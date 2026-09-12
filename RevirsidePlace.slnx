@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="Backend/HeThongDatTiecCuoi_API/HeThongDatTiecCuoi_API.csproj" />
+  <Project Path="Frontend/HeThongDatTiecCuoi_WEB/HeThongDatTiecCuoi_WEB.csproj" />
+</Solution>
