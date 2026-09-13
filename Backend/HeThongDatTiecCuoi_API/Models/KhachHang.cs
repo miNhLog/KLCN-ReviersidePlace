@@ -6,7 +6,6 @@ public sealed class KhachHang
     public int? NguoiDungID { get; set; }
     public string HoTen { get; set; } = string.Empty;
     public string SoDienThoai { get; set; } = string.Empty;
-    public string? DiaChi { get; set; }
 
     public NguoiDung? NguoiDung { get; set; }
 }

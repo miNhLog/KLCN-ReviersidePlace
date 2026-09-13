@@ -33,5 +33,17 @@ namespace HeThongDatTiecCuoi_API.Controllers
                 message = "Không thể kết nối SQL Server"
             });
         }
+
+        [HttpGet("info")]
+        public IActionResult GetDatabaseInfo()
+        {
+            var connection = _context.Database.GetDbConnection();
+
+            return Ok(new
+            {
+                Server = connection.DataSource,
+                Database = connection.Database
+            });
+        }
     }
 }

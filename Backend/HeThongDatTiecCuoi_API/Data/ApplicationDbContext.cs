@@ -49,7 +49,6 @@ public sealed class ApplicationDbContext : DbContext
             entity.HasKey(x => x.KhachHangID);
             entity.Property(x => x.HoTen).HasMaxLength(150).IsRequired();
             entity.Property(x => x.SoDienThoai).HasMaxLength(20).IsRequired();
-            entity.Property(x => x.DiaChi).HasMaxLength(255);
             entity.HasIndex(x => x.NguoiDungID).IsUnique().HasFilter("[NguoiDungID] IS NOT NULL");
             entity.HasIndex(x => x.SoDienThoai).IsUnique();
             entity.HasOne(x => x.NguoiDung)
