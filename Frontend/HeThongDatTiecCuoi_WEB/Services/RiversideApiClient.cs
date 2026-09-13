@@ -2,7 +2,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using HeThongDatTiecCuoi_WEB.Models.Auth;
-
+using HeThongDatTiecCuoi_WEB.Models.AdminSanh;
 namespace HeThongDatTiecCuoi_WEB.Services;
 
 public sealed class RiversideApiClient : IRiversideApiClient
@@ -43,6 +43,112 @@ public sealed class RiversideApiClient : IRiversideApiClient
         string accessToken,
         CancellationToken cancellationToken) =>
         SendAsync<CurrentUserDto>(HttpMethod.Get, "api/auth/me", null, accessToken, cancellationToken);
+
+    public Task<ApiCallResult<List<SanhTiecDto>>> GetDanhSachSanhAsync(
+    string accessToken,
+    CancellationToken cancellationToken) =>
+    SendAsync<List<SanhTiecDto>>(
+        HttpMethod.Get,
+        "api/SanhTiec",
+        null,
+        accessToken,
+        cancellationToken);
+
+
+    public Task<ApiCallResult<SanhTiecDto>> GetSanhByIdAsync(
+        int id,
+        string accessToken,
+        CancellationToken cancellationToken) =>
+        SendAsync<SanhTiecDto>(
+            HttpMethod.Get,
+            $"api/SanhTiec/{id}",
+            null,
+            accessToken,
+            cancellationToken);
+
+
+    public Task<ApiCallResult<SanhTiecDto>> CreateSanhAsync(
+        SanhTiecDto model,
+        string accessToken,
+        CancellationToken cancellationToken) =>
+        SendAsync<SanhTiecDto>(
+            HttpMethod.Post,
+            "api/SanhTiec",
+            model,
+            accessToken,
+            cancellationToken);
+
+
+    public Task<ApiCallResult<SanhTiecDto>> UpdateSanhAsync(
+        int id,
+        SanhTiecDto model,
+        string accessToken,
+        CancellationToken cancellationToken) =>
+        SendAsync<SanhTiecDto>(
+            HttpMethod.Put,
+            $"api/SanhTiec/{id}",
+            model,
+            accessToken,
+            cancellationToken);
+
+
+    public Task<ApiCallResult<ActionResponseDto>> UpdateTrangThaiSanhAsync(
+        int id,
+        string trangThai,
+        string accessToken,
+        CancellationToken cancellationToken) =>
+        SendAsync<ActionResponseDto>(
+            HttpMethod.Patch,
+            $"api/SanhTiec/{id}/trang-thai",
+            trangThai,
+            accessToken,
+            cancellationToken);
+
+
+    public Task<ApiCallResult<ActionResponseDto>> DeleteSanhAsync(
+        int id,
+        string accessToken,
+        CancellationToken cancellationToken) =>
+        SendAsync<ActionResponseDto>(
+            HttpMethod.Delete,
+            $"api/SanhTiec/{id}",
+            null,
+            accessToken,
+            cancellationToken);
+    public Task<ApiCallResult<LichSanhTuanDto>> GetLichSanhTheoTuanAsync(
+    DateTime ngayBatDau,
+    int? sanhTiecId,
+    string accessToken,
+    CancellationToken cancellationToken)
+    {
+        var url =
+            $"api/LichSanh/tuan?ngayBatDau={ngayBatDau:yyyy-MM-dd}";
+
+        if (sanhTiecId.HasValue)
+        {
+            url += $"&sanhTiecId={sanhTiecId.Value}";
+        }
+
+        return SendAsync<LichSanhTuanDto>(
+            HttpMethod.Get,
+            url,
+            null,
+            accessToken,
+            cancellationToken);
+    }
+
+
+    public Task<ApiCallResult<ActionResponseDto>> UpdateTrangThaiLichAsync(
+        int id,
+        string trangThai,
+        string accessToken,
+        CancellationToken cancellationToken) =>
+        SendAsync<ActionResponseDto>(
+            HttpMethod.Patch,
+            $"api/LichSanh/{id}/trang-thai",
+            trangThai,
+            accessToken,
+            cancellationToken);
 
     private async Task<ApiCallResult<T>> SendAsync<T>(
         HttpMethod method,

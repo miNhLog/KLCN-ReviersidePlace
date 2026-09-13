@@ -24,6 +24,11 @@ public sealed class AuthController : Controller
     {
         if (User.Identity?.IsAuthenticated == true)
         {
+            if (User.IsInRole("Quản trị viên"))
+            {
+                return RedirectToAction("Index", "AdminSanh");
+            }
+
             return RedirectToAction("Dashboard", "Home");
         }
 
@@ -53,6 +58,11 @@ public sealed class AuthController : Controller
             return LocalRedirect(model.ReturnUrl);
         }
 
+        if (result.Value.User.VaiTro == "Quản trị viên")
+        {
+            return RedirectToAction("Index", "AdminSanh");
+        }
+
         return RedirectToAction("Dashboard", "Home");
     }
 
@@ -62,6 +72,11 @@ public sealed class AuthController : Controller
     {
         if (User.Identity?.IsAuthenticated == true)
         {
+            if (User.IsInRole("Quản trị viên"))
+            {
+                return RedirectToAction("Index", "AdminSanh");
+            }
+
             return RedirectToAction("Dashboard", "Home");
         }
 
