@@ -1,6 +1,6 @@
 ﻿using HeThongDatTiecCuoi_WEB.Models.AdminSanh;
 using HeThongDatTiecCuoi_WEB.Models.Auth;
-
+using HeThongDatTiecCuoi_WEB.Models.AdminTaiKhoan;
 namespace HeThongDatTiecCuoi_WEB.Services;
 
 public interface IRiversideApiClient
@@ -64,4 +64,42 @@ public interface IRiversideApiClient
         string trangThai,
         string accessToken,
         CancellationToken cancellationToken);
+    Task<ApiCallResult<List<TaiKhoanDto>>> GetDanhSachTaiKhoanAsync(
+    string accessToken,
+    string? tuKhoa,
+    int? vaiTroId,
+    string? trangThai,
+    CancellationToken cancellationToken);
+
+    Task<ApiCallResult<List<VaiTroDto>>> GetDanhSachVaiTroAsync(
+        string accessToken,
+        CancellationToken cancellationToken);
+
+    Task<ApiCallResult<ThaoTacTaiKhoanResponse>> TaoTaiKhoanNhanVienAsync(
+        TaoTaiKhoanNhanVienRequest model,
+        string accessToken,
+        CancellationToken cancellationToken);
+
+    Task<ApiCallResult<ThaoTacTaiKhoanResponse>> CapNhatTaiKhoanNhanVienAsync(
+        int id,
+        CapNhatTaiKhoanNhanVienRequest model,
+        string accessToken,
+        CancellationToken cancellationToken);
+
+    Task<ApiCallResult<ThaoTacTaiKhoanResponse>> CapNhatTrangThaiTaiKhoanAsync(
+        int id,
+        string trangThai,
+        string accessToken,
+        CancellationToken cancellationToken);
+
+    Task<ApiCallResult<ThaoTacTaiKhoanResponse>> DatLaiMatKhauAsync(
+        int id,
+        DatLaiMatKhauRequest model,
+        string accessToken,
+        CancellationToken cancellationToken);
+    Task<ApiCallResult<ThaoTacTaiKhoanResponse>> CapNhatTrangThaiNhanVienAsync(
+    int nguoiDungId,
+    string trangThai,
+    string accessToken,
+    CancellationToken cancellationToken);
 }
