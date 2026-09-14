@@ -4,6 +4,7 @@ using System.Text.Json;
 using HeThongDatTiecCuoi_WEB.Models.Auth;
 using HeThongDatTiecCuoi_WEB.Models.AdminSanh;
 namespace HeThongDatTiecCuoi_WEB.Services;
+using HeThongDatTiecCuoi_WEB.Models.AdminTaiKhoan;
 
 public sealed class RiversideApiClient : IRiversideApiClient
 {
@@ -150,6 +151,131 @@ public sealed class RiversideApiClient : IRiversideApiClient
             accessToken,
             cancellationToken);
 
+    // ======================================================
+    // ADMIN - QUẢN LÝ TÀI KHOẢN
+    // ======================================================
+
+    public Task<ApiCallResult<List<TaiKhoanDto>>> GetDanhSachTaiKhoanAsync(
+        string accessToken,
+        string? tuKhoa,
+        int? vaiTroId,
+        string? trangThai,
+        CancellationToken cancellationToken)
+    {
+        var query = new List<string>();
+
+        if (!string.IsNullOrWhiteSpace(tuKhoa))
+        {
+            query.Add(
+                $"tuKhoa={Uri.EscapeDataString(tuKhoa)}"
+            );
+        }
+
+        if (vaiTroId.HasValue)
+        {
+            query.Add(
+                $"vaiTroId={vaiTroId.Value}"
+            );
+        }
+
+        if (!string.IsNullOrWhiteSpace(trangThai))
+        {
+            query.Add(
+                $"trangThai={Uri.EscapeDataString(trangThai)}"
+            );
+        }
+
+        var uri = "api/AdminTaiKhoan";
+
+        if (query.Count > 0)
+        {
+            uri += "?" + string.Join("&", query);
+        }
+
+        return SendAsync<List<TaiKhoanDto>>(
+            HttpMethod.Get,
+            uri,
+            null,
+            accessToken,
+            cancellationToken);
+    }
+
+
+    public Task<ApiCallResult<List<VaiTroDto>>> GetDanhSachVaiTroAsync(
+        string accessToken,
+        CancellationToken cancellationToken)
+    {
+        return SendAsync<List<VaiTroDto>>(
+            HttpMethod.Get,
+            "api/AdminTaiKhoan/vai-tro",
+            null,
+            accessToken,
+            cancellationToken);
+    }
+
+
+    public Task<ApiCallResult<ThaoTacTaiKhoanResponse>>
+        TaoTaiKhoanNhanVienAsync(
+            TaoTaiKhoanNhanVienRequest model,
+            string accessToken,
+            CancellationToken cancellationToken)
+    {
+        return SendAsync<ThaoTacTaiKhoanResponse>(
+            HttpMethod.Post,
+            "api/AdminTaiKhoan/nhan-vien",
+            model,
+            accessToken,
+            cancellationToken);
+    }
+
+
+    public Task<ApiCallResult<ThaoTacTaiKhoanResponse>>
+        CapNhatTaiKhoanNhanVienAsync(
+            int id,
+            CapNhatTaiKhoanNhanVienRequest model,
+            string accessToken,
+            CancellationToken cancellationToken)
+    {
+        return SendAsync<ThaoTacTaiKhoanResponse>(
+            HttpMethod.Put,
+            $"api/AdminTaiKhoan/nhan-vien/{id}",
+            model,
+            accessToken,
+            cancellationToken);
+    }
+
+
+    public Task<ApiCallResult<ThaoTacTaiKhoanResponse>>
+        CapNhatTrangThaiTaiKhoanAsync(
+            int id,
+            string trangThai,
+            string accessToken,
+            CancellationToken cancellationToken)
+    {
+        return SendAsync<ThaoTacTaiKhoanResponse>(
+            HttpMethod.Patch,
+            $"api/AdminTaiKhoan/{id}/trang-thai",
+            trangThai,
+            accessToken,
+            cancellationToken);
+    }
+
+
+    public Task<ApiCallResult<ThaoTacTaiKhoanResponse>>
+        DatLaiMatKhauAsync(
+            int id,
+            DatLaiMatKhauRequest model,
+            string accessToken,
+            CancellationToken cancellationToken)
+    {
+        return SendAsync<ThaoTacTaiKhoanResponse>(
+            HttpMethod.Patch,
+            $"api/AdminTaiKhoan/{id}/dat-lai-mat-khau",
+            model,
+            accessToken,
+            cancellationToken);
+    }
+
     private async Task<ApiCallResult<T>> SendAsync<T>(
         HttpMethod method,
         string uri,
@@ -190,5 +316,20 @@ public sealed class RiversideApiClient : IRiversideApiClient
         {
             return ApiCallResult<T>.Failure("Backend API phản hồi quá lâu.");
         }
+    }
+    public async Task<ApiCallResult<ThaoTacTaiKhoanResponse>>
+    CapNhatTrangThaiNhanVienAsync(
+        int nguoiDungId,
+        string trangThai,
+        string accessToken,
+        CancellationToken cancellationToken)
+    {
+        return await SendAsync<ThaoTacTaiKhoanResponse>(
+            HttpMethod.Patch,
+            $"api/AdminTaiKhoan/nhan-vien/{nguoiDungId}/trang-thai",
+            trangThai,
+            accessToken,
+            cancellationToken
+        );
     }
 }
