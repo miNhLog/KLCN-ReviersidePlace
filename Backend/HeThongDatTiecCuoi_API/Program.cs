@@ -141,6 +141,7 @@ app.UseCors("WebFrontend");
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseStaticFiles();
 app.MapControllers();
 
 app.Run();
