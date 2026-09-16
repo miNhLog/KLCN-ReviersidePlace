@@ -1,4 +1,4 @@
-﻿@{
+@{
     var activeMenu = ViewData["ActiveMenu"]?.ToString() ?? "";
 }
 
@@ -19,7 +19,7 @@
           href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
     <link rel="stylesheet"
-          href="~/css/admin-sanh.css"
+          href="~/css/admin-hall.css"
           asp-append-version="true" />
 
     @await RenderSectionAsync("Styles", required: false)
@@ -68,10 +68,10 @@
 
             <nav class="menu">
 
-                <a asp-controller="AdminSanh"
+                <a asp-controller="AdminHall"
                    asp-action="Index"
                    data-tooltip="Quản lý Sảnh & Lịch"
-                   class="menu-item @(activeMenu == "Sanh" ? "active" : "")">
+                   class="menu-item @(activeMenu == "Hall" ? "active" : "")">
 
                     <i class="fa-solid fa-hotel"></i>
 

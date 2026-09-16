@@ -1,4 +1,4 @@
-﻿using HeThongDatTiecCuoi_WEB.Models.AdminSanh;
+﻿using HeThongDatTiecCuoi_WEB.Models.AdminHall;
 using HeThongDatTiecCuoi_WEB.Models.AdminTaiKhoan;
 using HeThongDatTiecCuoi_WEB.Models.Auth;
 namespace HeThongDatTiecCuoi_WEB.Services;
@@ -21,49 +21,49 @@ public interface IRiversideApiClient
         CancellationToken cancellationToken);
 
 
-    // Sảnh tiệc
-    Task<ApiCallResult<List<SanhTiecDto>>> GetDanhSachSanhAsync(
+    // Hall management
+    Task<ApiCallResult<List<HallDto>>> GetHallsAsync(
         string accessToken,
         CancellationToken cancellationToken);
 
-    Task<ApiCallResult<SanhTiecDto>> GetSanhByIdAsync(
-        int id,
+    Task<ApiCallResult<HallDto>> GetHallByIdAsync(
+        int hallId,
         string accessToken,
         CancellationToken cancellationToken);
 
-    Task<ApiCallResult<SanhTiecDto>> CreateSanhAsync(
-        SanhTiecDto model,
+    Task<ApiCallResult<HallDto>> CreateHallAsync(
+        HallDto model,
         string accessToken,
         CancellationToken cancellationToken);
 
-    Task<ApiCallResult<SanhTiecDto>> UpdateSanhAsync(
-        int id,
-        SanhTiecDto model,
+    Task<ApiCallResult<HallDto>> UpdateHallAsync(
+        int hallId,
+        HallDto model,
         string accessToken,
         CancellationToken cancellationToken);
 
-    Task<ApiCallResult<ActionResponseDto>> UpdateTrangThaiSanhAsync(
-        int id,
-        string trangThai,
+    Task<ApiCallResult<ActionResponseDto>> UpdateHallStatusAsync(
+        int hallId,
+        string status,
         string accessToken,
         CancellationToken cancellationToken);
 
-    Task<ApiCallResult<ActionResponseDto>> DeleteSanhAsync(
-        int id,
+    Task<ApiCallResult<ActionResponseDto>> DeleteHallAsync(
+        int hallId,
         string accessToken,
         CancellationToken cancellationToken);
 
 
-    // Lịch sảnh
-    Task<ApiCallResult<LichSanhTuanDto>> GetLichSanhTheoTuanAsync(
-        DateTime ngayBatDau,
-        int? sanhTiecId,
+    // Hall schedules
+    Task<ApiCallResult<WeeklyHallScheduleDto>> GetWeeklyHallSchedulesAsync(
+        DateTime startDate,
+        int? hallId,
         string accessToken,
         CancellationToken cancellationToken);
 
-    Task<ApiCallResult<ActionResponseDto>> UpdateTrangThaiLichAsync(
-        int id,
-        string trangThai,
+    Task<ApiCallResult<ActionResponseDto>> UpdateHallScheduleStatusAsync(
+        int hallScheduleId,
+        string status,
         string accessToken,
         CancellationToken cancellationToken);
     Task<ApiCallResult<List<TaiKhoanDto>>> GetDanhSachTaiKhoanAsync(

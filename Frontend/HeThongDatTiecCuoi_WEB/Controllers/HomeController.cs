@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HeThongDatTiecCuoi_WEB.Controllers;
@@ -14,7 +14,7 @@ public sealed class HomeController : Controller
 
         if (User.IsInRole("Quản trị viên"))
         {
-            return RedirectToAction("Index", "AdminSanh");
+            return RedirectToAction("Index", "AdminHall");
         }
 
         return RedirectToAction(nameof(Dashboard));
@@ -28,7 +28,7 @@ public sealed class HomeController : Controller
         // cũng chuyển về trang quản lý sảnh
         if (User.IsInRole("Quản trị viên"))
         {
-            return RedirectToAction("Index", "AdminSanh");
+            return RedirectToAction("Index", "AdminHall");
         }
 
         return View();

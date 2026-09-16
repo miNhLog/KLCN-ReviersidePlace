@@ -1,4 +1,4 @@
-﻿using HeThongDatTiecCuoi_API.Data;
+using HeThongDatTiecCuoi_API.Data;
 using HeThongDatTiecCuoi_API.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -7,35 +7,33 @@ using Microsoft.EntityFrameworkCore;
 namespace HeThongDatTiecCuoi_API.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/halls")]
 [Authorize(Roles = RoleNames.Admin)]
-public class SanhTiecController : ControllerBase
+public sealed class HallController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
 
-    public SanhTiecController(ApplicationDbContext context)
+    public HallController(ApplicationDbContext context)
     {
         _context = context;
     }
 
-    // GET: api/SanhTiec
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<IActionResult> GetHalls()
     {
-        var danhSachSanh = await _context.SanhTiec
-            .OrderBy(x => x.SanhTiecID)
+        var halls = await _context.Halls
+            .OrderBy(hall => hall.HallId)
             .ToListAsync();
 
-        return Ok(danhSachSanh);
+        return Ok(halls);
     }
 
-    // GET: api/SanhTiec/1
-    [HttpGet("{id}")]
-    public async Task<IActionResult> GetById(int id)
+    [HttpGet("{hallId:int}")]
+    public async Task<IActionResult> GetHall(int hallId)
     {
-        var sanh = await _context.SanhTiec.FindAsync(id);
+        var hall = await _context.Halls.FindAsync(hallId);
 
-        if (sanh == null)
+        if (hall is null)
         {
             return NotFound(new
             {
@@ -43,14 +41,13 @@ public class SanhTiecController : ControllerBase
             });
         }
 
-        return Ok(sanh);
+        return Ok(hall);
     }
 
-    // POST: api/SanhTiec
     [HttpPost]
-    public async Task<IActionResult> Create(SanhTiec sanhTiec)
+    public async Task<IActionResult> CreateHall(Hall hall)
     {
-        if (string.IsNullOrWhiteSpace(sanhTiec.MaSanh))
+        if (string.IsNullOrWhiteSpace(hall.HallCode))
         {
             return BadRequest(new
             {
@@ -58,7 +55,7 @@ public class SanhTiecController : ControllerBase
             });
         }
 
-        if (string.IsNullOrWhiteSpace(sanhTiec.TenSanh))
+        if (string.IsNullOrWhiteSpace(hall.HallName))
         {
             return BadRequest(new
             {
@@ -66,10 +63,10 @@ public class SanhTiecController : ControllerBase
             });
         }
 
-        var maSanhDaTonTai = await _context.SanhTiec
-            .AnyAsync(x => x.MaSanh == sanhTiec.MaSanh);
+        var hallCodeExists = await _context.Halls
+            .AnyAsync(existingHall => existingHall.HallCode == hall.HallCode);
 
-        if (maSanhDaTonTai)
+        if (hallCodeExists)
         {
             return BadRequest(new
             {
@@ -77,7 +74,7 @@ public class SanhTiecController : ControllerBase
             });
         }
 
-        if (sanhTiec.SucChuaToiDa <= 0)
+        if (hall.MaximumCapacity <= 0)
         {
             return BadRequest(new
             {
@@ -85,8 +82,8 @@ public class SanhTiecController : ControllerBase
             });
         }
 
-        if (sanhTiec.SucChuaToiThieu.HasValue &&
-            sanhTiec.SucChuaToiThieu.Value > sanhTiec.SucChuaToiDa)
+        if (hall.MinimumCapacity.HasValue &&
+            hall.MinimumCapacity.Value > hall.MaximumCapacity)
         {
             return BadRequest(new
             {
@@ -94,7 +91,7 @@ public class SanhTiecController : ControllerBase
             });
         }
 
-        if (sanhTiec.GiaThue < 0)
+        if (hall.RentalPrice < 0)
         {
             return BadRequest(new
             {
@@ -102,9 +99,9 @@ public class SanhTiecController : ControllerBase
             });
         }
 
-        if (sanhTiec.TrangThai != "Hoạt động" &&
-            sanhTiec.TrangThai != "Bảo trì" &&
-            sanhTiec.TrangThai != "Ngừng hoạt động")
+        if (hall.Status != "Hoạt động" &&
+            hall.Status != "Bảo trì" &&
+            hall.Status != "Ngừng hoạt động")
         {
             return BadRequest(new
             {
@@ -112,23 +109,21 @@ public class SanhTiecController : ControllerBase
             });
         }
 
-        _context.SanhTiec.Add(sanhTiec);
+        _context.Halls.Add(hall);
         await _context.SaveChangesAsync();
 
         return CreatedAtAction(
-            nameof(GetById),
-            new { id = sanhTiec.SanhTiecID },
-            sanhTiec
-        );
+            nameof(GetHall),
+            new { hallId = hall.HallId },
+            hall);
     }
 
-    // PUT: api/SanhTiec/1
-    [HttpPut("{id}")]
-    public async Task<IActionResult> Update(int id, SanhTiec sanhTiec)
+    [HttpPut("{hallId:int}")]
+    public async Task<IActionResult> UpdateHall(int hallId, Hall hall)
     {
-        var sanhHienTai = await _context.SanhTiec.FindAsync(id);
+        var existingHall = await _context.Halls.FindAsync(hallId);
 
-        if (sanhHienTai == null)
+        if (existingHall is null)
         {
             return NotFound(new
             {
@@ -136,12 +131,12 @@ public class SanhTiecController : ControllerBase
             });
         }
 
-        var maSanhDaTonTai = await _context.SanhTiec
-            .AnyAsync(x =>
-                x.MaSanh == sanhTiec.MaSanh &&
-                x.SanhTiecID != id);
+        var hallCodeExists = await _context.Halls
+            .AnyAsync(otherHall =>
+                otherHall.HallCode == hall.HallCode &&
+                otherHall.HallId != hallId);
 
-        if (maSanhDaTonTai)
+        if (hallCodeExists)
         {
             return BadRequest(new
             {
@@ -149,7 +144,7 @@ public class SanhTiecController : ControllerBase
             });
         }
 
-        if (sanhTiec.SucChuaToiDa <= 0)
+        if (hall.MaximumCapacity <= 0)
         {
             return BadRequest(new
             {
@@ -157,8 +152,8 @@ public class SanhTiecController : ControllerBase
             });
         }
 
-        if (sanhTiec.SucChuaToiThieu.HasValue &&
-            sanhTiec.SucChuaToiThieu.Value > sanhTiec.SucChuaToiDa)
+        if (hall.MinimumCapacity.HasValue &&
+            hall.MinimumCapacity.Value > hall.MaximumCapacity)
         {
             return BadRequest(new
             {
@@ -166,7 +161,7 @@ public class SanhTiecController : ControllerBase
             });
         }
 
-        if (sanhTiec.GiaThue < 0)
+        if (hall.RentalPrice < 0)
         {
             return BadRequest(new
             {
@@ -174,9 +169,9 @@ public class SanhTiecController : ControllerBase
             });
         }
 
-        if (sanhTiec.TrangThai != "Hoạt động" &&
-            sanhTiec.TrangThai != "Bảo trì" &&
-            sanhTiec.TrangThai != "Ngừng hoạt động")
+        if (hall.Status != "Hoạt động" &&
+            hall.Status != "Bảo trì" &&
+            hall.Status != "Ngừng hoạt động")
         {
             return BadRequest(new
             {
@@ -184,29 +179,28 @@ public class SanhTiecController : ControllerBase
             });
         }
 
-        sanhHienTai.MaSanh = sanhTiec.MaSanh;
-        sanhHienTai.TenSanh = sanhTiec.TenSanh;
-        sanhHienTai.SucChuaToiThieu = sanhTiec.SucChuaToiThieu;
-        sanhHienTai.SucChuaToiDa = sanhTiec.SucChuaToiDa;
-        sanhHienTai.GiaThue = sanhTiec.GiaThue;
-        sanhHienTai.MoTa = sanhTiec.MoTa;
-        sanhHienTai.HinhAnh = sanhTiec.HinhAnh;
-        sanhHienTai.TrangThai = sanhTiec.TrangThai;
+        existingHall.HallCode = hall.HallCode;
+        existingHall.HallName = hall.HallName;
+        existingHall.MinimumCapacity = hall.MinimumCapacity;
+        existingHall.MaximumCapacity = hall.MaximumCapacity;
+        existingHall.RentalPrice = hall.RentalPrice;
+        existingHall.Description = hall.Description;
+        existingHall.ImageUrl = hall.ImageUrl;
+        existingHall.Status = hall.Status;
 
         await _context.SaveChangesAsync();
 
-        return Ok(sanhHienTai);
+        return Ok(existingHall);
     }
 
-    // PATCH: api/SanhTiec/1/trang-thai
-    [HttpPatch("{id}/trang-thai")]
-    public async Task<IActionResult> UpdateTrangThai(
-        int id,
-        [FromBody] string trangThai)
+    [HttpPatch("{hallId:int}/status")]
+    public async Task<IActionResult> UpdateHallStatus(
+        int hallId,
+        [FromBody] string status)
     {
-        var sanh = await _context.SanhTiec.FindAsync(id);
+        var hall = await _context.Halls.FindAsync(hallId);
 
-        if (sanh == null)
+        if (hall is null)
         {
             return NotFound(new
             {
@@ -214,9 +208,9 @@ public class SanhTiecController : ControllerBase
             });
         }
 
-        if (trangThai != "Hoạt động" &&
-            trangThai != "Bảo trì" &&
-            trangThai != "Ngừng hoạt động")
+        if (status != "Hoạt động" &&
+            status != "Bảo trì" &&
+            status != "Ngừng hoạt động")
         {
             return BadRequest(new
             {
@@ -224,24 +218,23 @@ public class SanhTiecController : ControllerBase
             });
         }
 
-        sanh.TrangThai = trangThai;
+        hall.Status = status;
 
         await _context.SaveChangesAsync();
 
         return Ok(new
         {
             message = "Cập nhật trạng thái thành công.",
-            sanh
+            hall
         });
     }
 
-    // DELETE: api/SanhTiec/1
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(int id)
+    [HttpDelete("{hallId:int}")]
+    public async Task<IActionResult> DeleteHall(int hallId)
     {
-        var sanh = await _context.SanhTiec.FindAsync(id);
+        var hall = await _context.Halls.FindAsync(hallId);
 
-        if (sanh == null)
+        if (hall is null)
         {
             return NotFound(new
             {
@@ -249,7 +242,7 @@ public class SanhTiecController : ControllerBase
             });
         }
 
-        if (sanh.TrangThai == "Hoạt động")
+        if (hall.Status == "Hoạt động")
         {
             return BadRequest(new
             {
@@ -257,11 +250,10 @@ public class SanhTiecController : ControllerBase
             });
         }
 
-        var coBooking = await _context.DatTiec
-            .AnyAsync(x =>
-                x.LichSanh.SanhTiecID == id);
+        var hasBooking = await _context.DatTiec
+            .AnyAsync(booking => booking.HallSchedule.HallId == hallId);
 
-        if (coBooking)
+        if (hasBooking)
         {
             return BadRequest(new
             {
@@ -269,12 +261,12 @@ public class SanhTiecController : ControllerBase
             });
         }
 
-        var danhSachLich = await _context.LichSanh
-            .Where(x => x.SanhTiecID == id)
+        var hallSchedules = await _context.HallSchedules
+            .Where(schedule => schedule.HallId == hallId)
             .ToListAsync();
 
-        _context.LichSanh.RemoveRange(danhSachLich);
-        _context.SanhTiec.Remove(sanh);
+        _context.HallSchedules.RemoveRange(hallSchedules);
+        _context.Halls.Remove(hall);
 
         await _context.SaveChangesAsync();
 

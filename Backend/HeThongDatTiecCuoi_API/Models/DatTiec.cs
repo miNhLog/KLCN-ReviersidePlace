@@ -8,7 +8,7 @@ public sealed class DatTiec
 
     public int KhachHangID { get; set; }
 
-    public int LichSanhID { get; set; }
+    public int HallScheduleId { get; set; }
 
     public int? ThucDonID { get; set; }
 
@@ -44,5 +44,5 @@ public sealed class DatTiec
 
     public KhachHang KhachHang { get; set; } = null!;
 
-    public LichSanh LichSanh { get; set; } = null!;
+    public HallSchedule HallSchedule { get; set; } = null!;
 }

@@ -1,4 +1,4 @@
-using HeThongDatTiecCuoi_WEB.Models.AdminSanh;
+using HeThongDatTiecCuoi_WEB.Models.AdminHall;
 using HeThongDatTiecCuoi_WEB.Models.Auth;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -47,92 +47,88 @@ public sealed class RiversideApiClient : IRiversideApiClient
         CancellationToken cancellationToken) =>
         SendAsync<CurrentUserDto>(HttpMethod.Get, "api/auth/me", null, accessToken, cancellationToken);
 
-    public Task<ApiCallResult<List<SanhTiecDto>>> GetDanhSachSanhAsync(
-    string accessToken,
-    CancellationToken cancellationToken) =>
-    SendAsync<List<SanhTiecDto>>(
-        HttpMethod.Get,
-        "api/SanhTiec",
-        null,
-        accessToken,
-        cancellationToken);
-
-
-    public Task<ApiCallResult<SanhTiecDto>> GetSanhByIdAsync(
-        int id,
+    public Task<ApiCallResult<List<HallDto>>> GetHallsAsync(
         string accessToken,
         CancellationToken cancellationToken) =>
-        SendAsync<SanhTiecDto>(
+        SendAsync<List<HallDto>>(
             HttpMethod.Get,
-            $"api/SanhTiec/{id}",
+            "api/halls",
             null,
             accessToken,
             cancellationToken);
 
-
-    public Task<ApiCallResult<SanhTiecDto>> CreateSanhAsync(
-        SanhTiecDto model,
+    public Task<ApiCallResult<HallDto>> GetHallByIdAsync(
+        int hallId,
         string accessToken,
         CancellationToken cancellationToken) =>
-        SendAsync<SanhTiecDto>(
+        SendAsync<HallDto>(
+            HttpMethod.Get,
+            $"api/halls/{hallId}",
+            null,
+            accessToken,
+            cancellationToken);
+
+    public Task<ApiCallResult<HallDto>> CreateHallAsync(
+        HallDto model,
+        string accessToken,
+        CancellationToken cancellationToken) =>
+        SendAsync<HallDto>(
             HttpMethod.Post,
-            "api/SanhTiec",
+            "api/halls",
             model,
             accessToken,
             cancellationToken);
 
-
-    public Task<ApiCallResult<SanhTiecDto>> UpdateSanhAsync(
-        int id,
-        SanhTiecDto model,
+    public Task<ApiCallResult<HallDto>> UpdateHallAsync(
+        int hallId,
+        HallDto model,
         string accessToken,
         CancellationToken cancellationToken) =>
-        SendAsync<SanhTiecDto>(
+        SendAsync<HallDto>(
             HttpMethod.Put,
-            $"api/SanhTiec/{id}",
+            $"api/halls/{hallId}",
             model,
             accessToken,
             cancellationToken);
 
-
-    public Task<ApiCallResult<ActionResponseDto>> UpdateTrangThaiSanhAsync(
-        int id,
-        string trangThai,
+    public Task<ApiCallResult<ActionResponseDto>> UpdateHallStatusAsync(
+        int hallId,
+        string status,
         string accessToken,
         CancellationToken cancellationToken) =>
         SendAsync<ActionResponseDto>(
             HttpMethod.Patch,
-            $"api/SanhTiec/{id}/trang-thai",
-            trangThai,
+            $"api/halls/{hallId}/status",
+            status,
             accessToken,
             cancellationToken);
 
-
-    public Task<ApiCallResult<ActionResponseDto>> DeleteSanhAsync(
-        int id,
+    public Task<ApiCallResult<ActionResponseDto>> DeleteHallAsync(
+        int hallId,
         string accessToken,
         CancellationToken cancellationToken) =>
         SendAsync<ActionResponseDto>(
             HttpMethod.Delete,
-            $"api/SanhTiec/{id}",
+            $"api/halls/{hallId}",
             null,
             accessToken,
             cancellationToken);
-    public Task<ApiCallResult<LichSanhTuanDto>> GetLichSanhTheoTuanAsync(
-    DateTime ngayBatDau,
-    int? sanhTiecId,
-    string accessToken,
-    CancellationToken cancellationToken)
+
+    public Task<ApiCallResult<WeeklyHallScheduleDto>> GetWeeklyHallSchedulesAsync(
+        DateTime startDate,
+        int? hallId,
+        string accessToken,
+        CancellationToken cancellationToken)
     {
         var url =
-            $"api/LichSanh/tuan?ngayBatDau={ngayBatDau:yyyy-MM-dd}";
+            $"api/hall-schedules/weekly?startDate={startDate:yyyy-MM-dd}";
 
-        if (sanhTiecId.HasValue)
+        if (hallId.HasValue)
         {
-            url += $"&sanhTiecId={sanhTiecId.Value}";
+            url += $"&hallId={hallId.Value}";
         }
 
-        return SendAsync<LichSanhTuanDto>(
+        return SendAsync<WeeklyHallScheduleDto>(
             HttpMethod.Get,
             url,
             null,
@@ -140,16 +136,15 @@ public sealed class RiversideApiClient : IRiversideApiClient
             cancellationToken);
     }
 
-
-    public Task<ApiCallResult<ActionResponseDto>> UpdateTrangThaiLichAsync(
-        int id,
-        string trangThai,
+    public Task<ApiCallResult<ActionResponseDto>> UpdateHallScheduleStatusAsync(
+        int hallScheduleId,
+        string status,
         string accessToken,
         CancellationToken cancellationToken) =>
         SendAsync<ActionResponseDto>(
             HttpMethod.Patch,
-            $"api/LichSanh/{id}/trang-thai",
-            trangThai,
+            $"api/hall-schedules/{hallScheduleId}/status",
+            status,
             accessToken,
             cancellationToken);
 

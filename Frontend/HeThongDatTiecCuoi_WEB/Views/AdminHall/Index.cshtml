@@ -1,12 +1,12 @@
-﻿@model HeThongDatTiecCuoi_WEB.Models.AdminSanh.QuanLySanhViewModel
+@model HeThongDatTiecCuoi_WEB.Models.AdminHall.HallManagementViewModel
 
 @{
     Layout = "_AdminLayout";
 
     ViewData["Title"] = "Quản lý Sảnh & Lịch";
-    ViewData["ActiveMenu"] = "Sanh";
+    ViewData["ActiveMenu"] = "Hall";
 
-    var ngayKetThuc = Model.NgayBatDau.AddDays(6);
+    var endDate = Model.StartDate.AddDays(6);
 }
 
 <!-- HEADER -->
@@ -59,8 +59,8 @@
                 <label>Tuần:</label>
 
                 <input type="date"
-                       name="ngay"
-                       value="@Model.NgayBatDau.ToString("yyyy-MM-dd")" />
+                       name="date"
+                       value="@Model.StartDate.ToString("yyyy-MM-dd")" />
 
             </div>
 
@@ -71,25 +71,25 @@
 
                 <label>Sảnh:</label>
 
-                <select name="sanhTiecId">
+                <select name="hallId">
 
                     <option value="">
                         Tất cả sảnh
                     </option>
 
-                    @foreach (var sanh in Model.DanhSachSanh)
+                    @foreach (var hall in Model.Halls)
                     {
-                        if (Model.SanhTiecId == sanh.SanhTiecID)
+                        if (Model.HallId == hall.HallId)
                         {
-                            <option value="@sanh.SanhTiecID"
+                            <option value="@hall.HallId"
                                     selected>
-                                @sanh.TenSanh
+                                @hall.HallName
                             </option>
                         }
                         else
                         {
-                            <option value="@sanh.SanhTiecID">
-                                @sanh.TenSanh
+                            <option value="@hall.HallId">
+                                @hall.HallName
                             </option>
                         }
                     }
@@ -138,7 +138,7 @@
         </div>
 
         <span>
-            @Model.DanhSachSanh.Count sảnh
+            @Model.Halls.Count sảnh
         </span>
 
     </div>
@@ -152,7 +152,7 @@
             var index = 0;
         }
 
-        @foreach (var sanh in Model.DanhSachSanh)
+        @foreach (var hall in Model.Halls)
         {
             var extraClass = index >= 3 ? "extra-hall hidden" : "";
 
@@ -165,21 +165,21 @@
                         <div class="hall-title">
 
                             <h4>
-                                @sanh.TenSanh
+                                @hall.HallName
                             </h4>
 
                             <span class="status-badge
-                                    @(sanh.TrangThai == "Hoạt động"
+                                    @(hall.Status == "Hoạt động"
                                                                                                                 ? "status-active"
-                                                                                                                : sanh.TrangThai == "Bảo trì"
+                                                                                                                : hall.Status == "Bảo trì"
                                                                                                                     ? "status-maintenance"
                                                                                                                     : "status-inactive")">
 
-                            @if (sanh.TrangThai == "Hoạt động")
+                            @if (hall.Status == "Hoạt động")
                                 {
                                     <i class="fa-solid fa-circle-check"></i>
                                 }
-                                else if (sanh.TrangThai == "Bảo trì")
+                                else if (hall.Status == "Bảo trì")
                                 {
                                     <i class="fa-solid fa-screwdriver-wrench"></i>
                                 }
@@ -188,14 +188,14 @@
                                     <i class="fa-solid fa-circle-xmark"></i>
                                 }
 
-                                @sanh.TrangThai
+                                @hall.Status
 
                             </span>
 
                         </div>
 
                         <div class="hall-code">
-                            Mã sảnh: @sanh.MaSanh
+                            Mã sảnh: @hall.HallCode
                         </div>
 
                     </div>
@@ -216,7 +216,7 @@
                         </span>
 
                         <strong>
-                            @(sanh.SucChuaToiThieu?.ToString() ?? "Chưa xác định") khách
+                            @(hall.MinimumCapacity?.ToString() ?? "Chưa xác định") khách
                         </strong>
 
                     </div>
@@ -229,7 +229,7 @@
                         </span>
 
                         <strong>
-                            @sanh.SucChuaToiDa khách
+                            @hall.MaximumCapacity khách
                         </strong>
 
                     </div>
@@ -242,7 +242,7 @@
                         </span>
 
                         <strong class="price">
-                            @sanh.GiaThue.ToString("N0") VNĐ
+                            @hall.RentalPrice.ToString("N0") VNĐ
                         </strong>
 
                     </div>
@@ -250,10 +250,10 @@
                 </div>
 
 
-                @if (!string.IsNullOrWhiteSpace(sanh.MoTa))
+                @if (!string.IsNullOrWhiteSpace(hall.Description))
                 {
                     <div class="hall-description">
-                        @sanh.MoTa
+                        @hall.Description
                     </div>
                 }
 
@@ -262,15 +262,15 @@
 
                 <button type="button"
                         class="btn-edit"
-                        data-id="@sanh.SanhTiecID"
-                        data-ma="@sanh.MaSanh"
-                        data-ten="@sanh.TenSanh"
-                        data-min="@sanh.SucChuaToiThieu"
-                        data-max="@sanh.SucChuaToiDa"
-                        data-gia="@sanh.GiaThue"
-                        data-hinh="@sanh.HinhAnh"
-                        data-mota="@sanh.MoTa"
-                        data-trangthai="@sanh.TrangThai">
+                        data-hall-id="@hall.HallId"
+                        data-code="@hall.HallCode"
+                        data-name="@hall.HallName"
+                        data-minimum-capacity="@hall.MinimumCapacity"
+                        data-maximum-capacity="@hall.MaximumCapacity"
+                        data-rental-price="@hall.RentalPrice"
+                        data-image-url="@hall.ImageUrl"
+                        data-description="@hall.Description"
+                        data-status="@hall.Status">
 
                     <i class="fa-regular fa-pen-to-square"></i>
 
@@ -280,20 +280,20 @@
 
                 <button type="button"
                         class="btn-status
-                                @(sanh.TrangThai == "Hoạt động"
+                                @(hall.Status == "Hoạt động"
                                                             ? "btn-status-active"
-                                                            : sanh.TrangThai == "Bảo trì"
+                                                            : hall.Status == "Bảo trì"
                                                                 ? "btn-status-maintenance"
                                                                 : "btn-status-inactive")"
-                        data-id="@sanh.SanhTiecID"
-                        data-ten="@sanh.TenSanh"
-                        data-trangthai="@sanh.TrangThai">
+                        data-hall-id="@hall.HallId"
+                        data-name="@hall.HallName"
+                        data-status="@hall.Status">
 
-                    @if (sanh.TrangThai == "Hoạt động")
+                    @if (hall.Status == "Hoạt động")
                         {
                             <i class="fa-solid fa-circle-check"></i>
                         }
-                        else if (sanh.TrangThai == "Bảo trì")
+                        else if (hall.Status == "Bảo trì")
                         {
                             <i class="fa-solid fa-screwdriver-wrench"></i>
                         }
@@ -302,14 +302,14 @@
                             <i class="fa-solid fa-circle-xmark"></i>
                         }
 
-                        @sanh.TrangThai
+                        @hall.Status
                     </button>
 
                     <button type="button"
                             class="btn-delete"
-                            data-id="@sanh.SanhTiecID"
-                            data-ten="@sanh.TenSanh"
-                            data-trangthai="@sanh.TrangThai">
+                            data-hall-id="@hall.HallId"
+                            data-name="@hall.HallName"
+                            data-status="@hall.Status">
 
                         <i class="fa-regular fa-trash-can"></i>
 
@@ -326,7 +326,7 @@
     </div>
 
 
-    @if (Model.DanhSachSanh.Count > 3)
+    @if (Model.Halls.Count > 3)
     {
         <div class="show-more-wrapper">
 
@@ -359,9 +359,9 @@
                 </h3>
 
                 <p>
-                    @Model.NgayBatDau.ToString("dd/MM/yyyy")
+                    @Model.StartDate.ToString("dd/MM/yyyy")
                     -
-                    @ngayKetThuc.ToString("dd/MM/yyyy")
+                    @endDate.ToString("dd/MM/yyyy")
                 </p>
             </div>
 
@@ -370,11 +370,11 @@
                 <a class="week-button current-button"
                    href="@Url.Action(
                                               "Index",
-                                              "AdminSanh",
+                                              "AdminHall",
                                               new
                                               {
-                                                  ngay = DateTime.Today.ToString("yyyy-MM-dd"),
-                                                  sanhTiecId = Model.SanhTiecId
+                                                  date = DateTime.Today.ToString("yyyy-MM-dd"),
+                                                  hallId = Model.HallId
                                               })">
 
                     <i class="fa-solid fa-calendar-day"></i>
@@ -384,11 +384,11 @@
                 <a class="week-button"
                    href="@Url.Action(
                                                           "Index",
-                                                          "AdminSanh",
+                                                          "AdminHall",
                                                           new
                                                           {
-                                                              ngay = Model.NgayBatDau.AddDays(-7).ToString("yyyy-MM-dd"),
-                                                              sanhTiecId = Model.SanhTiecId
+                                                              date = Model.StartDate.AddDays(-7).ToString("yyyy-MM-dd"),
+                                                              hallId = Model.HallId
                                                           })">
 
                     <i class="fa-solid fa-chevron-left"></i>
@@ -397,20 +397,20 @@
 
 
                 <span class="current-week">
-                    @Model.NgayBatDau.ToString("dd/MM")
+                    @Model.StartDate.ToString("dd/MM")
                     -
-                    @ngayKetThuc.ToString("dd/MM/yyyy")
+                    @endDate.ToString("dd/MM/yyyy")
                 </span>
 
 
                 <a class="week-button"
                    href="@Url.Action(
                                                           "Index",
-                                                          "AdminSanh",
+                                                          "AdminHall",
                                                           new
                                                           {
-                                                              ngay = Model.NgayBatDau.AddDays(7).ToString("yyyy-MM-dd"),
-                                                              sanhTiecId = Model.SanhTiecId
+                                                              date = Model.StartDate.AddDays(7).ToString("yyyy-MM-dd"),
+                                                              hallId = Model.HallId
                                                           })">
 
                     Tuần sau
@@ -423,8 +423,8 @@
 
 
 
-        @if (Model.LichTuan == null ||
-                Model.LichTuan.DanhSachSanh.Count == 0)
+        @if (Model.WeeklySchedule == null ||
+                Model.WeeklySchedule.Halls.Count == 0)
         {
             <div class="schedule-empty">
                 Không có dữ liệu lịch sảnh.
@@ -446,9 +446,9 @@
 
                             @for (var i = 0; i < 7; i++)
                             {
-                                var ngay = Model.NgayBatDau.AddDays(i);
+                                var date = Model.StartDate.AddDays(i);
 
-                                var tenThu = ngay.DayOfWeek switch
+                                var dayName = date.DayOfWeek switch
                                 {
                                     DayOfWeek.Monday => "Thứ Hai",
                                     DayOfWeek.Tuesday => "Thứ Ba",
@@ -461,8 +461,8 @@
                                 };
 
                                 <th>
-                                    <strong>@tenThu</strong>
-                                    <span>@ngay.ToString("dd/MM/yyyy")</span>
+                                    <strong>@dayName</strong>
+                                    <span>@date.ToString("dd/MM/yyyy")</span>
                                 </th>
                             }
 
@@ -473,7 +473,7 @@
 
                     <tbody>
 
-                        @foreach (var sanh in Model.LichTuan.DanhSachSanh)
+                        @foreach (var hall in Model.WeeklySchedule.Halls)
                         {
                             <tr>
 
@@ -481,17 +481,17 @@
                                 <td class="hall-column">
 
                                     <strong>
-                                        @sanh.TenSanh
+                                        @hall.HallName
                                     </strong>
 
                                     <span>
-                                        @sanh.MaSanh
+                                        @hall.HallCode
                                     </span>
 
-                                    @if (sanh.TrangThaiSanh != "Hoạt động")
+                                    @if (hall.HallStatus != "Hoạt động")
                                     {
                                         <small>
-                                            @sanh.TrangThaiSanh
+                                            @hall.HallStatus
                                         </small>
                                     }
 
@@ -501,79 +501,79 @@
                                 <!-- 7 NGÀY -->
                                 @for (var i = 0; i < 7; i++)
                                 {
-                                    var ngay = Model.NgayBatDau.AddDays(i);
+                                    var date = Model.StartDate.AddDays(i);
 
-                                    var caTrua = sanh.Lich.FirstOrDefault(x =>
-                                    x.Ngay.Date == ngay.Date &&
-                                    x.CaToChuc == "Ca trưa");
+                                    var lunchShift = hall.Schedule.FirstOrDefault(x =>
+                                    x.Date.Date == date.Date &&
+                                    x.Shift == "Ca trưa");
 
-                                    var caToi = sanh.Lich.FirstOrDefault(x =>
-                                    x.Ngay.Date == ngay.Date &&
-                                    x.CaToChuc == "Ca tối");
+                                    var dinnerShift = hall.Schedule.FirstOrDefault(x =>
+                                    x.Date.Date == date.Date &&
+                                    x.Shift == "Ca tối");
 
                                     <td class="schedule-cell">
 
-                                        @if (caTrua != null)
+                                        @if (lunchShift != null)
                                         {
-                                            var classTrangThai =
-                                            caTrua.TrangThai == "Đã đặt"
+                                            var classStatus =
+                                            lunchShift.Status == "Đã đặt"
                                             ? "slot-booked"
-                                            : caTrua.TrangThai == "Tạm khóa"
+                                            : lunchShift.Status == "Tạm khóa"
                                             ? "slot-locked"
                                             : "slot-empty";
 
-                                            <div class="schedule-slot @classTrangThai
-                                                                        @(caTrua.TrangThai != "Đã đặt" ? "editable-slot" : "")"
-                                                 data-id="@caTrua.LichSanhID"
-                                                 data-status="@caTrua.TrangThai">
+                                            <div class="schedule-slot @classStatus
+                                                                        @(lunchShift.Status != "Đã đặt" ? "editable-slot" : "")"
+                                                 data-hall-schedule-id="@lunchShift.HallScheduleId"
+                                                 data-status="@lunchShift.Status">
 
                                                 <span class="slot-time">
                                                     Trưa
                                                 </span>
 
-                                                @if (caTrua.TrangThai == "Đã đặt" &&
-                                                                                caTrua.Booking != null)
+                                                @if (lunchShift.Status == "Đã đặt" &&
+                                                                                lunchShift.Booking != null)
                                                 {
                                                     <strong>
                                                         <i class="fa-solid fa-calendar-check"></i>
-                                                        @caTrua.Booking.MaDatTiec
+                                                        @lunchShift.Booking.BookingCode
                                                     </strong>
 
                                                     <span class="booking-customer">
-                                                        @caTrua.Booking.HoTenKhachHang
+                                                        @lunchShift.Booking.CustomerName
                                                     </span>
 
-                                                    @if (caTrua.Booking.SoBan.HasValue)
+                                                    @if (lunchShift.Booking.TableCount.HasValue)
                                                     {
                                                         <span class="booking-tables">
-                                                            @caTrua.Booking.SoBan bàn
+                                                            @lunchShift.Booking.TableCount bàn
                                                         </span>
                                                     }
 
                                                     <div class="booking-tooltip">
 
                                                         <strong>
-                                                            @caTrua.Booking.MaDatTiec
+                                                            @lunchShift.Booking.BookingCode
                                                         </strong>
 
                                                         <p>
                                                             Khách hàng:
-                                                            @caTrua.Booking.HoTenKhachHang
+                                                            @lunchShift.Booking.CustomerName
                                                         </p>
 
                                                         <p>
                                                             Số bàn:
-                                                            @(caTrua.Booking.SoBan?.ToString() ?? "Chưa xác định")
+                                                            @(lunchShift.Booking.TableCount?.ToString() ?? "Chưa xác định")
                                                         </p>
 
                                                         <p>
                                                             Số khách:
-                                                            @(caTrua.Booking.SoLuongKhach?.ToString() ?? "Chưa xác định")
+                                                            @(lunchShift.Booking.GuestCount?.ToString() ?? "Chưa xác định")
                                                         </p>
 
                                                         <p>
                                                             Trạng thái:
-                                                            @caTrua.Booking.TrangThaiDatTiec
+                                                            @lunchShift.Booking.BookingStatus
                                                         </p>
 
                                                     </div>
@@ -581,7 +581,7 @@
                                                 else
                                                 {
                                                     <strong>
-                                                        @if (caTrua.TrangThai == "Trống")
+                                                        @if (lunchShift.Status == "Trống")
                                                         {
                                                             <i class="fa-solid fa-circle-check"></i>
                                                         }
@@ -590,7 +590,7 @@
                                                             <i class="fa-solid fa-lock"></i>
                                                         }
 
-                                                        @caTrua.TrangThai
+                                                        @lunchShift.Status
                                                     </strong>
                                                 }
 
@@ -598,67 +598,67 @@
                                         }
 
 
-                                        @if (caToi != null)
+                                        @if (dinnerShift != null)
                                         {
-                                            var classTrangThai =
-                                            caToi.TrangThai == "Đã đặt"
+                                            var classStatus =
+                                            dinnerShift.Status == "Đã đặt"
                                             ? "slot-booked"
-                                            : caToi.TrangThai == "Tạm khóa"
+                                            : dinnerShift.Status == "Tạm khóa"
                                             ? "slot-locked"
                                             : "slot-empty";
 
-                                            <div class="schedule-slot @classTrangThai
-                                                                        @(caToi.TrangThai != "Đã đặt" ? "editable-slot" : "")"
-                                                 data-id="@caToi.LichSanhID"
-                                                 data-status="@caToi.TrangThai">
+                                            <div class="schedule-slot @classStatus
+                                                                        @(dinnerShift.Status != "Đã đặt" ? "editable-slot" : "")"
+                                                 data-hall-schedule-id="@dinnerShift.HallScheduleId"
+                                                 data-status="@dinnerShift.Status">
 
                                                 <span class="slot-time">
                                                     Tối
                                                 </span>
 
-                                                @if (caToi.TrangThai == "Đã đặt" &&
-                                                                                caToi.Booking != null)
+                                                @if (dinnerShift.Status == "Đã đặt" &&
+                                                                                dinnerShift.Booking != null)
                                                 {
                                                     <strong>
                                                         <i class="fa-solid fa-calendar-check"></i>
-                                                        @caToi.Booking.MaDatTiec
+                                                        @dinnerShift.Booking.BookingCode
                                                     </strong>
 
                                                     <span class="booking-customer">
-                                                        @caToi.Booking.HoTenKhachHang
+                                                        @dinnerShift.Booking.CustomerName
                                                     </span>
 
-                                                    @if (caToi.Booking.SoBan.HasValue)
+                                                    @if (dinnerShift.Booking.TableCount.HasValue)
                                                     {
                                                         <span class="booking-tables">
-                                                            @caToi.Booking.SoBan bàn
+                                                            @dinnerShift.Booking.TableCount bàn
                                                         </span>
                                                     }
 
                                                     <div class="booking-tooltip">
 
                                                         <strong>
-                                                            @caToi.Booking.MaDatTiec
+                                                            @dinnerShift.Booking.BookingCode
                                                         </strong>
 
                                                         <p>
                                                             Khách hàng:
-                                                            @caToi.Booking.HoTenKhachHang
+                                                            @dinnerShift.Booking.CustomerName
                                                         </p>
 
                                                         <p>
                                                             Số bàn:
-                                                            @(caToi.Booking.SoBan?.ToString() ?? "Chưa xác định")
+                                                            @(dinnerShift.Booking.TableCount?.ToString() ?? "Chưa xác định")
                                                         </p>
 
                                                         <p>
                                                             Số khách:
-                                                            @(caToi.Booking.SoLuongKhach?.ToString() ?? "Chưa xác định")
+                                                            @(dinnerShift.Booking.GuestCount?.ToString() ?? "Chưa xác định")
                                                         </p>
 
                                                         <p>
                                                             Trạng thái:
-                                                            @caToi.Booking.TrangThaiDatTiec
+                                                            @dinnerShift.Booking.BookingStatus
                                                         </p>
 
                                                     </div>
@@ -666,7 +666,7 @@
                                                 else
                                                 {
                                                     <strong>
-                                                        @if (caToi.TrangThai == "Trống")
+                                                        @if (dinnerShift.Status == "Trống")
                                                         {
                                                             <i class="fa-solid fa-circle-check"></i>
                                                         }
@@ -675,7 +675,7 @@
                                                             <i class="fa-solid fa-lock"></i>
                                                         }
 
-                                                        @caToi.TrangThai
+                                                        @dinnerShift.Status
                                                     </strong>
                                                 }
 
@@ -697,36 +697,36 @@
 
     </div>
     @{
-        var tongCa = 0;
-        var daDat = 0;
-        var caTrong = 0;
-        var tamKhoa = 0;
+        var totalShifts = 0;
+        var bookedCount = 0;
+        var availableCount = 0;
+        var lockedCount = 0;
 
-        if (Model.LichTuan != null)
+        if (Model.WeeklySchedule != null)
         {
-            tongCa = Model.LichTuan.DanhSachSanh
-            .Sum(s => s.Lich.Count);
+            totalShifts = Model.WeeklySchedule.Halls
+            .Sum(s => s.Schedule.Count);
 
-            daDat = Model.LichTuan.DanhSachSanh
-            .Sum(s => s.Lich.Count(x => x.TrangThai == "Đã đặt"));
+            bookedCount = Model.WeeklySchedule.Halls
+            .Sum(s => s.Schedule.Count(x => x.Status == "Đã đặt"));
 
-            caTrong = Model.LichTuan.DanhSachSanh
-            .Sum(s => s.Lich.Count(x => x.TrangThai == "Trống"));
+            availableCount = Model.WeeklySchedule.Halls
+            .Sum(s => s.Schedule.Count(x => x.Status == "Trống"));
 
-            tamKhoa = Model.LichTuan.DanhSachSanh
-            .Sum(s => s.Lich.Count(x => x.TrangThai == "Tạm khóa"));
+            lockedCount = Model.WeeklySchedule.Halls
+            .Sum(s => s.Schedule.Count(x => x.Status == "Tạm khóa"));
         }
 
-        var phanTramDaDat = tongCa > 0
-        ? (double)daDat / tongCa * 100
+        var bookedPercentage = totalShifts > 0
+        ? (double)bookedCount / totalShifts * 100
         : 0;
 
-        var phanTramTrong = tongCa > 0
-        ? (double)caTrong / tongCa * 100
+        var availablePercentage = totalShifts > 0
+        ? (double)availableCount / totalShifts * 100
         : 0;
 
-        var phanTramTamKhoa = tongCa > 0
-        ? (double)tamKhoa / tongCa * 100
+        var lockedPercentage = totalShifts > 0
+        ? (double)lockedCount / totalShifts * 100
         : 0;
     }
     <div class="schedule-summary">
@@ -735,28 +735,28 @@
 
             <span>
                 <strong>Tổng số slot ca trong tuần:</strong>
-                @tongCa ca
-                (@(Model.LichTuan?.DanhSachSanh.Count ?? 0) sảnh × 7 ngày × 2 ca)
+                @totalShifts ca
+                (@(Model.WeeklySchedule?.Halls.Count ?? 0) sảnh × 7 ngày × 2 ca)
             </span>
 
             <span class="summary-booked">
                 <i class="fa-solid fa-calendar-check"></i>
                 Đã đặt:
-                <strong>@daDat ca (@phanTramDaDat.ToString("0.0")%)</strong>
+                <strong>@bookedCount ca (@bookedPercentage.ToString("0.0")%)</strong>
             </span>
 
             <span class="summary-empty">
                 <i class="fa-solid fa-circle-check"></i>
                 Còn trống:
-                <strong>@caTrong ca (@phanTramTrong.ToString("0.0")%)</strong>
+                <strong>@availableCount ca (@availablePercentage.ToString("0.0")%)</strong>
             </span>
 
-            @if (tamKhoa > 0)
+            @if (lockedCount > 0)
             {
                 <span class="summary-locked">
                     <i class="fa-solid fa-lock"></i>
                     Tạm khóa:
-                    <strong>@tamKhoa ca (@phanTramTamKhoa.ToString("0.0")%)</strong>
+                    <strong>@lockedCount ca (@lockedPercentage.ToString("0.0")%)</strong>
                 </span>
             }
 
@@ -842,7 +842,7 @@
                     <label>Mã sảnh <span>*</span></label>
 
                     <input type="text"
-                           name="MaSanh"
+                           name="HallCode"
                            placeholder="Ví dụ: S010"
                            required />
                 </div>
@@ -852,7 +852,7 @@
                     <label>Tên sảnh <span>*</span></label>
 
                     <input type="text"
-                           name="TenSanh"
+                           name="HallName"
                            placeholder="Tên sảnh"
                            required />
                 </div>
@@ -862,7 +862,7 @@
                     <label>Sức chứa tối thiểu</label>
 
                     <input type="number"
-                           name="SucChuaToiThieu"
+                           name="MinimumCapacity"
                            min="0"
                            placeholder="Ví dụ: 200" />
                 </div>
@@ -872,7 +872,7 @@
                     <label>Sức chứa tối đa <span>*</span></label>
 
                     <input type="number"
-                           name="SucChuaToiDa"
+                           name="MaximumCapacity"
                            min="1"
                            placeholder="Ví dụ: 500"
                            required />
@@ -883,7 +883,7 @@
                     <label>Giá thuê sảnh <span>*</span></label>
 
                     <input type="number"
-                           name="GiaThue"
+                           name="RentalPrice"
                            min="0"
                            step="1000"
                            placeholder="Ví dụ: 30000000"
@@ -895,7 +895,7 @@
                     <label>Hình ảnh</label>
 
                     <input type="text"
-                           name="HinhAnh"
+                           name="ImageUrl"
                            placeholder="Đường dẫn hoặc URL hình ảnh" />
                 </div>
 
@@ -903,7 +903,7 @@
                 <div class="form-group form-full">
                     <label>Mô tả</label>
 
-                    <textarea name="MoTa"
+                    <textarea name="Description"
                               rows="4"
                               placeholder="Mô tả ngắn về sảnh"></textarea>
                 </div>
@@ -968,11 +968,11 @@
             @Html.AntiForgeryToken()
 
             <input type="hidden"
-                   id="editSanhTiecID" />
+                   id="editHallId" />
 
             <input type="hidden"
-                   name="TrangThai"
-                   id="editTrangThai" />
+                   name="Status"
+                   id="editStatus" />
 
 
             <div class="form-grid">
@@ -984,8 +984,8 @@
                     </label>
 
                     <input type="text"
-                           name="MaSanh"
-                           id="editMaSanh"
+                           name="HallCode"
+                           id="editHallCode"
                            required />
 
                 </div>
@@ -998,8 +998,8 @@
                     </label>
 
                     <input type="text"
-                           name="TenSanh"
-                           id="editTenSanh"
+                           name="HallName"
+                           id="editHallName"
                            required />
 
                 </div>
@@ -1010,8 +1010,8 @@
                     <label>Sức chứa tối thiểu</label>
 
                     <input type="number"
-                           name="SucChuaToiThieu"
-                           id="editSucChuaMin"
+                           name="MinimumCapacity"
+                           id="editMinimumCapacity"
                            min="0" />
 
                 </div>
@@ -1024,8 +1024,8 @@
                     </label>
 
                     <input type="number"
-                           name="SucChuaToiDa"
-                           id="editSucChuaMax"
+                           name="MaximumCapacity"
+                           id="editMaximumCapacity"
                            min="1"
                            required />
 
@@ -1039,8 +1039,8 @@
                     </label>
 
                     <input type="number"
-                           name="GiaThue"
-                           id="editGiaThue"
+                           name="RentalPrice"
+                           id="editRentalPrice"
                            min="0"
                            step="1000"
                            required />
@@ -1053,8 +1053,8 @@
                     <label>Hình ảnh</label>
 
                     <input type="text"
-                           name="HinhAnh"
-                           id="editHinhAnh" />
+                           name="ImageUrl"
+                           id="editImageUrl" />
 
                 </div>
 
@@ -1063,8 +1063,8 @@
 
                     <label>Mô tả</label>
 
-                    <textarea name="MoTa"
-                              id="editMoTa"
+                    <textarea name="Description"
+                              id="editDescription"
                               rows="4"></textarea>
 
                 </div>
@@ -1135,7 +1135,7 @@
             @Html.AntiForgeryToken()
 
             <input type="hidden"
-                   id="statusSanhTiecID" />
+                   id="statusHallId" />
 
 
             <div class="form-group">
@@ -1143,7 +1143,7 @@
                 <label>Trạng thái sảnh</label>
 
                 <select id="statusHallSelect"
-                        name="trangThai">
+                        name="status">
 
                     <option value="Hoạt động">
                         Hoạt động
@@ -1272,7 +1272,7 @@
 
                 slot.addEventListener("click", async function () {
 
-                    const id = slot.dataset.id;
+                    const hallScheduleId = slot.dataset.hallScheduleId;
                     const currentStatus = slot.dataset.status;
 
                     const newStatus =
@@ -1296,13 +1296,13 @@
 
                     const formData = new FormData();
 
-                    formData.append("trangThai", newStatus);
+                    formData.append("status", newStatus);
                     formData.append("__RequestVerificationToken", token);
 
                     try {
 
                         const response = await fetch(
-                            `/admin/quan-ly-sanh/lich/${id}/trang-thai`,
+                            `/admin/quan-ly-sanh/lich/${hallScheduleId}/status`,
                             {
                                 method: "POST",
                                 body: formData
@@ -1475,32 +1475,32 @@
 
                 button.addEventListener("click", function () {
 
-                    document.getElementById("editSanhTiecID").value =
-                        button.dataset.id;
+                    document.getElementById("editHallId").value =
+                        button.dataset.hallId;
 
-                    document.getElementById("editMaSanh").value =
-                        button.dataset.ma ?? "";
+                    document.getElementById("editHallCode").value =
+                        button.dataset.code ?? "";
 
-                    document.getElementById("editTenSanh").value =
-                        button.dataset.ten ?? "";
+                    document.getElementById("editHallName").value =
+                        button.dataset.name ?? "";
 
-                    document.getElementById("editSucChuaMin").value =
-                        button.dataset.min ?? "";
+                    document.getElementById("editMinimumCapacity").value =
+                        button.dataset.minimumCapacity ?? "";
 
-                    document.getElementById("editSucChuaMax").value =
-                        button.dataset.max ?? "";
+                    document.getElementById("editMaximumCapacity").value =
+                        button.dataset.maximumCapacity ?? "";
 
-                    document.getElementById("editGiaThue").value =
-                        button.dataset.gia ?? "";
+                    document.getElementById("editRentalPrice").value =
+                        button.dataset.rentalPrice ?? "";
 
-                    document.getElementById("editHinhAnh").value =
-                        button.dataset.hinh ?? "";
+                    document.getElementById("editImageUrl").value =
+                        button.dataset.imageUrl ?? "";
 
-                    document.getElementById("editMoTa").value =
-                        button.dataset.mota ?? "";
+                    document.getElementById("editDescription").value =
+                        button.dataset.description ?? "";
 
-                    document.getElementById("editTrangThai").value =
-                        button.dataset.trangthai ?? "";
+                    document.getElementById("editStatus").value =
+                        button.dataset.status ?? "";
 
                     editHallError.textContent = "";
 
@@ -1535,8 +1535,8 @@
 
                 editHallError.textContent = "";
 
-                const id =
-                    document.getElementById("editSanhTiecID").value;
+                const hallId =
+                    document.getElementById("editHallId").value;
 
                 const formData =
                     new FormData(editHallForm);
@@ -1552,7 +1552,7 @@
                 try {
 
                     const response = await fetch(
-                        `/admin/quan-ly-sanh/sua/${id}`,
+                        `/admin/quan-ly-sanh/sua/${hallId}`,
                         {
                             method: "POST",
                             body: formData
@@ -1621,14 +1621,14 @@
 
                 button.addEventListener("click", function () {
 
-                    document.getElementById("statusSanhTiecID").value =
-                        button.dataset.id;
+                    document.getElementById("statusHallId").value =
+                        button.dataset.hallId;
 
                     document.getElementById("statusHallSelect").value =
-                        button.dataset.trangthai;
+                        button.dataset.status;
 
                     document.getElementById("statusHallName").textContent =
-                        button.dataset.ten;
+                        button.dataset.name;
 
                     statusHallError.textContent = "";
 
@@ -1663,8 +1663,8 @@
 
                 statusHallError.textContent = "";
 
-                const id =
-                    document.getElementById("statusSanhTiecID").value;
+                const hallId =
+                    document.getElementById("statusHallId").value;
 
                 const formData =
                     new FormData(statusHallForm);
@@ -1680,7 +1680,7 @@
                 try {
 
                     const response = await fetch(
-                        `/admin/quan-ly-sanh/trang-thai/${id}`,
+                        `/admin/quan-ly-sanh/status/${hallId}`,
                         {
                             method: "POST",
                             body: formData
@@ -1724,27 +1724,27 @@
 
                 button.addEventListener("click", async function () {
 
-                    const id = button.dataset.id;
-                    const tenSanh = button.dataset.ten;
-                    const trangThai = button.dataset.trangthai;
+                    const hallId = button.dataset.hallId;
+                    const hallName = button.dataset.name;
+                    const status = button.dataset.status;
 
-                    // Chặn ngay trên giao diện
-                    if (trangThai === "Hoạt động") {
+                    // Prevent deletion immediately in the UI.
+                    if (status === "Hoạt động") {
 
                         alert(
-                            `Không thể xóa "${tenSanh}" vì sảnh đang ở trạng thái Hoạt động.\n\n` +
+                            `Không thể xóa "${hallName}" vì sảnh đang ở trạng thái Hoạt động.\n\n` +
                             `Hãy chuyển sảnh sang Bảo trì hoặc Ngừng hoạt động trước.`
                         );
 
                         return;
                     }
 
-                    const xacNhan = confirm(
-                        `Bạn có chắc muốn xóa sảnh "${tenSanh}" không?\n\n` +
+                    const confirmed = confirm(
+                        `Bạn có chắc muốn xóa sảnh "${hallName}" không?\n\n` +
                         `Nếu sảnh đã từng có booking, hệ thống sẽ không cho phép xóa.`
                     );
 
-                    if (!xacNhan) {
+                    if (!confirmed) {
                         return;
                     }
 
@@ -1763,7 +1763,7 @@
                     try {
 
                         const response = await fetch(
-                            `/admin/quan-ly-sanh/xoa/${id}`,
+                            `/admin/quan-ly-sanh/xoa/${hallId}`,
                             {
                                 method: "POST",
                                 body: formData
