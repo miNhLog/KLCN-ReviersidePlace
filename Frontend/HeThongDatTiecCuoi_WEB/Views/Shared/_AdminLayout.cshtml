@@ -145,12 +145,9 @@
                 </button>
 
 
-                <!-- Sau khi tạo AdminTaiKhoanController,
-                     đổi href="#" thành asp-controller="AdminTaiKhoan"
-                     asp-action="Index" -->
-                <a asp-controller="AdminTaiKhoan"
+                <a asp-controller="AdminAccount"
                    asp-action="Index"
-                   class="menu-item @(ViewData["ActiveMenu"]?.ToString() == "TaiKhoan" ? "active" : "")"
+                   class="menu-item @(ViewData["ActiveMenu"]?.ToString() == "Account" ? "active" : "")"
                    data-tooltip="Phân quyền tài khoản">
 
                     <i class="fa-solid fa-user-shield"></i>

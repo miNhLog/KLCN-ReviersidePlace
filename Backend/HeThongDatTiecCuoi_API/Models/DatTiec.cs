@@ -42,7 +42,7 @@ public sealed class DatTiec
 
     public DateTime? NgayCapNhat { get; set; }
 
-    public KhachHang KhachHang { get; set; } = null!;
+    public Customer KhachHang { get; set; } = null!;
 
     public HallSchedule HallSchedule { get; set; } = null!;
 }

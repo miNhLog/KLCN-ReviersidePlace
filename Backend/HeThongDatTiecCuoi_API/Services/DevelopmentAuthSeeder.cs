@@ -10,12 +10,12 @@ namespace HeThongDatTiecCuoi_API.Services;
 public sealed class DevelopmentAuthSeeder
 {
     private readonly ApplicationDbContext _db;
-    private readonly IPasswordHasher<NguoiDung> _hasher;
+    private readonly IPasswordHasher<User> _hasher;
     private readonly DevelopmentAccountsOptions _options;
 
     public DevelopmentAuthSeeder(
         ApplicationDbContext db,
-        IPasswordHasher<NguoiDung> hasher,
+        IPasswordHasher<User> hasher,
         IOptions<DevelopmentAccountsOptions> options)
     {
         _db = db;
@@ -32,22 +32,22 @@ public sealed class DevelopmentAuthSeeder
 
         var roles = await EnsureRolesAsync(cancellationToken);
         await UpsertAccountAsync(_options.AdminEmail, _options.AdminPassword, roles[RoleNames.Admin], cancellationToken);
-        await UpsertAccountAsync(_options.StaffEmail, _options.StaffPassword, roles[RoleNames.Staff], cancellationToken);
+        await UpsertAccountAsync(_options.StaffEmail, _options.StaffPassword, roles[RoleNames.Consultant], cancellationToken);
         await UpsertAccountAsync(_options.CustomerEmail, _options.CustomerPassword, roles[RoleNames.Customer], cancellationToken);
         await _db.SaveChangesAsync(cancellationToken);
     }
 
-    private async Task<Dictionary<string, VaiTro>> EnsureRolesAsync(CancellationToken cancellationToken)
+    private async Task<Dictionary<string, Role>> EnsureRolesAsync(CancellationToken cancellationToken)
     {
-        var required = new[] { RoleNames.Admin, RoleNames.Staff, RoleNames.Customer };
-        var roles = await _db.VaiTro
-            .Where(x => required.Contains(x.TenVaiTro))
-            .ToDictionaryAsync(x => x.TenVaiTro, cancellationToken);
+        var required = new[] { RoleNames.Admin, RoleNames.Consultant, RoleNames.Customer };
+        var roles = await _db.Roles
+            .Where(role => required.Contains(role.RoleName))
+            .ToDictionaryAsync(role => role.RoleName, cancellationToken);
 
         foreach (var name in required.Where(name => !roles.ContainsKey(name)))
         {
-            var role = new VaiTro { TenVaiTro = name };
-            _db.VaiTro.Add(role);
+            var role = new Role { RoleName = name };
+            _db.Roles.Add(role);
             roles[name] = role;
         }
 
@@ -58,7 +58,7 @@ public sealed class DevelopmentAuthSeeder
     private async Task UpsertAccountAsync(
         string email,
         string password,
-        VaiTro role,
+        Role role,
         CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
@@ -67,51 +67,51 @@ public sealed class DevelopmentAuthSeeder
         }
 
         var normalizedEmail = email.Trim().ToLowerInvariant();
-        var user = await _db.NguoiDung
-            .Include(x => x.KhachHang)
-            .Include(x => x.NhanVien)
+        var user = await _db.Users
+            .Include(x => x.Customer)
+            .Include(x => x.Employee)
             .SingleOrDefaultAsync(x => x.Email == normalizedEmail, cancellationToken);
 
         if (user is null)
         {
-            user = new NguoiDung
+            user = new User
             {
                 Email = normalizedEmail,
-                VaiTro = role,
-                VaiTroID = role.VaiTroID,
-                TrangThai = "Hoạt động",
-                NgayTao = DateTime.Now
+                Role = role,
+                RoleId = role.RoleId,
+                Status = "Hoạt động",
+                CreatedAt = DateTime.Now
             };
-            _db.NguoiDung.Add(user);
+            _db.Users.Add(user);
         }
         else
         {
-            user.VaiTro = role;
-            user.VaiTroID = role.VaiTroID;
-            user.TrangThai = "Hoạt động";
+            user.Role = role;
+            user.RoleId = role.RoleId;
+            user.Status = "Hoạt động";
         }
 
-        user.MatKhauHash = _hasher.HashPassword(user, password);
+        user.PasswordHash = _hasher.HashPassword(user, password);
 
-        if (role.TenVaiTro == RoleNames.Staff && user.NhanVien is null)
+        if (role.RoleName == RoleNames.Consultant && user.Employee is null)
         {
-            user.NhanVien = new NhanVien
+            user.Employee = new Employee
             {
-                NguoiDung = user,
-                MaNhanVien = "NV001",
-                HoTen = "Nhân viên tư vấn",
-                SoDienThoai = "0912345678",
-                TrangThai = "Đang làm việc"
+                User = user,
+                EmployeeCode = "NV001",
+                FullName = "Nhân viên tư vấn",
+                PhoneNumber = "0912345678",
+                Status = "Đang làm việc"
             };
         }
 
-        if (role.TenVaiTro == RoleNames.Customer && user.KhachHang is null)
+        if (role.RoleName == RoleNames.Customer && user.Customer is null)
         {
-            user.KhachHang = new KhachHang
+            user.Customer = new Customer
             {
-                NguoiDung = user,
-                HoTen = "Khách hàng mẫu",
-                SoDienThoai = "0901234567"
+                User = user,
+                FullName = "Khách hàng mẫu",
+                PhoneNumber = "0901234567"
             };
         }
     }

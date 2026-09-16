@@ -4,5 +4,5 @@ namespace HeThongDatTiecCuoi_API.Services;
 
 public interface IJwtTokenService
 {
-    (string Token, DateTime ExpiresAtUtc) CreateAccessToken(NguoiDung user, bool rememberMe);
+    (string Token, DateTime ExpiresAtUtc) CreateAccessToken(User user, bool rememberMe);
 }

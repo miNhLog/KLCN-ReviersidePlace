@@ -11,10 +11,10 @@ public sealed class ApplicationDbContext : DbContext
     }
 
     public DbSet<Hall> Halls => Set<Hall>();
-    public DbSet<VaiTro> VaiTro => Set<VaiTro>();
-    public DbSet<NguoiDung> NguoiDung => Set<NguoiDung>();
-    public DbSet<KhachHang> KhachHang => Set<KhachHang>();
-    public DbSet<NhanVien> NhanVien => Set<NhanVien>();
+    public DbSet<Role> Roles => Set<Role>();
+    public DbSet<User> Users => Set<User>();
+    public DbSet<Customer> Customers => Set<Customer>();
+    public DbSet<Employee> Employees => Set<Employee>();
     public DbSet<HallSchedule> HallSchedules => Set<HallSchedule>();
     public DbSet<DatTiec> DatTiec => Set<DatTiec>();
     public DbSet<ThucDon> ThucDon => Set<ThucDon>();
@@ -27,57 +27,67 @@ public sealed class ApplicationDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        modelBuilder.Entity<VaiTro>(entity =>
+        modelBuilder.Entity<Role>(entity =>
         {
             entity.ToTable("VaiTro");
-            entity.HasKey(x => x.VaiTroID);
-            entity.Property(x => x.TenVaiTro).HasMaxLength(100).IsRequired();
-            entity.HasIndex(x => x.TenVaiTro).IsUnique();
+            entity.HasKey(x => x.RoleId);
+            entity.Property(x => x.RoleId).HasColumnName("VaiTroID");
+            entity.Property(x => x.RoleName)
+                .HasColumnName("TenVaiTro")
+                .HasMaxLength(100)
+                .IsRequired();
+            entity.HasIndex(x => x.RoleName).IsUnique();
         });
 
-        modelBuilder.Entity<NguoiDung>(entity =>
+        modelBuilder.Entity<User>(entity =>
         {
             entity.ToTable("NguoiDung");
-            entity.HasKey(x => x.NguoiDungID);
-            entity.Property(x => x.Email).HasMaxLength(150).IsRequired();
-            entity.Property(x => x.MatKhauHash).HasMaxLength(255).IsRequired();
-            entity.Property(x => x.TrangThai).HasMaxLength(50).IsRequired();
-            entity.Property(x => x.NgayTao).HasPrecision(0);
+            entity.HasKey(x => x.UserId);
+            entity.Property(x => x.UserId).HasColumnName("NguoiDungID");
+            entity.Property(x => x.RoleId).HasColumnName("VaiTroID");
+            entity.Property(x => x.Email).HasColumnName("Email").HasMaxLength(150).IsRequired();
+            entity.Property(x => x.PasswordHash).HasColumnName("MatKhauHash").HasMaxLength(255).IsRequired();
+            entity.Property(x => x.Status).HasColumnName("TrangThai").HasMaxLength(50).IsRequired();
+            entity.Property(x => x.CreatedAt).HasColumnName("NgayTao").HasPrecision(0);
             entity.HasIndex(x => x.Email).IsUnique();
-            entity.HasOne(x => x.VaiTro)
-                .WithMany(x => x.NguoiDungs)
-                .HasForeignKey(x => x.VaiTroID)
+            entity.HasOne(x => x.Role)
+                .WithMany(x => x.Users)
+                .HasForeignKey(x => x.RoleId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
-        modelBuilder.Entity<KhachHang>(entity =>
+        modelBuilder.Entity<Customer>(entity =>
         {
             entity.ToTable("KhachHang");
-            entity.HasKey(x => x.KhachHangID);
-            entity.Property(x => x.HoTen).HasMaxLength(150).IsRequired();
-            entity.Property(x => x.SoDienThoai).HasMaxLength(20).IsRequired();
-            entity.HasIndex(x => x.NguoiDungID).IsUnique().HasFilter("[NguoiDungID] IS NOT NULL");
-            entity.HasIndex(x => x.SoDienThoai).IsUnique();
-            entity.HasOne(x => x.NguoiDung)
-                .WithOne(x => x.KhachHang)
-                .HasForeignKey<KhachHang>(x => x.NguoiDungID)
+            entity.HasKey(x => x.CustomerId);
+            entity.Property(x => x.CustomerId).HasColumnName("KhachHangID");
+            entity.Property(x => x.UserId).HasColumnName("NguoiDungID");
+            entity.Property(x => x.FullName).HasColumnName("HoTen").HasMaxLength(150).IsRequired();
+            entity.Property(x => x.PhoneNumber).HasColumnName("SoDienThoai").HasMaxLength(20).IsRequired();
+            entity.HasIndex(x => x.UserId).IsUnique().HasFilter("[NguoiDungID] IS NOT NULL");
+            entity.HasIndex(x => x.PhoneNumber).IsUnique();
+            entity.HasOne(x => x.User)
+                .WithOne(x => x.Customer)
+                .HasForeignKey<Customer>(x => x.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
-        modelBuilder.Entity<NhanVien>(entity =>
+        modelBuilder.Entity<Employee>(entity =>
         {
             entity.ToTable("NhanVien");
-            entity.HasKey(x => x.NhanVienID);
-            entity.Property(x => x.MaNhanVien).HasMaxLength(50).IsRequired();
-            entity.Property(x => x.HoTen).HasMaxLength(150).IsRequired();
-            entity.Property(x => x.SoDienThoai).HasMaxLength(20);
-            entity.Property(x => x.TrangThai).HasMaxLength(50).IsRequired();
-            entity.HasIndex(x => x.NguoiDungID).IsUnique();
-            entity.HasIndex(x => x.MaNhanVien).IsUnique();
-            entity.HasIndex(x => x.SoDienThoai).IsUnique().HasFilter("[SoDienThoai] IS NOT NULL");
-            entity.HasOne(x => x.NguoiDung)
-                .WithOne(x => x.NhanVien)
-                .HasForeignKey<NhanVien>(x => x.NguoiDungID)
+            entity.HasKey(x => x.EmployeeId);
+            entity.Property(x => x.EmployeeId).HasColumnName("NhanVienID");
+            entity.Property(x => x.UserId).HasColumnName("NguoiDungID");
+            entity.Property(x => x.EmployeeCode).HasColumnName("MaNhanVien").HasMaxLength(50).IsRequired();
+            entity.Property(x => x.FullName).HasColumnName("HoTen").HasMaxLength(150).IsRequired();
+            entity.Property(x => x.PhoneNumber).HasColumnName("SoDienThoai").HasMaxLength(20);
+            entity.Property(x => x.Status).HasColumnName("TrangThai").HasMaxLength(50).IsRequired();
+            entity.HasIndex(x => x.UserId).IsUnique();
+            entity.HasIndex(x => x.EmployeeCode).IsUnique();
+            entity.HasIndex(x => x.PhoneNumber).IsUnique().HasFilter("[SoDienThoai] IS NOT NULL");
+            entity.HasOne(x => x.User)
+                .WithOne(x => x.Employee)
+                .HasForeignKey<Employee>(x => x.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
