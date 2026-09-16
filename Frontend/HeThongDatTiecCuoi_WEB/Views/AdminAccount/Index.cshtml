@@ -1,28 +1,28 @@
-﻿@model HeThongDatTiecCuoi_WEB.Models.AdminTaiKhoan.QuanLyTaiKhoanViewModel
+@model HeThongDatTiecCuoi_WEB.Models.AdminAccount.AccountManagementViewModel
 
 @{
     Layout = "_AdminLayout";
 
     ViewData["Title"] = "Phân quyền tài khoản";
-    ViewData["ActiveMenu"] = "TaiKhoan";
+    ViewData["ActiveMenu"] = "Account";
 
-    var danhSachQuanTriVien = Model.DanhSachTaiKhoan
-        .Where(x => x.TenVaiTro == "Quản trị viên")
+    var adminAccounts = Model.Accounts
+        .Where(x => x.RoleName == "Quản trị viên")
         .ToList();
 
-    var danhSachNhanVien = Model.DanhSachTaiKhoan
+    var employeeAccounts = Model.Accounts
         .Where(x =>
-            x.TenVaiTro == "Nhân viên tư vấn" ||
-            x.TenVaiTro == "Nhân viên điều phối")
+            x.RoleName == "Nhân viên tư vấn" ||
+            x.RoleName == "Nhân viên điều phối")
         .ToList();
 
-    var danhSachKhachHang = Model.DanhSachTaiKhoan
-        .Where(x => x.TenVaiTro == "Khách hàng")
+    var customerAccounts = Model.Accounts
+        .Where(x => x.RoleName == "Khách hàng")
         .ToList();
 }
 
 <link rel="stylesheet"
-      href="~/css/admin-tai-khoan.css"
+      href="~/css/admin-account.css"
       asp-append-version="true" />
 
 
@@ -50,11 +50,11 @@
 
 <section class="content account-content">
 
-    @if (!string.IsNullOrWhiteSpace(Model.Loi))
+    @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
     {
         <div class="error-box">
             <i class="fa-solid fa-circle-exclamation"></i>
-            @Model.Loi
+            @Model.ErrorMessage
         </div>
     }
 
@@ -69,7 +69,7 @@
 
             <div>
                 <span>Tổng tài khoản</span>
-                <strong>@Model.DanhSachTaiKhoan.Count</strong>
+                <strong>@Model.Accounts.Count</strong>
             </div>
         </div>
 
@@ -83,8 +83,8 @@
                 <span>Đang hoạt động</span>
 
                 <strong>
-                    @Model.DanhSachTaiKhoan.Count(
-                    x => x.TrangThai == "Hoạt động"
+                    @Model.Accounts.Count(
+                    x => x.Status == "Hoạt động"
                                         )
                 </strong>
             </div>
@@ -100,8 +100,8 @@
                 <span>Tạm khóa</span>
 
                 <strong>
-                    @Model.DanhSachTaiKhoan.Count(
-                                        x => x.TrangThai == "Tạm khóa"
+                    @Model.Accounts.Count(
+                                        x => x.Status == "Tạm khóa"
                                         )
                 </strong>
             </div>
@@ -117,8 +117,8 @@
                 <span>Ngừng hoạt động</span>
 
                 <strong>
-                    @Model.DanhSachTaiKhoan.Count(
-                                        x => x.TrangThai == "Ngừng hoạt động"
+                    @Model.Accounts.Count(
+                                        x => x.Status == "Ngừng hoạt động"
                                         )
                 </strong>
             </div>
@@ -141,34 +141,34 @@
                 <i class="fa-solid fa-magnifying-glass"></i>
 
                 <input type="text"
-                       name="tuKhoa"
-                       value="@Model.TuKhoa"
+                       name="keyword"
+                       value="@Model.Keyword"
                        placeholder="Tên, email, mã nhân viên..." />
 
             </div>
 
 
             <!-- ROLE -->
-            <select name="vaiTroId"
+            <select name="roleId"
                     class="account-select">
 
                 <option value="">
                     Tất cả vai trò
                 </option>
 
-                @foreach (var vaiTro in Model.DanhSachVaiTro)
+                @foreach (var role in Model.Roles)
                 {
-                    if (Model.VaiTroID == vaiTro.VaiTroID)
+                    if (Model.RoleId == role.RoleId)
                     {
-                        <option value="@vaiTro.VaiTroID"
+                        <option value="@role.RoleId"
                                 selected>
-                            @vaiTro.TenVaiTro
+                            @role.RoleName
                         </option>
                     }
                     else
                     {
-                        <option value="@vaiTro.VaiTroID">
-                            @vaiTro.TenVaiTro
+                        <option value="@role.RoleId">
+                            @role.RoleName
                         </option>
                     }
                 }
@@ -177,14 +177,14 @@
 
 
             <!-- STATUS -->
-            <select name="trangThai"
+            <select name="status"
                     class="account-select">
 
                 <option value="">
                     Tất cả trạng thái
                 </option>
 
-                @if (Model.TrangThai == "Hoạt động")
+                @if (Model.Status == "Hoạt động")
                 {
                     <option value="Hoạt động" selected>
                         Hoạt động
@@ -198,7 +198,7 @@
                 }
 
 
-                @if (Model.TrangThai == "Tạm khóa")
+                @if (Model.Status == "Tạm khóa")
                 {
                     <option value="Tạm khóa" selected>
                         Tạm khóa
@@ -212,7 +212,7 @@
                 }
 
 
-                @if (Model.TrangThai == "Ngừng hoạt động")
+                @if (Model.Status == "Ngừng hoạt động")
                 {
                     <option value="Ngừng hoạt động" selected>
                         Ngừng hoạt động
@@ -263,7 +263,7 @@
     <!-- =====================================================
      TÀI KHOẢN QUẢN TRỊ VIÊN
      ===================================================== -->
-    @if (danhSachQuanTriVien.Count > 0)
+    @if (adminAccounts.Count > 0)
     {
         <div class="account-section">
 
@@ -280,19 +280,19 @@
                 </div>
 
                 <span>
-                    @danhSachQuanTriVien.Count tài khoản
+                    @adminAccounts.Count tài khoản
                 </span>
             </div>
 
 
             <div class="admin-account-grid">
 
-                @foreach (var taiKhoan in danhSachQuanTriVien)
+                @foreach (var account in adminAccounts)
                 {
                     var statusClass =
-                    taiKhoan.TrangThai == "Hoạt động"
+                    account.Status == "Hoạt động"
                     ? "account-status-active"
-                    : taiKhoan.TrangThai == "Tạm khóa"
+                    : account.Status == "Tạm khóa"
                     ? "account-status-locked"
                     : "account-status-inactive";
 
@@ -309,11 +309,11 @@
                             </strong>
 
                             <span>
-                                @taiKhoan.Email
+                                @account.Email
                             </span>
 
                             <small>
-                                ID tài khoản: @taiKhoan.NguoiDungID
+                                ID tài khoản: @account.UserId
                             </small>
 
                         </div>
@@ -322,17 +322,17 @@
                         <div class="admin-account-meta">
 
                             <span class="role-badge">
-                                @taiKhoan.TenVaiTro
+                                @account.RoleName
                             </span>
 
                             <span class="account-status @statusClass">
                                 <i class="fa-solid fa-circle"></i>
-                                @taiKhoan.TrangThai
+                                @account.Status
                             </span>
 
                             <span class="created-date">
                                 <i class="fa-regular fa-calendar"></i>
-                                @taiKhoan.NgayTao.ToString("dd/MM/yyyy")
+                                @account.CreatedAt.ToString("dd/MM/yyyy")
                             </span>
 
                         </div>
@@ -367,13 +367,13 @@
             </div>
 
             <span>
-                @danhSachNhanVien.Count nhân viên
+                @employeeAccounts.Count nhân viên
             </span>
 
         </div>
 
 
-        @if (danhSachNhanVien.Count == 0)
+        @if (employeeAccounts.Count == 0)
         {
             <div class="account-empty">
 
@@ -409,12 +409,12 @@
 
                     <tbody>
 
-                        @foreach (var taiKhoan in danhSachNhanVien)
+                        @foreach (var account in employeeAccounts)
                         {
                             var statusClass =
-                            taiKhoan.TrangThai == "Hoạt động"
+                            account.Status == "Hoạt động"
                             ? "account-status-active"
-                            : taiKhoan.TrangThai == "Tạm khóa"
+                            : account.Status == "Tạm khóa"
                             ? "account-status-locked"
                             : "account-status-inactive";
 
@@ -430,15 +430,15 @@
                                         <div>
 
                                             <strong>
-                                                @taiKhoan.HoTen
+                                                @account.FullName
                                             </strong>
 
                                             <span>
-                                                @taiKhoan.Email
+                                                @account.Email
                                             </span>
 
                                             <small>
-                                                ID: @taiKhoan.NguoiDungID
+                                                ID: @account.UserId
                                             </small>
 
                                         </div>
@@ -449,20 +449,20 @@
 
                                 <td>
                                     <span class="role-badge">
-                                        @taiKhoan.TenVaiTro
+                                        @account.RoleName
                                     </span>
                                 </td>
 
 
                                 <td>
                                     <strong class="employee-code">
-                                        @taiKhoan.MaNhanVien
+                                        @account.EmployeeCode
                                     </strong>
                                 </td>
 
 
                                 <td>
-                                    @(taiKhoan.SoDienThoai ?? "—")
+                                    @(account.PhoneNumber ?? "—")
                                 </td>
 
 
@@ -471,7 +471,7 @@
 
                                         <i class="fa-solid fa-circle"></i>
 
-                                        @taiKhoan.TrangThai
+                                        @account.Status
 
                                     </span>
                                 </td>
@@ -479,21 +479,21 @@
 
                                 <td>
                                     <select class="employee-status-select"
-                                            data-id="@taiKhoan.NguoiDungID"
-                                            data-old-value="@taiKhoan.TrangThaiNhanVien">
+                                            data-user-id="@account.UserId"
+                                            data-old-value="@account.EmployeeStatus">
 
                                         <option value="Đang làm việc"
-                                                selected="@(taiKhoan.TrangThaiNhanVien == "Đang làm việc")">
+                                                selected="@(account.EmployeeStatus == "Đang làm việc")">
                                             Đang làm việc
                                         </option>
 
                                         <option value="Tạm nghỉ"
-                                                selected="@(taiKhoan.TrangThaiNhanVien == "Tạm nghỉ")">
+                                                selected="@(account.EmployeeStatus == "Tạm nghỉ")">
                                             Tạm nghỉ
                                         </option>
 
                                         <option value="Đã nghỉ việc"
-                                                selected="@(taiKhoan.TrangThaiNhanVien == "Đã nghỉ việc")">
+                                                selected="@(account.EmployeeStatus == "Đã nghỉ việc")">
                                             Đã nghỉ việc
                                         </option>
 
@@ -502,7 +502,7 @@
 
 
                                 <td>
-                                    @taiKhoan.NgayTao.ToString("dd/MM/yyyy")
+                                    @account.CreatedAt.ToString("dd/MM/yyyy")
                                 </td>
 
 
@@ -513,12 +513,12 @@
                                         <button type="button"
                                                 class="account-action-button edit-account"
                                                 title="Chỉnh sửa"
-                                                data-id="@taiKhoan.NguoiDungID"
-                                                data-ma="@taiKhoan.MaNhanVien"
-                                                data-hoten="@taiKhoan.HoTen"
-                                                data-email="@taiKhoan.Email"
-                                                data-sodienthoai="@taiKhoan.SoDienThoai"
-                                                data-vaitroid="@taiKhoan.VaiTroID">
+                                                data-user-id="@account.UserId"
+                                                data-employee-code="@account.EmployeeCode"
+                                                data-full-name="@account.FullName"
+                                                data-email="@account.Email"
+                                                data-phone-number="@account.PhoneNumber"
+                                                data-role-id="@account.RoleId">
 
 
                                             <i class="fa-regular fa-pen-to-square"></i>
@@ -528,10 +528,10 @@
                                         <button type="button"
                                                 class="account-action-button status-account"
                                                 title="Thay đổi trạng thái tài khoản"
-                                                data-id="@taiKhoan.NguoiDungID"
-                                                data-ten="@taiKhoan.HoTen"
-                                                data-email="@taiKhoan.Email"
-                                                data-trangthai="@taiKhoan.TrangThai">
+                                                data-user-id="@account.UserId"
+                                                data-full-name="@account.FullName"
+                                                data-email="@account.Email"
+                                                data-status="@account.Status">
 
                                             <i class="fa-solid fa-shield-halved"></i>
                                         </button>
@@ -540,8 +540,8 @@
                                         <button type="button"
                                                 class="account-action-button password-account"
                                                 title="Đặt lại mật khẩu"
-                                                data-id="@taiKhoan.NguoiDungID"
-                                                data-email="@taiKhoan.Email">
+                                                data-user-id="@account.UserId"
+                                                data-email="@account.Email">
 
                                             <i class="fa-solid fa-key"></i>
 
@@ -585,13 +585,13 @@
             </div>
 
             <span>
-                @danhSachKhachHang.Count khách hàng
+                @customerAccounts.Count khách hàng
             </span>
 
         </div>
 
 
-        @if (danhSachKhachHang.Count == 0)
+        @if (customerAccounts.Count == 0)
         {
             <div class="account-empty">
 
@@ -624,12 +624,12 @@
 
                     <tbody>
 
-                        @foreach (var taiKhoan in danhSachKhachHang)
+                        @foreach (var account in customerAccounts)
                         {
                             var statusClass =
-                            taiKhoan.TrangThai == "Hoạt động"
+                            account.Status == "Hoạt động"
                             ? "account-status-active"
-                            : taiKhoan.TrangThai == "Tạm khóa"
+                            : account.Status == "Tạm khóa"
                             ? "account-status-locked"
                             : "account-status-inactive";
 
@@ -646,17 +646,17 @@
                                         <div>
 
                                             <strong>
-                                                @(string.IsNullOrWhiteSpace(taiKhoan.HoTen)
+                                                @(string.IsNullOrWhiteSpace(account.FullName)
                                                                                         ? "Khách hàng"
-                                                                                        : taiKhoan.HoTen)
+                                                                                        : account.FullName)
                                     </strong>
 
                                             <span>
-                                                @taiKhoan.Email
+                                                @account.Email
                                             </span>
 
                                             <small>
-                                                ID: @taiKhoan.NguoiDungID
+                                                ID: @account.UserId
                                             </small>
 
                                         </div>
@@ -667,7 +667,7 @@
 
 
                                 <td>
-                                    @(taiKhoan.SoDienThoai ?? "—")
+                                    @(account.PhoneNumber ?? "—")
                                 </td>
 
 
@@ -677,7 +677,7 @@
 
                                         <i class="fa-solid fa-circle"></i>
 
-                                        @taiKhoan.TrangThai
+                                        @account.Status
 
                                     </span>
 
@@ -685,7 +685,7 @@
 
 
                                 <td>
-                                    @taiKhoan.NgayTao.ToString("dd/MM/yyyy")
+                                    @account.CreatedAt.ToString("dd/MM/yyyy")
                                 </td>
 
 
@@ -696,10 +696,10 @@
                                         <button type="button"
                                                 class="account-action-button status-account"
                                                 title="Thay đổi trạng thái tài khoản"
-                                                data-id="@taiKhoan.NguoiDungID"
-                                                data-ten="@taiKhoan.HoTen"
-                                                data-email="@taiKhoan.Email"
-                                                data-trangthai="@taiKhoan.TrangThai">
+                                                data-user-id="@account.UserId"
+                                                data-full-name="@account.FullName"
+                                                data-email="@account.Email"
+                                                data-status="@account.Status">
 
                                             <i class="fa-solid fa-shield-halved"></i>
                                         </button>
@@ -708,8 +708,8 @@
                                         <button type="button"
                                                 class="account-action-button password-account"
                                                 title="Đặt lại mật khẩu"
-                                                data-id="@taiKhoan.NguoiDungID"
-                                                data-email="@taiKhoan.Email">
+                                                data-user-id="@account.UserId"
+                                                data-email="@account.Email">
 
                                             <i class="fa-solid fa-key"></i>
 
@@ -767,7 +767,7 @@
                     </label>
 
                     <input type="text"
-                           name="HoTen"
+                           name="FullName"
                            maxlength="150"
                            required
                            placeholder="Ví dụ: Nguyễn Văn An" />
@@ -794,7 +794,7 @@
                     </label>
 
                     <input type="text"
-                           name="SoDienThoai"
+                           name="PhoneNumber"
                            maxlength="20"
                            placeholder="Có thể để trống" />
                 </div>
@@ -807,20 +807,20 @@
                         <span>*</span>
                     </label>
 
-                    <select name="VaiTroID"
+                    <select name="RoleId"
                             required>
 
                         <option value="">
                             -- Chọn vai trò --
                         </option>
 
-                        @foreach (var vaiTro in Model.DanhSachVaiTro)
+                        @foreach (var role in Model.Roles)
                         {
-                            if (vaiTro.TenVaiTro == "Nhân viên tư vấn" ||
-                            vaiTro.TenVaiTro == "Nhân viên điều phối")
+                            if (role.RoleName == "Nhân viên tư vấn" ||
+                            role.RoleName == "Nhân viên điều phối")
                             {
-                                <option value="@vaiTro.VaiTroID">
-                                    @vaiTro.TenVaiTro
+                                <option value="@role.RoleId">
+                                    @role.RoleName
                                 </option>
                             }
                         }
@@ -839,7 +839,7 @@
                     </label>
 
                     <input type="password"
-                           name="MatKhau"
+                           name="Password"
                            required
                            minlength="8"
                            autocomplete="new-password"
@@ -909,7 +909,7 @@
             @Html.AntiForgeryToken()
 
             <input type="hidden"
-                   id="editNguoiDungID" />
+                   id="editUserId" />
 
 
             <div class="account-form-grid">
@@ -920,7 +920,7 @@
                     <label>Mã nhân viên</label>
 
                     <input type="text"
-                           id="editMaNhanVien"
+                           id="editEmployeeCode"
                            readonly />
 
                     <small>
@@ -939,8 +939,8 @@
                     </label>
 
                     <input type="text"
-                           id="editHoTen"
-                           name="HoTen"
+                           id="editFullName"
+                           name="FullName"
                            maxlength="150"
                            required />
 
@@ -972,8 +972,8 @@
                     </label>
 
                     <input type="text"
-                           id="editSoDienThoai"
-                           name="SoDienThoai"
+                           id="editPhoneNumber"
+                           name="PhoneNumber"
                            maxlength="20" />
 
                 </div>
@@ -987,17 +987,17 @@
                         <span>*</span>
                     </label>
 
-                    <select id="editVaiTroID"
-                            name="VaiTroID"
+                    <select id="editRoleId"
+                            name="RoleId"
                             required>
 
-                        @foreach (var vaiTro in Model.DanhSachVaiTro)
+                        @foreach (var role in Model.Roles)
                         {
-                            if (vaiTro.TenVaiTro == "Nhân viên tư vấn" ||
-                            vaiTro.TenVaiTro == "Nhân viên điều phối")
+                            if (role.RoleName == "Nhân viên tư vấn" ||
+                            role.RoleName == "Nhân viên điều phối")
                             {
-                                <option value="@vaiTro.VaiTroID">
-                                    @vaiTro.TenVaiTro
+                                <option value="@role.RoleId">
+                                    @role.RoleName
                                 </option>
                             }
                         }
@@ -1067,7 +1067,7 @@
             @Html.AntiForgeryToken()
 
             <input type="hidden"
-                   id="statusNguoiDungID" />
+                   id="statusUserId" />
 
 
             <div class="status-account-user">
@@ -1093,7 +1093,7 @@
                 </label>
 
                 <select id="statusAccountSelect"
-                        name="trangThai"
+                        name="status"
                         required>
 
                     <option value="Hoạt động">
@@ -1186,7 +1186,7 @@
             @Html.AntiForgeryToken()
 
             <input type="hidden"
-                   id="resetPasswordNguoiDungID" />
+                   id="resetPasswordUserId" />
 
 
             <div class="status-account-user">
@@ -1213,7 +1213,7 @@
 
                 <input type="password"
                        id="newPassword"
-                       name="matKhauMoi"
+                       name="newPassword"
                        minlength="8"
                        autocomplete="new-password"
                        required
@@ -1436,23 +1436,23 @@
 
             button.addEventListener("click", function () {
 
-                document.getElementById("editNguoiDungID").value =
-                    button.dataset.id;
+                document.getElementById("editUserId").value =
+                    button.dataset.userId;
 
-                document.getElementById("editMaNhanVien").value =
-                    button.dataset.ma ?? "";
+                document.getElementById("editEmployeeCode").value =
+                    button.dataset.employeeCode ?? "";
 
-                document.getElementById("editHoTen").value =
-                    button.dataset.hoten ?? "";
+                document.getElementById("editFullName").value =
+                    button.dataset.fullName ?? "";
 
                 document.getElementById("editEmail").value =
                     button.dataset.email ?? "";
 
-                document.getElementById("editSoDienThoai").value =
-                    button.dataset.sodienthoai ?? "";
+                document.getElementById("editPhoneNumber").value =
+                    button.dataset.phoneNumber ?? "";
 
-                document.getElementById("editVaiTroID").value =
-                    button.dataset.vaitroid;
+                document.getElementById("editRoleId").value =
+                    button.dataset.roleId;
 
                 editAccountError.textContent = "";
 
@@ -1494,9 +1494,9 @@
 
                 editAccountError.textContent = "";
 
-                const id =
+                const userId =
                     document.getElementById(
-                        "editNguoiDungID"
+                        "editUserId"
                     ).value;
 
                 const formData =
@@ -1518,7 +1518,7 @@
 
                     const response =
                         await fetch(
-                            `/admin/quan-ly-tai-khoan/sua-nhan-vien/${id}`,
+                            `/admin/quan-ly-tai-khoan/sua-nhan-vien/${userId}`,
                             {
                                 method: "POST",
                                 body: formData
@@ -1595,14 +1595,14 @@
             button.addEventListener("click", function () {
 
                 document.getElementById(
-                    "statusNguoiDungID"
-                ).value = button.dataset.id;
+                    "statusUserId"
+                ).value = button.dataset.userId;
 
 
                 document.getElementById(
                     "statusAccountName"
                 ).textContent =
-                    button.dataset.ten || "Tài khoản";
+                    button.dataset.fullName || "Tài khoản";
 
 
                 document.getElementById(
@@ -1614,7 +1614,7 @@
                 document.getElementById(
                     "statusAccountSelect"
                 ).value =
-                    button.dataset.trangthai;
+                    button.dataset.status;
 
 
                 statusAccountError.textContent = "";
@@ -1646,9 +1646,9 @@
                 statusAccountError.textContent = "";
 
 
-                const id =
+                const userId =
                     document.getElementById(
-                        "statusNguoiDungID"
+                        "statusUserId"
                     ).value;
 
 
@@ -1672,7 +1672,7 @@
 
                     const response =
                         await fetch(
-                            `/admin/quan-ly-tai-khoan/trang-thai/${id}`,
+                            `/admin/quan-ly-tai-khoan/trang-thai/${userId}`,
                             {
                                 method: "POST",
                                 body: formData
@@ -1725,7 +1725,7 @@
 
             select.addEventListener("change", async function () {
 
-                const id = select.dataset.id;
+                const userId = select.dataset.userId;
 
                 const oldValue =
                     select.dataset.oldValue;
@@ -1743,7 +1743,7 @@
                     new FormData();
 
                 formData.append(
-                    "trangThai",
+                    "status",
                     newValue
                 );
 
@@ -1769,7 +1769,7 @@
 
                     const response =
                         await fetch(
-                            `/admin/quan-ly-tai-khoan/trang-thai-nhan-vien/${id}`,
+                            `/admin/quan-ly-tai-khoan/trang-thai-nhan-vien/${userId}`,
                             {
                                 method: "POST",
                                 body: formData
@@ -1856,8 +1856,8 @@
             button.addEventListener("click", function () {
 
                 document.getElementById(
-                    "resetPasswordNguoiDungID"
-                ).value = button.dataset.id;
+                    "resetPasswordUserId"
+                ).value = button.dataset.userId;
 
                 document.getElementById(
                     "resetPasswordEmail"
@@ -1894,9 +1894,9 @@
                 resetPasswordError.textContent = "";
 
 
-                const id =
+                const userId =
                     document.getElementById(
-                        "resetPasswordNguoiDungID"
+                        "resetPasswordUserId"
                     ).value;
 
 
@@ -1941,7 +1941,7 @@
 
                     const response =
                         await fetch(
-                            `/admin/quan-ly-tai-khoan/dat-lai-mat-khau/${id}`,
+                            `/admin/quan-ly-tai-khoan/dat-lai-mat-khau/${userId}`,
                             {
                                 method: "POST",
                                 body: formData

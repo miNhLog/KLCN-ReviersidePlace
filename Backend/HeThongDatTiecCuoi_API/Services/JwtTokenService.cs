@@ -17,23 +17,23 @@ public sealed class JwtTokenService : IJwtTokenService
         _options = options.Value;
     }
 
-    public (string Token, DateTime ExpiresAtUtc) CreateAccessToken(NguoiDung user, bool rememberMe)
+    public (string Token, DateTime ExpiresAtUtc) CreateAccessToken(User user, bool rememberMe)
     {
         var now = DateTime.UtcNow;
         var expiresAt = rememberMe
             ? now.AddDays(_options.RememberMeDays)
             : now.AddMinutes(_options.AccessTokenMinutes);
 
-        var displayName = user.KhachHang?.HoTen ?? user.NhanVien?.HoTen ?? user.Email;
+        var displayName = user.Customer?.FullName ?? user.Employee?.FullName ?? user.Email;
         var claims = new List<Claim>
         {
-            new(JwtRegisteredClaimNames.Sub, user.NguoiDungID.ToString()),
+            new(JwtRegisteredClaimNames.Sub, user.UserId.ToString()),
             new(JwtRegisteredClaimNames.Email, user.Email),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new(ClaimTypes.NameIdentifier, user.NguoiDungID.ToString()),
+            new(ClaimTypes.NameIdentifier, user.UserId.ToString()),
             new(ClaimTypes.Name, displayName),
             new(ClaimTypes.Email, user.Email),
-            new(ClaimTypes.Role, user.VaiTro.TenVaiTro)
+            new(ClaimTypes.Role, user.Role.RoleName)
         };
 
         var credentials = new SigningCredentials(

@@ -58,7 +58,7 @@ public sealed class AuthController : Controller
             return LocalRedirect(model.ReturnUrl);
         }
 
-        if (result.Value.User.VaiTro == "Quản trị viên")
+        if (result.Value.User.RoleName == "Quản trị viên")
         {
             return RedirectToAction("Index", "AdminHall");
         }
@@ -119,10 +119,10 @@ public sealed class AuthController : Controller
     {
         var claims = new List<Claim>
         {
-            new(ClaimTypes.NameIdentifier, auth.User.NguoiDungId.ToString()),
-            new(ClaimTypes.Name, auth.User.HoTen),
+            new(ClaimTypes.NameIdentifier, auth.User.UserId.ToString()),
+            new(ClaimTypes.Name, auth.User.FullName),
             new(ClaimTypes.Email, auth.User.Email),
-            new(ClaimTypes.Role, auth.User.VaiTro)
+            new(ClaimTypes.Role, auth.User.RoleName)
         };
 
         var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);

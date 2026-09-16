@@ -10,12 +10,12 @@ namespace HeThongDatTiecCuoi_API.Services;
 public sealed partial class AuthService : IAuthService
 {
     private readonly ApplicationDbContext _db;
-    private readonly IPasswordHasher<NguoiDung> _passwordHasher;
+    private readonly IPasswordHasher<User> _passwordHasher;
     private readonly IJwtTokenService _jwtTokenService;
 
     public AuthService(
         ApplicationDbContext db,
-        IPasswordHasher<NguoiDung> passwordHasher,
+        IPasswordHasher<User> passwordHasher,
         IJwtTokenService jwtTokenService)
     {
         _db = db;
@@ -37,22 +37,22 @@ public sealed partial class AuthService : IAuthService
                 StatusCodes.Status400BadRequest);
         }
 
-        if (await _db.NguoiDung.AnyAsync(x => x.Email == email, cancellationToken))
+        if (await _db.Users.AnyAsync(x => x.Email == email, cancellationToken))
         {
             return ServiceResult<AuthResponse>.Failure(
                 "Email đã được sử dụng.",
                 StatusCodes.Status409Conflict);
         }
 
-        if (await _db.KhachHang.AnyAsync(x => x.SoDienThoai == phone, cancellationToken))
+        if (await _db.Customers.AnyAsync(x => x.PhoneNumber == phone, cancellationToken))
         {
             return ServiceResult<AuthResponse>.Failure(
                 "Số điện thoại đã được sử dụng.",
                 StatusCodes.Status409Conflict);
         }
 
-        var customerRole = await _db.VaiTro.SingleOrDefaultAsync(
-            x => x.TenVaiTro == RoleNames.Customer,
+        var customerRole = await _db.Roles.SingleOrDefaultAsync(
+            x => x.RoleName == RoleNames.Customer,
             cancellationToken);
 
         if (customerRole is null)
@@ -66,29 +66,29 @@ public sealed partial class AuthService : IAuthService
 
         try
         {
-            var user = new NguoiDung
+            var user = new User
             {
-                VaiTroID = customerRole.VaiTroID,
-                VaiTro = customerRole,
+                RoleId = customerRole.RoleId,
+                Role = customerRole,
                 Email = email,
-                TrangThai = "Hoạt động",
-                NgayTao = DateTime.Now
+                Status = "Hoạt động",
+                CreatedAt = DateTime.Now
             };
-            user.MatKhauHash = _passwordHasher.HashPassword(user, request.MatKhau);
+            user.PasswordHash = _passwordHasher.HashPassword(user, request.MatKhau);
 
-            var customer = new KhachHang
+            var customer = new Customer
             {
-                NguoiDung = user,
-                HoTen = request.HoTen.Trim(),
-                SoDienThoai = phone
+                User = user,
+                FullName = request.HoTen.Trim(),
+                PhoneNumber = phone
             };
 
-            _db.NguoiDung.Add(user);
-            _db.KhachHang.Add(customer);
+            _db.Users.Add(user);
+            _db.Customers.Add(customer);
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
 
-            user.KhachHang = customer;
+            user.Customer = customer;
             var token = _jwtTokenService.CreateAccessToken(user, rememberMe: false);
             return ServiceResult<AuthResponse>.Success(
                 new AuthResponse(token.Token, token.ExpiresAtUtc, ToCurrentUser(user)),
@@ -110,12 +110,12 @@ public sealed partial class AuthService : IAuthService
         var identifier = request.DinhDanh.Trim();
         var isStaffLogin = request.LoaiTaiKhoan == "Staff";
 
-        IQueryable<NguoiDung> query = _db.NguoiDung
-            .Include(x => x.VaiTro)
-            .Include(x => x.KhachHang)
-            .Include(x => x.NhanVien);
+        IQueryable<User> query = _db.Users
+            .Include(x => x.Role)
+            .Include(x => x.Customer)
+            .Include(x => x.Employee);
 
-        NguoiDung? user;
+        User? user;
         if (identifier.Contains('@'))
         {
             var email = identifier.ToLowerInvariant();
@@ -125,8 +125,8 @@ public sealed partial class AuthService : IAuthService
         {
             var phone = NormalizePhone(identifier);
             user = isStaffLogin
-                ? await query.SingleOrDefaultAsync(x => x.NhanVien != null && x.NhanVien.SoDienThoai == phone, cancellationToken)
-                : await query.SingleOrDefaultAsync(x => x.KhachHang != null && x.KhachHang.SoDienThoai == phone, cancellationToken);
+                ? await query.SingleOrDefaultAsync(x => x.Employee != null && x.Employee.PhoneNumber == phone, cancellationToken)
+                : await query.SingleOrDefaultAsync(x => x.Customer != null && x.Customer.PhoneNumber == phone, cancellationToken);
         }
 
         if (user is null || !MatchesSelectedAccountType(user, isStaffLogin))
@@ -134,14 +134,14 @@ public sealed partial class AuthService : IAuthService
             return InvalidCredentials();
         }
 
-        if (user.TrangThai != "Hoạt động")
+        if (user.Status != "Hoạt động")
         {
             return ServiceResult<AuthResponse>.Failure(
                 "Tài khoản đang bị khóa hoặc đã ngừng hoạt động.",
                 StatusCodes.Status403Forbidden);
         }
 
-        if (isStaffLogin && user.NhanVien is not null && user.NhanVien.TrangThai != "Đang làm việc")
+        if (isStaffLogin && user.Employee is not null && user.Employee.Status != "Đang làm việc")
         {
             return ServiceResult<AuthResponse>.Failure(
                 "Tài khoản nhân viên hiện không được phép đăng nhập.",
@@ -152,7 +152,7 @@ public sealed partial class AuthService : IAuthService
         PasswordVerificationResult verification;
         try
         {
-            verification = _passwordHasher.VerifyHashedPassword(user, user.MatKhauHash, request.MatKhau);
+            verification = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, request.MatKhau);
         }
         catch (FormatException)
         {
@@ -165,7 +165,7 @@ public sealed partial class AuthService : IAuthService
 
         if (verification == PasswordVerificationResult.SuccessRehashNeeded)
         {
-            user.MatKhauHash = _passwordHasher.HashPassword(user, request.MatKhau);
+            user.PasswordHash = _passwordHasher.HashPassword(user, request.MatKhau);
             await _db.SaveChangesAsync(cancellationToken);
         }
 
@@ -178,12 +178,12 @@ public sealed partial class AuthService : IAuthService
         int userId,
         CancellationToken cancellationToken)
     {
-        var user = await _db.NguoiDung
+        var user = await _db.Users
             .AsNoTracking()
-            .Include(x => x.VaiTro)
-            .Include(x => x.KhachHang)
-            .Include(x => x.NhanVien)
-            .SingleOrDefaultAsync(x => x.NguoiDungID == userId, cancellationToken);
+            .Include(x => x.Role)
+            .Include(x => x.Customer)
+            .Include(x => x.Employee)
+            .SingleOrDefaultAsync(x => x.UserId == userId, cancellationToken);
 
         return user is null
             ? ServiceResult<CurrentUserResponse>.Failure("Không tìm thấy người dùng.", StatusCodes.Status404NotFound)
@@ -191,22 +191,22 @@ public sealed partial class AuthService : IAuthService
     }
 
     private static bool MatchesSelectedAccountType(
-    NguoiDung user,
+    User user,
     bool isStaffLogin) =>
     isStaffLogin
-        ? user.VaiTro.TenVaiTro is
+        ? user.Role.RoleName is
             RoleNames.Admin or
-            RoleNames.Staff or
+            RoleNames.Consultant or
             RoleNames.Coordinator
-        : user.VaiTro.TenVaiTro == RoleNames.Customer;
+        : user.Role.RoleName == RoleNames.Customer;
 
-    private static CurrentUserResponse ToCurrentUser(NguoiDung user) => new(
-        user.NguoiDungID,
+    private static CurrentUserResponse ToCurrentUser(User user) => new(
+        user.UserId,
         user.Email,
-        user.KhachHang?.HoTen ?? user.NhanVien?.HoTen ?? user.Email,
-        user.KhachHang?.SoDienThoai ?? user.NhanVien?.SoDienThoai,
-        user.VaiTro.TenVaiTro,
-        user.TrangThai);
+        user.Customer?.FullName ?? user.Employee?.FullName ?? user.Email,
+        user.Customer?.PhoneNumber ?? user.Employee?.PhoneNumber,
+        user.Role.RoleName,
+        user.Status);
 
     private static ServiceResult<AuthResponse> InvalidCredentials() =>
         ServiceResult<AuthResponse>.Failure(

@@ -1,12 +1,12 @@
 namespace HeThongDatTiecCuoi_WEB.Models.Auth;
 
 public sealed record CurrentUserDto(
-    int NguoiDungId,
+    int UserId,
     string Email,
-    string HoTen,
-    string? SoDienThoai,
-    string VaiTro,
-    string TrangThai);
+    string FullName,
+    string? PhoneNumber,
+    string RoleName,
+    string Status);
 
 public sealed record AuthResponseDto(
     string AccessToken,

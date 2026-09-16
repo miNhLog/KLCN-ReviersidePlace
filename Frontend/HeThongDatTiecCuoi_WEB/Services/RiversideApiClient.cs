@@ -1,10 +1,10 @@
+using HeThongDatTiecCuoi_WEB.Models.AdminAccount;
 using HeThongDatTiecCuoi_WEB.Models.AdminHall;
 using HeThongDatTiecCuoi_WEB.Models.Auth;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 namespace HeThongDatTiecCuoi_WEB.Services;
-using HeThongDatTiecCuoi_WEB.Models.AdminTaiKhoan;
 using HeThongDatTiecCuoi_WEB.Models.AdminThucDon;
 using Microsoft.AspNetCore.Mvc;
 
@@ -152,44 +152,38 @@ public sealed class RiversideApiClient : IRiversideApiClient
     // ADMIN - QUẢN LÝ TÀI KHOẢN
     // ======================================================
 
-    public Task<ApiCallResult<List<TaiKhoanDto>>> GetDanhSachTaiKhoanAsync(
+    public Task<ApiCallResult<List<AccountDto>>> GetAccountsAsync(
         string accessToken,
-        string? tuKhoa,
-        int? vaiTroId,
-        string? trangThai,
+        string? keyword,
+        int? roleId,
+        string? status,
         CancellationToken cancellationToken)
     {
         var query = new List<string>();
 
-        if (!string.IsNullOrWhiteSpace(tuKhoa))
+        if (!string.IsNullOrWhiteSpace(keyword))
         {
-            query.Add(
-                $"tuKhoa={Uri.EscapeDataString(tuKhoa)}"
-            );
+            query.Add($"keyword={Uri.EscapeDataString(keyword)}");
         }
 
-        if (vaiTroId.HasValue)
+        if (roleId.HasValue)
         {
-            query.Add(
-                $"vaiTroId={vaiTroId.Value}"
-            );
+            query.Add($"roleId={roleId.Value}");
         }
 
-        if (!string.IsNullOrWhiteSpace(trangThai))
+        if (!string.IsNullOrWhiteSpace(status))
         {
-            query.Add(
-                $"trangThai={Uri.EscapeDataString(trangThai)}"
-            );
+            query.Add($"status={Uri.EscapeDataString(status)}");
         }
 
-        var uri = "api/AdminTaiKhoan";
+        var uri = "api/admin/accounts";
 
         if (query.Count > 0)
         {
             uri += "?" + string.Join("&", query);
         }
 
-        return SendAsync<List<TaiKhoanDto>>(
+        return SendAsync<List<AccountDto>>(
             HttpMethod.Get,
             uri,
             null,
@@ -198,76 +192,76 @@ public sealed class RiversideApiClient : IRiversideApiClient
     }
 
 
-    public Task<ApiCallResult<List<VaiTroDto>>> GetDanhSachVaiTroAsync(
+    public Task<ApiCallResult<List<RoleDto>>> GetRolesAsync(
         string accessToken,
         CancellationToken cancellationToken)
     {
-        return SendAsync<List<VaiTroDto>>(
+        return SendAsync<List<RoleDto>>(
             HttpMethod.Get,
-            "api/AdminTaiKhoan/vai-tro",
+            "api/admin/accounts/roles",
             null,
             accessToken,
             cancellationToken);
     }
 
 
-    public Task<ApiCallResult<ThaoTacTaiKhoanResponse>>
-        TaoTaiKhoanNhanVienAsync(
-            TaoTaiKhoanNhanVienRequest model,
+    public Task<ApiCallResult<AccountActionResponse>>
+        CreateEmployeeAccountAsync(
+            CreateEmployeeAccountRequest model,
             string accessToken,
             CancellationToken cancellationToken)
     {
-        return SendAsync<ThaoTacTaiKhoanResponse>(
+        return SendAsync<AccountActionResponse>(
             HttpMethod.Post,
-            "api/AdminTaiKhoan/nhan-vien",
+            "api/admin/accounts/employees",
             model,
             accessToken,
             cancellationToken);
     }
 
 
-    public Task<ApiCallResult<ThaoTacTaiKhoanResponse>>
-        CapNhatTaiKhoanNhanVienAsync(
-            int id,
-            CapNhatTaiKhoanNhanVienRequest model,
+    public Task<ApiCallResult<AccountActionResponse>>
+        UpdateEmployeeAccountAsync(
+            int userId,
+            UpdateEmployeeAccountRequest model,
             string accessToken,
             CancellationToken cancellationToken)
     {
-        return SendAsync<ThaoTacTaiKhoanResponse>(
+        return SendAsync<AccountActionResponse>(
             HttpMethod.Put,
-            $"api/AdminTaiKhoan/nhan-vien/{id}",
+            $"api/admin/accounts/employees/{userId}",
             model,
             accessToken,
             cancellationToken);
     }
 
 
-    public Task<ApiCallResult<ThaoTacTaiKhoanResponse>>
-        CapNhatTrangThaiTaiKhoanAsync(
-            int id,
-            string trangThai,
+    public Task<ApiCallResult<AccountActionResponse>>
+        UpdateAccountStatusAsync(
+            int userId,
+            string status,
             string accessToken,
             CancellationToken cancellationToken)
     {
-        return SendAsync<ThaoTacTaiKhoanResponse>(
+        return SendAsync<AccountActionResponse>(
             HttpMethod.Patch,
-            $"api/AdminTaiKhoan/{id}/trang-thai",
-            trangThai,
+            $"api/admin/accounts/{userId}/status",
+            status,
             accessToken,
             cancellationToken);
     }
 
 
-    public Task<ApiCallResult<ThaoTacTaiKhoanResponse>>
-        DatLaiMatKhauAsync(
-            int id,
-            DatLaiMatKhauRequest model,
+    public Task<ApiCallResult<AccountActionResponse>>
+        ResetPasswordAsync(
+            int userId,
+            ResetPasswordRequest model,
             string accessToken,
             CancellationToken cancellationToken)
     {
-        return SendAsync<ThaoTacTaiKhoanResponse>(
+        return SendAsync<AccountActionResponse>(
             HttpMethod.Patch,
-            $"api/AdminTaiKhoan/{id}/dat-lai-mat-khau",
+            $"api/admin/accounts/{userId}/reset-password",
             model,
             accessToken,
             cancellationToken);
@@ -314,17 +308,17 @@ public sealed class RiversideApiClient : IRiversideApiClient
             return ApiCallResult<T>.Failure("Backend API phản hồi quá lâu.");
         }
     }
-    public async Task<ApiCallResult<ThaoTacTaiKhoanResponse>>
-    CapNhatTrangThaiNhanVienAsync(
-        int nguoiDungId,
-        string trangThai,
+    public async Task<ApiCallResult<AccountActionResponse>>
+    UpdateEmployeeStatusAsync(
+        int userId,
+        string status,
         string accessToken,
         CancellationToken cancellationToken)
     {
-        return await SendAsync<ThaoTacTaiKhoanResponse>(
+        return await SendAsync<AccountActionResponse>(
             HttpMethod.Patch,
-            $"api/AdminTaiKhoan/nhan-vien/{nguoiDungId}/trang-thai",
-            trangThai,
+            $"api/admin/accounts/employees/{userId}/status",
+            status,
             accessToken,
             cancellationToken
         );

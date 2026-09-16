@@ -1,5 +1,5 @@
 ﻿using HeThongDatTiecCuoi_WEB.Models.AdminHall;
-using HeThongDatTiecCuoi_WEB.Models.AdminTaiKhoan;
+using HeThongDatTiecCuoi_WEB.Models.AdminAccount;
 using HeThongDatTiecCuoi_WEB.Models.Auth;
 namespace HeThongDatTiecCuoi_WEB.Services;
 using HeThongDatTiecCuoi_WEB.Models.AdminThucDon;
@@ -66,44 +66,45 @@ public interface IRiversideApiClient
         string status,
         string accessToken,
         CancellationToken cancellationToken);
-    Task<ApiCallResult<List<TaiKhoanDto>>> GetDanhSachTaiKhoanAsync(
-    string accessToken,
-    string? tuKhoa,
-    int? vaiTroId,
-    string? trangThai,
-    CancellationToken cancellationToken);
+    Task<ApiCallResult<List<AccountDto>>> GetAccountsAsync(
+        string accessToken,
+        string? keyword,
+        int? roleId,
+        string? status,
+        CancellationToken cancellationToken);
 
-    Task<ApiCallResult<List<VaiTroDto>>> GetDanhSachVaiTroAsync(
+    Task<ApiCallResult<List<RoleDto>>> GetRolesAsync(
         string accessToken,
         CancellationToken cancellationToken);
 
-    Task<ApiCallResult<ThaoTacTaiKhoanResponse>> TaoTaiKhoanNhanVienAsync(
-        TaoTaiKhoanNhanVienRequest model,
+    Task<ApiCallResult<AccountActionResponse>> CreateEmployeeAccountAsync(
+        CreateEmployeeAccountRequest model,
         string accessToken,
         CancellationToken cancellationToken);
 
-    Task<ApiCallResult<ThaoTacTaiKhoanResponse>> CapNhatTaiKhoanNhanVienAsync(
-        int id,
-        CapNhatTaiKhoanNhanVienRequest model,
+    Task<ApiCallResult<AccountActionResponse>> UpdateEmployeeAccountAsync(
+        int userId,
+        UpdateEmployeeAccountRequest model,
         string accessToken,
         CancellationToken cancellationToken);
 
-    Task<ApiCallResult<ThaoTacTaiKhoanResponse>> CapNhatTrangThaiTaiKhoanAsync(
-        int id,
-        string trangThai,
+    Task<ApiCallResult<AccountActionResponse>> UpdateAccountStatusAsync(
+        int userId,
+        string status,
         string accessToken,
         CancellationToken cancellationToken);
 
-    Task<ApiCallResult<ThaoTacTaiKhoanResponse>> DatLaiMatKhauAsync(
-        int id,
-        DatLaiMatKhauRequest model,
+    Task<ApiCallResult<AccountActionResponse>> ResetPasswordAsync(
+        int userId,
+        ResetPasswordRequest model,
         string accessToken,
         CancellationToken cancellationToken);
-    Task<ApiCallResult<ThaoTacTaiKhoanResponse>> CapNhatTrangThaiNhanVienAsync(
-    int nguoiDungId,
-    string trangThai,
-    string accessToken,
-    CancellationToken cancellationToken);
+
+    Task<ApiCallResult<AccountActionResponse>> UpdateEmployeeStatusAsync(
+        int userId,
+        string status,
+        string accessToken,
+        CancellationToken cancellationToken);
     // THỰC ĐƠN
     Task<ApiCallResult<List<ThucDonViewModel>>> GetDanhSachThucDonAsync(
         string? tuKhoa,
