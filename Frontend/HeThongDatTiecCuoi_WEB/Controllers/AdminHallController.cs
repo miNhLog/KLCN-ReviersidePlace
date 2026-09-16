@@ -1,4 +1,4 @@
-﻿using HeThongDatTiecCuoi_WEB.Models.AdminSanh;
+using HeThongDatTiecCuoi_WEB.Models.AdminHall;
 using HeThongDatTiecCuoi_WEB.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -6,22 +6,21 @@ using Microsoft.AspNetCore.Mvc;
 namespace HeThongDatTiecCuoi_WEB.Controllers;
 
 [Authorize(Roles = "Quản trị viên")]
-public sealed class AdminSanhController : Controller
+public sealed class AdminHallController : Controller
 {
     private const string ApiTokenCookie = "rp_api_token";
 
     private readonly IRiversideApiClient _apiClient;
 
-    public AdminSanhController(IRiversideApiClient apiClient)
+    public AdminHallController(IRiversideApiClient apiClient)
     {
         _apiClient = apiClient;
     }
 
-    // GET: /admin/quan-ly-sanh
     [HttpGet("admin/quan-ly-sanh")]
     public async Task<IActionResult> Index(
-        DateTime? ngay,
-        int? sanhTiecId,
+        DateTime? date,
+        int? hallId,
         CancellationToken cancellationToken)
     {
         var accessToken = Request.Cookies[ApiTokenCookie];
@@ -31,61 +30,56 @@ public sealed class AdminSanhController : Controller
             return RedirectToAction("Login", "Auth");
         }
 
-        // Nếu không truyền ngày thì lấy ngày hiện tại
-        var ngayThamChieu = (ngay ?? DateTime.Today).Date;
+        var referenceDate = (date ?? DateTime.Today).Date;
+        var daysSinceMonday =
+            (7 + ((int)referenceDate.DayOfWeek - (int)DayOfWeek.Monday)) % 7;
+        var weekStartDate = referenceDate.AddDays(-daysSinceMonday);
 
-        // Tìm thứ Hai của tuần đang chọn
-        var soNgayLui =
-            (7 + ((int)ngayThamChieu.DayOfWeek - (int)DayOfWeek.Monday)) % 7;
-
-        var ngayBatDauTuan = ngayThamChieu.AddDays(-soNgayLui);
-
-        // Lấy danh sách sảnh
-        var ketQuaSanh = await _apiClient.GetDanhSachSanhAsync(
+        var hallsResult = await _apiClient.GetHallsAsync(
             accessToken,
             cancellationToken);
 
-        // Lấy lịch sảnh theo tuần
-        var ketQuaLich = await _apiClient.GetLichSanhTheoTuanAsync(
-            ngayBatDauTuan,
-            sanhTiecId,
+        var scheduleResult = await _apiClient.GetWeeklyHallSchedulesAsync(
+            weekStartDate,
+            hallId,
             accessToken,
             cancellationToken);
 
-        var model = new QuanLySanhViewModel
+        var model = new HallManagementViewModel
         {
-            NgayBatDau = ngayBatDauTuan,
-            SanhTiecId = sanhTiecId
+            StartDate = weekStartDate,
+            HallId = hallId
         };
 
-        if (ketQuaSanh.Succeeded && ketQuaSanh.Value is not null)
+        if (hallsResult.Succeeded && hallsResult.Value is not null)
         {
-            model.DanhSachSanh = ketQuaSanh.Value;
+            model.Halls = hallsResult.Value;
         }
         else
         {
-            model.ErrorMessage = ketQuaSanh.Error
+            model.ErrorMessage = hallsResult.Error
                 ?? "Không thể tải danh sách sảnh.";
         }
 
-        if (ketQuaLich.Succeeded && ketQuaLich.Value is not null)
+        if (scheduleResult.Succeeded && scheduleResult.Value is not null)
         {
-            model.LichTuan = ketQuaLich.Value;
+            model.WeeklySchedule = scheduleResult.Value;
         }
         else
         {
-            model.ErrorMessage ??= ketQuaLich.Error
+            model.ErrorMessage ??= scheduleResult.Error
                 ?? "Không thể tải lịch sảnh.";
         }
 
         return View(model);
     }
-    [HttpPost("admin/quan-ly-sanh/lich/{id}/trang-thai")]
+
+    [HttpPost("admin/quan-ly-sanh/lich/{hallScheduleId:int}/status")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> UpdateTrangThaiLich(
-    int id,
-    string trangThai,
-    CancellationToken cancellationToken)
+    public async Task<IActionResult> UpdateHallScheduleStatus(
+        int hallScheduleId,
+        string status,
+        CancellationToken cancellationToken)
     {
         var accessToken = Request.Cookies[ApiTokenCookie];
 
@@ -98,7 +92,7 @@ public sealed class AdminSanhController : Controller
             });
         }
 
-        if (trangThai != "Trống" && trangThai != "Tạm khóa")
+        if (status != "Trống" && status != "Tạm khóa")
         {
             return Json(new
             {
@@ -107,9 +101,9 @@ public sealed class AdminSanhController : Controller
             });
         }
 
-        var result = await _apiClient.UpdateTrangThaiLichAsync(
-            id,
-            trangThai,
+        var result = await _apiClient.UpdateHallScheduleStatusAsync(
+            hallScheduleId,
+            status,
             accessToken,
             cancellationToken);
 
@@ -128,11 +122,12 @@ public sealed class AdminSanhController : Controller
             message = "Cập nhật trạng thái lịch thành công."
         });
     }
+
     [HttpPost("admin/quan-ly-sanh/them")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> CreateSanh(
-    SanhTiecDto model,
-    CancellationToken cancellationToken)
+    public async Task<IActionResult> CreateHall(
+        HallDto model,
+        CancellationToken cancellationToken)
     {
         var accessToken = Request.Cookies[ApiTokenCookie];
 
@@ -145,7 +140,7 @@ public sealed class AdminSanhController : Controller
             });
         }
 
-        if (string.IsNullOrWhiteSpace(model.MaSanh))
+        if (string.IsNullOrWhiteSpace(model.HallCode))
         {
             return Json(new
             {
@@ -154,7 +149,7 @@ public sealed class AdminSanhController : Controller
             });
         }
 
-        if (string.IsNullOrWhiteSpace(model.TenSanh))
+        if (string.IsNullOrWhiteSpace(model.HallName))
         {
             return Json(new
             {
@@ -163,7 +158,7 @@ public sealed class AdminSanhController : Controller
             });
         }
 
-        if (model.SucChuaToiDa <= 0)
+        if (model.MaximumCapacity <= 0)
         {
             return Json(new
             {
@@ -172,8 +167,8 @@ public sealed class AdminSanhController : Controller
             });
         }
 
-        if (model.SucChuaToiThieu.HasValue &&
-            model.SucChuaToiThieu.Value > model.SucChuaToiDa)
+        if (model.MinimumCapacity.HasValue &&
+            model.MinimumCapacity.Value > model.MaximumCapacity)
         {
             return Json(new
             {
@@ -182,7 +177,7 @@ public sealed class AdminSanhController : Controller
             });
         }
 
-        if (model.GiaThue < 0)
+        if (model.RentalPrice < 0)
         {
             return Json(new
             {
@@ -191,9 +186,9 @@ public sealed class AdminSanhController : Controller
             });
         }
 
-        model.TrangThai = "Hoạt động";
+        model.Status = "Hoạt động";
 
-        var result = await _apiClient.CreateSanhAsync(
+        var result = await _apiClient.CreateHallAsync(
             model,
             accessToken,
             cancellationToken);
@@ -213,12 +208,13 @@ public sealed class AdminSanhController : Controller
             message = "Thêm sảnh tiệc thành công."
         });
     }
-    [HttpPost("admin/quan-ly-sanh/sua/{id}")]
+
+    [HttpPost("admin/quan-ly-sanh/sua/{hallId:int}")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> UpdateSanh(
-    int id,
-    SanhTiecDto model,
-    CancellationToken cancellationToken)
+    public async Task<IActionResult> UpdateHall(
+        int hallId,
+        HallDto model,
+        CancellationToken cancellationToken)
     {
         var accessToken = Request.Cookies[ApiTokenCookie];
 
@@ -231,7 +227,7 @@ public sealed class AdminSanhController : Controller
             });
         }
 
-        if (string.IsNullOrWhiteSpace(model.MaSanh))
+        if (string.IsNullOrWhiteSpace(model.HallCode))
         {
             return Json(new
             {
@@ -240,7 +236,7 @@ public sealed class AdminSanhController : Controller
             });
         }
 
-        if (string.IsNullOrWhiteSpace(model.TenSanh))
+        if (string.IsNullOrWhiteSpace(model.HallName))
         {
             return Json(new
             {
@@ -249,7 +245,7 @@ public sealed class AdminSanhController : Controller
             });
         }
 
-        if (model.SucChuaToiDa <= 0)
+        if (model.MaximumCapacity <= 0)
         {
             return Json(new
             {
@@ -258,8 +254,8 @@ public sealed class AdminSanhController : Controller
             });
         }
 
-        if (model.SucChuaToiThieu.HasValue &&
-            model.SucChuaToiThieu.Value > model.SucChuaToiDa)
+        if (model.MinimumCapacity.HasValue &&
+            model.MinimumCapacity.Value > model.MaximumCapacity)
         {
             return Json(new
             {
@@ -268,7 +264,7 @@ public sealed class AdminSanhController : Controller
             });
         }
 
-        if (model.GiaThue < 0)
+        if (model.RentalPrice < 0)
         {
             return Json(new
             {
@@ -277,10 +273,10 @@ public sealed class AdminSanhController : Controller
             });
         }
 
-        model.SanhTiecID = id;
+        model.HallId = hallId;
 
-        var result = await _apiClient.UpdateSanhAsync(
-            id,
+        var result = await _apiClient.UpdateHallAsync(
+            hallId,
             model,
             accessToken,
             cancellationToken);
@@ -300,12 +296,13 @@ public sealed class AdminSanhController : Controller
             message = "Cập nhật sảnh thành công."
         });
     }
-    [HttpPost("admin/quan-ly-sanh/trang-thai/{id}")]
+
+    [HttpPost("admin/quan-ly-sanh/status/{hallId:int}")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> UpdateTrangThaiSanh(
-    int id,
-    string trangThai,
-    CancellationToken cancellationToken)
+    public async Task<IActionResult> UpdateHallStatus(
+        int hallId,
+        string status,
+        CancellationToken cancellationToken)
     {
         var accessToken = Request.Cookies[ApiTokenCookie];
 
@@ -318,14 +315,14 @@ public sealed class AdminSanhController : Controller
             });
         }
 
-        var trangThaiHopLe = new[]
+        var validStatuses = new[]
         {
-        "Hoạt động",
-        "Bảo trì",
-        "Ngừng hoạt động"
-    };
+            "Hoạt động",
+            "Bảo trì",
+            "Ngừng hoạt động"
+        };
 
-        if (!trangThaiHopLe.Contains(trangThai))
+        if (!validStatuses.Contains(status))
         {
             return Json(new
             {
@@ -334,9 +331,9 @@ public sealed class AdminSanhController : Controller
             });
         }
 
-        var result = await _apiClient.UpdateTrangThaiSanhAsync(
-            id,
-            trangThai,
+        var result = await _apiClient.UpdateHallStatusAsync(
+            hallId,
+            status,
             accessToken,
             cancellationToken);
 
@@ -355,11 +352,12 @@ public sealed class AdminSanhController : Controller
             message = "Cập nhật trạng thái sảnh thành công."
         });
     }
-    [HttpPost("admin/quan-ly-sanh/xoa/{id}")]
+
+    [HttpPost("admin/quan-ly-sanh/xoa/{hallId:int}")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> DeleteSanh(
-    int id,
-    CancellationToken cancellationToken)
+    public async Task<IActionResult> DeleteHall(
+        int hallId,
+        CancellationToken cancellationToken)
     {
         var accessToken = Request.Cookies[ApiTokenCookie];
 
@@ -372,8 +370,8 @@ public sealed class AdminSanhController : Controller
             });
         }
 
-        var result = await _apiClient.DeleteSanhAsync(
-            id,
+        var result = await _apiClient.DeleteHallAsync(
+            hallId,
             accessToken,
             cancellationToken);
 

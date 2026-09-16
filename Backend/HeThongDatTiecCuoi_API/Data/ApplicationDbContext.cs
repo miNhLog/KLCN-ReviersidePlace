@@ -10,12 +10,12 @@ public sealed class ApplicationDbContext : DbContext
     {
     }
 
-    public DbSet<SanhTiec> SanhTiec => Set<SanhTiec>();
+    public DbSet<Hall> Halls => Set<Hall>();
     public DbSet<VaiTro> VaiTro => Set<VaiTro>();
     public DbSet<NguoiDung> NguoiDung => Set<NguoiDung>();
     public DbSet<KhachHang> KhachHang => Set<KhachHang>();
     public DbSet<NhanVien> NhanVien => Set<NhanVien>();
-    public DbSet<LichSanh> LichSanh => Set<LichSanh>();
+    public DbSet<HallSchedule> HallSchedules => Set<HallSchedule>();
     public DbSet<DatTiec> DatTiec => Set<DatTiec>();
     public DbSet<ThucDon> ThucDon => Set<ThucDon>();
 
@@ -81,47 +81,61 @@ public sealed class ApplicationDbContext : DbContext
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
-        modelBuilder.Entity<SanhTiec>(entity =>
+        modelBuilder.Entity<Hall>(entity =>
         {
             entity.ToTable("SanhTiec");
-            entity.HasKey(x => x.SanhTiecID);
-            entity.Property(x => x.MaSanh).HasMaxLength(50).IsRequired();
-            entity.Property(x => x.TenSanh).HasMaxLength(150).IsRequired();
-            entity.Property(x => x.GiaThue).HasColumnType("decimal(18,2)");
-            entity.Property(x => x.HinhAnh).HasMaxLength(500);
-            entity.Property(x => x.TrangThai).HasMaxLength(50).IsRequired();
+            entity.HasKey(x => x.HallId);
+            entity.Property(x => x.HallId).HasColumnName("SanhTiecID");
+            entity.Property(x => x.HallCode).HasColumnName("MaSanh").HasMaxLength(50).IsRequired();
+            entity.Property(x => x.HallName).HasColumnName("TenSanh").HasMaxLength(150).IsRequired();
+            entity.Property(x => x.MinimumCapacity).HasColumnName("SucChuaToiThieu");
+            entity.Property(x => x.MaximumCapacity).HasColumnName("SucChuaToiDa");
+            entity.Property(x => x.RentalPrice).HasColumnName("GiaThue").HasColumnType("decimal(18,2)");
+            entity.Property(x => x.Description).HasColumnName("MoTa");
+            entity.Property(x => x.ImageUrl).HasColumnName("HinhAnh").HasMaxLength(500);
+            entity.Property(x => x.Status).HasColumnName("TrangThai").HasMaxLength(50).IsRequired();
         });
 
-        modelBuilder.Entity<LichSanh>(entity =>
+        modelBuilder.Entity<HallSchedule>(entity =>
         {
             entity.ToTable("LichSanh");
 
-            entity.HasKey(x => x.LichSanhID);
+            entity.HasKey(x => x.HallScheduleId);
 
-            entity.Property(x => x.Ngay)
+            entity.Property(x => x.HallScheduleId)
+                .HasColumnName("LichSanhID");
+
+            entity.Property(x => x.HallId)
+                .HasColumnName("SanhTiecID");
+
+            entity.Property(x => x.Date)
+                .HasColumnName("Ngay")
                 .HasColumnType("date");
 
-            entity.Property(x => x.CaToChuc)
+            entity.Property(x => x.Shift)
+                .HasColumnName("CaToChuc")
                 .HasMaxLength(50)
                 .IsRequired();
 
-            entity.Property(x => x.TrangThai)
+            entity.Property(x => x.Status)
+                .HasColumnName("TrangThai")
                 .HasMaxLength(50)
                 .IsRequired();
 
-            entity.Property(x => x.GhiChu)
+            entity.Property(x => x.Notes)
+                .HasColumnName("GhiChu")
                 .HasMaxLength(500);
 
             entity.HasIndex(x => new
             {
-                x.SanhTiecID,
-                x.Ngay,
-                x.CaToChuc
+                x.HallId,
+                x.Date,
+                x.Shift
             }).IsUnique();
 
-            entity.HasOne(x => x.SanhTiec)
+            entity.HasOne(x => x.Hall)
                 .WithMany()
-                .HasForeignKey(x => x.SanhTiecID)
+                .HasForeignKey(x => x.HallId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
         modelBuilder.Entity<DatTiec>(entity =>
@@ -173,9 +187,12 @@ public sealed class ApplicationDbContext : DbContext
                 .HasForeignKey(x => x.KhachHangID)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            entity.HasOne(x => x.LichSanh)
+            entity.Property(x => x.HallScheduleId)
+                .HasColumnName("LichSanhID");
+
+            entity.HasOne(x => x.HallSchedule)
                 .WithMany()
-                .HasForeignKey(x => x.LichSanhID)
+                .HasForeignKey(x => x.HallScheduleId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
         modelBuilder.Entity<ThucDon>(entity =>

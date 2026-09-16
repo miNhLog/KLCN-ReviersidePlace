@@ -26,7 +26,7 @@ public sealed class AuthController : Controller
         {
             if (User.IsInRole("Quản trị viên"))
             {
-                return RedirectToAction("Index", "AdminSanh");
+                return RedirectToAction("Index", "AdminHall");
             }
 
             return RedirectToAction("Dashboard", "Home");
@@ -60,7 +60,7 @@ public sealed class AuthController : Controller
 
         if (result.Value.User.VaiTro == "Quản trị viên")
         {
-            return RedirectToAction("Index", "AdminSanh");
+            return RedirectToAction("Index", "AdminHall");
         }
 
         return RedirectToAction("Dashboard", "Home");
@@ -74,7 +74,7 @@ public sealed class AuthController : Controller
         {
             if (User.IsInRole("Quản trị viên"))
             {
-                return RedirectToAction("Index", "AdminSanh");
+                return RedirectToAction("Index", "AdminHall");
             }
 
             return RedirectToAction("Dashboard", "Home");
