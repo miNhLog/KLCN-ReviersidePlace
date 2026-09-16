@@ -82,9 +82,10 @@
                 </a>
 
 
-                <button type="button"
-                        data-tooltip="Thực đơn & Ẩm thực"
-                        class="menu-item developing">
+                <a asp-controller="AdminThucDon"
+                   asp-action="Index"
+                   data-tooltip="Thực đơn & Ẩm thực"
+                   class="menu-item @(activeMenu == "ThucDon" ? "active" : "")">
 
                     <i class="fa-solid fa-utensils"></i>
 
@@ -92,7 +93,7 @@
                         Thực đơn & Ẩm thực
                     </span>
 
-                </button>
+                </a>
 
 
                 <button type="button"
