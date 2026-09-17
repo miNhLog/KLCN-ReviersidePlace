@@ -85,6 +85,11 @@ public sealed class AdminMenuController : Controller
         {
             model.Dishes =
                 dishResult.Value;
+
+            if (string.IsNullOrWhiteSpace(category))
+            {
+                model.DishesForCounts = dishResult.Value;
+            }
         }
         else
         {
@@ -92,6 +97,24 @@ public sealed class AdminMenuController : Controller
                 string.Empty,
                 dishResult.Error
                 ?? "Không thể tải danh sách món ăn.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(category))
+        {
+            var dishCountResult =
+                await _apiClient.GetDishesAsync(
+                    dishKeyword,
+                    null,
+                    dishStatus,
+                    accessToken,
+                    cancellationToken);
+
+            if (dishCountResult.Succeeded &&
+                dishCountResult.Value is not null)
+            {
+                model.DishesForCounts =
+                    dishCountResult.Value;
+            }
         }
 
         // Danh sách riêng cho dropdown thêm món.

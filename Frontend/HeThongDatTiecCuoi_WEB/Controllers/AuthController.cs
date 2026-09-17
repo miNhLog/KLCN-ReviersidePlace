@@ -21,10 +21,25 @@ public sealed class AuthController : Controller
 
     [HttpGet("dang-nhap")]
     [AllowAnonymous]
-    public IActionResult Login(string? returnUrl = null)
+    public async Task<IActionResult> Login(string? returnUrl = null)
     {
         if (User.Identity?.IsAuthenticated == true)
         {
+            var accessToken = Request.Cookies[ApiTokenCookie];
+
+            if (string.IsNullOrWhiteSpace(accessToken))
+            {
+                await HttpContext.SignOutAsync(
+                    CookieAuthenticationDefaults.AuthenticationScheme);
+
+                Response.Cookies.Delete(ApiTokenCookie);
+
+                return View(new LoginViewModel
+                {
+                    ReturnUrl = returnUrl
+                });
+            }
+
             if (User.IsInRole(RoleNames.Admin))
             {
                 return RedirectToAction("Index", "AdminHall");
@@ -33,7 +48,10 @@ public sealed class AuthController : Controller
             return RedirectToAction("Dashboard", "Home");
         }
 
-        return View(new LoginViewModel { ReturnUrl = returnUrl });
+        return View(new LoginViewModel
+        {
+            ReturnUrl = returnUrl
+        });
     }
 
     [HttpPost("dang-nhap")]
