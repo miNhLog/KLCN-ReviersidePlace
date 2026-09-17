@@ -4,6 +4,7 @@ using HeThongDatTiecCuoi_API.Constants;
 using HeThongDatTiecCuoi_API.Data;
 using HeThongDatTiecCuoi_API.DTOs.AdminAccount;
 using HeThongDatTiecCuoi_API.DTOs.Common;
+using HeThongDatTiecCuoi_API.Helpers;
 using HeThongDatTiecCuoi_API.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -232,19 +233,23 @@ public sealed class AdminAccountController : ControllerBase
         var fullName = request.FullName.Trim();
         var phoneNumber = string.IsNullOrWhiteSpace(request.PhoneNumber)
             ? null
-            : request.PhoneNumber.Trim();
+            : PhoneNumberHelper.Normalize(request.PhoneNumber);
 
         if (!string.IsNullOrWhiteSpace(phoneNumber))
         {
-            var phoneNumberExists = await _context.Employees.AnyAsync(
-                employee => employee.PhoneNumber == phoneNumber,
-                cancellationToken);
+            var phoneNumberExists =
+                await _context.Employees.AnyAsync(
+                    employee => employee.PhoneNumber == phoneNumber,
+                    cancellationToken) ||
+                await _context.Customers.AnyAsync(
+                    customer => customer.PhoneNumber == phoneNumber,
+                    cancellationToken);
 
             if (phoneNumberExists)
             {
                 return Conflict(new
                 {
-                    message = "Số điện thoại này đã được sử dụng bởi nhân viên khác."
+                    message = "Số điện thoại đã được sử dụng."
                 });
             }
         }
@@ -381,21 +386,25 @@ public sealed class AdminAccountController : ControllerBase
         var fullName = request.FullName.Trim();
         var phoneNumber = string.IsNullOrWhiteSpace(request.PhoneNumber)
             ? null
-            : request.PhoneNumber.Trim();
+            : PhoneNumberHelper.Normalize(request.PhoneNumber);
 
         if (!string.IsNullOrWhiteSpace(phoneNumber))
         {
-            var phoneNumberExists = await _context.Employees.AnyAsync(
-                employee =>
-                    employee.PhoneNumber == phoneNumber &&
-                    employee.UserId != userId,
-                cancellationToken);
+            var phoneNumberExists =
+                await _context.Employees.AnyAsync(
+                    employee =>
+                        employee.PhoneNumber == phoneNumber &&
+                        employee.UserId != userId,
+                    cancellationToken) ||
+                await _context.Customers.AnyAsync(
+                    customer => customer.PhoneNumber == phoneNumber,
+                    cancellationToken);
 
             if (phoneNumberExists)
             {
                 return Conflict(new
                 {
-                    message = "Số điện thoại này đã được sử dụng bởi nhân viên khác."
+                    message = "Số điện thoại đã được sử dụng."
                 });
             }
         }

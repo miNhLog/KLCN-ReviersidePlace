@@ -9,7 +9,7 @@ public sealed class RegisterRequest
     public string FullName { get; init; } = string.Empty;
 
     [Required(ErrorMessage = "Vui lòng nhập số điện thoại.")]
-    [RegularExpression(@"^(?:\+84|0)(?:[\s.-]?\d){9}$", ErrorMessage = "Số điện thoại Việt Nam không hợp lệ.")]
+    [RegularExpression(@"^(?:\+?84|0)(?:[\s.-]?\d){9}$", ErrorMessage = "Số điện thoại Việt Nam không hợp lệ.")]
     public string PhoneNumber { get; init; } = string.Empty;
 
     [Required(ErrorMessage = "Vui lòng nhập email.")]

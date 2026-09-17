@@ -3,6 +3,7 @@ using HeThongDatTiecCuoi_API.Constants.StatusCodes;
 using HeThongDatTiecCuoi_API.Constants;
 using HeThongDatTiecCuoi_API.Data;
 using HeThongDatTiecCuoi_API.DTOs.Auth;
+using HeThongDatTiecCuoi_API.Helpers;
 using HeThongDatTiecCuoi_API.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -33,7 +34,7 @@ public sealed partial class AuthService : IAuthService
         CancellationToken cancellationToken)
     {
         var email = request.Email.Trim().ToLowerInvariant();
-        var phone = NormalizePhone(request.PhoneNumber);
+        var phone = PhoneNumberHelper.Normalize(request.PhoneNumber);
 
         if (!StrongPasswordRegex().IsMatch(request.Password))
         {
@@ -49,7 +50,15 @@ public sealed partial class AuthService : IAuthService
                 StatusCodes.Status409Conflict);
         }
 
-        if (await _db.Customers.AnyAsync(x => x.PhoneNumber == phone, cancellationToken))
+        var phoneExists =
+            await _db.Customers.AnyAsync(
+                customer => customer.PhoneNumber == phone,
+                cancellationToken) ||
+            await _db.Employees.AnyAsync(
+                employee => employee.PhoneNumber == phone,
+                cancellationToken);
+
+        if (phoneExists)
         {
             return ServiceResult<AuthResponse>.Failure(
                 "Số điện thoại đã được sử dụng.",
@@ -148,7 +157,7 @@ public sealed partial class AuthService : IAuthService
         }
         else
         {
-            var phone = NormalizePhone(identifier);
+            var phone = PhoneNumberHelper.Normalize(identifier);
             user = isStaffLogin
                 ? await query.SingleOrDefaultAsync(x => x.Employee != null && x.Employee.PhoneNumber == phone, cancellationToken)
                 : await query.SingleOrDefaultAsync(x => x.Customer != null && x.Customer.PhoneNumber == phone, cancellationToken);
@@ -241,17 +250,6 @@ public sealed partial class AuthService : IAuthService
         ServiceResult<AuthResponse>.Failure(
             "Thông tin đăng nhập không chính xác.",
             StatusCodes.Status401Unauthorized);
-
-    private static string NormalizePhone(string value)
-    {
-        var digits = NonDigitRegex().Replace(value, string.Empty);
-        return digits.StartsWith("84") && digits.Length == 11
-            ? $"0{digits[2..]}"
-            : digits;
-    }
-
-    [GeneratedRegex(@"[^0-9]")]
-    private static partial Regex NonDigitRegex();
 
     [GeneratedRegex(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,100}$")]
     private static partial Regex StrongPasswordRegex();

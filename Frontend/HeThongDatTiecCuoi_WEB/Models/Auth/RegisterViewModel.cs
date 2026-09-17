@@ -10,7 +10,7 @@ public sealed class RegisterViewModel
     public string FullName { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "Vui lòng nhập số điện thoại.")]
-    [RegularExpression(@"^(?:\+84|0)(?:[\s.-]?\d){9}$", ErrorMessage = "Số điện thoại không hợp lệ.")]
+    [RegularExpression(@"^(?:\+?84|0)(?:[\s.-]?\d){9}$", ErrorMessage = "Số điện thoại không hợp lệ.")]
     [Display(Name = "Số điện thoại")]
     public string PhoneNumber { get; set; } = string.Empty;
 
