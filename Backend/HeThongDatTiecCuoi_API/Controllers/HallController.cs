@@ -1,4 +1,6 @@
+using HeThongDatTiecCuoi_API.Constants.StatusCodes;
 using HeThongDatTiecCuoi_API.Data;
+using HeThongDatTiecCuoi_API.DTOs.Common;
 using HeThongDatTiecCuoi_API.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -99,9 +101,9 @@ public sealed class HallController : ControllerBase
             });
         }
 
-        if (hall.Status != "Hoạt động" &&
-            hall.Status != "Bảo trì" &&
-            hall.Status != "Ngừng hoạt động")
+        if (hall.Status != HallStatusCodes.Active &&
+            hall.Status != HallStatusCodes.Maintenance &&
+            hall.Status != HallStatusCodes.Inactive)
         {
             return BadRequest(new
             {
@@ -169,9 +171,9 @@ public sealed class HallController : ControllerBase
             });
         }
 
-        if (hall.Status != "Hoạt động" &&
-            hall.Status != "Bảo trì" &&
-            hall.Status != "Ngừng hoạt động")
+        if (hall.Status != HallStatusCodes.Active &&
+            hall.Status != HallStatusCodes.Maintenance &&
+            hall.Status != HallStatusCodes.Inactive)
         {
             return BadRequest(new
             {
@@ -196,8 +198,10 @@ public sealed class HallController : ControllerBase
     [HttpPatch("{hallId:int}/status")]
     public async Task<IActionResult> UpdateHallStatus(
         int hallId,
-        [FromBody] string status)
+        [FromBody] StatusRequest request)
     {
+        var status = request.Status?.Trim();
+
         var hall = await _context.Halls.FindAsync(hallId);
 
         if (hall is null)
@@ -208,9 +212,9 @@ public sealed class HallController : ControllerBase
             });
         }
 
-        if (status != "Hoạt động" &&
-            status != "Bảo trì" &&
-            status != "Ngừng hoạt động")
+        if (status != HallStatusCodes.Active &&
+            status != HallStatusCodes.Maintenance &&
+            status != HallStatusCodes.Inactive)
         {
             return BadRequest(new
             {
@@ -242,7 +246,7 @@ public sealed class HallController : ControllerBase
             });
         }
 
-        if (hall.Status == "Hoạt động")
+        if (hall.Status == HallStatusCodes.Active)
         {
             return BadRequest(new
             {

@@ -1,4 +1,5 @@
 ﻿using HeThongDatTiecCuoi_API.Data;
+using HeThongDatTiecCuoi_API.Constants.StatusCodes;
 using HeThongDatTiecCuoi_API.DTOs.AdminMonAn;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -124,7 +125,7 @@ public sealed class AdminMonAnController : ControllerBase
             TenMon = request.TenMon.Trim(),
             NhomMon = request.NhomMon.Trim(),
             HinhAnh = null,
-            TrangThai = "Đang phục vụ"
+            TrangThai = DishStatusCodes.Active
         };
 
         _context.MonAn.Add(monAn);
@@ -220,9 +221,9 @@ public sealed class AdminMonAnController : ControllerBase
 
         var cacTrangThaiHopLe = new[]
         {
-        "Đang phục vụ",
-        "Ngừng phục vụ"
-    };
+            DishStatusCodes.Active,
+            DishStatusCodes.Inactive
+        };
 
         if (string.IsNullOrWhiteSpace(request.TrangThai) ||
             !cacTrangThaiHopLe.Contains(request.TrangThai.Trim()))

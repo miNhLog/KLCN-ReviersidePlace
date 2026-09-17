@@ -1,4 +1,5 @@
 using HeThongDatTiecCuoi_API.Data;
+using HeThongDatTiecCuoi_API.Constants.StatusCodes;
 using HeThongDatTiecCuoi_API.Models;
 using HeThongDatTiecCuoi_API.Options;
 using Microsoft.AspNetCore.Identity;
@@ -79,7 +80,7 @@ public sealed class DevelopmentAuthSeeder
                 Email = normalizedEmail,
                 Role = role,
                 RoleId = role.RoleId,
-                Status = "Hoạt động",
+                Status = AccountStatusCodes.Active,
                 CreatedAt = DateTime.Now
             };
             _db.Users.Add(user);
@@ -88,7 +89,7 @@ public sealed class DevelopmentAuthSeeder
         {
             user.Role = role;
             user.RoleId = role.RoleId;
-            user.Status = "Hoạt động";
+            user.Status = AccountStatusCodes.Active;
         }
 
         user.PasswordHash = _hasher.HashPassword(user, password);
@@ -101,7 +102,7 @@ public sealed class DevelopmentAuthSeeder
                 EmployeeCode = "NV001",
                 FullName = "Nhân viên tư vấn",
                 PhoneNumber = "0912345678",
-                Status = "Đang làm việc"
+                Status = EmployeeStatusCodes.Active
             };
         }
 

@@ -1,3 +1,4 @@
+using HeThongDatTiecCuoi_API.Constants.StatusCodes;
 using HeThongDatTiecCuoi_API.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -228,7 +229,7 @@ public sealed class ApplicationDbContext : DbContext
             entity.Property(x => x.TrangThai)
                 .HasMaxLength(50)
                 .IsRequired()
-                .HasDefaultValue("Áp dụng");
+                .HasDefaultValue(MenuStatusCodes.Active);
 
             entity.HasIndex(x => x.MaThucDon)
                 .IsUnique();
@@ -258,7 +259,7 @@ public sealed class ApplicationDbContext : DbContext
             entity.Property(x => x.TrangThai)
                 .HasMaxLength(50)
                 .IsRequired()
-                .HasDefaultValue("Đang phục vụ");
+                .HasDefaultValue(DishStatusCodes.Active);
 
             entity.HasIndex(x => x.MaMon)
                 .IsUnique();

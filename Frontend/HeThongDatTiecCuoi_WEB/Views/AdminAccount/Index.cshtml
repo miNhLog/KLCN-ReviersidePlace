@@ -84,7 +84,7 @@
 
                 <strong>
                     @Model.Accounts.Count(
-                    x => x.Status == "Hoạt động"
+                    x => x.Status == AccountStatusCodes.Active
                                         )
                 </strong>
             </div>
@@ -101,7 +101,7 @@
 
                 <strong>
                     @Model.Accounts.Count(
-                                        x => x.Status == "Tạm khóa"
+                                        x => x.Status == AccountStatusCodes.Suspended
                                         )
                 </strong>
             </div>
@@ -118,7 +118,7 @@
 
                 <strong>
                     @Model.Accounts.Count(
-                                        x => x.Status == "Ngừng hoạt động"
+                                        x => x.Status == AccountStatusCodes.Inactive
                                         )
                 </strong>
             </div>
@@ -184,43 +184,43 @@
                     Tất cả trạng thái
                 </option>
 
-                @if (Model.Status == "Hoạt động")
+                @if (Model.Status == AccountStatusCodes.Active)
                 {
-                    <option value="Hoạt động" selected>
+                    <option value="@AccountStatusCodes.Active" selected>
                         Hoạt động
                     </option>
                 }
                 else
                 {
-                    <option value="Hoạt động">
+                    <option value="@AccountStatusCodes.Active">
                         Hoạt động
                     </option>
                 }
 
 
-                @if (Model.Status == "Tạm khóa")
+                @if (Model.Status == AccountStatusCodes.Suspended)
                 {
-                    <option value="Tạm khóa" selected>
+                    <option value="@AccountStatusCodes.Suspended" selected>
                         Tạm khóa
                     </option>
                 }
                 else
                 {
-                    <option value="Tạm khóa">
+                    <option value="@AccountStatusCodes.Suspended">
                         Tạm khóa
                     </option>
                 }
 
 
-                @if (Model.Status == "Ngừng hoạt động")
+                @if (Model.Status == AccountStatusCodes.Inactive)
                 {
-                    <option value="Ngừng hoạt động" selected>
+                    <option value="@AccountStatusCodes.Inactive" selected>
                         Ngừng hoạt động
                     </option>
                 }
                 else
                 {
-                    <option value="Ngừng hoạt động">
+                    <option value="@AccountStatusCodes.Inactive">
                         Ngừng hoạt động
                     </option>
                 }
@@ -290,9 +290,9 @@
                 @foreach (var account in adminAccounts)
                 {
                     var statusClass =
-                    account.Status == "Hoạt động"
+                    account.Status == AccountStatusCodes.Active
                     ? "account-status-active"
-                    : account.Status == "Tạm khóa"
+                    : account.Status == AccountStatusCodes.Suspended
                     ? "account-status-locked"
                     : "account-status-inactive";
 
@@ -327,7 +327,7 @@
 
                             <span class="account-status @statusClass">
                                 <i class="fa-solid fa-circle"></i>
-                                @account.Status
+                                @StatusDisplayNames.GetAccountStatusName(account.Status)
                             </span>
 
                             <span class="created-date">
@@ -412,9 +412,9 @@
                         @foreach (var account in employeeAccounts)
                         {
                             var statusClass =
-                            account.Status == "Hoạt động"
+                            account.Status == AccountStatusCodes.Active
                             ? "account-status-active"
-                            : account.Status == "Tạm khóa"
+                            : account.Status == AccountStatusCodes.Suspended
                             ? "account-status-locked"
                             : "account-status-inactive";
 
@@ -471,7 +471,7 @@
 
                                         <i class="fa-solid fa-circle"></i>
 
-                                        @account.Status
+                                        @StatusDisplayNames.GetAccountStatusName(account.Status)
 
                                     </span>
                                 </td>
@@ -482,18 +482,18 @@
                                             data-user-id="@account.UserId"
                                             data-old-value="@account.EmployeeStatus">
 
-                                        <option value="Đang làm việc"
-                                                selected="@(account.EmployeeStatus == "Đang làm việc")">
+                                        <option value="@EmployeeStatusCodes.Active"
+                                                selected="@(account.EmployeeStatus == EmployeeStatusCodes.Active)">
                                             Đang làm việc
                                         </option>
 
-                                        <option value="Tạm nghỉ"
-                                                selected="@(account.EmployeeStatus == "Tạm nghỉ")">
+                                        <option value="@EmployeeStatusCodes.OnLeave"
+                                                selected="@(account.EmployeeStatus == EmployeeStatusCodes.OnLeave)">
                                             Tạm nghỉ
                                         </option>
 
-                                        <option value="Đã nghỉ việc"
-                                                selected="@(account.EmployeeStatus == "Đã nghỉ việc")">
+                                        <option value="@EmployeeStatusCodes.Terminated"
+                                                selected="@(account.EmployeeStatus == EmployeeStatusCodes.Terminated)">
                                             Đã nghỉ việc
                                         </option>
 
@@ -627,9 +627,9 @@
                         @foreach (var account in customerAccounts)
                         {
                             var statusClass =
-                            account.Status == "Hoạt động"
+                            account.Status == AccountStatusCodes.Active
                             ? "account-status-active"
-                            : account.Status == "Tạm khóa"
+                            : account.Status == AccountStatusCodes.Suspended
                             ? "account-status-locked"
                             : "account-status-inactive";
 
@@ -677,7 +677,7 @@
 
                                         <i class="fa-solid fa-circle"></i>
 
-                                        @account.Status
+                                        @StatusDisplayNames.GetAccountStatusName(account.Status)
 
                                     </span>
 
@@ -1096,15 +1096,15 @@
                         name="status"
                         required>
 
-                    <option value="Hoạt động">
+                    <option value="@AccountStatusCodes.Active">
                         Hoạt động
                     </option>
 
-                    <option value="Tạm khóa">
+                    <option value="@AccountStatusCodes.Suspended">
                         Tạm khóa
                     </option>
 
-                    <option value="Ngừng hoạt động">
+                    <option value="@AccountStatusCodes.Inactive">
                         Ngừng hoạt động
                     </option>
 

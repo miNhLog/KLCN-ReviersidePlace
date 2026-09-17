@@ -1,4 +1,5 @@
 ﻿using HeThongDatTiecCuoi_API.Data;
+using HeThongDatTiecCuoi_API.Constants.StatusCodes;
 using HeThongDatTiecCuoi_API.DTOs.AdminThucDon;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -104,7 +105,7 @@ public sealed class AdminThucDonController : ControllerBase
                 ? null
                 : request.MoTa.Trim(),
             GiaMoiBan = request.GiaMoiBan,
-            TrangThai = "Áp dụng"
+            TrangThai = MenuStatusCodes.Active
         };
 
         _context.ThucDon.Add(thucDon);
@@ -196,9 +197,9 @@ public sealed class AdminThucDonController : ControllerBase
 
         var cacTrangThaiHopLe = new[]
         {
-        "Áp dụng",
-        "Ngừng áp dụng"
-    };
+            MenuStatusCodes.Active,
+            MenuStatusCodes.Inactive
+        };
 
         if (string.IsNullOrWhiteSpace(request.TrangThai) ||
             !cacTrangThaiHopLe.Contains(request.TrangThai.Trim()))
@@ -309,7 +310,7 @@ public sealed class AdminThucDonController : ControllerBase
         }
 
         // 3. Chỉ được thêm món đang phục vụ
-        if (monAn.TrangThai != "Đang phục vụ")
+        if (monAn.TrangThai != DishStatusCodes.Active)
         {
             return BadRequest(new
             {

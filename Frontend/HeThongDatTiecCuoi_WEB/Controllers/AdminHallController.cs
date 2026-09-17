@@ -1,3 +1,4 @@
+using HeThongDatTiecCuoi_WEB.Constants.StatusCodes;
 using HeThongDatTiecCuoi_WEB.Models.AdminHall;
 using HeThongDatTiecCuoi_WEB.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -92,7 +93,8 @@ public sealed class AdminHallController : Controller
             });
         }
 
-        if (status != "Trống" && status != "Tạm khóa")
+        if (status != HallScheduleStatusCodes.Available &&
+            status != HallScheduleStatusCodes.Locked)
         {
             return Json(new
             {
@@ -186,7 +188,7 @@ public sealed class AdminHallController : Controller
             });
         }
 
-        model.Status = "Hoạt động";
+        model.Status = HallStatusCodes.Active;
 
         var result = await _apiClient.CreateHallAsync(
             model,
@@ -317,9 +319,9 @@ public sealed class AdminHallController : Controller
 
         var validStatuses = new[]
         {
-            "Hoạt động",
-            "Bảo trì",
-            "Ngừng hoạt động"
+            HallStatusCodes.Active,
+            HallStatusCodes.Maintenance,
+            HallStatusCodes.Inactive
         };
 
         if (!validStatuses.Contains(status))

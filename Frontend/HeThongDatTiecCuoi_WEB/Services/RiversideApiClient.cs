@@ -1,6 +1,7 @@
 using HeThongDatTiecCuoi_WEB.Models.AdminAccount;
 using HeThongDatTiecCuoi_WEB.Models.AdminHall;
 using HeThongDatTiecCuoi_WEB.Models.Auth;
+using HeThongDatTiecCuoi_WEB.Models.Common;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -95,13 +96,20 @@ public sealed class RiversideApiClient : IRiversideApiClient
         int hallId,
         string status,
         string accessToken,
-        CancellationToken cancellationToken) =>
-        SendAsync<ActionResponseDto>(
+        CancellationToken cancellationToken)
+    {
+        var request = new StatusRequest
+        {
+            Status = status
+        };
+
+        return SendAsync<ActionResponseDto>(
             HttpMethod.Patch,
             $"api/halls/{hallId}/status",
-            status,
+            request,
             accessToken,
             cancellationToken);
+    }
 
     public Task<ApiCallResult<ActionResponseDto>> DeleteHallAsync(
         int hallId,
@@ -140,13 +148,20 @@ public sealed class RiversideApiClient : IRiversideApiClient
         int hallScheduleId,
         string status,
         string accessToken,
-        CancellationToken cancellationToken) =>
-        SendAsync<ActionResponseDto>(
+        CancellationToken cancellationToken)
+    {
+        var request = new StatusRequest
+        {
+            Status = status
+        };
+
+        return SendAsync<ActionResponseDto>(
             HttpMethod.Patch,
             $"api/hall-schedules/{hallScheduleId}/status",
-            status,
+            request,
             accessToken,
             cancellationToken);
+    }
 
     // ======================================================
     // ADMIN - QUẢN LÝ TÀI KHOẢN
@@ -243,10 +258,15 @@ public sealed class RiversideApiClient : IRiversideApiClient
             string accessToken,
             CancellationToken cancellationToken)
     {
+        var request = new StatusRequest
+        {
+            Status = status
+        };
+
         return SendAsync<AccountActionResponse>(
             HttpMethod.Patch,
             $"api/admin/accounts/{userId}/status",
-            status,
+            request,
             accessToken,
             cancellationToken);
     }
@@ -315,10 +335,15 @@ public sealed class RiversideApiClient : IRiversideApiClient
         string accessToken,
         CancellationToken cancellationToken)
     {
+        var request = new StatusRequest
+        {
+            Status = status
+        };
+
         return await SendAsync<AccountActionResponse>(
             HttpMethod.Patch,
             $"api/admin/accounts/employees/{userId}/status",
-            status,
+            request,
             accessToken,
             cancellationToken
         );

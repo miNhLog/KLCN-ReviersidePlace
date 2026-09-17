@@ -10,12 +10,12 @@
 
     var tongThucDon = Model.DanhSachThucDon.Count;
     var thucDonApDung = Model.DanhSachThucDon.Count(
-        x => x.TrangThai == "Áp dụng"
+        x => x.TrangThai == MenuStatusCodes.Active
     );
 
     var tongMonAn = Model.DanhSachMonAn.Count;
     var monDangPhucVu = Model.DanhSachMonAn.Count(
-        x => x.TrangThai == "Đang phục vụ"
+        x => x.TrangThai == DishStatusCodes.Active
     );
 
     var giaBinhQuan = tongThucDon > 0
@@ -358,7 +358,7 @@
 
 
                     <a class="food-pill
-                        @(Model.TrangThaiThucDon == "Áp dụng"
+                        @(Model.TrangThaiThucDon == MenuStatusCodes.Active
                            ? "active"
                            : "")"
                        href="@Url.Action(
@@ -368,7 +368,7 @@
                                                   {
                                                       thucDonId = Model.ThucDonDangChonID,
                                                       tuKhoaThucDon = Model.TuKhoaThucDon,
-                                                      trangThaiThucDon = "Áp dụng",
+                                                      trangThaiThucDon = MenuStatusCodes.Active,
                                                       tuKhoaMonAn = Model.TuKhoaMonAn,
                                                       nhomMon = Model.NhomMon,
                                                       trangThaiMonAn = Model.TrangThaiMonAn
@@ -380,7 +380,7 @@
 
 
                     <a class="food-pill
-                        @(Model.TrangThaiThucDon == "Ngừng áp dụng"
+                        @(Model.TrangThaiThucDon == MenuStatusCodes.Inactive
                            ? "active"
                            : "")"
                        href="@Url.Action(
@@ -390,7 +390,7 @@
                                                   {
                                                       thucDonId = Model.ThucDonDangChonID,
                                                       tuKhoaThucDon = Model.TuKhoaThucDon,
-                                                      trangThaiThucDon = "Ngừng áp dụng",
+                                                      trangThaiThucDon = MenuStatusCodes.Inactive,
                                                       tuKhoaMonAn = Model.TuKhoaMonAn,
                                                       nhomMon = Model.NhomMon,
                                                       trangThaiMonAn = Model.TrangThaiMonAn
@@ -473,11 +473,11 @@
                                     <div class="food-menu-meta">
 
                                         <span class="food-status
-                                            @(thucDon.TrangThai == "Áp dụng"
+                                            @(thucDon.TrangThai == MenuStatusCodes.Active
                                                 ? "active"
                                                 : "inactive")">
 
-                                            @thucDon.TrangThai
+                                            @StatusDisplayNames.GetMenuStatusName(thucDon.TrangThai)
 
                                         </span>
 
@@ -767,14 +767,14 @@
 
                                     <input type="hidden"
                                            name="trangThai"
-                                           value="@(thucDon.TrangThai == "Áp dụng"
-                                                                                   ? "Ngừng áp dụng"
-                                                                                   : "Áp dụng")" />
+                                           value="@(thucDon.TrangThai == MenuStatusCodes.Active
+                                                                                   ? MenuStatusCodes.Inactive
+                                                                                   : MenuStatusCodes.Active)" />
 
 
                                     <button type="submit"
                                             class="food-status-toggle
-                                        @(thucDon.TrangThai == "Áp dụng"
+                                        @(thucDon.TrangThai == MenuStatusCodes.Active
                                             ? "on"
                                             : "")"
                                             title="Đổi trạng thái"
@@ -1107,11 +1107,11 @@
                                         <td>
 
                                             <span class="food-dish-status
-                                                @(monAn.TrangThai == "Đang phục vụ"
+                                                @(monAn.TrangThai == DishStatusCodes.Active
                                                     ? "serving"
                                                     : "stopped")">
 
-                                                @monAn.TrangThai
+                                                @StatusDisplayNames.GetDishStatusName(monAn.TrangThai)
 
                                             </span>
 
@@ -1149,9 +1149,9 @@
 
                                                     <input type="hidden"
                                                            name="trangThai"
-                                                           value="@(monAn.TrangThai == "Đang phục vụ"
-                                                                                                                   ? "Ngừng phục vụ"
-                                                                                                                   : "Đang phục vụ")" />
+                                                           value="@(monAn.TrangThai == DishStatusCodes.Active
+                                                                                                                   ? DishStatusCodes.Inactive
+                                                                                                                   : DishStatusCodes.Active)" />
 
 
                                                     <button type="submit"
@@ -1160,7 +1160,7 @@
                                                             onclick="return confirm('Xác nhận đổi trạng thái món ăn?');">
 
                                                         <i class="fa-solid
-                                                            @(monAn.TrangThai == "Đang phục vụ"
+                                                            @(monAn.TrangThai == DishStatusCodes.Active
                                                                ? "fa-eye-slash"
                                                                : "fa-eye")">
                                                         </i>

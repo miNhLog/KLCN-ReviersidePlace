@@ -1,3 +1,4 @@
+using HeThongDatTiecCuoi_WEB.Constants.StatusCodes;
 using HeThongDatTiecCuoi_WEB.Models.AdminAccount;
 using HeThongDatTiecCuoi_WEB.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -190,9 +191,9 @@ public sealed class AdminAccountController : Controller
 
         var validStatuses = new[]
         {
-            "Hoạt động",
-            "Tạm khóa",
-            "Ngừng hoạt động"
+            AccountStatusCodes.Active,
+            AccountStatusCodes.Suspended,
+            AccountStatusCodes.Inactive
         };
 
         if (!validStatuses.Contains(status))
@@ -257,9 +258,9 @@ public sealed class AdminAccountController : Controller
 
         var validStatuses = new[]
         {
-            "Đang làm việc",
-            "Tạm nghỉ",
-            "Đã nghỉ việc"
+            EmployeeStatusCodes.Active,
+            EmployeeStatusCodes.OnLeave,
+            EmployeeStatusCodes.Terminated
         };
 
         if (!validStatuses.Contains(status))

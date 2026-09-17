@@ -1,3 +1,4 @@
+using HeThongDatTiecCuoi_WEB.Constants.StatusCodes;
 using HeThongDatTiecCuoi_WEB.Models.AdminThucDon;
 using HeThongDatTiecCuoi_WEB.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -97,7 +98,7 @@ public sealed class AdminThucDonController : Controller
             await _apiClient.GetDanhSachMonAnAsync(
                 null,
                 null,
-                "Đang phục vụ",
+                DishStatusCodes.Active,
                 accessToken,
                 cancellationToken);
 

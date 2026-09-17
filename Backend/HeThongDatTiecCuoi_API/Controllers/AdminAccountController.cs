@@ -1,6 +1,8 @@
 using System.Security.Claims;
+using HeThongDatTiecCuoi_API.Constants.StatusCodes;
 using HeThongDatTiecCuoi_API.Data;
 using HeThongDatTiecCuoi_API.DTOs.AdminAccount;
+using HeThongDatTiecCuoi_API.DTOs.Common;
 using HeThongDatTiecCuoi_API.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -129,9 +131,19 @@ public sealed class AdminAccountController : ControllerBase
     [HttpPatch("{userId:int}/status")]
     public async Task<IActionResult> UpdateAccountStatus(
         int userId,
-        [FromBody] string status,
+        [FromBody] StatusRequest request,
         CancellationToken cancellationToken)
     {
+        var status = request.Status?.Trim();
+
+        if (string.IsNullOrWhiteSpace(status))
+        {
+            return BadRequest(new
+            {
+                message = "Trạng thái không được để trống."
+            });
+        }
+
         var user = await _context.Users
             .FirstOrDefaultAsync(
                 account => account.UserId == userId,
@@ -147,9 +159,9 @@ public sealed class AdminAccountController : ControllerBase
 
         var validStatuses = new[]
         {
-            "Hoạt động",
-            "Tạm khóa",
-            "Ngừng hoạt động"
+            AccountStatusCodes.Active,
+            AccountStatusCodes.Suspended,
+            AccountStatusCodes.Inactive
         };
 
         if (!validStatuses.Contains(status))
@@ -162,7 +174,7 @@ public sealed class AdminAccountController : ControllerBase
 
         var signedInEmail = User.FindFirst(ClaimTypes.Email)?.Value;
 
-        if (user.Email == signedInEmail && status != "Hoạt động")
+        if (user.Email == signedInEmail && status != AccountStatusCodes.Active)
         {
             return BadRequest(new
             {
@@ -176,9 +188,9 @@ public sealed class AdminAccountController : ControllerBase
 
         var message = status switch
         {
-            "Hoạt động" => "Mở khóa tài khoản thành công.",
-            "Tạm khóa" => "Tạm khóa tài khoản thành công.",
-            "Ngừng hoạt động" => "Ngừng hoạt động tài khoản thành công.",
+            AccountStatusCodes.Active => "Mở khóa tài khoản thành công.",
+            AccountStatusCodes.Suspended => "Tạm khóa tài khoản thành công.",
+            AccountStatusCodes.Inactive => "Ngừng hoạt động tài khoản thành công.",
             _ => "Cập nhật trạng thái tài khoản thành công."
         };
 
@@ -292,7 +304,7 @@ public sealed class AdminAccountController : ControllerBase
             {
                 RoleId = request.RoleId,
                 Email = email,
-                Status = "Hoạt động",
+                Status = AccountStatusCodes.Active,
                 CreatedAt = DateTime.Now
             };
 
@@ -309,7 +321,7 @@ public sealed class AdminAccountController : ControllerBase
                 EmployeeCode = employeeCode,
                 FullName = fullName,
                 PhoneNumber = phoneNumber,
-                Status = "Đang làm việc"
+                Status = EmployeeStatusCodes.Active
             };
 
             _context.Employees.Add(employee);
@@ -370,9 +382,9 @@ public sealed class AdminAccountController : ControllerBase
         {
             var validEmployeeStatuses = new[]
             {
-                "Đang làm việc",
-                "Tạm nghỉ",
-                "Đã nghỉ việc"
+                EmployeeStatusCodes.Active,
+                EmployeeStatusCodes.OnLeave,
+                EmployeeStatusCodes.Terminated
             };
 
             if (!validEmployeeStatuses.Contains(employeeStatus))
@@ -592,19 +604,19 @@ public sealed class AdminAccountController : ControllerBase
     [HttpPatch("employees/{userId:int}/status")]
     public async Task<IActionResult> UpdateEmployeeStatus(
         int userId,
-        [FromBody] string status,
+        [FromBody] StatusRequest request,
         CancellationToken cancellationToken)
     {
-        var normalizedStatus = status?.Trim();
+        var status = request.Status?.Trim();
         var validStatuses = new[]
         {
-            "Đang làm việc",
-            "Tạm nghỉ",
-            "Đã nghỉ việc"
+            EmployeeStatusCodes.Active,
+            EmployeeStatusCodes.OnLeave,
+            EmployeeStatusCodes.Terminated
         };
 
-        if (string.IsNullOrWhiteSpace(normalizedStatus) ||
-            !validStatuses.Contains(normalizedStatus))
+        if (string.IsNullOrWhiteSpace(status) ||
+            !validStatuses.Contains(status))
         {
             return BadRequest(new
             {
@@ -625,7 +637,7 @@ public sealed class AdminAccountController : ControllerBase
             });
         }
 
-        employee.Status = normalizedStatus;
+        employee.Status = status;
 
         await _context.SaveChangesAsync(cancellationToken);
 

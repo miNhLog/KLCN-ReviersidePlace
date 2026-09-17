@@ -1,4 +1,6 @@
+using HeThongDatTiecCuoi_API.Constants.StatusCodes;
 using HeThongDatTiecCuoi_API.Data;
+using HeThongDatTiecCuoi_API.DTOs.Common;
 using HeThongDatTiecCuoi_API.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -86,7 +88,9 @@ public sealed class HallScheduleController : ControllerBase
                         hallScheduleId = item.HallScheduleId,
                         date = item.Date,
                         shift = item.Shift,
-                        status = booking is not null ? "Đã đặt" : item.Status,
+                        status = booking is not null
+                            ? HallScheduleStatusCodes.Booked
+                            : item.Status,
                         notes = item.Notes,
                         booking = booking is null
                             ? null
@@ -115,8 +119,10 @@ public sealed class HallScheduleController : ControllerBase
     [HttpPatch("{hallScheduleId:int}/status")]
     public async Task<IActionResult> UpdateHallScheduleStatus(
         int hallScheduleId,
-        [FromBody] string status)
+        [FromBody] StatusRequest request)
     {
+        var status = request.Status?.Trim();
+
         var hallSchedule = await _context.HallSchedules.FindAsync(hallScheduleId);
 
         if (hallSchedule is null)
@@ -140,7 +146,8 @@ public sealed class HallScheduleController : ControllerBase
             });
         }
 
-        if (status != "Trống" && status != "Tạm khóa")
+        if (status != HallScheduleStatusCodes.Available &&
+            status != HallScheduleStatusCodes.Locked)
         {
             return BadRequest(new
             {
@@ -200,7 +207,7 @@ public sealed class HallScheduleController : ControllerBase
                         HallId = hall.HallId,
                         Date = date,
                         Shift = shift,
-                        Status = "Trống"
+                        Status = HallScheduleStatusCodes.Available
                     });
                 }
             }

@@ -169,17 +169,17 @@
                             </h4>
 
                             <span class="status-badge
-                                    @(hall.Status == "Hoạt động"
+                                    @(hall.Status == HallStatusCodes.Active
                                                                                                                 ? "status-active"
-                                                                                                                : hall.Status == "Bảo trì"
+                                                                                                                : hall.Status == HallStatusCodes.Maintenance
                                                                                                                     ? "status-maintenance"
                                                                                                                     : "status-inactive")">
 
-                            @if (hall.Status == "Hoạt động")
+                            @if (hall.Status == HallStatusCodes.Active)
                                 {
                                     <i class="fa-solid fa-circle-check"></i>
                                 }
-                                else if (hall.Status == "Bảo trì")
+                                else if (hall.Status == HallStatusCodes.Maintenance)
                                 {
                                     <i class="fa-solid fa-screwdriver-wrench"></i>
                                 }
@@ -188,7 +188,7 @@
                                     <i class="fa-solid fa-circle-xmark"></i>
                                 }
 
-                                @hall.Status
+                                @StatusDisplayNames.GetHallStatusName(hall.Status)
 
                             </span>
 
@@ -280,20 +280,20 @@
 
                 <button type="button"
                         class="btn-status
-                                @(hall.Status == "Hoạt động"
+                                @(hall.Status == HallStatusCodes.Active
                                                             ? "btn-status-active"
-                                                            : hall.Status == "Bảo trì"
+                                                            : hall.Status == HallStatusCodes.Maintenance
                                                                 ? "btn-status-maintenance"
                                                                 : "btn-status-inactive")"
                         data-hall-id="@hall.HallId"
                         data-name="@hall.HallName"
                         data-status="@hall.Status">
 
-                    @if (hall.Status == "Hoạt động")
+                    @if (hall.Status == HallStatusCodes.Active)
                         {
                             <i class="fa-solid fa-circle-check"></i>
                         }
-                        else if (hall.Status == "Bảo trì")
+                        else if (hall.Status == HallStatusCodes.Maintenance)
                         {
                             <i class="fa-solid fa-screwdriver-wrench"></i>
                         }
@@ -302,7 +302,7 @@
                             <i class="fa-solid fa-circle-xmark"></i>
                         }
 
-                        @hall.Status
+                        @StatusDisplayNames.GetHallStatusName(hall.Status)
                     </button>
 
                     <button type="button"
@@ -488,10 +488,10 @@
                                         @hall.HallCode
                                     </span>
 
-                                    @if (hall.HallStatus != "Hoạt động")
+                                    @if (hall.HallStatus != HallStatusCodes.Active)
                                     {
                                         <small>
-                                            @hall.HallStatus
+                                            @StatusDisplayNames.GetHallStatusName(hall.HallStatus)
                                         </small>
                                     }
 
@@ -516,14 +516,14 @@
                                         @if (lunchShift != null)
                                         {
                                             var classStatus =
-                                            lunchShift.Status == "Đã đặt"
+                                            lunchShift.Status == HallScheduleStatusCodes.Booked
                                             ? "slot-booked"
-                                            : lunchShift.Status == "Tạm khóa"
+                                            : lunchShift.Status == HallScheduleStatusCodes.Locked
                                             ? "slot-locked"
                                             : "slot-empty";
 
                                             <div class="schedule-slot @classStatus
-                                                                        @(lunchShift.Status != "Đã đặt" ? "editable-slot" : "")"
+                                                                        @(lunchShift.Status != HallScheduleStatusCodes.Booked ? "editable-slot" : "")"
                                                  data-hall-schedule-id="@lunchShift.HallScheduleId"
                                                  data-status="@lunchShift.Status">
 
@@ -531,7 +531,7 @@
                                                     Trưa
                                                 </span>
 
-                                                @if (lunchShift.Status == "Đã đặt" &&
+                                                @if (lunchShift.Status == HallScheduleStatusCodes.Booked &&
                                                                                 lunchShift.Booking != null)
                                                 {
                                                     <strong>
@@ -581,7 +581,7 @@
                                                 else
                                                 {
                                                     <strong>
-                                                        @if (lunchShift.Status == "Trống")
+                                                        @if (lunchShift.Status == HallScheduleStatusCodes.Available)
                                                         {
                                                             <i class="fa-solid fa-circle-check"></i>
                                                         }
@@ -590,7 +590,7 @@
                                                             <i class="fa-solid fa-lock"></i>
                                                         }
 
-                                                        @lunchShift.Status
+                                                        @StatusDisplayNames.GetHallScheduleStatusName(lunchShift.Status)
                                                     </strong>
                                                 }
 
@@ -601,14 +601,14 @@
                                         @if (dinnerShift != null)
                                         {
                                             var classStatus =
-                                            dinnerShift.Status == "Đã đặt"
+                                            dinnerShift.Status == HallScheduleStatusCodes.Booked
                                             ? "slot-booked"
-                                            : dinnerShift.Status == "Tạm khóa"
+                                            : dinnerShift.Status == HallScheduleStatusCodes.Locked
                                             ? "slot-locked"
                                             : "slot-empty";
 
                                             <div class="schedule-slot @classStatus
-                                                                        @(dinnerShift.Status != "Đã đặt" ? "editable-slot" : "")"
+                                                                        @(dinnerShift.Status != HallScheduleStatusCodes.Booked ? "editable-slot" : "")"
                                                  data-hall-schedule-id="@dinnerShift.HallScheduleId"
                                                  data-status="@dinnerShift.Status">
 
@@ -616,7 +616,7 @@
                                                     Tối
                                                 </span>
 
-                                                @if (dinnerShift.Status == "Đã đặt" &&
+                                                @if (dinnerShift.Status == HallScheduleStatusCodes.Booked &&
                                                                                 dinnerShift.Booking != null)
                                                 {
                                                     <strong>
@@ -666,7 +666,7 @@
                                                 else
                                                 {
                                                     <strong>
-                                                        @if (dinnerShift.Status == "Trống")
+                                                        @if (dinnerShift.Status == HallScheduleStatusCodes.Available)
                                                         {
                                                             <i class="fa-solid fa-circle-check"></i>
                                                         }
@@ -675,7 +675,7 @@
                                                             <i class="fa-solid fa-lock"></i>
                                                         }
 
-                                                        @dinnerShift.Status
+                                                        @StatusDisplayNames.GetHallScheduleStatusName(dinnerShift.Status)
                                                     </strong>
                                                 }
 
@@ -708,13 +708,13 @@
             .Sum(s => s.Schedule.Count);
 
             bookedCount = Model.WeeklySchedule.Halls
-            .Sum(s => s.Schedule.Count(x => x.Status == "Đã đặt"));
+            .Sum(s => s.Schedule.Count(x => x.Status == HallScheduleStatusCodes.Booked));
 
             availableCount = Model.WeeklySchedule.Halls
-            .Sum(s => s.Schedule.Count(x => x.Status == "Trống"));
+            .Sum(s => s.Schedule.Count(x => x.Status == HallScheduleStatusCodes.Available));
 
             lockedCount = Model.WeeklySchedule.Halls
-            .Sum(s => s.Schedule.Count(x => x.Status == "Tạm khóa"));
+            .Sum(s => s.Schedule.Count(x => x.Status == HallScheduleStatusCodes.Locked));
         }
 
         var bookedPercentage = totalShifts > 0
@@ -1145,15 +1145,15 @@
                 <select id="statusHallSelect"
                         name="status">
 
-                    <option value="Hoạt động">
+                    <option value="@HallStatusCodes.Active">
                         Hoạt động
                     </option>
 
-                    <option value="Bảo trì">
+                    <option value="@HallStatusCodes.Maintenance">
                         Bảo trì
                     </option>
 
-                    <option value="Ngừng hoạt động">
+                    <option value="@HallStatusCodes.Inactive">
                         Ngừng hoạt động
                     </option>
 
@@ -1276,12 +1276,12 @@
                     const currentStatus = slot.dataset.status;
 
                     const newStatus =
-                        currentStatus === "Trống"
-                            ? "Tạm khóa"
-                            : "Trống";
+                        currentStatus === "@HallScheduleStatusCodes.Available"
+                            ? "@HallScheduleStatusCodes.Locked"
+                            : "@HallScheduleStatusCodes.Available";
 
                     const message =
-                        newStatus === "Tạm khóa"
+                        newStatus === "@HallScheduleStatusCodes.Locked"
                             ? "Bạn có muốn tạm khóa ca này không?"
                             : "Bạn có muốn mở lại ca này không?";
 
@@ -1729,7 +1729,7 @@
                     const status = button.dataset.status;
 
                     // Prevent deletion immediately in the UI.
-                    if (status === "Hoạt động") {
+                    if (status === "@HallStatusCodes.Active") {
 
                         alert(
                             `Không thể xóa "${hallName}" vì sảnh đang ở trạng thái Hoạt động.\n\n` +

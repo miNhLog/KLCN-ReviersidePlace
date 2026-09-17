@@ -53,11 +53,6 @@ public sealed class ResetPasswordRequest
     public string NewPassword { get; set; } = string.Empty;
 }
 
-public sealed class UpdateAccountStatusRequest
-{
-    public string Status { get; set; } = string.Empty;
-}
-
 public sealed class AccountActionResponse
 {
     public string Message { get; set; } = string.Empty;

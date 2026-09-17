@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using HeThongDatTiecCuoi_API.Constants.StatusCodes;
 using HeThongDatTiecCuoi_API.Data;
 using HeThongDatTiecCuoi_API.DTOs.Auth;
 using HeThongDatTiecCuoi_API.Models;
@@ -71,7 +72,7 @@ public sealed partial class AuthService : IAuthService
                 RoleId = customerRole.RoleId,
                 Role = customerRole,
                 Email = email,
-                Status = "Hoạt động",
+                Status = AccountStatusCodes.Active,
                 CreatedAt = DateTime.Now
             };
             user.PasswordHash = _passwordHasher.HashPassword(user, request.MatKhau);
@@ -134,14 +135,16 @@ public sealed partial class AuthService : IAuthService
             return InvalidCredentials();
         }
 
-        if (user.Status != "Hoạt động")
+        if (user.Status != AccountStatusCodes.Active)
         {
             return ServiceResult<AuthResponse>.Failure(
                 "Tài khoản đang bị khóa hoặc đã ngừng hoạt động.",
                 StatusCodes.Status403Forbidden);
         }
 
-        if (isStaffLogin && user.Employee is not null && user.Employee.Status != "Đang làm việc")
+        if (isStaffLogin &&
+            user.Employee is not null &&
+            user.Employee.Status != EmployeeStatusCodes.Active)
         {
             return ServiceResult<AuthResponse>.Failure(
                 "Tài khoản nhân viên hiện không được phép đăng nhập.",
