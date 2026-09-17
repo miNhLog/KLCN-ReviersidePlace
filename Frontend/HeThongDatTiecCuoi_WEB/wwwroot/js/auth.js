@@ -17,7 +17,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    const password = document.querySelector("#MatKhau");
+    const password = document.querySelector("#Password");
     const meter = document.querySelector(".password-meter");
     const strengthText = document.querySelector("#passwordStrength");
     if (password && meter && strengthText) {

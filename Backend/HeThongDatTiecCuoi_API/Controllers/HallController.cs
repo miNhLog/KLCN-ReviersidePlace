@@ -1,7 +1,10 @@
+using HeThongDatTiecCuoi_API.Constants;
 using HeThongDatTiecCuoi_API.Constants.StatusCodes;
 using HeThongDatTiecCuoi_API.Data;
 using HeThongDatTiecCuoi_API.DTOs.Common;
+using HeThongDatTiecCuoi_API.DTOs.Hall;
 using HeThongDatTiecCuoi_API.Models;
+using HeThongDatTiecCuoi_API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -13,270 +16,177 @@ namespace HeThongDatTiecCuoi_API.Controllers;
 [Authorize(Roles = RoleNames.Admin)]
 public sealed class HallController : ControllerBase
 {
-    private readonly ApplicationDbContext _context;
+    private static readonly string[] ValidStatuses =
+    [
+        HallStatusCodes.Active,
+        HallStatusCodes.Maintenance,
+        HallStatusCodes.Inactive
+    ];
 
-    public HallController(ApplicationDbContext context)
+    private readonly ApplicationDbContext _context;
+    private readonly IStatusService _statusService;
+
+    public HallController(ApplicationDbContext context, IStatusService statusService)
     {
         _context = context;
+        _statusService = statusService;
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetHalls()
+    public async Task<IActionResult> GetHalls(CancellationToken cancellationToken)
     {
-        var halls = await _context.Halls
+        var halls = await _context.Halls.AsNoTracking()
+            .Include(hall => hall.Status)
             .OrderBy(hall => hall.HallId)
-            .ToListAsync();
-
-        return Ok(halls);
+            .ToListAsync(cancellationToken);
+        return Ok(halls.Select(hall => ToDto(hall)));
     }
 
     [HttpGet("{hallId:int}")]
-    public async Task<IActionResult> GetHall(int hallId)
+    public async Task<IActionResult> GetHall(int hallId, CancellationToken cancellationToken)
     {
-        var hall = await _context.Halls.FindAsync(hallId);
-
-        if (hall is null)
-        {
-            return NotFound(new
-            {
-                message = "Không tìm thấy sảnh tiệc."
-            });
-        }
-
-        return Ok(hall);
+        var hall = await _context.Halls.AsNoTracking()
+            .Include(item => item.Status)
+            .Where(item => item.HallId == hallId)
+            .SingleOrDefaultAsync(cancellationToken);
+        return hall is null
+            ? NotFound(new { message = "Không tìm thấy sảnh tiệc." })
+            : Ok(ToDto(hall));
     }
 
     [HttpPost]
-    public async Task<IActionResult> CreateHall(Hall hall)
+    public async Task<IActionResult> CreateHall(
+        [FromBody] CreateHallRequest request,
+        CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(hall.HallCode))
+        var error = Validate(request.HallCode, request.HallName, request.MinimumCapacity,
+            request.MaximumCapacity, request.RentalPrice);
+        if (error is not null) return BadRequest(new { message = error });
+
+        if (await _context.Halls.AnyAsync(
+                hall => hall.HallCode == request.HallCode.Trim(), cancellationToken))
+            return Conflict(new { message = "Mã sảnh đã tồn tại." });
+
+        var status = await ResolveStatusAsync(request.Status, cancellationToken);
+        if (status is null) return BadRequest(new { message = "Trạng thái sảnh không hợp lệ." });
+
+        var hall = new Hall
         {
-            return BadRequest(new
-            {
-                message = "Mã sảnh không được để trống."
-            });
-        }
-
-        if (string.IsNullOrWhiteSpace(hall.HallName))
-        {
-            return BadRequest(new
-            {
-                message = "Tên sảnh không được để trống."
-            });
-        }
-
-        var hallCodeExists = await _context.Halls
-            .AnyAsync(existingHall => existingHall.HallCode == hall.HallCode);
-
-        if (hallCodeExists)
-        {
-            return BadRequest(new
-            {
-                message = "Mã sảnh đã tồn tại."
-            });
-        }
-
-        if (hall.MaximumCapacity <= 0)
-        {
-            return BadRequest(new
-            {
-                message = "Sức chứa tối đa phải lớn hơn 0."
-            });
-        }
-
-        if (hall.MinimumCapacity.HasValue &&
-            hall.MinimumCapacity.Value > hall.MaximumCapacity)
-        {
-            return BadRequest(new
-            {
-                message = "Sức chứa tối thiểu không được lớn hơn sức chứa tối đa."
-            });
-        }
-
-        if (hall.RentalPrice < 0)
-        {
-            return BadRequest(new
-            {
-                message = "Giá thuê không hợp lệ."
-            });
-        }
-
-        if (hall.Status != HallStatusCodes.Active &&
-            hall.Status != HallStatusCodes.Maintenance &&
-            hall.Status != HallStatusCodes.Inactive)
-        {
-            return BadRequest(new
-            {
-                message = "Trạng thái sảnh không hợp lệ."
-            });
-        }
-
+            HallCode = request.HallCode.Trim(),
+            HallName = request.HallName.Trim(),
+            MinimumCapacity = request.MinimumCapacity,
+            MaximumCapacity = request.MaximumCapacity,
+            RentalPrice = request.RentalPrice,
+            Description = request.Description?.Trim(),
+            ImageUrl = request.ImageUrl?.Trim(),
+            StatusId = status.StatusId
+        };
         _context.Halls.Add(hall);
-        await _context.SaveChangesAsync();
-
-        return CreatedAtAction(
-            nameof(GetHall),
-            new { hallId = hall.HallId },
-            hall);
+        await _context.SaveChangesAsync(cancellationToken);
+        return CreatedAtAction(nameof(GetHall), new { hallId = hall.HallId }, ToDto(hall, status));
     }
 
     [HttpPut("{hallId:int}")]
-    public async Task<IActionResult> UpdateHall(int hallId, Hall hall)
+    public async Task<IActionResult> UpdateHall(
+        int hallId,
+        [FromBody] UpdateHallRequest request,
+        CancellationToken cancellationToken)
     {
-        var existingHall = await _context.Halls.FindAsync(hallId);
+        var hall = await _context.Halls.Include(item => item.Status)
+            .SingleOrDefaultAsync(item => item.HallId == hallId, cancellationToken);
+        if (hall is null) return NotFound(new { message = "Không tìm thấy sảnh tiệc." });
 
-        if (existingHall is null)
-        {
-            return NotFound(new
-            {
-                message = "Không tìm thấy sảnh tiệc."
-            });
-        }
+        var error = Validate(request.HallCode, request.HallName, request.MinimumCapacity,
+            request.MaximumCapacity, request.RentalPrice);
+        if (error is not null) return BadRequest(new { message = error });
 
-        var hallCodeExists = await _context.Halls
-            .AnyAsync(otherHall =>
-                otherHall.HallCode == hall.HallCode &&
-                otherHall.HallId != hallId);
+        if (await _context.Halls.AnyAsync(item =>
+                item.HallCode == request.HallCode.Trim() && item.HallId != hallId,
+                cancellationToken))
+            return Conflict(new { message = "Mã sảnh đã tồn tại." });
 
-        if (hallCodeExists)
-        {
-            return BadRequest(new
-            {
-                message = "Mã sảnh đã tồn tại."
-            });
-        }
+        var status = await ResolveStatusAsync(request.Status, cancellationToken);
+        if (status is null) return BadRequest(new { message = "Trạng thái sảnh không hợp lệ." });
 
-        if (hall.MaximumCapacity <= 0)
-        {
-            return BadRequest(new
-            {
-                message = "Sức chứa tối đa phải lớn hơn 0."
-            });
-        }
-
-        if (hall.MinimumCapacity.HasValue &&
-            hall.MinimumCapacity.Value > hall.MaximumCapacity)
-        {
-            return BadRequest(new
-            {
-                message = "Sức chứa tối thiểu không được lớn hơn sức chứa tối đa."
-            });
-        }
-
-        if (hall.RentalPrice < 0)
-        {
-            return BadRequest(new
-            {
-                message = "Giá thuê không hợp lệ."
-            });
-        }
-
-        if (hall.Status != HallStatusCodes.Active &&
-            hall.Status != HallStatusCodes.Maintenance &&
-            hall.Status != HallStatusCodes.Inactive)
-        {
-            return BadRequest(new
-            {
-                message = "Trạng thái sảnh không hợp lệ."
-            });
-        }
-
-        existingHall.HallCode = hall.HallCode;
-        existingHall.HallName = hall.HallName;
-        existingHall.MinimumCapacity = hall.MinimumCapacity;
-        existingHall.MaximumCapacity = hall.MaximumCapacity;
-        existingHall.RentalPrice = hall.RentalPrice;
-        existingHall.Description = hall.Description;
-        existingHall.ImageUrl = hall.ImageUrl;
-        existingHall.Status = hall.Status;
-
-        await _context.SaveChangesAsync();
-
-        return Ok(existingHall);
+        hall.HallCode = request.HallCode.Trim();
+        hall.HallName = request.HallName.Trim();
+        hall.MinimumCapacity = request.MinimumCapacity;
+        hall.MaximumCapacity = request.MaximumCapacity;
+        hall.RentalPrice = request.RentalPrice;
+        hall.Description = request.Description?.Trim();
+        hall.ImageUrl = request.ImageUrl?.Trim();
+        hall.StatusId = status.StatusId;
+        await _context.SaveChangesAsync(cancellationToken);
+        return Ok(ToDto(hall, status));
     }
 
     [HttpPatch("{hallId:int}/status")]
     public async Task<IActionResult> UpdateHallStatus(
         int hallId,
-        [FromBody] StatusRequest request)
+        [FromBody] StatusRequest request,
+        CancellationToken cancellationToken)
     {
-        var status = request.Status?.Trim();
+        var hall = await _context.Halls.FindAsync([hallId], cancellationToken);
+        if (hall is null) return NotFound(new { message = "Không tìm thấy sảnh tiệc." });
 
-        var hall = await _context.Halls.FindAsync(hallId);
+        var status = await ResolveStatusAsync(request.Status, cancellationToken);
+        if (status is null) return BadRequest(new { message = "Trạng thái sảnh không hợp lệ." });
 
-        if (hall is null)
-        {
-            return NotFound(new
-            {
-                message = "Không tìm thấy sảnh tiệc."
-            });
-        }
-
-        if (status != HallStatusCodes.Active &&
-            status != HallStatusCodes.Maintenance &&
-            status != HallStatusCodes.Inactive)
-        {
-            return BadRequest(new
-            {
-                message = "Trạng thái sảnh không hợp lệ."
-            });
-        }
-
-        hall.Status = status;
-
-        await _context.SaveChangesAsync();
-
-        return Ok(new
-        {
-            message = "Cập nhật trạng thái thành công.",
-            hall
-        });
+        hall.StatusId = status.StatusId;
+        await _context.SaveChangesAsync(cancellationToken);
+        return Ok(new { message = "Cập nhật trạng thái thành công.", hall = ToDto(hall, status) });
     }
 
     [HttpDelete("{hallId:int}")]
-    public async Task<IActionResult> DeleteHall(int hallId)
+    public async Task<IActionResult> DeleteHall(int hallId, CancellationToken cancellationToken)
     {
-        var hall = await _context.Halls.FindAsync(hallId);
+        var hall = await _context.Halls.Include(item => item.Status)
+            .SingleOrDefaultAsync(item => item.HallId == hallId, cancellationToken);
+        if (hall is null) return NotFound(new { message = "Không tìm thấy sảnh tiệc." });
+        if (hall.Status.StatusCode == HallStatusCodes.Active)
+            return Conflict(new { message = "Không thể xóa sảnh đang hoạt động. Hãy chuyển sảnh sang trạng thái Ngừng hoạt động trước." });
 
-        if (hall is null)
-        {
-            return NotFound(new
-            {
-                message = "Không tìm thấy sảnh tiệc."
-            });
-        }
+        if (await _context.WeddingBookings.AnyAsync(
+                booking => booking.HallSchedule.HallId == hallId, cancellationToken))
+            return Conflict(new { message = "Không thể xóa sảnh vì sảnh đã từng có booking." });
 
-        if (hall.Status == HallStatusCodes.Active)
-        {
-            return BadRequest(new
-            {
-                message = "Không thể xóa sảnh đang hoạt động. Hãy chuyển sảnh sang trạng thái Ngừng hoạt động trước."
-            });
-        }
-
-        var hasBooking = await _context.DatTiec
-            .AnyAsync(booking => booking.HallSchedule.HallId == hallId);
-
-        if (hasBooking)
-        {
-            return BadRequest(new
-            {
-                message = "Không thể xóa sảnh vì sảnh đã từng có booking."
-            });
-        }
-
-        var hallSchedules = await _context.HallSchedules
-            .Where(schedule => schedule.HallId == hallId)
-            .ToListAsync();
-
-        _context.HallSchedules.RemoveRange(hallSchedules);
+        var schedules = await _context.HallSchedules.Where(schedule => schedule.HallId == hallId)
+            .ToListAsync(cancellationToken);
+        _context.HallSchedules.RemoveRange(schedules);
         _context.Halls.Remove(hall);
-
-        await _context.SaveChangesAsync();
-
-        return Ok(new
-        {
-            message = "Xóa sảnh thành công."
-        });
+        await _context.SaveChangesAsync(cancellationToken);
+        return Ok(new { message = "Xóa sảnh thành công." });
     }
+
+    private async Task<Status?> ResolveStatusAsync(string? code, CancellationToken cancellationToken)
+    {
+        var normalized = code?.Trim().ToUpperInvariant();
+        if (string.IsNullOrWhiteSpace(normalized) || !ValidStatuses.Contains(normalized)) return null;
+        return await _statusService.GetStatusAsync(StatusGroups.Hall, normalized, cancellationToken);
+    }
+
+    private static string? Validate(string hallCode, string hallName, int? minimumCapacity,
+        int maximumCapacity, decimal rentalPrice)
+    {
+        if (string.IsNullOrWhiteSpace(hallCode)) return "Mã sảnh không được để trống.";
+        if (string.IsNullOrWhiteSpace(hallName)) return "Tên sảnh không được để trống.";
+        if (maximumCapacity <= 0) return "Sức chứa tối đa phải lớn hơn 0.";
+        if (minimumCapacity.HasValue && minimumCapacity.Value > maximumCapacity)
+            return "Sức chứa tối thiểu không được lớn hơn sức chứa tối đa.";
+        return rentalPrice < 0 ? "Giá thuê không hợp lệ." : null;
+    }
+
+    private static HallDto ToDto(Hall hall, Status? status = null) => new()
+    {
+        HallId = hall.HallId,
+        HallCode = hall.HallCode,
+        HallName = hall.HallName,
+        MinimumCapacity = hall.MinimumCapacity,
+        MaximumCapacity = hall.MaximumCapacity,
+        RentalPrice = hall.RentalPrice,
+        Description = hall.Description,
+        ImageUrl = hall.ImageUrl,
+        Status = (status ?? hall.Status).StatusCode,
+        StatusName = (status ?? hall.Status).StatusName
+    };
 }

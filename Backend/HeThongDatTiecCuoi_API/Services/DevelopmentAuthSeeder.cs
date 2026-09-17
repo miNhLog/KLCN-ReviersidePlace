@@ -1,5 +1,6 @@
 using HeThongDatTiecCuoi_API.Data;
 using HeThongDatTiecCuoi_API.Constants.StatusCodes;
+using HeThongDatTiecCuoi_API.Constants;
 using HeThongDatTiecCuoi_API.Models;
 using HeThongDatTiecCuoi_API.Options;
 using Microsoft.AspNetCore.Identity;
@@ -13,15 +14,18 @@ public sealed class DevelopmentAuthSeeder
     private readonly ApplicationDbContext _db;
     private readonly IPasswordHasher<User> _hasher;
     private readonly DevelopmentAccountsOptions _options;
+    private readonly IStatusService _statusService;
 
     public DevelopmentAuthSeeder(
         ApplicationDbContext db,
         IPasswordHasher<User> hasher,
-        IOptions<DevelopmentAccountsOptions> options)
+        IOptions<DevelopmentAccountsOptions> options,
+        IStatusService statusService)
     {
         _db = db;
         _hasher = hasher;
         _options = options.Value;
+        _statusService = statusService;
     }
 
     public async Task SeedAsync(CancellationToken cancellationToken = default)
@@ -68,6 +72,8 @@ public sealed class DevelopmentAuthSeeder
         }
 
         var normalizedEmail = email.Trim().ToLowerInvariant();
+        var accountStatusId = await _statusService.GetStatusIdAsync(
+            StatusGroups.Account, AccountStatusCodes.Active, cancellationToken);
         var user = await _db.Users
             .Include(x => x.Customer)
             .Include(x => x.Employee)
@@ -80,7 +86,7 @@ public sealed class DevelopmentAuthSeeder
                 Email = normalizedEmail,
                 Role = role,
                 RoleId = role.RoleId,
-                Status = AccountStatusCodes.Active,
+                StatusId = accountStatusId,
                 CreatedAt = DateTime.Now
             };
             _db.Users.Add(user);
@@ -89,20 +95,22 @@ public sealed class DevelopmentAuthSeeder
         {
             user.Role = role;
             user.RoleId = role.RoleId;
-            user.Status = AccountStatusCodes.Active;
+            user.StatusId = accountStatusId;
         }
 
         user.PasswordHash = _hasher.HashPassword(user, password);
 
         if (role.RoleName == RoleNames.Consultant && user.Employee is null)
         {
+            var employeeStatusId = await _statusService.GetStatusIdAsync(
+                StatusGroups.Employee, EmployeeStatusCodes.Active, cancellationToken);
             user.Employee = new Employee
             {
                 User = user,
                 EmployeeCode = "NV001",
                 FullName = "Nhân viên tư vấn",
                 PhoneNumber = "0912345678",
-                Status = EmployeeStatusCodes.Active
+                StatusId = employeeStatusId
             };
         }
 

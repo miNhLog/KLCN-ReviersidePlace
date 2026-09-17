@@ -1,7 +1,9 @@
 using HeThongDatTiecCuoi_API.Constants.StatusCodes;
+using HeThongDatTiecCuoi_API.Constants;
 using HeThongDatTiecCuoi_API.Data;
 using HeThongDatTiecCuoi_API.DTOs.Common;
 using HeThongDatTiecCuoi_API.Models;
+using HeThongDatTiecCuoi_API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -14,21 +16,24 @@ namespace HeThongDatTiecCuoi_API.Controllers;
 public sealed class HallScheduleController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
+    private readonly IStatusService _statusService;
 
-    public HallScheduleController(ApplicationDbContext context)
+    public HallScheduleController(ApplicationDbContext context, IStatusService statusService)
     {
         _context = context;
+        _statusService = statusService;
     }
 
     [HttpGet("weekly")]
     public async Task<IActionResult> GetWeeklyHallSchedules(
         DateTime startDate,
-        int? hallId = null)
+        int? hallId = null,
+        CancellationToken cancellationToken = default)
     {
         var weekStartDate = startDate.Date;
         var weekEndDate = weekStartDate.AddDays(6);
 
-        var hallsQuery = _context.Halls.AsQueryable();
+        var hallsQuery = _context.Halls.Include(hall => hall.Status).AsQueryable();
 
         if (hallId.HasValue)
         {
@@ -38,7 +43,7 @@ public sealed class HallScheduleController : ControllerBase
 
         var halls = await hallsQuery
             .OrderBy(hall => hall.HallId)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
         if (halls.Count == 0)
         {
@@ -48,10 +53,11 @@ public sealed class HallScheduleController : ControllerBase
             });
         }
 
-        await EnsureWeeklySchedulesAsync(halls, weekStartDate);
+        await EnsureWeeklySchedulesAsync(halls, weekStartDate, cancellationToken);
 
         var hallSchedules = await _context.HallSchedules
             .Include(schedule => schedule.Hall)
+            .Include(schedule => schedule.Status)
             .Where(schedule =>
                 schedule.Date >= weekStartDate &&
                 schedule.Date <= weekEndDate &&
@@ -59,22 +65,28 @@ public sealed class HallScheduleController : ControllerBase
             .OrderBy(schedule => schedule.HallId)
             .ThenBy(schedule => schedule.Date)
             .ThenBy(schedule => schedule.Shift)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
-        var bookings = await _context.DatTiec
-            .Include(booking => booking.KhachHang)
+        var bookedStatus = await _statusService.GetStatusAsync(
+            StatusGroups.HallSchedule,
+            HallScheduleStatusCodes.Booked,
+            cancellationToken) ?? throw new InvalidOperationException("Thiếu trạng thái lịch sảnh BOOKED.");
+
+        var bookings = await _context.WeddingBookings
+            .Include(booking => booking.Customer)
             .Where(booking =>
                 booking.HallSchedule.Date >= weekStartDate &&
                 booking.HallSchedule.Date <= weekEndDate &&
-                booking.TrangThai != "Đã hủy")
-            .ToListAsync();
+                booking.Status != "Đã hủy")
+            .ToListAsync(cancellationToken);
 
         var scheduleGroups = halls.Select(hall => new
         {
             hallId = hall.HallId,
             hallCode = hall.HallCode,
             hallName = hall.HallName,
-            hallStatus = hall.Status,
+            hallStatus = hall.Status.StatusCode,
+            hallStatusName = hall.Status.StatusName,
             schedule = hallSchedules
                 .Where(item => item.HallId == hall.HallId)
                 .Select(item =>
@@ -90,18 +102,21 @@ public sealed class HallScheduleController : ControllerBase
                         shift = item.Shift,
                         status = booking is not null
                             ? HallScheduleStatusCodes.Booked
-                            : item.Status,
+                            : item.Status.StatusCode,
+                        statusName = booking is not null
+                            ? bookedStatus.StatusName
+                            : item.Status.StatusName,
                         notes = item.Notes,
                         booking = booking is null
                             ? null
                             : new
                             {
-                                bookingId = booking.DatTiecID,
-                                bookingCode = booking.MaDatTiec,
-                                customerName = booking.KhachHang.HoTen,
-                                tableCount = booking.SoBan,
-                                guestCount = booking.SoLuongKhach,
-                                bookingStatus = booking.TrangThai
+                                bookingId = booking.BookingId,
+                                bookingCode = booking.BookingCode,
+                                customerName = booking.Customer.FullName,
+                                tableCount = booking.TableCount,
+                                guestCount = booking.GuestCount,
+                                bookingStatus = booking.Status
                             }
                     };
                 })
@@ -119,11 +134,12 @@ public sealed class HallScheduleController : ControllerBase
     [HttpPatch("{hallScheduleId:int}/status")]
     public async Task<IActionResult> UpdateHallScheduleStatus(
         int hallScheduleId,
-        [FromBody] StatusRequest request)
+        [FromBody] StatusRequest request,
+        CancellationToken cancellationToken)
     {
-        var status = request.Status?.Trim();
+        var statusCode = request.Status?.Trim().ToUpperInvariant();
 
-        var hallSchedule = await _context.HallSchedules.FindAsync(hallScheduleId);
+        var hallSchedule = await _context.HallSchedules.FindAsync([hallScheduleId], cancellationToken);
 
         if (hallSchedule is null)
         {
@@ -133,10 +149,11 @@ public sealed class HallScheduleController : ControllerBase
             });
         }
 
-        var hasBooking = await _context.DatTiec
+        var hasBooking = await _context.WeddingBookings
             .AnyAsync(booking =>
                 booking.HallScheduleId == hallScheduleId &&
-                booking.TrangThai != "Đã hủy");
+                booking.Status != "Đã hủy",
+                cancellationToken);
 
         if (hasBooking)
         {
@@ -146,8 +163,8 @@ public sealed class HallScheduleController : ControllerBase
             });
         }
 
-        if (status != HallScheduleStatusCodes.Available &&
-            status != HallScheduleStatusCodes.Locked)
+        if (statusCode != HallScheduleStatusCodes.Available &&
+            statusCode != HallScheduleStatusCodes.Locked)
         {
             return BadRequest(new
             {
@@ -155,20 +172,29 @@ public sealed class HallScheduleController : ControllerBase
             });
         }
 
-        hallSchedule.Status = status;
+        var status = await _statusService.GetStatusAsync(
+            StatusGroups.HallSchedule,
+            statusCode,
+            cancellationToken) ?? throw new InvalidOperationException(
+                $"Thiếu trạng thái lịch sảnh {statusCode}.");
 
-        await _context.SaveChangesAsync();
+        hallSchedule.StatusId = status.StatusId;
+
+        await _context.SaveChangesAsync(cancellationToken);
 
         return Ok(new
         {
             message = "Cập nhật trạng thái lịch sảnh thành công.",
-            hallSchedule
+            hallScheduleId = hallSchedule.HallScheduleId,
+            status = status.StatusCode,
+            statusName = status.StatusName
         });
     }
 
     private async Task EnsureWeeklySchedulesAsync(
         List<Hall> halls,
-        DateTime startDate)
+        DateTime startDate,
+        CancellationToken cancellationToken)
     {
         var endDate = startDate.AddDays(6);
 
@@ -176,7 +202,12 @@ public sealed class HallScheduleController : ControllerBase
             .Where(schedule =>
                 schedule.Date >= startDate &&
                 schedule.Date <= endDate)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
+
+        var availableStatusId = await _statusService.GetStatusIdAsync(
+            StatusGroups.HallSchedule,
+            HallScheduleStatusCodes.Available,
+            cancellationToken);
 
         var shifts = new[]
         {
@@ -207,12 +238,12 @@ public sealed class HallScheduleController : ControllerBase
                         HallId = hall.HallId,
                         Date = date,
                         Shift = shift,
-                        Status = HallScheduleStatusCodes.Available
+                        StatusId = availableStatusId
                     });
                 }
             }
         }
 
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(cancellationToken);
     }
 }

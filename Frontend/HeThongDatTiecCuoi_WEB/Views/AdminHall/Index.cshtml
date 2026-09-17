@@ -188,7 +188,7 @@
                                     <i class="fa-solid fa-circle-xmark"></i>
                                 }
 
-                                @StatusDisplayNames.GetHallStatusName(hall.Status)
+                                @(string.IsNullOrWhiteSpace(hall.StatusName) ? StatusDisplayNames.GetHallStatusName(hall.Status) : hall.StatusName)
 
                             </span>
 
@@ -302,7 +302,7 @@
                             <i class="fa-solid fa-circle-xmark"></i>
                         }
 
-                        @StatusDisplayNames.GetHallStatusName(hall.Status)
+                        @(string.IsNullOrWhiteSpace(hall.StatusName) ? StatusDisplayNames.GetHallStatusName(hall.Status) : hall.StatusName)
                     </button>
 
                     <button type="button"
@@ -491,7 +491,7 @@
                                     @if (hall.HallStatus != HallStatusCodes.Active)
                                     {
                                         <small>
-                                            @StatusDisplayNames.GetHallStatusName(hall.HallStatus)
+                                            @(string.IsNullOrWhiteSpace(hall.HallStatusName) ? StatusDisplayNames.GetHallStatusName(hall.HallStatus) : hall.HallStatusName)
                                         </small>
                                     }
 
@@ -590,7 +590,7 @@
                                                             <i class="fa-solid fa-lock"></i>
                                                         }
 
-                                                        @StatusDisplayNames.GetHallScheduleStatusName(lunchShift.Status)
+                                                        @(string.IsNullOrWhiteSpace(lunchShift.StatusName) ? StatusDisplayNames.GetHallScheduleStatusName(lunchShift.Status) : lunchShift.StatusName)
                                                     </strong>
                                                 }
 
@@ -675,7 +675,7 @@
                                                             <i class="fa-solid fa-lock"></i>
                                                         }
 
-                                                        @StatusDisplayNames.GetHallScheduleStatusName(dinnerShift.Status)
+                                                        @(string.IsNullOrWhiteSpace(dinnerShift.StatusName) ? StatusDisplayNames.GetHallScheduleStatusName(dinnerShift.Status) : dinnerShift.StatusName)
                                                     </strong>
                                                 }
 

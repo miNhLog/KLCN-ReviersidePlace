@@ -32,6 +32,7 @@ public sealed class HallDto
     public string? ImageUrl { get; set; }
 
     public string Status { get; set; } = string.Empty;
+    public string StatusName { get; set; } = string.Empty;
 }
 
 public sealed class WeeklyHallScheduleDto
@@ -52,6 +53,7 @@ public sealed class HallScheduleGroupDto
     public string HallName { get; set; } = string.Empty;
 
     public string HallStatus { get; set; } = string.Empty;
+    public string HallStatusName { get; set; } = string.Empty;
 
     public List<HallScheduleSlotDto> Schedule { get; set; } = new();
 }
@@ -65,6 +67,7 @@ public sealed class HallScheduleSlotDto
     public string Shift { get; set; } = string.Empty;
 
     public string Status { get; set; } = string.Empty;
+    public string StatusName { get; set; } = string.Empty;
 
     public string? Notes { get; set; }
 

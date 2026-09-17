@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using HeThongDatTiecCuoi_API.Constants.StatusCodes;
+using HeThongDatTiecCuoi_API.Constants;
 using HeThongDatTiecCuoi_API.Data;
 using HeThongDatTiecCuoi_API.DTOs.Auth;
 using HeThongDatTiecCuoi_API.Models;
@@ -13,15 +14,18 @@ public sealed partial class AuthService : IAuthService
     private readonly ApplicationDbContext _db;
     private readonly IPasswordHasher<User> _passwordHasher;
     private readonly IJwtTokenService _jwtTokenService;
+    private readonly IStatusService _statusService;
 
     public AuthService(
         ApplicationDbContext db,
         IPasswordHasher<User> passwordHasher,
-        IJwtTokenService jwtTokenService)
+        IJwtTokenService jwtTokenService,
+        IStatusService statusService)
     {
         _db = db;
         _passwordHasher = passwordHasher;
         _jwtTokenService = jwtTokenService;
+        _statusService = statusService;
     }
 
     public async Task<ServiceResult<AuthResponse>> RegisterAsync(
@@ -29,9 +33,9 @@ public sealed partial class AuthService : IAuthService
         CancellationToken cancellationToken)
     {
         var email = request.Email.Trim().ToLowerInvariant();
-        var phone = NormalizePhone(request.SoDienThoai);
+        var phone = NormalizePhone(request.PhoneNumber);
 
-        if (!StrongPasswordRegex().IsMatch(request.MatKhau))
+        if (!StrongPasswordRegex().IsMatch(request.Password))
         {
             return ServiceResult<AuthResponse>.Failure(
                 "Mật khẩu phải có chữ hoa, chữ thường, chữ số và ký tự đặc biệt.",
@@ -67,32 +71,50 @@ public sealed partial class AuthService : IAuthService
 
         try
         {
+            var accountStatusId = await _statusService.GetStatusIdAsync(
+                StatusGroups.Account,
+                AccountStatusCodes.Active,
+                cancellationToken);
+
             var user = new User
             {
                 RoleId = customerRole.RoleId,
                 Role = customerRole,
                 Email = email,
-                Status = AccountStatusCodes.Active,
+                StatusId = accountStatusId,
                 CreatedAt = DateTime.Now
             };
-            user.PasswordHash = _passwordHasher.HashPassword(user, request.MatKhau);
+            user.PasswordHash = _passwordHasher.HashPassword(user, request.Password);
 
             var customer = new Customer
             {
                 User = user,
-                FullName = request.HoTen.Trim(),
+                FullName = request.FullName.Trim(),
                 PhoneNumber = phone
             };
 
             _db.Users.Add(user);
             _db.Customers.Add(customer);
+
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
 
+            // Load Status navigation sau khi User đã được lưu
+            await _db.Entry(user)
+                .Reference(x => x.Status)
+                .LoadAsync(cancellationToken);
+
             user.Customer = customer;
-            var token = _jwtTokenService.CreateAccessToken(user, rememberMe: false);
+
+            var token = _jwtTokenService.CreateAccessToken(
+                user,
+                rememberMe: false);
+
             return ServiceResult<AuthResponse>.Success(
-                new AuthResponse(token.Token, token.ExpiresAtUtc, ToCurrentUser(user)),
+                new AuthResponse(
+                    token.Token,
+                    token.ExpiresAtUtc,
+                    ToCurrentUser(user)),
                 StatusCodes.Status201Created);
         }
         catch (DbUpdateException)
@@ -108,13 +130,15 @@ public sealed partial class AuthService : IAuthService
         LoginRequest request,
         CancellationToken cancellationToken)
     {
-        var identifier = request.DinhDanh.Trim();
-        var isStaffLogin = request.LoaiTaiKhoan == "Staff";
+        var identifier = request.Identifier.Trim();
+        var isStaffLogin = request.AccountType == "Staff";
 
         IQueryable<User> query = _db.Users
             .Include(x => x.Role)
+            .Include(x => x.Status)
             .Include(x => x.Customer)
-            .Include(x => x.Employee);
+            .Include(x => x.Employee)
+                .ThenInclude(x => x!.Status);
 
         User? user;
         if (identifier.Contains('@'))
@@ -135,7 +159,7 @@ public sealed partial class AuthService : IAuthService
             return InvalidCredentials();
         }
 
-        if (user.Status != AccountStatusCodes.Active)
+        if (user.Status.StatusCode != AccountStatusCodes.Active)
         {
             return ServiceResult<AuthResponse>.Failure(
                 "Tài khoản đang bị khóa hoặc đã ngừng hoạt động.",
@@ -144,7 +168,7 @@ public sealed partial class AuthService : IAuthService
 
         if (isStaffLogin &&
             user.Employee is not null &&
-            user.Employee.Status != EmployeeStatusCodes.Active)
+            user.Employee.Status.StatusCode != EmployeeStatusCodes.Active)
         {
             return ServiceResult<AuthResponse>.Failure(
                 "Tài khoản nhân viên hiện không được phép đăng nhập.",
@@ -155,7 +179,7 @@ public sealed partial class AuthService : IAuthService
         PasswordVerificationResult verification;
         try
         {
-            verification = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, request.MatKhau);
+            verification = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, request.Password);
         }
         catch (FormatException)
         {
@@ -168,11 +192,11 @@ public sealed partial class AuthService : IAuthService
 
         if (verification == PasswordVerificationResult.SuccessRehashNeeded)
         {
-            user.PasswordHash = _passwordHasher.HashPassword(user, request.MatKhau);
+            user.PasswordHash = _passwordHasher.HashPassword(user, request.Password);
             await _db.SaveChangesAsync(cancellationToken);
         }
 
-        var token = _jwtTokenService.CreateAccessToken(user, request.GhiNhoDangNhap);
+        var token = _jwtTokenService.CreateAccessToken(user, request.RememberMe);
         return ServiceResult<AuthResponse>.Success(
             new AuthResponse(token.Token, token.ExpiresAtUtc, ToCurrentUser(user)));
     }
@@ -184,8 +208,10 @@ public sealed partial class AuthService : IAuthService
         var user = await _db.Users
             .AsNoTracking()
             .Include(x => x.Role)
+            .Include(x => x.Status)
             .Include(x => x.Customer)
             .Include(x => x.Employee)
+                .ThenInclude(x => x!.Status)
             .SingleOrDefaultAsync(x => x.UserId == userId, cancellationToken);
 
         return user is null
@@ -209,7 +235,7 @@ public sealed partial class AuthService : IAuthService
         user.Customer?.FullName ?? user.Employee?.FullName ?? user.Email,
         user.Customer?.PhoneNumber ?? user.Employee?.PhoneNumber,
         user.Role.RoleName,
-        user.Status);
+        user.Status.StatusCode);
 
     private static ServiceResult<AuthResponse> InvalidCredentials() =>
         ServiceResult<AuthResponse>.Failure(

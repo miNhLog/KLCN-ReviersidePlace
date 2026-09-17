@@ -1,4 +1,5 @@
 using HeThongDatTiecCuoi_WEB.Constants.StatusCodes;
+using HeThongDatTiecCuoi_WEB.Constants;
 using HeThongDatTiecCuoi_WEB.Models.AdminHall;
 using HeThongDatTiecCuoi_WEB.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -6,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace HeThongDatTiecCuoi_WEB.Controllers;
 
-[Authorize(Roles = "Quản trị viên")]
+[Authorize(Roles = RoleNames.Admin)]
 public sealed class AdminHallController : Controller
 {
     private const string ApiTokenCookie = "rp_api_token";

@@ -2,7 +2,7 @@
 using HeThongDatTiecCuoi_WEB.Models.AdminAccount;
 using HeThongDatTiecCuoi_WEB.Models.Auth;
 namespace HeThongDatTiecCuoi_WEB.Services;
-using HeThongDatTiecCuoi_WEB.Models.AdminThucDon;
+using HeThongDatTiecCuoi_WEB.Models.AdminMenu;
 using Microsoft.AspNetCore.Mvc;
 
 public interface IRiversideApiClient
@@ -14,6 +14,14 @@ public interface IRiversideApiClient
 
     Task<ApiCallResult<AuthResponseDto>> RegisterAsync(
         RegisterViewModel model,
+        CancellationToken cancellationToken);
+
+    Task<ApiCallResult<MessageResponseDto>> ForgotPasswordAsync(
+        ForgotPasswordViewModel model,
+        CancellationToken cancellationToken);
+
+    Task<ApiCallResult<MessageResponseDto>> ResetPasswordAsync(
+        ResetPasswordViewModel model,
         CancellationToken cancellationToken);
 
     Task<ApiCallResult<CurrentUserDto>> GetCurrentUserAsync(
@@ -94,9 +102,8 @@ public interface IRiversideApiClient
         string accessToken,
         CancellationToken cancellationToken);
 
-    Task<ApiCallResult<AccountActionResponse>> ResetPasswordAsync(
+    Task<ApiCallResult<AccountActionResponse>> SendPasswordResetLinkAsync(
         int userId,
-        ResetPasswordRequest model,
         string accessToken,
         CancellationToken cancellationToken);
 
@@ -106,88 +113,88 @@ public interface IRiversideApiClient
         string accessToken,
         CancellationToken cancellationToken);
     // THỰC ĐƠN
-    Task<ApiCallResult<List<ThucDonViewModel>>> GetDanhSachThucDonAsync(
-        string? tuKhoa,
-        string? trangThai,
+    Task<ApiCallResult<List<MenuViewModel>>> GetMenusAsync(
+        string? keyword,
+        string? status,
         string accessToken,
         CancellationToken cancellationToken);
 
-    Task<ApiCallResult<ThucDonViewModel>> TaoThucDonAsync(
-        TaoThucDonForm model,
+    Task<ApiCallResult<MenuViewModel>> CreateMenuAsync(
+        CreateMenuForm model,
         string accessToken,
         CancellationToken cancellationToken);
 
-    Task<ApiCallResult<ThucDonViewModel>> CapNhatThucDonAsync(
-        int id,
-        CapNhatThucDonForm model,
+    Task<ApiCallResult<MenuViewModel>> UpdateMenuAsync(
+        int menuId,
+        UpdateMenuForm model,
         string accessToken,
         CancellationToken cancellationToken);
 
-    Task<ApiActionResult> CapNhatTrangThaiThucDonAsync(
-        int id,
-        string trangThai,
+    Task<ApiActionResult> UpdateMenuStatusAsync(
+        int menuId,
+        string status,
         string accessToken,
         CancellationToken cancellationToken);
 
     // MÓN ĂN
-    Task<ApiCallResult<List<MonAnViewModel>>> GetDanhSachMonAnAsync(
-        string? tuKhoa,
-        string? nhomMon,
-        string? trangThai,
+    Task<ApiCallResult<List<DishViewModel>>> GetDishesAsync(
+        string? keyword,
+        string? category,
+        string? status,
         string accessToken,
         CancellationToken cancellationToken);
 
-    Task<ApiCallResult<MonAnViewModel>> TaoMonAnAsync(
-        TaoMonAnForm model,
+    Task<ApiCallResult<DishViewModel>> CreateDishAsync(
+        CreateDishForm model,
         string accessToken,
         CancellationToken cancellationToken);
 
-    Task<ApiCallResult<MonAnViewModel>> CapNhatMonAnAsync(
-        int id,
-        CapNhatMonAnForm model,
+    Task<ApiCallResult<DishViewModel>> UpdateDishAsync(
+        int dishId,
+        UpdateDishForm model,
         string accessToken,
         CancellationToken cancellationToken);
 
-    Task<ApiActionResult> CapNhatTrangThaiMonAnAsync(
-        int id,
-        string trangThai,
+    Task<ApiActionResult> UpdateDishStatusAsync(
+        int dishId,
+        string status,
         string accessToken,
         CancellationToken cancellationToken);
 
-    Task<ApiActionResult> UploadHinhAnhMonAnAsync(
-        int id,
+    Task<ApiActionResult> UploadDishImageAsync(
+        int dishId,
         Stream fileStream,
         string fileName,
         string? contentType,
         string accessToken,
         CancellationToken cancellationToken);
 
-    Task<ApiActionResult> XoaHinhAnhMonAnAsync(
-        int id,
+    Task<ApiActionResult> DeleteDishImageAsync(
+        int dishId,
         string accessToken,
         CancellationToken cancellationToken);
 
     // CHI TIẾT THỰC ĐƠN
-    Task<ApiCallResult<List<ChiTietThucDonViewModel>>> GetMonAnTrongThucDonAsync(
-        int thucDonId,
+    Task<ApiCallResult<List<MenuDishViewModel>>> GetMenuDishesAsync(
+        int menuId,
         string accessToken,
         CancellationToken cancellationToken);
 
-    Task<ApiCallResult<ChiTietThucDonViewModel>> ThemMonVaoThucDonAsync(
-        int thucDonId,
-        int monAnId,
+    Task<ApiCallResult<MenuDishViewModel>> AddDishToMenuAsync(
+        int menuId,
+        int dishId,
         string accessToken,
         CancellationToken cancellationToken);
 
-    Task<ApiActionResult> XoaMonKhoiThucDonAsync(
-        int thucDonId,
-        int monAnId,
+    Task<ApiActionResult> RemoveDishFromMenuAsync(
+        int menuId,
+        int dishId,
         string accessToken,
         CancellationToken cancellationToken);
 
-    Task<ApiActionResult> SapXepMonAnAsync(
-        int thucDonId,
-        List<int> danhSachMonAnID,
+    Task<ApiActionResult> ReorderMenuDishesAsync(
+        int menuId,
+        List<int> dishIds,
         string accessToken,
         CancellationToken cancellationToken);
 

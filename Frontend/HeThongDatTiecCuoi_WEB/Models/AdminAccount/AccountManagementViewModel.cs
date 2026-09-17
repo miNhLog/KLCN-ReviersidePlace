@@ -10,7 +10,9 @@ public sealed class AccountDto
     public string? EmployeeCode { get; set; }
     public string? PhoneNumber { get; set; }
     public string Status { get; set; } = string.Empty;
+    public string StatusName { get; set; } = string.Empty;
     public string? EmployeeStatus { get; set; }
+    public string? EmployeeStatusName { get; set; }
     public DateTime CreatedAt { get; set; }
 }
 
@@ -46,11 +48,6 @@ public sealed class UpdateEmployeeAccountRequest
     public string? PhoneNumber { get; set; }
     public string Email { get; set; } = string.Empty;
     public string? EmployeeStatus { get; set; }
-}
-
-public sealed class ResetPasswordRequest
-{
-    public string NewPassword { get; set; } = string.Empty;
 }
 
 public sealed class AccountActionResponse

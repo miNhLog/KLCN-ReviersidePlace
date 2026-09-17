@@ -1,4 +1,5 @@
 using HeThongDatTiecCuoi_WEB.Constants.StatusCodes;
+using HeThongDatTiecCuoi_WEB.Constants;
 using HeThongDatTiecCuoi_WEB.Models.AdminAccount;
 using HeThongDatTiecCuoi_WEB.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -6,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace HeThongDatTiecCuoi_WEB.Controllers;
 
-[Authorize(Roles = "Quản trị viên")]
+[Authorize(Roles = RoleNames.Admin)]
 [Route("admin/quan-ly-tai-khoan")]
 public sealed class AdminAccountController : Controller
 {
@@ -296,11 +297,10 @@ public sealed class AdminAccountController : Controller
         });
     }
 
-    [HttpPost("dat-lai-mat-khau/{userId:int}")]
+    [HttpPost("gui-lien-ket-dat-lai-mat-khau/{userId:int}")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> ResetPassword(
+    public async Task<IActionResult> SendPasswordResetLink(
         int userId,
-        [FromForm] string newPassword,
         CancellationToken cancellationToken)
     {
         var accessToken = Request.Cookies[ApiTokenCookie];
@@ -323,23 +323,8 @@ public sealed class AdminAccountController : Controller
             });
         }
 
-        if (string.IsNullOrWhiteSpace(newPassword))
-        {
-            return Json(new
-            {
-                success = false,
-                message = "Vui lòng nhập mật khẩu mới."
-            });
-        }
-
-        var model = new ResetPasswordRequest
-        {
-            NewPassword = newPassword
-        };
-
-        var result = await _apiClient.ResetPasswordAsync(
+        var result = await _apiClient.SendPasswordResetLinkAsync(
             userId,
-            model,
             accessToken,
             cancellationToken);
 
@@ -349,7 +334,7 @@ public sealed class AdminAccountController : Controller
             {
                 success = false,
                 message = result.Error
-                    ?? "Không thể đặt lại mật khẩu."
+                    ?? "Không thể gửi liên kết đặt lại mật khẩu."
             });
         }
 
@@ -357,7 +342,7 @@ public sealed class AdminAccountController : Controller
         {
             success = true,
             message = result.Value?.Message
-                ?? "Đặt lại mật khẩu thành công."
+                ?? "Đã gửi liên kết đặt lại mật khẩu."
         });
     }
 }

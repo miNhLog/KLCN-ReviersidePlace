@@ -1,3 +1,4 @@
+using HeThongDatTiecCuoi_WEB.Constants;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,7 +13,7 @@ public sealed class HomeController : Controller
             return RedirectToAction("Login", "Auth");
         }
 
-        if (User.IsInRole("Quản trị viên"))
+        if (User.IsInRole(RoleNames.Admin))
         {
             return RedirectToAction("Index", "AdminHall");
         }
@@ -26,7 +27,7 @@ public sealed class HomeController : Controller
     {
         // Admin truy cập trực tiếp /Home/Dashboard
         // cũng chuyển về trang quản lý sảnh
-        if (User.IsInRole("Quản trị viên"))
+        if (User.IsInRole(RoleNames.Admin))
         {
             return RedirectToAction("Index", "AdminHall");
         }

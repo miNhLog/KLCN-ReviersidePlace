@@ -10,6 +10,8 @@ public sealed class AccountDto
     public string? EmployeeCode { get; set; }
     public string? PhoneNumber { get; set; }
     public string Status { get; set; } = string.Empty;
+    public string StatusName { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
     public string? EmployeeStatus { get; set; }
+    public string? EmployeeStatusName { get; set; }
 }

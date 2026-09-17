@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using HeThongDatTiecCuoi_WEB.Constants;
 using HeThongDatTiecCuoi_WEB.Models.Auth;
 using HeThongDatTiecCuoi_WEB.Services;
 using Microsoft.AspNetCore.Authentication;
@@ -24,7 +25,7 @@ public sealed class AuthController : Controller
     {
         if (User.Identity?.IsAuthenticated == true)
         {
-            if (User.IsInRole("Quản trị viên"))
+            if (User.IsInRole(RoleNames.Admin))
             {
                 return RedirectToAction("Index", "AdminHall");
             }
@@ -52,13 +53,13 @@ public sealed class AuthController : Controller
             return View(model);
         }
 
-        await SignInAsync(result.Value, model.GhiNhoDangNhap);
+        await SignInAsync(result.Value, model.RememberMe);
         if (!string.IsNullOrWhiteSpace(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl))
         {
             return LocalRedirect(model.ReturnUrl);
         }
 
-        if (result.Value.User.RoleName == "Quản trị viên")
+        if (result.Value.User.RoleName == RoleNames.Admin)
         {
             return RedirectToAction("Index", "AdminHall");
         }
@@ -72,7 +73,7 @@ public sealed class AuthController : Controller
     {
         if (User.Identity?.IsAuthenticated == true)
         {
-            if (User.IsInRole("Quản trị viên"))
+            if (User.IsInRole(RoleNames.Admin))
             {
                 return RedirectToAction("Index", "AdminHall");
             }
@@ -103,6 +104,59 @@ public sealed class AuthController : Controller
         await SignInAsync(result.Value, isPersistent: false);
         TempData["Success"] = "Tạo tài khoản thành công. Chào mừng anh/chị đến Riverside Palace!";
         return RedirectToAction("Dashboard", "Home");
+    }
+
+    [HttpGet("auth/forgot-password")]
+    [AllowAnonymous]
+    public IActionResult ForgotPassword() => View(new ForgotPasswordViewModel());
+
+    [HttpPost("auth/forgot-password")]
+    [AllowAnonymous]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ForgotPassword(
+        ForgotPasswordViewModel model,
+        CancellationToken cancellationToken)
+    {
+        if (!ModelState.IsValid)
+        {
+            return View(model);
+        }
+
+        var result = await _apiClient.ForgotPasswordAsync(model, cancellationToken);
+        TempData[result.Succeeded ? "Success" : "Error"] = result.Succeeded
+            ? result.Value?.Message ?? "Nếu email tồn tại trong hệ thống, hướng dẫn đặt lại mật khẩu sẽ được gửi."
+            : result.Error ?? "Không thể gửi yêu cầu đặt lại mật khẩu.";
+        return View(model);
+    }
+
+    [HttpGet("auth/reset-password")]
+    [AllowAnonymous]
+    public IActionResult ResetPassword(string? token)
+    {
+        return View(new ResetPasswordViewModel { Token = token ?? string.Empty });
+    }
+
+    [HttpPost("auth/reset-password")]
+    [AllowAnonymous]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ResetPassword(
+        ResetPasswordViewModel model,
+        CancellationToken cancellationToken)
+    {
+        if (!ModelState.IsValid)
+        {
+            return View(model);
+        }
+
+        var result = await _apiClient.ResetPasswordAsync(model, cancellationToken);
+        if (!result.Succeeded)
+        {
+            ModelState.AddModelError(string.Empty, result.Error ?? "Không thể đặt lại mật khẩu.");
+            return View(model);
+        }
+
+        TempData["Success"] = result.Value?.Message ?? "Đặt lại mật khẩu thành công.";
+        return RedirectToAction(nameof(Login));
     }
 
     [HttpPost("dang-xuat")]

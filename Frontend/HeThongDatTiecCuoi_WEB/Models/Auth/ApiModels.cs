@@ -14,6 +14,7 @@ public sealed record AuthResponseDto(
     CurrentUserDto User);
 
 public sealed record ApiErrorDto(string Message, Dictionary<string, string[]>? Errors = null);
+public sealed record MessageResponseDto(string Message);
 
 public sealed record ApiCallResult<T>(bool Succeeded, T? Value, string? Error)
 {

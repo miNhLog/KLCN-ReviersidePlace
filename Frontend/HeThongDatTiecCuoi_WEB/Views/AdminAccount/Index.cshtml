@@ -7,7 +7,7 @@
     ViewData["ActiveMenu"] = "Account";
 
     var adminAccounts = Model.Accounts
-        .Where(x => x.RoleName == "Quản trị viên")
+        .Where(x => x.RoleName == RoleNames.Admin)
         .ToList();
 
     var employeeAccounts = Model.Accounts
@@ -327,7 +327,7 @@
 
                             <span class="account-status @statusClass">
                                 <i class="fa-solid fa-circle"></i>
-                                @StatusDisplayNames.GetAccountStatusName(account.Status)
+                                @(string.IsNullOrWhiteSpace(account.StatusName) ? StatusDisplayNames.GetAccountStatusName(account.Status) : account.StatusName)
                             </span>
 
                             <span class="created-date">
@@ -471,7 +471,7 @@
 
                                         <i class="fa-solid fa-circle"></i>
 
-                                        @StatusDisplayNames.GetAccountStatusName(account.Status)
+                                        @(string.IsNullOrWhiteSpace(account.StatusName) ? StatusDisplayNames.GetAccountStatusName(account.Status) : account.StatusName)
 
                                     </span>
                                 </td>
@@ -539,7 +539,7 @@
 
                                         <button type="button"
                                                 class="account-action-button password-account"
-                                                title="Đặt lại mật khẩu"
+                                                title="Gửi liên kết đặt lại mật khẩu"
                                                 data-user-id="@account.UserId"
                                                 data-email="@account.Email">
 
@@ -677,7 +677,7 @@
 
                                         <i class="fa-solid fa-circle"></i>
 
-                                        @StatusDisplayNames.GetAccountStatusName(account.Status)
+                                        @(string.IsNullOrWhiteSpace(account.StatusName) ? StatusDisplayNames.GetAccountStatusName(account.Status) : account.StatusName)
 
                                     </span>
 
@@ -707,7 +707,7 @@
 
                                         <button type="button"
                                                 class="account-action-button password-account"
-                                                title="Đặt lại mật khẩu"
+                                                title="Gửi liên kết đặt lại mật khẩu"
                                                 data-user-id="@account.UserId"
                                                 data-email="@account.Email">
 
@@ -1156,7 +1156,7 @@
     </div>
 
 </div>
-<!-- MODAL ĐẶT LẠI MẬT KHẨU -->
+<!-- MODAL GỬI LIÊN KẾT ĐẶT LẠI MẬT KHẨU -->
 <div id="resetPasswordModal"
      class="account-modal-overlay">
 
@@ -1165,8 +1165,8 @@
         <div class="account-modal-header">
 
             <div>
-                <h3>Đặt Lại Mật Khẩu</h3>
-                <p>Cập nhật mật khẩu mới cho tài khoản</p>
+                <h3>Gửi Liên Kết Đặt Lại Mật Khẩu</h3>
+                <p>Người dùng sẽ tự đặt mật khẩu mới qua liên kết bảo mật gửi đến email</p>
             </div>
 
             <button type="button"
@@ -1204,44 +1204,9 @@
             </div>
 
 
-            <div class="account-form-group">
-
-                <label>
-                    Mật khẩu mới
-                    <span>*</span>
-                </label>
-
-                <input type="password"
-                       id="newPassword"
-                       name="newPassword"
-                       minlength="8"
-                       autocomplete="new-password"
-                       required
-                       placeholder="Nhập mật khẩu mới" />
-
-                <small>
-                    Tối thiểu 8 ký tự, có chữ hoa, chữ thường,
-                    số và ký tự đặc biệt.
-                </small>
-
-            </div>
-
-
-            <div class="account-form-group">
-
-                <label>
-                    Xác nhận mật khẩu
-                    <span>*</span>
-                </label>
-
-                <input type="password"
-                       id="confirmNewPassword"
-                       minlength="8"
-                       autocomplete="new-password"
-                       required
-                       placeholder="Nhập lại mật khẩu mới" />
-
-            </div>
+            <p class="account-form-help">
+                Admin không thể xem hoặc đặt mật khẩu thay người dùng. Liên kết có thời hạn và chỉ sử dụng được một lần.
+            </p>
 
 
             <div id="resetPasswordError"
@@ -1263,8 +1228,8 @@
                         class="btn-modal-save"
                         id="saveResetPasswordButton">
 
-                    <i class="fa-solid fa-key"></i>
-                    Đặt lại mật khẩu
+                    <i class="fa-solid fa-envelope"></i>
+                    Gửi liên kết
 
                 </button>
 
@@ -1819,7 +1784,7 @@
         });
 
                 // =====================================================
-        // ĐẶT LẠI MẬT KHẨU
+        // GỬI LIÊN KẾT ĐẶT LẠI MẬT KHẨU
         // =====================================================
 
         const resetPasswordModal =
@@ -1900,27 +1865,6 @@
                     ).value;
 
 
-                const newPassword =
-                    document.getElementById(
-                        "newPassword"
-                    ).value;
-
-
-                const confirmPassword =
-                    document.getElementById(
-                        "confirmNewPassword"
-                    ).value;
-
-
-                if (newPassword !== confirmPassword) {
-
-                    resetPasswordError.textContent =
-                        "Mật khẩu xác nhận không khớp.";
-
-                    return;
-                }
-
-
                 const formData =
                     new FormData(resetPasswordForm);
 
@@ -1934,14 +1878,14 @@
                 saveButton.disabled = true;
 
                 saveButton.innerHTML =
-                    '<i class="fa-solid fa-spinner fa-spin"></i> Đang cập nhật...';
+                    '<i class="fa-solid fa-spinner fa-spin"></i> Đang gửi...';
 
 
                 try {
 
                     const response =
                         await fetch(
-                            `/admin/quan-ly-tai-khoan/dat-lai-mat-khau/${userId}`,
+                            `/admin/quan-ly-tai-khoan/gui-lien-ket-dat-lai-mat-khau/${userId}`,
                             {
                                 method: "POST",
                                 body: formData
@@ -1957,7 +1901,7 @@
 
                         resetPasswordError.textContent =
                             result.message
-                            ?? "Không thể đặt lại mật khẩu.";
+                            ?? "Không thể gửi liên kết đặt lại mật khẩu.";
 
                         return;
                     }
@@ -1965,7 +1909,7 @@
 
                     closePasswordModal();
 
-                    alert("Đặt lại mật khẩu thành công.");
+                    alert(result.message ?? "Đã gửi liên kết đặt lại mật khẩu.");
 
                 }
                 catch (error) {
@@ -1978,7 +1922,7 @@
                     saveButton.disabled = false;
 
                     saveButton.innerHTML =
-                        '<i class="fa-solid fa-key"></i> Đặt lại mật khẩu';
+                        '<i class="fa-solid fa-envelope"></i> Gửi liên kết';
                 }
 
             }

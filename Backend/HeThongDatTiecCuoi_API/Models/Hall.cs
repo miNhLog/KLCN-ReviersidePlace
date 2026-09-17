@@ -10,5 +10,6 @@ public sealed class Hall
     public decimal RentalPrice { get; set; }
     public string? Description { get; set; }
     public string? ImageUrl { get; set; }
-    public string Status { get; set; } = string.Empty;
+    public int StatusId { get; set; }
+    public Status Status { get; set; } = null!;
 }

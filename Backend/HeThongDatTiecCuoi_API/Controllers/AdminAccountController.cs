@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using HeThongDatTiecCuoi_API.Constants.StatusCodes;
+using HeThongDatTiecCuoi_API.Constants;
 using HeThongDatTiecCuoi_API.Data;
 using HeThongDatTiecCuoi_API.DTOs.AdminAccount;
 using HeThongDatTiecCuoi_API.DTOs.Common;
@@ -8,6 +9,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using HeThongDatTiecCuoi_API.Services;
 
 namespace HeThongDatTiecCuoi_API.Controllers;
 
@@ -18,13 +20,19 @@ public sealed class AdminAccountController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
     private readonly IPasswordHasher<User> _passwordHasher;
+    private readonly IStatusService _statusService;
+    private readonly IPasswordResetService _passwordResetService;
 
     public AdminAccountController(
         ApplicationDbContext context,
-        IPasswordHasher<User> passwordHasher)
+        IPasswordHasher<User> passwordHasher,
+        IStatusService statusService,
+        IPasswordResetService passwordResetService)
     {
         _context = context;
         _passwordHasher = passwordHasher;
+        _statusService = statusService;
+        _passwordResetService = passwordResetService;
     }
 
     [HttpGet]
@@ -76,7 +84,7 @@ public sealed class AdminAccountController : ControllerBase
 
         if (!string.IsNullOrWhiteSpace(status))
         {
-            query = query.Where(item => item.user.Status == status);
+            query = query.Where(item => item.user.Status.StatusCode == status);
         }
 
         var accounts = await query
@@ -100,10 +108,14 @@ public sealed class AdminAccountController : ControllerBase
                     : item.customer != null
                         ? item.customer.PhoneNumber
                         : null,
-                Status = item.user.Status,
+                Status = item.user.Status.StatusCode,
+                StatusName = item.user.Status.StatusName,
                 CreatedAt = item.user.CreatedAt,
                 EmployeeStatus = item.employee != null
-                    ? item.employee.Status
+                    ? item.employee.Status.StatusCode
+                    : null,
+                EmployeeStatusName = item.employee != null
+                    ? item.employee.Status.StatusName
                     : null
             })
             .ToListAsync(cancellationToken);
@@ -134,9 +146,9 @@ public sealed class AdminAccountController : ControllerBase
         [FromBody] StatusRequest request,
         CancellationToken cancellationToken)
     {
-        var status = request.Status?.Trim();
+        var statusCode = request.Status?.Trim().ToUpperInvariant();
 
-        if (string.IsNullOrWhiteSpace(status))
+        if (string.IsNullOrWhiteSpace(statusCode))
         {
             return BadRequest(new
             {
@@ -145,6 +157,7 @@ public sealed class AdminAccountController : ControllerBase
         }
 
         var user = await _context.Users
+            .Include(account => account.Status)
             .FirstOrDefaultAsync(
                 account => account.UserId == userId,
                 cancellationToken);
@@ -164,7 +177,7 @@ public sealed class AdminAccountController : ControllerBase
             AccountStatusCodes.Inactive
         };
 
-        if (!validStatuses.Contains(status))
+        if (!validStatuses.Contains(statusCode))
         {
             return BadRequest(new
             {
@@ -174,7 +187,7 @@ public sealed class AdminAccountController : ControllerBase
 
         var signedInEmail = User.FindFirst(ClaimTypes.Email)?.Value;
 
-        if (user.Email == signedInEmail && status != AccountStatusCodes.Active)
+        if (user.Email == signedInEmail && statusCode != AccountStatusCodes.Active)
         {
             return BadRequest(new
             {
@@ -182,11 +195,18 @@ public sealed class AdminAccountController : ControllerBase
             });
         }
 
-        user.Status = status;
+        var status = await _statusService.GetStatusAsync(
+            StatusGroups.Account, statusCode, cancellationToken);
+        if (status is null)
+        {
+            return BadRequest(new { message = "Trạng thái tài khoản chưa được cấu hình." });
+        }
+
+        user.StatusId = status.StatusId;
 
         await _context.SaveChangesAsync(cancellationToken);
 
-        var message = status switch
+        var message = statusCode switch
         {
             AccountStatusCodes.Active => "Mở khóa tài khoản thành công.",
             AccountStatusCodes.Suspended => "Tạm khóa tài khoản thành công.",
@@ -198,7 +218,8 @@ public sealed class AdminAccountController : ControllerBase
         {
             message,
             userId = user.UserId,
-            status = user.Status
+            status = status.StatusCode,
+            statusName = status.StatusName
         });
     }
 
@@ -300,11 +321,16 @@ public sealed class AdminAccountController : ControllerBase
 
         try
         {
+            var accountStatusId = await _statusService.GetStatusIdAsync(
+                StatusGroups.Account, AccountStatusCodes.Active, cancellationToken);
+            var employeeStatusId = await _statusService.GetStatusIdAsync(
+                StatusGroups.Employee, EmployeeStatusCodes.Active, cancellationToken);
+
             var user = new User
             {
                 RoleId = request.RoleId,
                 Email = email,
-                Status = AccountStatusCodes.Active,
+                StatusId = accountStatusId,
                 CreatedAt = DateTime.Now
             };
 
@@ -321,7 +347,7 @@ public sealed class AdminAccountController : ControllerBase
                 EmployeeCode = employeeCode,
                 FullName = fullName,
                 PhoneNumber = phoneNumber,
-                Status = EmployeeStatusCodes.Active
+                StatusId = employeeStatusId
             };
 
             _context.Employees.Add(employee);
@@ -378,6 +404,7 @@ public sealed class AdminAccountController : ControllerBase
             ? null
             : request.EmployeeStatus.Trim();
 
+        Status? updatedEmployeeStatus = null;
         if (employeeStatus is not null)
         {
             var validEmployeeStatuses = new[]
@@ -430,6 +457,7 @@ public sealed class AdminAccountController : ControllerBase
         }
 
         var user = await _context.Users
+            .Include(account => account.Status)
             .FirstOrDefaultAsync(
                 account => account.UserId == userId,
                 cancellationToken);
@@ -443,6 +471,7 @@ public sealed class AdminAccountController : ControllerBase
         }
 
         var employee = await _context.Employees
+            .Include(existingEmployee => existingEmployee.Status)
             .FirstOrDefaultAsync(
                 existingEmployee => existingEmployee.UserId == userId,
                 cancellationToken);
@@ -499,7 +528,15 @@ public sealed class AdminAccountController : ControllerBase
 
         if (employeeStatus is not null)
         {
-            employee.Status = employeeStatus;
+            var resolvedEmployeeStatus = await _statusService.GetStatusAsync(
+                StatusGroups.Employee, employeeStatus, cancellationToken);
+            if (resolvedEmployeeStatus is null)
+            {
+                return BadRequest(new { message = "Trạng thái nhân viên chưa được cấu hình." });
+            }
+
+            employee.StatusId = resolvedEmployeeStatus.StatusId;
+            updatedEmployeeStatus = resolvedEmployeeStatus;
         }
 
         await _context.SaveChangesAsync(cancellationToken);
@@ -513,61 +550,40 @@ public sealed class AdminAccountController : ControllerBase
             fullName = employee.FullName,
             phoneNumber = employee.PhoneNumber,
             roleName = role.RoleName,
-            accountStatus = user.Status,
-            employeeStatus = employee.Status
+            accountStatus = user.Status.StatusCode,
+            accountStatusName = user.Status.StatusName,
+            employeeStatus = (updatedEmployeeStatus ?? employee.Status).StatusCode,
+            employeeStatusName = (updatedEmployeeStatus ?? employee.Status).StatusName
         });
     }
 
-    [HttpPatch("{userId:int}/reset-password")]
-    public async Task<IActionResult> ResetPassword(
+    [HttpPost("{userId:int}/password-reset")]
+    public async Task<IActionResult> SendPasswordResetLink(
         int userId,
-        [FromBody] ResetPasswordRequest request,
         CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(request.NewPassword))
+        bool userExists;
+        try
         {
-            return BadRequest(new
+            userExists = await _passwordResetService.SendResetLinkForUserAsync(
+                userId, cancellationToken);
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            return StatusCode(StatusCodes.Status503ServiceUnavailable, new
             {
-                message = "Vui lòng nhập mật khẩu mới."
+                message = "Chưa thể gửi email đặt lại mật khẩu. Vui lòng kiểm tra cấu hình SMTP."
             });
         }
-
-        if (request.NewPassword.Length < 8 ||
-            !request.NewPassword.Any(char.IsUpper) ||
-            !request.NewPassword.Any(char.IsLower) ||
-            !request.NewPassword.Any(char.IsDigit) ||
-            !request.NewPassword.Any(character => !char.IsLetterOrDigit(character)))
+        if (!userExists)
         {
-            return BadRequest(new
-            {
-                message = "Mật khẩu phải có ít nhất 8 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt."
-            });
+            return NotFound(new { message = "Không tìm thấy tài khoản." });
         }
-
-        var user = await _context.Users
-            .FirstOrDefaultAsync(
-                account => account.UserId == userId,
-                cancellationToken);
-
-        if (user is null)
-        {
-            return NotFound(new
-            {
-                message = "Không tìm thấy tài khoản."
-            });
-        }
-
-        user.PasswordHash = _passwordHasher.HashPassword(
-            user,
-            request.NewPassword);
-
-        await _context.SaveChangesAsync(cancellationToken);
 
         return Ok(new
         {
-            message = "Đặt lại mật khẩu thành công.",
-            userId = user.UserId,
-            email = user.Email
+            message = "Đã gửi liên kết đặt lại mật khẩu đến email của người dùng.",
+            userId
         });
     }
 
@@ -607,7 +623,7 @@ public sealed class AdminAccountController : ControllerBase
         [FromBody] StatusRequest request,
         CancellationToken cancellationToken)
     {
-        var status = request.Status?.Trim();
+        var statusCode = request.Status?.Trim().ToUpperInvariant();
         var validStatuses = new[]
         {
             EmployeeStatusCodes.Active,
@@ -615,8 +631,8 @@ public sealed class AdminAccountController : ControllerBase
             EmployeeStatusCodes.Terminated
         };
 
-        if (string.IsNullOrWhiteSpace(status) ||
-            !validStatuses.Contains(status))
+        if (string.IsNullOrWhiteSpace(statusCode) ||
+            !validStatuses.Contains(statusCode))
         {
             return BadRequest(new
             {
@@ -637,7 +653,14 @@ public sealed class AdminAccountController : ControllerBase
             });
         }
 
-        employee.Status = status;
+        var status = await _statusService.GetStatusAsync(
+            StatusGroups.Employee, statusCode, cancellationToken);
+        if (status is null)
+        {
+            return BadRequest(new { message = "Trạng thái nhân viên chưa được cấu hình." });
+        }
+
+        employee.StatusId = status.StatusId;
 
         await _context.SaveChangesAsync(cancellationToken);
 
@@ -646,7 +669,8 @@ public sealed class AdminAccountController : ControllerBase
             message = "Cập nhật trạng thái nhân viên thành công.",
             userId,
             employeeCode = employee.EmployeeCode,
-            employeeStatus = employee.Status
+            employeeStatus = status.StatusCode,
+            employeeStatusName = status.StatusName
         });
     }
 }

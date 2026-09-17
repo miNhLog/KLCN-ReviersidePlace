@@ -1,5 +1,3 @@
-using HeThongDatTiecCuoi_API.Constants.StatusCodes;
-
 namespace HeThongDatTiecCuoi_API.Models;
 
 public sealed class Employee
@@ -9,7 +7,8 @@ public sealed class Employee
     public string EmployeeCode { get; set; } = string.Empty;
     public string FullName { get; set; } = string.Empty;
     public string? PhoneNumber { get; set; }
-    public string Status { get; set; } = EmployeeStatusCodes.Active;
+    public int StatusId { get; set; }
 
     public User User { get; set; } = null!;
+    public Status Status { get; set; } = null!;
 }

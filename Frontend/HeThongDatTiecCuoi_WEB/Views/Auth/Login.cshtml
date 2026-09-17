@@ -29,31 +29,36 @@
             <h2>Đăng Nhập</h2>
             <p class="subtitle">Vui lòng nhập thông tin để truy cập tài khoản và dịch vụ</p>
 
+            @if (TempData["Success"] is string successMessage)
+            {
+                <div class="alert-success">@successMessage</div>
+            }
+
             <form asp-action="Login" asp-controller="Auth" method="post" novalidate>
                 <input asp-for="ReturnUrl" type="hidden" />
                 <div asp-validation-summary="ModelOnly" class="alert-error"></div>
 
                 <div class="account-tabs" role="group" aria-label="Loại tài khoản">
-                    <button type="button" class="tab-button @(Model.LoaiTaiKhoan == "Customer" ? "active" : "")" data-account-type="Customer">Khách hàng / Chủ tiệc</button>
-                    <button type="button" class="tab-button @(Model.LoaiTaiKhoan == "Staff" ? "active" : "")" data-account-type="Staff">Cán bộ nhân viên</button>
+                    <button type="button" class="tab-button @(Model.AccountType == "Customer" ? "active" : "")" data-account-type="Customer">Khách hàng / Chủ tiệc</button>
+                    <button type="button" class="tab-button @(Model.AccountType == "Staff" ? "active" : "")" data-account-type="Staff">Cán bộ nhân viên</button>
                 </div>
-                <input asp-for="LoaiTaiKhoan" type="hidden" id="accountType" />
+                <input asp-for="AccountType" type="hidden" id="accountType" />
 
                 <div class="field">
-                    <label asp-for="DinhDanh">EMAIL HOẶC SỐ ĐIỆN THOẠI <i>*</i></label>
-                    <div class="input-wrap"><span>✉</span><input asp-for="DinhDanh" placeholder="example@email.com hoặc 0903xxxxxx" autocomplete="username" /></div>
-                    <span asp-validation-for="DinhDanh" class="field-error"></span>
+                    <label asp-for="Identifier">EMAIL HOẶC SỐ ĐIỆN THOẠI <i>*</i></label>
+                    <div class="input-wrap"><span>✉</span><input asp-for="Identifier" placeholder="example@email.com hoặc 0903xxxxxx" autocomplete="username" /></div>
+                    <span asp-validation-for="Identifier" class="field-error"></span>
                 </div>
 
                 <div class="field">
-                    <label asp-for="MatKhau">MẬT KHẨU <i>*</i></label>
-                    <div class="input-wrap"><span>♙</span><input asp-for="MatKhau" placeholder="••••••••••••" autocomplete="current-password" /><button class="toggle-password" type="button" aria-label="Hiện mật khẩu">◉</button></div>
-                    <span asp-validation-for="MatKhau" class="field-error"></span>
+                    <label asp-for="Password">MẬT KHẨU <i>*</i></label>
+                    <div class="input-wrap"><span>♙</span><input asp-for="Password" placeholder="••••••••••••" autocomplete="current-password" /><button class="toggle-password" type="button" aria-label="Hiện mật khẩu">◉</button></div>
+                    <span asp-validation-for="Password" class="field-error"></span>
                 </div>
 
                 <div class="form-row between compact">
-                    <label class="check"><input asp-for="GhiNhoDangNhap" /> <span>Ghi nhớ phiên đăng nhập</span></label>
-                    <span class="muted-link" title="Tính năng sẽ được triển khai ở giai đoạn 2">Quên mật khẩu?</span>
+                    <label class="check"><input asp-for="RememberMe" /> <span>Ghi nhớ phiên đăng nhập</span></label>
+                    <a class="muted-link" asp-action="ForgotPassword">Quên mật khẩu?</a>
                 </div>
 
                 <button class="primary-button" type="submit">Đăng Nhập <span>→</span></button>

@@ -1,7 +1,5 @@
 ﻿namespace HeThongDatTiecCuoi_API.Models;
 
-using HeThongDatTiecCuoi_API.Constants.StatusCodes;
-
 public sealed class HallSchedule
 {
     public int HallScheduleId { get; set; }
@@ -12,9 +10,10 @@ public sealed class HallSchedule
 
     public string Shift { get; set; } = string.Empty;
 
-    public string Status { get; set; } = HallScheduleStatusCodes.Available;
+    public int StatusId { get; set; }
 
     public string? Notes { get; set; }
 
     public Hall Hall { get; set; } = null!;
+    public Status Status { get; set; } = null!;
 }

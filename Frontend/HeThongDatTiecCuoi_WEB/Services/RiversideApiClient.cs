@@ -6,7 +6,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 namespace HeThongDatTiecCuoi_WEB.Services;
-using HeThongDatTiecCuoi_WEB.Models.AdminThucDon;
+using HeThongDatTiecCuoi_WEB.Models.AdminMenu;
 using Microsoft.AspNetCore.Mvc;
 
 public sealed class RiversideApiClient : IRiversideApiClient
@@ -24,10 +24,10 @@ public sealed class RiversideApiClient : IRiversideApiClient
         CancellationToken cancellationToken) =>
         SendAsync<AuthResponseDto>(HttpMethod.Post, "api/auth/login", new
         {
-            model.DinhDanh,
-            model.MatKhau,
-            model.LoaiTaiKhoan,
-            model.GhiNhoDangNhap
+            model.Identifier,
+            model.Password,
+            model.AccountType,
+            model.RememberMe
         }, null, cancellationToken);
 
     public Task<ApiCallResult<AuthResponseDto>> RegisterAsync(
@@ -35,12 +35,30 @@ public sealed class RiversideApiClient : IRiversideApiClient
         CancellationToken cancellationToken) =>
         SendAsync<AuthResponseDto>(HttpMethod.Post, "api/auth/register", new
         {
-            model.HoTen,
-            model.SoDienThoai,
+            model.FullName,
+            model.PhoneNumber,
             model.Email,
-            model.MatKhau,
-            model.XacNhanMatKhau,
-            model.DongYDieuKhoan
+            model.Password,
+            model.ConfirmPassword,
+            model.AcceptTerms
+        }, null, cancellationToken);
+
+    public Task<ApiCallResult<MessageResponseDto>> ForgotPasswordAsync(
+        ForgotPasswordViewModel model,
+        CancellationToken cancellationToken) =>
+        SendAsync<MessageResponseDto>(HttpMethod.Post, "api/auth/forgot-password", new
+        {
+            model.Email
+        }, null, cancellationToken);
+
+    public Task<ApiCallResult<MessageResponseDto>> ResetPasswordAsync(
+        ResetPasswordViewModel model,
+        CancellationToken cancellationToken) =>
+        SendAsync<MessageResponseDto>(HttpMethod.Post, "api/auth/reset-password", new
+        {
+            model.Token,
+            model.NewPassword,
+            model.ConfirmPassword
         }, null, cancellationToken);
 
     public Task<ApiCallResult<CurrentUserDto>> GetCurrentUserAsync(
@@ -273,16 +291,15 @@ public sealed class RiversideApiClient : IRiversideApiClient
 
 
     public Task<ApiCallResult<AccountActionResponse>>
-        ResetPasswordAsync(
+        SendPasswordResetLinkAsync(
             int userId,
-            ResetPasswordRequest model,
             string accessToken,
             CancellationToken cancellationToken)
     {
         return SendAsync<AccountActionResponse>(
-            HttpMethod.Patch,
-            $"api/admin/accounts/{userId}/reset-password",
-            model,
+            HttpMethod.Post,
+            $"api/admin/accounts/{userId}/password-reset",
+            null,
             accessToken,
             cancellationToken);
     }
@@ -353,34 +370,34 @@ public sealed class RiversideApiClient : IRiversideApiClient
     // THỰC ĐƠN
     // =========================================================
 
-    public Task<ApiCallResult<List<ThucDonViewModel>>> GetDanhSachThucDonAsync(
-        string? tuKhoa,
-        string? trangThai,
+    public Task<ApiCallResult<List<MenuViewModel>>> GetMenusAsync(
+        string? keyword,
+        string? status,
         string accessToken,
         CancellationToken cancellationToken)
     {
         var query = new List<string>();
 
-        if (!string.IsNullOrWhiteSpace(tuKhoa))
+        if (!string.IsNullOrWhiteSpace(keyword))
         {
             query.Add(
-                $"tuKhoa={Uri.EscapeDataString(tuKhoa.Trim())}");
+                $"keyword={Uri.EscapeDataString(keyword.Trim())}");
         }
 
-        if (!string.IsNullOrWhiteSpace(trangThai))
+        if (!string.IsNullOrWhiteSpace(status))
         {
             query.Add(
-                $"trangThai={Uri.EscapeDataString(trangThai.Trim())}");
+                $"status={Uri.EscapeDataString(status.Trim())}");
         }
 
-        var uri = "api/AdminThucDon";
+        var uri = "api/menus";
 
         if (query.Count > 0)
         {
             uri += "?" + string.Join("&", query);
         }
 
-        return SendJsonAsync<List<ThucDonViewModel>>(
+        return SendJsonAsync<List<MenuViewModel>>(
             HttpMethod.Get,
             uri,
             null,
@@ -388,48 +405,48 @@ public sealed class RiversideApiClient : IRiversideApiClient
             cancellationToken);
     }
 
-    public Task<ApiCallResult<ThucDonViewModel>> TaoThucDonAsync(
-        TaoThucDonForm model,
+    public Task<ApiCallResult<MenuViewModel>> CreateMenuAsync(
+        CreateMenuForm model,
         string accessToken,
         CancellationToken cancellationToken) =>
-        SendJsonAsync<ThucDonViewModel>(
+        SendJsonAsync<MenuViewModel>(
             HttpMethod.Post,
-            "api/AdminThucDon",
+            "api/menus",
             new
             {
-                model.TenThucDon,
-                model.MoTa,
-                model.GiaMoiBan
+                model.MenuName,
+                model.Description,
+                model.PricePerTable
             },
             accessToken,
             cancellationToken);
 
-    public Task<ApiCallResult<ThucDonViewModel>> CapNhatThucDonAsync(
-        int id,
-        CapNhatThucDonForm model,
+    public Task<ApiCallResult<MenuViewModel>> UpdateMenuAsync(
+        int menuId,
+        UpdateMenuForm model,
         string accessToken,
         CancellationToken cancellationToken) =>
-        SendJsonAsync<ThucDonViewModel>(
+        SendJsonAsync<MenuViewModel>(
             HttpMethod.Put,
-            $"api/AdminThucDon/{id}",
+            $"api/menus/{menuId}",
             new
             {
-                model.TenThucDon,
-                model.MoTa,
-                model.GiaMoiBan
+                model.MenuName,
+                model.Description,
+                model.PricePerTable
             },
             accessToken,
             cancellationToken);
 
-    public Task<ApiActionResult> CapNhatTrangThaiThucDonAsync(
-        int id,
-        string trangThai,
+    public Task<ApiActionResult> UpdateMenuStatusAsync(
+        int menuId,
+        string status,
         string accessToken,
         CancellationToken cancellationToken) =>
         SendActionJsonAsync(
             HttpMethod.Patch,
-            $"api/AdminThucDon/{id}/trang-thai",
-            new { TrangThai = trangThai },
+            $"api/menus/{menuId}/status",
+            new { Status = status },
             accessToken,
             cancellationToken);
 
@@ -438,41 +455,41 @@ public sealed class RiversideApiClient : IRiversideApiClient
     // MÓN ĂN
     // =========================================================
 
-    public Task<ApiCallResult<List<MonAnViewModel>>> GetDanhSachMonAnAsync(
-        string? tuKhoa,
-        string? nhomMon,
-        string? trangThai,
+    public Task<ApiCallResult<List<DishViewModel>>> GetDishesAsync(
+        string? keyword,
+        string? category,
+        string? status,
         string accessToken,
         CancellationToken cancellationToken)
     {
         var query = new List<string>();
 
-        if (!string.IsNullOrWhiteSpace(tuKhoa))
+        if (!string.IsNullOrWhiteSpace(keyword))
         {
             query.Add(
-                $"tuKhoa={Uri.EscapeDataString(tuKhoa.Trim())}");
+                $"keyword={Uri.EscapeDataString(keyword.Trim())}");
         }
 
-        if (!string.IsNullOrWhiteSpace(nhomMon))
+        if (!string.IsNullOrWhiteSpace(category))
         {
             query.Add(
-                $"nhomMon={Uri.EscapeDataString(nhomMon.Trim())}");
+                $"category={Uri.EscapeDataString(category.Trim())}");
         }
 
-        if (!string.IsNullOrWhiteSpace(trangThai))
+        if (!string.IsNullOrWhiteSpace(status))
         {
             query.Add(
-                $"trangThai={Uri.EscapeDataString(trangThai.Trim())}");
+                $"status={Uri.EscapeDataString(status.Trim())}");
         }
 
-        var uri = "api/AdminMonAn";
+        var uri = "api/dishes";
 
         if (query.Count > 0)
         {
             uri += "?" + string.Join("&", query);
         }
 
-        return SendJsonAsync<List<MonAnViewModel>>(
+        return SendJsonAsync<List<DishViewModel>>(
             HttpMethod.Get,
             uri,
             null,
@@ -480,51 +497,51 @@ public sealed class RiversideApiClient : IRiversideApiClient
             cancellationToken);
     }
 
-    public Task<ApiCallResult<MonAnViewModel>> TaoMonAnAsync(
-        TaoMonAnForm model,
+    public Task<ApiCallResult<DishViewModel>> CreateDishAsync(
+        CreateDishForm model,
         string accessToken,
         CancellationToken cancellationToken) =>
-        SendJsonAsync<MonAnViewModel>(
+        SendJsonAsync<DishViewModel>(
             HttpMethod.Post,
-            "api/AdminMonAn",
+            "api/dishes",
             new
             {
-                model.TenMon,
-                model.NhomMon
+                model.DishName,
+                model.Category
             },
             accessToken,
             cancellationToken);
 
-    public Task<ApiCallResult<MonAnViewModel>> CapNhatMonAnAsync(
-        int id,
-        CapNhatMonAnForm model,
+    public Task<ApiCallResult<DishViewModel>> UpdateDishAsync(
+        int dishId,
+        UpdateDishForm model,
         string accessToken,
         CancellationToken cancellationToken) =>
-        SendJsonAsync<MonAnViewModel>(
+        SendJsonAsync<DishViewModel>(
             HttpMethod.Put,
-            $"api/AdminMonAn/{id}",
+            $"api/dishes/{dishId}",
             new
             {
-                model.TenMon,
-                model.NhomMon
+                model.DishName,
+                model.Category
             },
             accessToken,
             cancellationToken);
 
-    public Task<ApiActionResult> CapNhatTrangThaiMonAnAsync(
-        int id,
-        string trangThai,
+    public Task<ApiActionResult> UpdateDishStatusAsync(
+        int dishId,
+        string status,
         string accessToken,
         CancellationToken cancellationToken) =>
         SendActionJsonAsync(
             HttpMethod.Patch,
-            $"api/AdminMonAn/{id}/trang-thai",
-            new { TrangThai = trangThai },
+            $"api/dishes/{dishId}/status",
+            new { Status = status },
             accessToken,
             cancellationToken);
 
-    public async Task<ApiActionResult> UploadHinhAnhMonAnAsync(
-        int id,
+    public async Task<ApiActionResult> UploadDishImageAsync(
+        int dishId,
         Stream fileStream,
         string fileName,
         string? contentType,
@@ -535,7 +552,7 @@ public sealed class RiversideApiClient : IRiversideApiClient
         {
             using var request = new HttpRequestMessage(
                 HttpMethod.Post,
-                $"api/AdminMonAn/{id}/hinh-anh");
+                $"api/dishes/{dishId}/image");
 
             request.Headers.Authorization =
                 new AuthenticationHeaderValue("Bearer", accessToken);
@@ -575,13 +592,13 @@ public sealed class RiversideApiClient : IRiversideApiClient
         }
     }
 
-    public Task<ApiActionResult> XoaHinhAnhMonAnAsync(
-        int id,
+    public Task<ApiActionResult> DeleteDishImageAsync(
+        int dishId,
         string accessToken,
         CancellationToken cancellationToken) =>
         SendActionJsonAsync(
             HttpMethod.Delete,
-            $"api/AdminMonAn/{id}/hinh-anh",
+            $"api/dishes/{dishId}/image",
             null,
             accessToken,
             cancellationToken);
@@ -591,50 +608,50 @@ public sealed class RiversideApiClient : IRiversideApiClient
     // CHI TIẾT THỰC ĐƠN
     // =========================================================
 
-    public Task<ApiCallResult<List<ChiTietThucDonViewModel>>> GetMonAnTrongThucDonAsync(
-        int thucDonId,
+    public Task<ApiCallResult<List<MenuDishViewModel>>> GetMenuDishesAsync(
+        int menuId,
         string accessToken,
         CancellationToken cancellationToken) =>
-        SendJsonAsync<List<ChiTietThucDonViewModel>>(
+        SendJsonAsync<List<MenuDishViewModel>>(
             HttpMethod.Get,
-            $"api/AdminThucDon/{thucDonId}/mon-an",
+            $"api/menus/{menuId}/dishes",
             null,
             accessToken,
             cancellationToken);
 
-    public Task<ApiCallResult<ChiTietThucDonViewModel>> ThemMonVaoThucDonAsync(
-        int thucDonId,
-        int monAnId,
+    public Task<ApiCallResult<MenuDishViewModel>> AddDishToMenuAsync(
+        int menuId,
+        int dishId,
         string accessToken,
         CancellationToken cancellationToken) =>
-        SendJsonAsync<ChiTietThucDonViewModel>(
+        SendJsonAsync<MenuDishViewModel>(
             HttpMethod.Post,
-            $"api/AdminThucDon/{thucDonId}/mon-an",
-            new { MonAnID = monAnId },
+            $"api/menus/{menuId}/dishes",
+            new { DishId = dishId },
             accessToken,
             cancellationToken);
 
-    public Task<ApiActionResult> XoaMonKhoiThucDonAsync(
-        int thucDonId,
-        int monAnId,
+    public Task<ApiActionResult> RemoveDishFromMenuAsync(
+        int menuId,
+        int dishId,
         string accessToken,
         CancellationToken cancellationToken) =>
         SendActionJsonAsync(
             HttpMethod.Delete,
-            $"api/AdminThucDon/{thucDonId}/mon-an/{monAnId}",
+            $"api/menus/{menuId}/dishes/{dishId}",
             null,
             accessToken,
             cancellationToken);
 
-    public Task<ApiActionResult> SapXepMonAnAsync(
-        int thucDonId,
-        List<int> danhSachMonAnID,
+    public Task<ApiActionResult> ReorderMenuDishesAsync(
+        int menuId,
+        List<int> dishIds,
         string accessToken,
         CancellationToken cancellationToken) =>
         SendActionJsonAsync(
             HttpMethod.Put,
-            $"api/AdminThucDon/{thucDonId}/mon-an/sap-xep",
-            new { DanhSachMonAnID = danhSachMonAnID },
+            $"api/menus/{menuId}/dishes/order",
+            new { DishIds = dishIds },
             accessToken,
             cancellationToken);
 
