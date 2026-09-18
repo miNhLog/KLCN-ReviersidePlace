@@ -22,7 +22,8 @@ public sealed class ApplicationDbContext : DbContext
     public DbSet<MenuDish> MenuDishes => Set<MenuDish>();
     public DbSet<Status> Statuses => Set<Status>();
     public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
-
+    public DbSet<DecorPackage> DecorPackages { get; set; }
+    public DbSet<ServiceItem> ServiceItems { get; set; }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

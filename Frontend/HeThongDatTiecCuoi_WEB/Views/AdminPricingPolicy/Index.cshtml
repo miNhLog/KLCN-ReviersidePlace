@@ -1,0 +1,1108 @@
+﻿@model List<HeThongDatTiecCuoi_WEB.Models.AdminHall.HallDto>
+@{
+    ViewData["Title"] = "Quản Trị Bảng Giá & Chính Sách";
+    Layout = "_AdminLayout";
+}
+
+<!-- Nhúng Fonts & Icons chuẩn theo hệ thống thiết kế Opulent Serenade -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- Thêm thư viện SheetJS để xuất Excel thực tế -->
+<script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+
+<script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                colors: {
+                    brand: {
+                        gold: '#B89758',
+                        goldLight: '#E8D8B6',
+                        goldHover: '#8C6D32',
+                        darkNavy: '#111822',
+                        sidebar: '#141E28',
+                        surface: '#FFFFFF',
+                        canvas: '#F8F9FA',
+                        border: '#E2E8F0',
+                        textMain: '#1E293B',
+                        textMuted: '#64748B'
+                    }
+                },
+                fontFamily: {
+                    serif: ['"Playfair Display"', 'Georgia', 'serif'],
+                    sans: ['"Plus Jakarta Sans"', '-apple-system', 'BlinkMacSystemFont', 'sans-serif']
+                }
+            }
+        }
+    }
+</script>
+
+<style>
+    .policy-page-wrapper {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        color: #1E293B;
+    }
+
+        .policy-page-wrapper .font-serif {
+            font-family: 'Playfair Display', serif;
+        }
+
+    .custom-card-shadow {
+        box-shadow: 0 4px 20px -2px rgba(30, 41, 59, 0.05), 0 2px 6px -1px rgba(30, 41, 59, 0.02);
+    }
+
+    .custom-row-hover:hover {
+        background-color: #FAF8F5;
+        border-color: rgba(184, 151, 88, 0.4);
+    }
+
+    .focus-ring:focus-visible {
+        outline: 2px solid #B89758;
+        outline-offset: 2px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: #F7F4EE;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #C5A880;
+        border-radius: 4px;
+    }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #B89758;
+        }
+
+    /* Hiệu ứng hover cho tên bản ghi có thể click */
+    .record-name-hover {
+        cursor: pointer;
+        transition: color 0.2s ease;
+    }
+
+        .record-name-hover:hover {
+            color: #B89758;
+            text-decoration: underline;
+            text-underline-offset: 3px;
+        }
+</style>
+
+<!-- TOAST THÔNG BÁO TỰ ẨN (CHAMPAGNE TOAST) -->
+<div id="toastNotification" class="fixed top-5 right-5 z-50 transform translate-x-full transition-transform duration-300 flex items-center gap-3 bg-white border border-[#E5D5B8] shadow-2xl px-4 py-3 rounded-xl">
+    <div id="toastIcon" class="w-7 h-7 rounded-full bg-[#B89758]/20 flex items-center justify-center text-[#B89758] text-xs">
+        <i class="fa-solid fa-circle-check"></i>
+    </div>
+    <div>
+        <p id="toastTitle" class="text-xs font-bold text-slate-900">Thông báo</p>
+        <p id="toastMessage" class="text-[11px] text-slate-500">Nội dung</p>
+    </div>
+</div>
+
+<!-- CONTAINER CHÍNH: Đã thêm padding và căn giữa để đồng bộ với các trang khác -->
+<div class="policy-page-wrapper p-6 lg:p-8 space-y-6 w-full max-w-[1600px] mx-auto">
+
+    <!-- ================= 1. HEADER TRANG & TRẠNG THÁI HỆ THỐNG ================= -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+            <nav aria-label="Breadcrumb" class="flex items-center gap-2 text-xs text-slate-500 mb-1">
+                <span>Quản trị Master Data</span>
+                <i class="fa-solid fa-chevron-right text-[9px] text-slate-400"></i>
+                <span id="breadcrumb-current-tab" class="text-[#B89758] font-medium">Chính Sách Thanh Toán &amp; Đặt Cọc</span>
+            </nav>
+            <h2 id="header-page-title" class="font-serif text-2xl font-bold text-slate-900 tracking-tight">
+                Quản Trị Bảng Giá &amp; Chính Sách Hợp Đồng
+            </h2>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <div class="flex items-center bg-slate-50 rounded-lg px-3 py-1.5 border border-slate-200 text-xs shadow-2xs">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 mr-2 animate-pulse"></span>
+                <span id="badge-system-status" class="text-slate-600 font-medium">Dữ liệu CSDL đồng bộ • Niên độ 2026</span>
+            </div>
+
+            <!-- Chuông thông báo -->
+            <div class="relative" id="notification-wrapper">
+                <button id="btn-notification" onclick="toggleNotificationDropdown()" class="p-2.5 text-slate-500 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 rounded-lg border border-slate-200 relative focus-ring min-h-[42px] min-w-[42px] flex items-center justify-center transition-colors shadow-2xs" aria-label="Thông báo">
+                    <i class="fa-regular fa-bell text-sm"></i>
+                    <span id="notif-badge" class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
+                </button>
+
+                <div id="notification-dropdown" class="hidden absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-xl shadow-2xl border border-[#E5D5B8] z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+                    <div class="bg-[#FAF8F5] px-4 py-3 border-b border-slate-200 flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-bell text-[#B89758] text-xs"></i>
+                            <span class="font-bold text-xs text-slate-800">Thông báo chính sách</span>
+                        </div>
+                        <button onclick="markAllNotificationsRead()" class="text-[11px] text-[#8C6D32] hover:underline font-medium">Đã đọc tất cả</button>
+                    </div>
+                    <div class="divide-y divide-slate-100 max-h-80 overflow-y-auto custom-scrollbar text-xs">
+                        <div class="p-3.5 hover:bg-[#FAF8F5] transition-colors flex gap-3 cursor-pointer">
+                            <div class="w-8 h-8 rounded-full bg-amber-50 border border-amber-200 text-[#8C6D32] flex items-center justify-center flex-shrink-0 mt-0.5">
+                                <i class="fa-solid fa-triangle-exclamation text-xs"></i>
+                            </div>
+                            <div class="space-y-0.5 flex-1">
+                                <p class="font-semibold text-slate-800">Biến động trạng thái vận hành đại sảnh</p>
+                                <p class="text-slate-500 text-[11px] leading-relaxed">Sảnh Elbe chuyển sang "Ngừng hoạt động", sảnh Amur đang "Bảo trì". Giá ca của hai sảnh này tạm ngưng mở bán booking.</p>
+                                <span class="text-[10px] text-slate-400 block pt-1">Vừa cập nhật</span>
+                            </div>
+                        </div>
+                        <div class="p-3.5 hover:bg-[#FAF8F5] transition-colors flex gap-3 cursor-pointer">
+                            <div class="w-8 h-8 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                <i class="fa-solid fa-calendar-check text-xs"></i>
+                            </div>
+                            <div class="space-y-0.5 flex-1">
+                                <p class="font-semibold text-slate-800">Quy chuẩn giữ chỗ 48 giờ</p>
+                                <p class="text-slate-500 text-[11px] leading-relaxed">Tiến trình quét tự động giải phóng sảnh quá hạn thanh toán cọc đang vận hành ổn định.</p>
+                                <span class="text-[10px] text-slate-400 block pt-1">10 phút trước</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-2.5 bg-slate-50 border-t border-slate-100 text-center">
+                        <button onclick="toggleNotificationDropdown()" class="text-[11px] font-semibold text-slate-600 hover:text-slate-900">Đóng</button>
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="exportPolicyExcel()" class="flex items-center gap-2 px-3.5 py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-lg text-xs font-semibold transition-colors border border-slate-200 focus-ring min-h-[42px] shadow-2xs">
+                <i class="fa-solid fa-file-excel text-emerald-600 text-sm"></i>
+                <span>Xuất biểu mẫu Excel</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- ================= 2. THANH TAB ĐIỀU HƯỚNG ================= -->
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm px-6">
+        <div class="flex flex-wrap gap-8" role="tablist">
+            <button id="tab-btn-payment" onclick="switchPolicyTab('payment')" class="py-4 font-bold text-sm border-b-2 border-[#B89758] text-slate-900 flex items-center gap-2 relative focus-ring transition-colors">
+                <i class="fa-solid fa-file-signature text-[#B89758]"></i>
+                <span>Chính Sách Thanh Toán &amp; Đặt Cọc</span>
+                <span id="badge-payment-active" class="bg-[#B89758]/15 text-[#8C6D32] text-[11px] font-bold px-2 py-0.5 rounded-full ml-1 border border-[#B89758]/30">Đang chọn</span>
+            </button>
+
+            <button id="tab-btn-surcharge" onclick="switchPolicyTab('surcharge')" class="py-4 font-medium text-sm text-slate-500 hover:text-slate-800 flex items-center gap-2 transition-colors border-b-2 border-transparent focus-ring">
+                <i class="fa-solid fa-calculator text-slate-400"></i>
+                <span>Bảng Giá Ca &amp; Trạng Thái Vận Hành Sảnh</span>
+                <span id="badge-surcharge-count" class="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full border border-slate-200">@(Model?.Count ?? 9) sảnh</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- ================= 3. THANH BỘ LỌC CÂN ĐỐI ================= -->
+    <section class="bg-white rounded-xl p-4 border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-4">
+        <div class="flex flex-wrap items-center gap-3 flex-1">
+            <div class="relative flex-1 min-w-[260px]">
+                <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                <input type="text"
+                       id="input-policy-search"
+                       oninput="applyPolicyFilters()"
+                       placeholder="Tìm theo mã quy định, tên điều khoản, căn cứ áp dụng..."
+                       class="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:border-[#B89758] focus:ring-1 focus:ring-[#B89758] min-h-[42px] transition-all">
+            </div>
+
+            <div class="flex items-center bg-slate-50 border border-slate-200 rounded-lg px-3 py-1 min-h-[42px] min-w-[200px]">
+                <i class="fa-solid fa-layer-group text-slate-500 mr-2 text-xs"></i>
+                <label for="filter-policy-cat" id="label-policy-cat" class="text-xs text-slate-500 mr-1.5 whitespace-nowrap">Phân nhóm:</label>
+                <select id="filter-policy-cat" onchange="applyPolicyFilters()" class="w-full bg-transparent text-xs font-semibold text-slate-800 focus:outline-none cursor-pointer pr-1">
+                </select>
+            </div>
+
+            <div class="flex items-center bg-slate-50 border border-slate-200 rounded-lg px-3 py-1 min-h-[42px] min-w-[170px]">
+                <i class="fa-solid fa-toggle-on text-slate-500 mr-2 text-xs"></i>
+                <label for="filter-policy-status" id="label-policy-status" class="text-xs text-slate-500 mr-1.5 whitespace-nowrap">Trạng thái:</label>
+                <select id="filter-policy-status" onchange="applyPolicyFilters()" class="w-full bg-transparent text-xs font-semibold text-slate-800 focus:outline-none cursor-pointer pr-1">
+                    <option value="">Tất cả trạng thái</option>
+                    <option value="Hoạt động">Đang hoạt động</option>
+                    <option value="Bảo trì">Đang bảo trì</option>
+                    <option value="Ngừng hoạt động">Ngừng hoạt động</option>
+                </select>
+            </div>
+
+            <button onclick="resetPolicyFilters()" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition-colors border border-slate-200 flex items-center gap-1.5 focus-ring min-h-[42px]">
+                <i class="fa-solid fa-arrow-rotate-left text-[11px] text-slate-500"></i>
+                <span>Đặt lại</span>
+            </button>
+        </div>
+
+        <!-- Nút này sẽ được ẩn/hiện tùy theo Tab -->
+        <button id="btn-create-policy" onclick="openPolicyModal()" class="px-5 py-2.5 bg-gradient-to-r from-[#B89758] to-[#9E7E3F] hover:from-[#A8884A] hover:to-[#8E7035] text-white font-bold text-xs rounded-lg shadow-sm flex items-center gap-2 transition-all focus-ring min-h-[42px] flex-shrink-0 cursor-pointer">
+            <i class="fa-solid fa-plus text-xs"></i>
+            <span id="btn-create-policy-label">Thêm chính sách mới</span>
+        </button>
+    </section>
+
+    <!-- ================= 4. SUMMARY METRICS BAR ĐỒNG BỘ ================= -->
+    <div class="flex items-center justify-between text-xs text-slate-500 px-1">
+        <div class="flex items-center gap-3">
+            <span id="metric-policy-title" class="font-medium text-slate-700">Điều khoản hợp đồng đang quản lý:</span>
+            <span id="metric-policy-showing" class="px-2.5 py-0.5 rounded-full bg-slate-200/80 font-bold text-slate-800 text-[11px]">Hiển thị 5 điều khoản</span>
+        </div>
+        <div id="metrics-badges-container" class="flex items-center gap-3 text-[11px]">
+            <!-- Render động theo danh sách sảnh thực tế -->
+        </div>
+    </div>
+
+    <!-- ================= 5. BẢNG DỮ LIỆU CHÍNH ================= -->
+    <div class="bg-white rounded-xl border border-slate-200 custom-card-shadow overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full border-collapse text-left">
+                <thead>
+                    <tr class="bg-[#FAF8F5] text-slate-700 border-b border-slate-200 text-xs font-semibold uppercase tracking-wider">
+                        <th id="th-policy-code" class="py-3.5 px-4 w-28 text-center">Mã ĐK</th>
+                        <th class="py-3.5 px-5" id="th-policy-name">Tên Điều Khoản</th>
+                        <th class="py-3.5 px-4 w-44" id="th-policy-type">Phân Loại</th>
+                        <th class="py-3.5 px-5 w-48 text-right" id="th-policy-value">Định Mức / Tỷ Lệ</th>
+                        <th class="py-3.5 px-4 w-40 text-center">Thời Hạn / Mốc</th>
+                        <th class="py-3.5 px-4 w-44 text-center">Trạng Thái Vận Hành</th>
+                        <th class="py-3.5 px-4 w-44 text-center">Thao Tác</th>
+                    </tr>
+                </thead>
+                <tbody id="policy-table-tbody" class="divide-y divide-slate-100 text-xs">
+                </tbody>
+            </table>
+        </div>
+
+        <div class="p-4 bg-[#FAF8F5] border-t border-slate-200 flex flex-wrap items-center justify-between gap-4 text-xs text-slate-600">
+            <div class="flex items-center gap-2">
+                <span id="policy-pagination-summary">Hiển thị <strong>1 – 5</strong> điều khoản</span>
+                <span class="text-slate-300">|</span>
+                <span class="text-slate-500">Tiêu chuẩn vận hành: Hợp đồng kinh tế Riverside Palace 2026</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <button class="px-3.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-slate-600 font-medium focus-ring disabled:opacity-50" disabled>
+                    <i class="fa-solid fa-chevron-left mr-1 text-[10px]"></i> Trước
+                </button>
+                <span class="px-3 py-1.5 rounded-lg bg-[#B89758]/15 text-[#8C6D32] font-bold border border-[#B89758]/30">1</span>
+                <button class="px-3.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-slate-600 font-medium focus-ring disabled:opacity-50" disabled>
+                    Sau <i class="fa-solid fa-chevron-right ml-1 text-[10px]"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= 6. BANNER NGUYÊN TẮC BẢO TOÀN PHÁP LÝ ================= -->
+    <div class="p-4 rounded-xl bg-amber-50/50 border border-[#B89758]/30 flex items-start gap-3 text-xs">
+        <div class="w-6 h-6 rounded-full bg-[#B89758]/20 flex items-center justify-center text-[#967638] flex-shrink-0 mt-0.5">
+            <i class="fa-solid fa-scale-balanced text-xs"></i>
+        </div>
+        <div class="space-y-1">
+            <h5 class="font-bold text-[#1E242B]">Mối quan hệ giữa Bảng giá và Tình trạng vận hành đại sảnh:</h5>
+            <p class="text-slate-600 leading-relaxed">
+                Đơn giá thuê theo ca (ca trưa, ca tối +15%, cuối tuần +25%) chỉ có hiệu lực mở bán hợp đồng khi sảnh ở trạng thái <strong>Hoạt động</strong>. Đối với các sảnh đang <strong>Bảo trì</strong> hoặc <strong>Ngừng hoạt động</strong>, hệ thống tự động khóa lịch đặt tiệc và cảnh báo nhân viên kinh doanh không phát hành báo giá.
+            </p>
+        </div>
+    </div>
+
+</div>
+
+<!-- ================= MODAL 1: XEM CHI TIẾT BẢN GHI ================= -->
+<div id="detailModal" class="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 hidden p-4 overflow-y-auto">
+    <div class="bg-white border border-[#E5D5B8] rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 my-auto">
+        <div class="bg-[#FAF8F5] px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+            <h3 class="font-serif font-bold text-lg text-slate-900 flex items-center gap-2">
+                <i class="fa-solid fa-crown text-[#B89758] text-sm"></i>
+                <span id="detail-modal-title">Chi Tiết Quy Định</span>
+            </h3>
+            <button onclick="closeDetailModal()" class="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-800 hover:bg-slate-200 transition-colors">
+                <i class="fa-solid fa-xmark text-sm"></i>
+            </button>
+        </div>
+        <div id="detail-modal-body" class="p-6 space-y-4 text-xs">
+        </div>
+        <div class="bg-slate-50 px-6 py-3 border-t border-slate-100 text-right">
+            <button onclick="closeDetailModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-lg font-semibold transition-colors">Đóng</button>
+        </div>
+    </div>
+</div>
+
+<!-- ================= MODAL 2: THÊM / CẬP NHẬT CHÍNH SÁCH ================= -->
+<div id="policyModal" class="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 hidden p-4 overflow-y-auto">
+    <div class="bg-white border border-[#E5D5B8] rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 my-auto">
+        <div class="bg-[#FAF8F5] px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-full bg-[#B89758]/15 border border-[#E5D5B8] flex items-center justify-center text-[#B89758]">
+                    <i class="fa-solid fa-pen-nib text-sm"></i>
+                </div>
+                <div>
+                    <h3 id="modal-policy-title" class="font-serif font-bold text-lg text-slate-900">Cập nhật chính sách</h3>
+                    <p class="text-[11px] text-slate-500">Quy định tỷ lệ, định mức và mốc thời gian áp dụng hợp đồng.</p>
+                </div>
+            </div>
+            <button onclick="closePolicyModal()" class="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-800 hover:bg-slate-200 transition-colors">
+                <i class="fa-solid fa-xmark text-sm"></i>
+            </button>
+        </div>
+
+        <form id="policyForm" onsubmit="handlePolicyFormSubmit(event)" class="p-6 space-y-4 text-xs bg-[#FDFBF7]">
+            <input type="hidden" id="form-policy-id" value="0" />
+
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+                <div class="md:col-span-4">
+                    <label class="block font-semibold text-slate-700 mb-1">Mã Quy Định <span class="text-red-500">*</span></label>
+                    <div class="relative">
+                        <input id="form-policy-code" required class="w-full bg-slate-100 border border-slate-200 text-slate-700 font-mono font-bold rounded-lg px-3 py-2 text-xs cursor-not-allowed select-all outline-none" readonly type="text" value="POL-PAY-01" />
+                        <i class="fa-solid fa-lock absolute right-3 top-2.5 text-slate-400 text-xs"></i>
+                    </div>
+                </div>
+                <div class="md:col-span-8">
+                    <label class="block font-semibold text-slate-800 mb-1">Tên Quy Định / Điều Khoản <span class="text-red-500">*</span></label>
+                    <input id="form-policy-name" required class="w-full bg-white border border-slate-200 focus:border-[#B89758] rounded-lg px-3 py-2 text-xs text-slate-800 outline-none" placeholder="VD: Đặt cọc Đợt 1 giữ sảnh tiệc..." />
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+                <div class="md:col-span-4">
+                    <label class="block font-semibold text-slate-800 mb-1">Phân Loại <span class="text-red-500">*</span></label>
+                    <input id="form-policy-type" required class="w-full bg-white border border-slate-200 focus:border-[#B89758] rounded-lg px-3 py-2 text-xs text-slate-800 outline-none" placeholder="VD: Đặt cọc & Giữ chỗ" />
+                </div>
+                <div class="md:col-span-4">
+                    <label class="block font-semibold text-slate-800 mb-1">Định Mức / Tỷ Lệ <span class="text-red-500">*</span></label>
+                    <input id="form-policy-val" required class="w-full bg-white border border-slate-200 focus:border-[#B89758] rounded-lg px-3 py-2 text-xs font-bold text-[#8C6D32] outline-none" placeholder="VD: 20% Tổng dự toán" />
+                </div>
+                <div class="md:col-span-4">
+                    <label class="block font-semibold text-slate-800 mb-1">Thời Hạn / Mốc</label>
+                    <input id="form-policy-time" class="w-full bg-white border border-slate-200 focus:border-[#B89758] rounded-lg px-3 py-2 text-xs text-slate-800 outline-none" placeholder="VD: Trong 48 giờ" />
+                </div>
+            </div>
+
+            <div>
+                <label class="block font-semibold text-slate-800 mb-1">Nội Dung Diễn Giải &amp; Căn Cứ Nghiệp Vụ</label>
+                <textarea id="form-policy-desc" rows="3" class="w-full bg-white border border-slate-200 focus:border-[#B89758] rounded-lg p-3 text-xs text-slate-800 leading-relaxed outline-none" placeholder="Quy định xử lý quá hạn, trách nhiệm bồi thường, điều khoản phạt cọc..."></textarea>
+            </div>
+
+            <div>
+                <label class="block font-semibold text-slate-800 mb-1">Trạng Thái Hiệu Lực</label>
+                <select id="form-policy-status" class="w-full bg-white border border-slate-200 focus:border-[#B89758] rounded-lg px-3 py-2 text-xs text-slate-800 outline-none cursor-pointer">
+                    <option value="Hiệu lực">Hiệu lực</option>
+                    <option value="Tạm ngưng">Tạm ngưng</option>
+                </select>
+            </div>
+
+            <div class="pt-3 border-t border-slate-200 flex items-center justify-end gap-2.5">
+                <button type="button" onclick="closePolicyModal()" class="h-10 px-5 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 font-semibold transition-colors focus-ring">
+                    Hủy bỏ
+                </button>
+                <button type="submit" class="h-10 px-6 rounded-lg bg-gradient-to-r from-[#B89758] to-[#9E7E3F] hover:from-[#A8884A] text-white font-bold tracking-wide shadow-sm flex items-center space-x-2 transition-all focus-ring">
+                    <i class="fa-solid fa-check text-xs"></i>
+                    <span>LƯU CHÍNH SÁCH</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ================= MODAL 3: ĐỔI ĐƠN GIÁ SẢNH NHANH ================= -->
+<div id="quickPriceModal" class="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 hidden p-4">
+    <div class="bg-white border border-[#E5D5B8] rounded-2xl w-full max-w-sm shadow-2xl p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+            <h3 class="font-serif font-bold text-base text-slate-900" id="quickPriceTitle">Cập nhật đơn giá sảnh</h3>
+            <button onclick="closeQuickPriceModal()" class="text-slate-400 hover:text-slate-700"><i class="fa-solid fa-xmark text-sm"></i></button>
+        </div>
+        <input type="hidden" id="quickPriceHallId" value="0" />
+        <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Đơn giá cơ sở mới (VNĐ) <span class="text-red-500">*</span></label>
+            <input type="number" id="quickPriceInput" step="500000" min="1000000" class="w-full bg-[#FAF8F5] border border-slate-200 focus:border-[#B89758] rounded-lg px-3 py-2.5 text-xs font-bold text-[#8C6D32] outline-none" />
+            <p class="text-[10px] text-slate-400 mt-1">* Ca tối (+15%) và cuối tuần (+25%) sẽ tự động tính toán lại.</p>
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+            <button onclick="closeQuickPriceModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold">Hủy</button>
+            <button onclick="saveQuickPrice()" class="px-4 py-2 bg-gradient-to-r from-[#B89758] to-[#9E7E3F] hover:brightness-105 text-white rounded-lg text-xs font-bold shadow-sm">Lưu đơn giá</button>
+        </div>
+    </div>
+</div>
+
+@Html.AntiForgeryToken()
+
+@section Scripts {
+    <script>
+        let currentPolicyTab = 'payment';
+
+        // 1. DỮ LIỆU CHÍNH SÁCH MẪU (ĐÃ LÀM SẠCH HOÀN TOÀN)
+        let paymentPolicies = [
+            {
+                id: 1,
+                ma: 'POL-PAY-01',
+                ten: 'Đặt cọc Đợt 1 - Giữ chỗ sảnh tiệc',
+                phanLoai: 'Đặt cọc & Giữ chỗ',
+                dinhMuc: '20% Tổng dự toán',
+                thoiHan: 'Trong 48 giờ',
+                moTa: 'Khách hàng hoàn tất 20% chi phí dự toán để xác lập hợp đồng chính thức. Quá 48 giờ kể từ khi tạo booking nếu chưa nhận cọc, hệ thống tự động hủy giữ chỗ và mở lại lịch sảnh khả dụng.',
+                canCu: 'Quy chuẩn giữ chỗ 48h',
+                trangThai: 'Hiệu lực'
+            },
+            {
+                id: 2,
+                ma: 'POL-PAY-02',
+                ten: 'Thanh toán Đợt 2 - Chốt thực đơn & dịch vụ',
+                phanLoai: 'Thanh toán đợt',
+                dinhMuc: '50% Tổng giá trị',
+                thoiHan: 'Trước tiệc 7 – 10 ngày',
+                moTa: 'Khách hàng chốt chính thức số lượng bàn phát sinh, danh mục ẩm thực và hoàn tất thanh toán lũy kế đạt tối thiểu 70% giá trị hợp đồng.',
+                canCu: 'Quy trình thanh toán 3 đợt',
+                trangThai: 'Hiệu lực'
+            },
+            {
+                id: 3,
+                ma: 'POL-PAY-03',
+                ten: 'Quyết toán Đợt 3 - Sau sự kiện',
+                phanLoai: 'Quyết toán thanh lý',
+                dinhMuc: '100% Số dư công nợ',
+                thoiHan: 'Ngay khi tan tiệc',
+                moTa: 'Đối soát các chi phí phát sinh thực tế (bàn dự phòng, thức uống gọi thêm, phụ phí dịch vụ) và thanh toán toàn bộ số tiền còn lại ngay sau tiệc.',
+                canCu: 'Thanh lý & quyết toán',
+                trangThai: 'Hiệu lực'
+            },
+            {
+                id: 4,
+                ma: 'POL-CNC-04',
+                ten: 'Chính sách bồi hoàn & hủy tiệc cưới',
+                phanLoai: 'Hủy hợp đồng',
+                dinhMuc: 'Phạt 50% - 100% Cọc',
+                thoiHan: 'Theo mốc ngày hủy',
+                moTa: 'Hủy trước 60 ngày: phạt 50% tiền cọc Đợt 1; Hủy từ 30 đến 59 ngày: phạt 100% tiền cọc Đợt 1; Hủy dưới 30 ngày: bồi hoàn 50% toàn bộ giá trị hợp đồng.',
+                canCu: 'Bồi thường hợp đồng kinh tế',
+                trangThai: 'Hiệu lực'
+            },
+            {
+                id: 5,
+                ma: 'POL-CHG-05',
+                ten: 'Chính sách dời ngày & chuyển sảnh tiệc',
+                phanLoai: 'Thay đổi lịch trình',
+                dinhMuc: 'Miễn phí / Phụ thu lệch giá',
+                thoiHan: 'Báo trước 45 ngày',
+                moTa: 'Báo trước từ 45 ngày: miễn phí chuyển ngày hoặc sảnh lần đầu (chỉ thanh toán chênh lệch giá sảnh mới). Báo dưới 30 ngày phụ thu 5.000.000 VNĐ phí vận hành.',
+                canCu: 'Biến động lịch tiệc',
+                trangThai: 'Hiệu lực'
+            }
+        ];
+
+        // 2. DỮ LIỆU ĐẠI SẢNH ĐƯỢC ĐỒNG BỘ 100% TỪ CONTROLLER / CSDL THỰC TẾ
+        const rawServerHalls = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model ?? new List<HeThongDatTiecCuoi_WEB.Models.AdminHall.HallDto>()));
+
+            function normalizeHallStatus(statusStr) {
+                if (!statusStr) return 'Hoạt động';
+                const s = statusStr.toString().trim().toLowerCase();
+                if (s.includes('active') || s.includes('hoạt động')) return 'Hoạt động';
+                if (s.includes('maintenance') || s.includes('bảo trì')) return 'Bảo trì';
+                if (s.includes('inactive') || s.includes('ngừng') || s.includes('locked') || s.includes('khóa')) return 'Ngừng hoạt động';
+                return statusStr;
+        }
+
+        let hallPricingData = rawServerHalls.map(h => {
+            const price = h.RentalPrice || 20000000;
+            return {
+                sanhTiecId: h.HallId,
+                maSanh: h.HallCode,
+                tenSanh: h.HallName,
+                sucChuaToiThieu: h.MinimumCapacity || 100,
+                sucChuaToiDa: h.MaximumCapacity || 500,
+                giaGoc: price,
+                giaCaTrua: price,
+                giaCaToi: price * 1.15,
+                giaCuoiTuan: price * 1.25,
+                trangThai: normalizeHallStatus(h.Status)
+            };
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            switchPolicyTab('payment');
+
+            document.addEventListener('click', function(e) {
+                const wrapper = document.getElementById('notification-wrapper');
+                const dropdown = document.getElementById('notification-dropdown');
+                if (wrapper && !wrapper.contains(e.target)) {
+                    dropdown.classList.add('hidden');
+                }
+            });
+        });
+
+        function showToast(message, isSuccess = true) {
+            const toast = document.getElementById('toastNotification');
+            const title = document.getElementById('toastTitle');
+            const msg = document.getElementById('toastMessage');
+            const icon = document.getElementById('toastIcon');
+
+            title.innerText = isSuccess ? 'Thành công' : 'Thông báo';
+            msg.innerText = message;
+            icon.className = isSuccess
+                ? 'w-7 h-7 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-xs'
+                : 'w-7 h-7 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center text-xs';
+            icon.innerHTML = `<i class="fa-solid ${isSuccess ? 'fa-circle-check' : 'fa-triangle-exclamation'}"></i>`;
+
+            toast.classList.remove('translate-x-full');
+            setTimeout(() => {
+                toast.classList.add('translate-x-full');
+            }, 3000);
+        }
+
+        function switchPolicyTab(tab) {
+            currentPolicyTab = tab;
+            const btnPayment = document.getElementById('tab-btn-payment');
+            const btnSurcharge = document.getElementById('tab-btn-surcharge');
+            const breadcrumbTab = document.getElementById('breadcrumb-current-tab');
+            const headerTitle = document.getElementById('header-page-title');
+            const inputSearch = document.getElementById('input-policy-search');
+            const labelCat = document.getElementById('label-policy-cat');
+            const thCode = document.getElementById('th-policy-code');
+            const thName = document.getElementById('th-policy-name');
+            const thValue = document.getElementById('th-policy-value');
+            const metricTitle = document.getElementById('metric-policy-title');
+            const btnCreate = document.getElementById('btn-create-policy');
+
+            if (tab === 'payment') {
+                btnPayment.className = 'py-4 font-bold text-sm border-b-2 border-[#B89758] text-slate-900 flex items-center gap-2 relative focus-ring transition-colors';
+                btnPayment.innerHTML = `<i class="fa-solid fa-file-signature text-[#B89758]"></i><span>Chính Sách Thanh Toán &amp; Đặt Cọc</span><span class="bg-[#B89758]/15 text-[#8C6D32] text-[11px] font-bold px-2 py-0.5 rounded-full ml-1 border border-[#B89758]/30">Đang chọn</span>`;
+
+                btnSurcharge.className = 'py-4 font-medium text-sm text-slate-500 hover:text-slate-800 flex items-center gap-2 transition-colors border-b-2 border-transparent focus-ring';
+                btnSurcharge.innerHTML = `<i class="fa-solid fa-calculator text-slate-400"></i><span>Bảng Giá Ca &amp; Trạng Thái Vận Hành Sảnh</span><span class="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full border border-slate-200">${hallPricingData.length} sảnh</span>`;
+
+                breadcrumbTab.innerText = 'Chính Sách Thanh Toán & Cọc';
+                headerTitle.innerText = 'Quản Trị Chính Sách Thanh Toán & Hợp Đồng Tiệc Cưới';
+                inputSearch.placeholder = 'Tìm mã quy định, tên điều khoản, căn cứ áp dụng...';
+                labelCat.innerText = 'Phân nhóm cọc:';
+                thCode.innerText = 'Mã ĐK';
+                thName.innerText = 'Tên Điều Khoản';
+                thValue.innerText = 'Tỷ Lệ / Định Mức';
+                metricTitle.innerText = 'Điều khoản hợp đồng:';
+
+                // Hiển thị nút thêm mới
+                btnCreate.classList.remove('hidden');
+            } else {
+                btnSurcharge.className = 'py-4 font-bold text-sm border-b-2 border-[#B89758] text-slate-900 flex items-center gap-2 relative focus-ring transition-colors';
+                btnSurcharge.innerHTML = `<i class="fa-solid fa-calculator text-[#B89758]"></i><span>Bảng Giá Ca &amp; Trạng Thái Vận Hành Sảnh</span><span class="bg-[#B89758]/15 text-[#8C6D32] text-[11px] font-bold px-2.5 py-0.5 rounded-full ml-1 border border-[#B89758]/30">Đang chọn</span>`;
+
+                btnPayment.className = 'py-4 font-medium text-sm text-slate-500 hover:text-slate-800 flex items-center gap-2 transition-colors border-b-2 border-transparent focus-ring';
+                btnPayment.innerHTML = `<i class="fa-solid fa-file-signature text-slate-400"></i><span>Chính Sách Thanh Toán &amp; Đặt Cọc</span><span class="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full border border-slate-200">${paymentPolicies.length} điều khoản</span>`;
+
+                breadcrumbTab.innerText = 'Bảng Giá Ca & Trạng Thái Sảnh';
+                headerTitle.innerText = 'Bảng Giá Thuê Sảnh Theo Ca & Tình Trạng Vận Hành';
+                inputSearch.placeholder = 'Tìm mã sảnh, tên đại sảnh...';
+                labelCat.innerText = 'Sức chứa sảnh:';
+                thCode.innerText = 'Mã Sảnh';
+                thName.innerText = 'Tên Đại Sảnh & Sức Chứa';
+                thValue.innerText = 'Đơn Giá Cơ Sở (VNĐ)';
+                metricTitle.innerText = 'Đại sảnh đang quản lý:';
+
+                // Ẩn nút thêm mới vì Tab 2 chỉ quản lý giá của các sảnh có sẵn
+                btnCreate.classList.add('hidden');
+            }
+
+            populatePolicyCatFilter();
+            applyPolicyFilters();
+        }
+
+        function populatePolicyCatFilter() {
+            const select = document.getElementById('filter-policy-cat');
+            select.innerHTML = '<option value="">Tất cả phân nhóm</option>';
+            if (currentPolicyTab === 'payment') {
+                const categories = [...new Set(paymentPolicies.map(x => x.phanLoai))];
+                categories.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c;
+                    opt.innerText = c;
+                    select.appendChild(opt);
+                });
+            } else {
+                select.innerHTML = `
+                    <option value="">Tất cả sức chứa</option>
+                    <option value="small">Dưới 400 khách</option>
+                    <option value="medium">400 - 600 khách</option>
+                    <option value="large">Trên 600 khách</option>
+                `;
+            }
+        }
+
+        function applyPolicyFilters() {
+            const keyword = document.getElementById('input-policy-search').value.toLowerCase().trim();
+            const category = document.getElementById('filter-policy-cat').value;
+            const status = document.getElementById('filter-policy-status').value;
+
+            if (currentPolicyTab === 'payment') {
+                const filtered = paymentPolicies.filter(item => {
+                    const matchKw = !keyword || item.ma.toLowerCase().includes(keyword) || item.ten.toLowerCase().includes(keyword) || item.moTa.toLowerCase().includes(keyword);
+                    const matchCat = !category || item.phanLoai === category;
+                    const matchStatus = !status || item.trangThai === status;
+                    return matchKw && matchCat && matchStatus;
+                });
+                renderPaymentTable(filtered);
+                updatePaymentMetrics(filtered.length);
+            } else {
+                const filtered = hallPricingData.filter(item => {
+                    const matchKw = !keyword || item.maSanh.toLowerCase().includes(keyword) || item.tenSanh.toLowerCase().includes(keyword);
+                    let matchCat = true;
+                    if (category === 'small') matchCat = item.sucChuaToiDa < 400;
+                    else if (category === 'medium') matchCat = item.sucChuaToiDa >= 400 && item.sucChuaToiDa <= 600;
+                    else if (category === 'large') matchCat = item.sucChuaToiDa > 600;
+
+                    const matchStatus = !status || item.trangThai === status;
+                    return matchKw && matchCat && matchStatus;
+                });
+                renderHallTable(filtered);
+                updateHallMetrics(filtered);
+            }
+        }
+
+        function resetPolicyFilters() {
+            document.getElementById('input-policy-search').value = '';
+            document.getElementById('filter-policy-cat').value = '';
+            document.getElementById('filter-policy-status').value = '';
+            applyPolicyFilters();
+        }
+
+        function updatePaymentMetrics(showingCount) {
+            document.getElementById('metric-policy-showing').innerText = `Hiển thị ${showingCount} điều khoản`;
+            document.getElementById('metrics-badges-container').innerHTML = `
+                <span class="flex items-center gap-1.5 text-emerald-700 font-medium">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span> ${showingCount} Đang áp dụng
+                </span>
+            `;
+            document.getElementById('policy-pagination-summary').innerHTML = `Hiển thị <strong>1 – ${showingCount}</strong> trong tổng số <strong>${paymentPolicies.length}</strong> điều khoản`;
+        }
+
+        function updateHallMetrics(list) {
+            const activeCount = hallPricingData.filter(h => h.trangThai === 'Hoạt động').length;
+            const maintCount = hallPricingData.filter(h => h.trangThai === 'Bảo trì').length;
+            const inactiveCount = hallPricingData.filter(h => h.trangThai === 'Ngừng hoạt động').length;
+
+            document.getElementById('metric-policy-showing').innerText = `Hiển thị ${list.length} / ${hallPricingData.length} sảnh`;
+            document.getElementById('metrics-badges-container').innerHTML = `
+                <span class="flex items-center gap-1 text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> ${activeCount} Hoạt động
+                </span>
+                <span class="flex items-center gap-1 text-amber-800 font-semibold bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                    <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> ${maintCount} Bảo trì
+                </span>
+                <span class="flex items-center gap-1 text-rose-800 font-semibold bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
+                    <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> ${inactiveCount} Ngừng HĐ
+                </span>
+            `;
+            document.getElementById('policy-pagination-summary').innerHTML = `Hiển thị <strong>1 – ${list.length}</strong> trong tổng số <strong>${hallPricingData.length}</strong> đại sảnh`;
+        }
+
+        // Render bảng Tab 1: Chỉ giữ 2 nút Cập nhật & Khóa, tên có thể hover để xem chi tiết
+        function renderPaymentTable(list) {
+            const tbody = document.getElementById('policy-table-tbody');
+            tbody.innerHTML = '';
+
+            if (list.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="text-center py-10 text-slate-400 italic">Không tìm thấy điều khoản nào phù hợp.</td></tr>`;
+                return;
+            }
+
+            list.forEach(item => {
+                const isInactive = item.trangThai === 'Tạm ngưng';
+                const tr = document.createElement('tr');
+                tr.className = `custom-row-hover transition-colors ${isInactive ? 'bg-slate-50/50' : ''}`;
+
+                const badgeStatus = !isInactive
+                    ? `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Hiệu lực</span>`
+                    : `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-300"><span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span> Tạm ngưng</span>`;
+
+                const lockBtn = !isInactive
+                    ? `<button onclick="togglePolicyStatus(${item.id})" class="h-[34px] px-2.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-semibold flex items-center gap-1 border border-amber-200 transition-colors" title="Tạm ngưng điều khoản"><i class="fa-solid fa-ban text-[10px]"></i><span>Khóa</span></button>`
+                    : `<button onclick="togglePolicyStatus(${item.id})" class="h-[34px] px-2.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-semibold flex items-center gap-1 border border-emerald-200 transition-colors" title="Kích hoạt lại"><i class="fa-solid fa-rotate-left text-[10px]"></i><span>Mở</span></button>`;
+
+                tr.innerHTML = `
+                    <td class="py-4 px-4 text-center font-mono font-bold text-slate-800">${item.ma}</td>
+                    <td class="py-4 px-5 align-middle">
+                        <div class="space-y-1">
+                            <h4 onclick="viewPolicyDetail(${item.id})" class="record-name-hover font-serif font-bold text-sm text-slate-900" title="Nhấn để xem chi tiết">${item.ten}</h4>
+                            <p class="text-slate-600 text-xs line-clamp-2 leading-relaxed">${item.moTa}</p>
+                        </div>
+                    </td>
+                    <td class="py-4 px-4">
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 border border-slate-200 text-xs font-medium">${item.phanLoai}</span>
+                    </td>
+                    <td class="py-4 px-5 text-right font-serif font-bold text-sm text-[#8C6D32]">${item.dinhMuc}</td>
+                    <td class="py-4 px-4 text-center text-xs font-medium text-slate-700">
+                        <span class="px-2 py-1 bg-[#FAF8F5] rounded border border-slate-200 whitespace-nowrap">${item.thoiHan}</span>
+                    </td>
+                    <td class="py-4 px-4 text-center">${badgeStatus}</td>
+                    <td class="py-4 px-4 text-center">
+                        <div class="flex items-center justify-center gap-1.5">
+                            <button onclick="editPolicyItem(${item.id})" class="h-[34px] px-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold flex items-center gap-1 border border-slate-200 transition-colors" title="Cập nhật">
+                                <i class="fa-regular fa-pen-to-square text-[#B89758] text-xs"></i><span>Cập nhật</span>
+                            </button>
+                            ${lockBtn}
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Render bảng Tab 2: Tên sảnh có thể hover để xem chi tiết
+        function renderHallTable(list) {
+            const tbody = document.getElementById('policy-table-tbody');
+            tbody.innerHTML = '';
+
+            if (list.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="text-center py-10 text-slate-400 italic">Không tìm thấy đại sảnh nào phù hợp.</td></tr>`;
+                return;
+            }
+
+            list.forEach(h => {
+                const tr = document.createElement('tr');
+                const isInactive = h.trangThai === 'Ngừng hoạt động';
+                const isMaintenance = h.trangThai === 'Bảo trì';
+
+                tr.className = `custom-row-hover transition-colors ${isInactive ? 'bg-slate-100/60 opacity-80' : isMaintenance ? 'bg-amber-50/20' : ''}`;
+
+                let statusBadge = '';
+                let actionButtons = '';
+                let operationalNote = '';
+
+                if (h.trangThai === 'Hoạt động') {
+                    statusBadge = `
+                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Hoạt động
+                        </span>`;
+                    operationalNote = `<span class="text-[10.5px] text-emerald-700 font-medium block mt-1"><i class="fa-solid fa-check-circle mr-1"></i>Sẵn sàng mở bán tiệc ca</span>`;
+                    actionButtons = `
+                        <button onclick="openQuickPriceModal(${h.sanhTiecId}, '${h.tenSanh}', ${h.giaGoc})" class="h-[34px] px-2.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-[#8C6D32] text-xs font-semibold border border-amber-200 transition-colors flex items-center gap-1" title="Cập nhật giá sảnh">
+                            <i class="fa-solid fa-pen-to-square text-xs"></i><span>Cập nhật giá</span>
+                        </button>`;
+                } else if (isMaintenance) {
+                    statusBadge = `
+                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-300">
+                            <i class="fa-solid fa-wrench text-[10px]"></i> Bảo trì
+                        </span>`;
+                    operationalNote = `<span class="text-[10.5px] text-amber-700 font-medium block mt-1"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Bảo dưỡng - Tạm dừng nhận tiệc</span>`;
+                    actionButtons = `
+                        <button onclick="openQuickPriceModal(${h.sanhTiecId}, '${h.tenSanh}', ${h.giaGoc})" class="h-[34px] px-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold border border-slate-200 transition-colors flex items-center gap-1" title="Sửa giá niêm yết trước khi mở lại">
+                            <i class="fa-solid fa-pen text-xs"></i><span>Cập nhật giá</span>
+                        </button>`;
+                } else {
+                    statusBadge = `
+                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                            <i class="fa-solid fa-ban text-[10px]"></i> Ngừng HĐ
+                        </span>`;
+                    operationalNote = `<span class="text-[10.5px] text-rose-600 font-medium block mt-1"><i class="fa-solid fa-circle-xmark mr-1"></i>Đã đóng sảnh - Không mở bán</span>`;
+                    actionButtons = `
+                        <button disabled class="h-[34px] px-2.5 rounded-lg bg-slate-100 text-slate-400 text-xs font-semibold border border-slate-200 cursor-not-allowed flex items-center gap-1" title="Sảnh đã ngừng hoạt động">
+                            <i class="fa-solid fa-lock text-xs"></i><span>Khóa giá</span>
+                        </button>`;
+                }
+
+                tr.innerHTML = `
+                    <td class="py-4 px-4 text-center align-middle font-mono font-bold text-slate-800">${h.maSanh}</td>
+                    <td class="py-4 px-5 align-middle">
+                        <h4 onclick="viewHallDetail(${h.sanhTiecId})" class="record-name-hover font-serif font-bold text-sm text-slate-900 inline-block" title="Nhấn để xem chi tiết">${h.tenSanh}</h4>
+                        <span class="text-[10px] bg-amber-50 text-[#8C6D32] px-2 py-0.5 rounded border border-[#B89758]/30 font-semibold ml-1">
+                            Sức chứa: ${h.sucChuaToiThieu} - ${h.sucChuaToiDa} khách
+                        </span>
+                        <div class="text-[11px] text-slate-500 mt-1 flex flex-wrap gap-x-4 gap-y-1">
+                            <span>Ca trưa: <strong>${Number(h.giaCaTrua).toLocaleString('vi-VN')} VNĐ</strong></span>
+                            <span>Ca tối (+15%): <strong class="text-[#8C6D32]">${Number(h.giaCaToi).toLocaleString('vi-VN')} VNĐ</strong></span>
+                            <span>Cuối tuần (+25%): <strong class="text-rose-700">${Number(h.giaCuoiTuan).toLocaleString('vi-VN')} VNĐ</strong></span>
+                        </div>
+                        ${operationalNote}
+                    </td>
+                    <td class="py-4 px-4 align-middle">
+                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-blue-50 text-blue-700 font-medium">Mặt bằng sảnh</span>
+                    </td>
+                    <td class="py-4 px-5 text-right align-middle font-serif font-bold text-sm ${isInactive ? 'text-slate-400 line-through' : 'text-slate-900'}">
+                        ${Number(h.giaGoc).toLocaleString('vi-VN')} VNĐ
+                    </td>
+                    <td class="py-4 px-4 text-center align-middle text-slate-500">
+                        <span class="px-2 py-1 bg-[#FAF8F5] rounded border border-slate-200 whitespace-nowrap inline-block">Ca 4 tiếng</span>
+                    </td>
+                    <td class="py-4 px-4 text-center align-middle">${statusBadge}</td>
+                    <td class="py-4 px-4 text-center align-middle">
+                        <div class="flex items-center justify-center gap-1.5">
+                            ${actionButtons}
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Modal Xem chi tiết chính sách
+        function viewPolicyDetail(id) {
+            const item = paymentPolicies.find(x => x.id === id);
+            if (!item) return;
+
+            document.getElementById('detail-modal-title').innerText = `Chi Tiết Điều Khoản: ${item.ma}`;
+            document.getElementById('detail-modal-body').innerHTML = `
+                <div class="p-3 bg-slate-50 rounded-lg border border-slate-200 flex justify-between items-center">
+                    <div>
+                        <h4 class="font-bold text-sm text-slate-800">${item.ten}</h4>
+                        <span class="text-[11px] text-[#B89758] font-semibold">${item.phanLoai}</span>
+                    </div>
+                    <div class="text-right font-serif font-bold text-sm text-[#8C6D32]">${item.dinhMuc}</div>
+                </div>
+                <div>
+                    <span class="font-bold text-slate-700 block mb-1">Nội dung chi tiết &amp; Căn cứ pháp lý:</span>
+                    <p class="text-slate-600 leading-relaxed bg-white p-3 rounded-lg border border-slate-100">${item.moTa}</p>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="p-2.5 bg-slate-50 rounded-lg border border-slate-200">
+                        <span class="text-[10px] uppercase font-bold text-slate-400 block">Thời hạn áp dụng</span>
+                        <span class="font-semibold text-slate-800">${item.thoiHan}</span>
+                    </div>
+                    <div class="p-2.5 bg-slate-50 rounded-lg border border-slate-200">
+                        <span class="text-[10px] uppercase font-bold text-slate-400 block">Căn cứ quy chế</span>
+                        <span class="font-semibold text-slate-800">${item.canCu}</span>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between text-[11px] text-slate-500 pt-2 border-t border-slate-100">
+                    <span>Tình trạng: <strong class="${item.trangThai === 'Hiệu lực' ? 'text-emerald-600' : 'text-slate-500'} font-bold">${item.trangThai}</strong></span>
+                    <span>Quy chuẩn: <strong>HopDong.DieuKhoanThanhToan (2026)</strong></span>
+                </div>
+            `;
+            document.getElementById('detailModal').classList.remove('hidden');
+        }
+
+        function viewHallDetail(sanhId) {
+            const h = hallPricingData.find(x => x.sanhTiecId === sanhId);
+            if (!h) return;
+
+            let statusTextClass = 'text-emerald-600';
+            let opAdvice = 'Đại sảnh đang vận hành ổn định. Đơn giá trên có hiệu lực áp dụng trực tiếp cho các hợp đồng tiệc cưới mới.';
+
+            if (h.trangThai === 'Bảo trì') {
+                statusTextClass = 'text-amber-600';
+                opAdvice = 'Đại sảnh đang trong giai đoạn bảo dưỡng kỹ thuật. Đơn giá được bảo lưu nhưng hệ thống tạm dừng nhận lịch tiệc mới.';
+            } else if (h.trangThai === 'Ngừng hoạt động') {
+                statusTextClass = 'text-rose-600';
+                opAdvice = 'Đại sảnh đã ngừng tiếp nhận sự kiện. Biểu phí niêm yết không khả dụng để chào bán cho khách hàng.';
+            }
+
+            document.getElementById('detail-modal-title').innerText = `Bảng Giá Chi Tiết: Sảnh ${h.tenSanh} (${h.maSanh})`;
+            document.getElementById('detail-modal-body').innerHTML = `
+                <div class="p-3 bg-slate-50 rounded-lg border border-slate-200 flex justify-between items-center">
+                    <div>
+                        <h4 class="font-bold text-sm text-slate-800">Đại sảnh ${h.tenSanh}</h4>
+                        <span class="text-[11px] text-slate-500">Sức chứa: ${h.sucChuaToiThieu} - ${h.sucChuaToiDa} khách mời</span>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-[10px] uppercase text-slate-400 block">Đơn giá cơ sở</span>
+                        <span class="font-serif font-bold text-base text-slate-900">${Number(h.giaGoc).toLocaleString('vi-VN')} VNĐ</span>
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <span class="font-bold text-slate-700 block">Biểu tính giá theo từng ca tổ chức:</span>
+                    <div class="grid grid-cols-3 gap-2 text-center">
+                        <div class="p-2.5 rounded-lg border border-slate-200 bg-white">
+                            <span class="text-[10px] uppercase text-slate-400 block">Ca trưa (100%)</span>
+                            <span class="font-bold text-slate-800">${Number(h.giaCaTrua).toLocaleString('vi-VN')} đ</span>
+                        </div>
+                        <div class="p-2.5 rounded-lg border border-amber-200 bg-amber-50/50">
+                            <span class="text-[10px] uppercase text-amber-700 block">Ca tối (+15%)</span>
+                            <span class="font-bold text-[#8C6D32]">${Number(h.giaCaToi).toLocaleString('vi-VN')} đ</span>
+                        </div>
+                        <div class="p-2.5 rounded-lg border border-rose-200 bg-rose-50/50">
+                            <span class="text-[10px] uppercase text-rose-700 block">Cuối tuần (+25%)</span>
+                            <span class="font-bold text-rose-700">${Number(h.giaCuoiTuan).toLocaleString('vi-VN')} đ</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-3 bg-[#FAF8F5] rounded-lg border border-[#E5D5B8] text-[11px] text-slate-600 space-y-1">
+                    <p class="font-semibold text-slate-800">Quy định kinh doanh:</p>
+                    <p>${opAdvice}</p>
+                </div>
+                <div class="flex items-center justify-between text-[11px] text-slate-500 pt-2 border-t border-slate-100">
+                    <span>Trạng thái sảnh: <strong class="${statusTextClass} font-bold">${h.trangThai}</strong></span>
+                    <span>Nguồn dữ liệu: <strong>CSDL SanhTiec (ID: ${h.sanhTiecId})</strong></span>
+                </div>
+            `;
+            document.getElementById('detailModal').classList.remove('hidden');
+        }
+
+        function closeDetailModal() {
+            document.getElementById('detailModal').classList.add('hidden');
+        }
+
+        // Modal Đổi đơn giá sảnh
+        function openQuickPriceModal(id, name, currentPrice) {
+            document.getElementById('quickPriceHallId').value = id;
+            document.getElementById('quickPriceTitle').innerText = `Đổi đơn giá sảnh ${name}`;
+            document.getElementById('quickPriceInput').value = currentPrice;
+            document.getElementById('quickPriceModal').classList.remove('hidden');
+        }
+
+        function closeQuickPriceModal() {
+            document.getElementById('quickPriceModal').classList.add('hidden');
+        }
+
+        async function saveQuickPrice() {
+            const id = parseInt(document.getElementById('quickPriceHallId').value);
+            const newPrice = parseFloat(document.getElementById('quickPriceInput').value);
+
+            if (!newPrice || newPrice < 1000000) {
+                showToast('Đơn giá thuê sảnh phải từ 1.000.000 VNĐ', false);
+                return;
+            }
+
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+            const formData = new FormData();
+            formData.append('hallId', id);
+            formData.append('newPrice', newPrice);
+            if (token) formData.append('__RequestVerificationToken', token);
+
+            try {
+                const res = await fetch('/AdminPricingPolicy/UpdateHallPrice', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await res.json();
+
+                if (result.success) {
+                    const target = hallPricingData.find(x => x.sanhTiecId === id);
+                    if (target) {
+                        target.giaGoc = newPrice;
+                        target.giaCaTrua = newPrice;
+                        target.giaCaToi = newPrice * 1.15;
+                        target.giaCuoiTuan = newPrice * 1.25;
+                    }
+                    closeQuickPriceModal();
+                    applyPolicyFilters();
+                    showToast(result.message || 'Cập nhật giá sảnh thành công!');
+                } else {
+                    showToast(result.message || 'Lỗi cập nhật giá sảnh', false);
+                }
+            } catch (err) {
+                console.error(err);
+                showToast('Không thể kết nối máy chủ để lưu giá.', false);
+            }
+        }
+
+        // Xử lý Modal Thêm/Cập nhật Chính sách
+        function openPolicyModal() {
+            document.getElementById('policyForm').reset();
+            document.getElementById('form-policy-id').value = '0';
+            document.getElementById('modal-policy-title').innerText = 'Thêm chính sách thanh toán mới';
+            document.getElementById('form-policy-code').value = 'POL-PAY-0' + (paymentPolicies.length + 1);
+            document.getElementById('form-policy-type').value = 'Đặt cọc & Giữ chỗ';
+            document.getElementById('form-policy-val').value = '20% Tổng dự toán';
+            document.getElementById('form-policy-time').value = 'Trong 48 giờ';
+            document.getElementById('policyModal').classList.remove('hidden');
+        }
+
+        function editPolicyItem(id) {
+            const item = paymentPolicies.find(x => x.id === id);
+            if (!item) return;
+
+            document.getElementById('form-policy-id').value = item.id;
+            document.getElementById('modal-policy-title').innerText = 'Cập nhật chính sách thanh toán';
+            document.getElementById('form-policy-code').value = item.ma;
+            document.getElementById('form-policy-name').value = item.ten;
+            document.getElementById('form-policy-type').value = item.phanLoai;
+            document.getElementById('form-policy-val').value = item.dinhMuc;
+            document.getElementById('form-policy-time').value = item.thoiHan;
+            document.getElementById('form-policy-desc').value = item.moTa;
+            document.getElementById('form-policy-status').value = item.trangThai;
+
+            document.getElementById('policyModal').classList.remove('hidden');
+        }
+
+        function closePolicyModal() {
+            document.getElementById('policyModal').classList.add('hidden');
+        }
+
+        function handlePolicyFormSubmit(e) {
+            e.preventDefault();
+            const id = parseInt(document.getElementById('form-policy-id').value);
+
+            const record = {
+                id: id === 0 ? Date.now() : id,
+                ma: document.getElementById('form-policy-code').value.trim(),
+                ten: document.getElementById('form-policy-name').value.trim(),
+                phanLoai: document.getElementById('form-policy-type').value.trim(),
+                dinhMuc: document.getElementById('form-policy-val').value.trim(),
+                thoiHan: document.getElementById('form-policy-time').value.trim(),
+                moTa: document.getElementById('form-policy-desc').value.trim(),
+                canCu: 'Quy chuẩn hợp đồng 2026',
+                trangThai: document.getElementById('form-policy-status').value
+            };
+
+            if (id === 0) {
+                paymentPolicies.unshift(record);
+                showToast('Đã thêm điều khoản chính sách mới thành công!');
+            } else {
+                const index = paymentPolicies.findIndex(x => x.id === id);
+                if (index !== -1) paymentPolicies[index] = record;
+                showToast('Đã lưu các thay đổi của điều khoản!');
+            }
+
+            closePolicyModal();
+            populatePolicyCatFilter();
+            applyPolicyFilters();
+        }
+
+        // Đổi trạng thái Khóa/Mở
+        function togglePolicyStatus(id) {
+            const item = paymentPolicies.find(x => x.id === id);
+            if (item) {
+                item.trangThai = item.trangThai === 'Hiệu lực' ? 'Tạm ngưng' : 'Hiệu lực';
+                applyPolicyFilters();
+                showToast(`Đã chuyển trạng thái ${item.ma} sang: ${item.trangThai}`);
+            }
+        }
+
+        function toggleNotificationDropdown() {
+            document.getElementById('notification-dropdown').classList.toggle('hidden');
+        }
+
+        function markAllNotificationsRead() {
+            const badge = document.getElementById('notif-badge');
+            if (badge) badge.classList.add('hidden');
+            showToast('Tất cả thông báo đã được đánh dấu là Đã đọc.');
+        }
+
+        // 13. XỬ LÝ XUẤT EXCEL THỰC TẾ BẰNG SHEETJS
+        function exportPolicyExcel() {
+            let dataToExport = [];
+            let fileName = '';
+            let sheetName = '';
+
+            if (currentPolicyTab === 'payment') {
+                fileName = 'Riverside_ChinhSach_ThanhToan.xlsx';
+                sheetName = 'Chinh_Sach_Thanh_Toan';
+                dataToExport = paymentPolicies.map((item, index) => ({
+                    'STT': index + 1,
+                    'Mã Quy Định': item.ma,
+                    'Tên Điều Khoản': item.ten,
+                    'Phân Loại': item.phanLoai,
+                    'Định Mức / Tỷ Lệ': item.dinhMuc,
+                    'Thời Hạn / Mốc': item.thoiHan,
+                    'Căn Cứ Nghiệp Vụ': item.canCu,
+                    'Mô Tả Chi Tiết': item.moTa,
+                    'Trạng Thái': item.trangThai
+                }));
+                var wscols = [{wch:5}, {wch:15}, {wch:35}, {wch:25}, {wch:20}, {wch:20}, {wch:30}, {wch:60}, {wch:15}];
+            } else {
+                fileName = 'Riverside_BangGia_SanhTiec.xlsx';
+                sheetName = 'Bang_Gia_Sanh';
+                dataToExport = hallPricingData.map((item, index) => ({
+                    'STT': index + 1,
+                    'Mã Sảnh': item.maSanh,
+                    'Tên Đại Sảnh': item.tenSanh,
+                    'Sức Chứa Tối Thiểu': item.sucChuaToiThieu,
+                    'Sức Chứa Tối Đa': item.sucChuaToiDa,
+                    'Giá Cơ Sở (VNĐ)': item.giaGoc,
+                    'Giá Ca Trưa (VNĐ)': item.giaCaTrua,
+                    'Giá Ca Tối (+15%)': item.giaCaToi,
+                    'Giá Cuối Tuần (+25%)': item.giaCuoiTuan,
+                    'Trạng Thái': item.trangThai
+                }));
+                var wscols = [{wch:5}, {wch:15}, {wch:25}, {wch:20}, {wch:20}, {wch:20}, {wch:20}, {wch:20}, {wch:20}, {wch:15}];
+            }
+
+            const ws = XLSX.utils.json_to_sheet(dataToExport);
+            ws['!cols'] = wscols;
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, sheetName);
+
+            XLSX.writeFile(wb, fileName);
+            showToast('Đã xuất biểu mẫu Excel thành công!');
+        }
+    </script>
+}

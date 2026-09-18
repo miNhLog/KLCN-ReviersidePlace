@@ -1,7 +1,9 @@
-using HeThongDatTiecCuoi_WEB.Constants.StatusCodes;
 using HeThongDatTiecCuoi_WEB.Constants;
+using HeThongDatTiecCuoi_WEB.Constants.StatusCodes;
 using HeThongDatTiecCuoi_WEB.Models.AdminHall;
 using HeThongDatTiecCuoi_WEB.Services;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -27,8 +29,11 @@ public sealed class AdminHallController : Controller
     {
         var accessToken = Request.Cookies[ApiTokenCookie];
 
+        // Nếu mất token, xóa phiên đăng nhập cũ để tránh AuthController đá ngược lại
         if (string.IsNullOrWhiteSpace(accessToken))
         {
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            Response.Cookies.Delete(ApiTokenCookie);
             return RedirectToAction("Login", "Auth");
         }
 

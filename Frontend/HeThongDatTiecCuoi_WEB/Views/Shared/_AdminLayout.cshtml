@@ -95,23 +95,25 @@
                             <span class="sidebar-label">Quản lý Sảnh &amp; Lịch</span>
                         </a>
 
-                        <button type="button"
-                                class="sidebar-item developing"
-                                data-sidebar-tooltip="Gói Decor & Dịch vụ">
+                        <a asp-controller="AdminDecorService"
+                           asp-action="Index"
+                           class="sidebar-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "AdminDecorService" ? "active" : "")"
+                           data-sidebar-tooltip="Gói Decor & Dịch vụ">
                             <span class="sidebar-icon" aria-hidden="true">
                                 <i class="fa-solid fa-wand-magic-sparkles"></i>
                             </span>
                             <span class="sidebar-label">Gói Decor &amp; Dịch vụ</span>
-                        </button>
+                        </a>
 
-                        <button type="button"
-                                class="sidebar-item developing"
-                                data-sidebar-tooltip="Bảng giá & Chính sách">
+                        <a asp-controller="AdminPricingPolicy"
+                           asp-action="Index"
+                           class="sidebar-item @(ViewContext.RouteData.Values["controller"]?.ToString() == "AdminPricingPolicy" ? "active" : "")"
+                           data-sidebar-tooltip="Bảng giá & Chính sách">
                             <span class="sidebar-icon" aria-hidden="true">
-                                <i class="fa-solid fa-tags"></i>
+                                <i class="fa-solid fa-sliders"></i>
                             </span>
                             <span class="sidebar-label">Bảng giá &amp; Chính sách</span>
-                        </button>
+                        </a>
                     </nav>
                 </section>
 
