@@ -23,7 +23,10 @@ public sealed class AuthController : Controller
     [AllowAnonymous]
     public async Task<IActionResult> Login(string? returnUrl = null)
     {
-        if (User.Identity?.IsAuthenticated == true)
+        var hasApiToken = !string.IsNullOrWhiteSpace(Request.Cookies[ApiTokenCookie]);
+
+        // CHỈ chuyển hướng vào trong khi CẢ HAI cookie rp_auth VÀ rp_api_token đều còn hợp lệ
+        if (User.Identity?.IsAuthenticated == true && hasApiToken)
         {
             var accessToken = Request.Cookies[ApiTokenCookie];
 
@@ -48,10 +51,14 @@ public sealed class AuthController : Controller
             return RedirectToAction("Dashboard", "Home");
         }
 
-        return View(new LoginViewModel
+        // Nếu có rp_auth nhưng mất rp_api_token (phiên lỗi), tự động dọn dẹp sạch sẽ
+        if (User.Identity?.IsAuthenticated == true && !hasApiToken)
         {
-            ReturnUrl = returnUrl
-        });
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            Response.Cookies.Delete(ApiTokenCookie);
+        }
+
+        return View(new LoginViewModel { ReturnUrl = returnUrl });
     }
 
     [HttpPost("dang-nhap")]
@@ -209,13 +216,17 @@ public sealed class AuthController : Controller
             new ClaimsPrincipal(identity),
             properties);
 
+        var expireTime = auth.ExpiresAtUtc > DateTime.UtcNow
+    ? new DateTimeOffset(auth.ExpiresAtUtc)
+    : DateTimeOffset.UtcNow.AddHours(1);
+
         Response.Cookies.Append(ApiTokenCookie, auth.AccessToken, new CookieOptions
         {
             HttpOnly = true,
             Secure = true,
             SameSite = SameSiteMode.Lax,
             IsEssential = true,
-            Expires = new DateTimeOffset(auth.ExpiresAtUtc)
+            Expires = expireTime
         });
     }
 }
