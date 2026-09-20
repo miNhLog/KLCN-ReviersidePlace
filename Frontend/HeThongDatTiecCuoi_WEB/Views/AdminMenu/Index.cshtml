@@ -13,8 +13,8 @@
         x => x.Status == MenuStatusCodes.Active
     );
 
-    var totalDishes = Model.Dishes.Count;
-    var activeDishCount = Model.Dishes.Count(
+    var totalDishes = Model.DishesForCounts.Count;
+    var activeDishCount = Model.DishesForCounts.Count(
         x => x.Status == DishStatusCodes.Active
     );
 
@@ -27,19 +27,19 @@
             x => x.MenuId == Model.SelectedMenuId
         );
 
-    var appetizerCount = Model.Dishes.Count(
+    var appetizerCount = Model.DishesForCounts.Count(
         x => x.Category == "Món khai vị"
     );
 
-    var soupCount = Model.Dishes.Count(
+    var soupCount = Model.DishesForCounts.Count(
         x => x.Category == "Món súp"
     );
 
-    var mainCourseCount = Model.Dishes.Count(
+    var mainCourseCount = Model.DishesForCounts.Count(
         x => x.Category == "Món chính"
     );
 
-    var dessertCount = Model.Dishes.Count(
+    var dessertCount = Model.DishesForCounts.Count(
         x => x.Category == "Món tráng miệng"
     );
 }
@@ -191,7 +191,7 @@
             <div>
 
                 <span class="food-stat-label">
-                    Món trong kho Master
+                    Món trong kho
                 </span>
 
                 <div class="food-stat-value">
@@ -260,7 +260,7 @@
             <div>
 
                 <span class="food-stat-label">
-                    Nhóm món chuẩn hóa
+                    Các nhóm món ăn
                 </span>
 
                 <div class="food-stat-value">
@@ -1025,10 +1025,6 @@
                                     Trạng thái
                                 </th>
 
-                                <th class="center">
-                                    Thao tác
-                                </th>
-
                             </tr>
 
                         </thead>
@@ -1040,7 +1036,7 @@
                             {
                                 <tr>
 
-                                    <td colspan="5">
+                                    <td colspan="4">
 
                                         <div class="food-empty">
                                             Không tìm thấy món ăn phù hợp.
@@ -1054,7 +1050,18 @@
                             {
                                 @foreach (var dish in Model.Dishes)
                                 {
-                                    <tr>
+                                    <tr class="food-dish-row edit-dish-row"
+                                        tabindex="0"
+                                        role="button"
+                                        aria-label="Chỉnh sửa món @dish.DishName"
+                                        data-id="@dish.DishId"
+                                        data-name="@dish.DishName"
+                                        data-category="@dish.Category"
+                                        data-image="@dish.ImageUrl"
+                                        data-status="@dish.Status"
+                                        data-status-name="@(string.IsNullOrWhiteSpace(dish.StatusName)
+                                            ? StatusDisplayNames.GetDishStatusName(dish.Status)
+                                            : dish.StatusName)">
 
 
                                         <!-- IMAGE + CODE -->
@@ -1120,64 +1127,6 @@
                                             </span>
 
                                         </td>
-
-
-                                        <!-- ACTION -->
-                                        <td class="center">
-
-                                            <div class="food-row-actions">
-
-
-                                                <button type="button"
-                                                        class="food-icon-button edit-dish-button"
-                                                        data-id="@dish.DishId"
-                                                        data-name="@dish.DishName"
-                                                        data-category="@dish.Category"
-                                                        data-image="@dish.ImageUrl"
-                                                        title="Chỉnh sửa">
-
-                                                    <i class="fa-solid fa-pen"></i>
-
-                                                </button>
-
-
-                                                <form method="post"
-                                                      asp-controller="AdminMenu"
-                                                      asp-action="UpdateDishStatus">
-
-                                                    @Html.AntiForgeryToken()
-
-                                                    <input type="hidden"
-                                                           name="dishId"
-                                                           value="@dish.DishId" />
-
-                                                    <input type="hidden"
-                                                           name="status"
-                                                           value="@(dish.Status == DishStatusCodes.Active
-                                                                                                                   ? DishStatusCodes.Inactive
-                                                                                                                   : DishStatusCodes.Active)" />
-
-
-                                                    <button type="submit"
-                                                            class="food-icon-button danger"
-                                                            title="Đổi trạng thái"
-                                                            onclick="return confirm('Xác nhận đổi trạng thái món ăn?');">
-
-                                                        <i class="fa-solid
-                                                            @(dish.Status == DishStatusCodes.Active
-                                                               ? "fa-eye-slash"
-                                                               : "fa-eye")">
-                                                        </i>
-
-                                                    </button>
-
-                                                </form>
-
-                                            </div>
-
-                                        </td>
-
-
                                     </tr>
                                 }
                             }
@@ -1187,6 +1136,27 @@
                     </table>
 
                 </div>
+
+                <nav class="food-pagination"
+                     id="dishPagination"
+                     aria-label="Phân trang danh sách món ăn"
+                     hidden>
+                    <button type="button"
+                            class="food-page-button"
+                            id="dishPreviousPage"
+                            aria-label="Trang trước">
+                        <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+                    </button>
+
+                    <div class="food-page-numbers" id="dishPageNumbers"></div>
+
+                    <button type="button"
+                            class="food-page-button"
+                            id="dishNextPage"
+                            aria-label="Trang sau">
+                        <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+                    </button>
+                </nav>
 
 
                 <!-- FOOT NOTE -->
@@ -1568,7 +1538,7 @@
 
             <div>
                 <h3>Cập nhật món ăn</h3>
-                <span>Chỉnh sửa tên, nhóm món và hình ảnh.</span>
+                <span>Chỉnh sửa thông tin hoặc thay đổi trạng thái món ăn.</span>
             </div>
 
             <button type="button"
@@ -1683,6 +1653,29 @@
 
             </div>
 
+        </form>
+
+        <form method="post"
+              asp-controller="AdminMenu"
+              asp-action="UpdateDishStatus"
+              class="food-dish-status-form">
+            @Html.AntiForgeryToken()
+
+            <input type="hidden" name="dishId" id="editDishStatusId" />
+            <input type="hidden" name="status" id="editDishStatusValue" />
+
+            <div class="food-status-form-copy">
+                <span>Trạng thái hiện tại</span>
+                <strong id="editDishCurrentStatus"></strong>
+            </div>
+
+            <button type="submit"
+                    class="food-button food-button-status"
+                    id="editDishStatusButton"
+                    onclick="return confirm('Xác nhận đổi trạng thái món ăn?');">
+                <i class="fa-solid fa-eye-slash" aria-hidden="true"></i>
+                <span>Ngừng phục vụ</span>
+            </button>
         </form>
 
     </div>
@@ -1852,32 +1845,24 @@
         // EDIT DISH
         // =====================================================
 
-        document
-            .querySelectorAll(
-                ".edit-dish-button"
-            )
-            .forEach(function (button) {
-
-                button.addEventListener(
-                    "click",
-                    function () {
+        function openDishEditor(row) {
 
                         document.getElementById(
                             "editDishId"
                         ).value =
-                            button.dataset.id;
+                            row.dataset.id;
 
 
                         document.getElementById(
                             "editDishName"
                         ).value =
-                            button.dataset.name ?? "";
+                            row.dataset.name ?? "";
 
 
                         document.getElementById(
                             "editDishGroup"
                         ).value =
-                            button.dataset.category
+                            row.dataset.category
                             ?? "Món chính";
 
 
@@ -1890,19 +1875,164 @@
                         document.getElementById(
                             "deleteImageWrapper"
                         ).style.display =
-                            button.dataset.image
+                            row.dataset.image
                                 ? "flex"
                                 : "none";
+
+                        const isServing =
+                            row.dataset.status === "@DishStatusCodes.Active";
+
+                        document.getElementById(
+                            "editDishStatusId"
+                        ).value = row.dataset.id;
+
+                        document.getElementById(
+                            "editDishStatusValue"
+                        ).value = isServing
+                            ? "@DishStatusCodes.Inactive"
+                            : "@DishStatusCodes.Active";
+
+                        const currentStatus = document.getElementById(
+                            "editDishCurrentStatus"
+                        );
+                        currentStatus.textContent =
+                            row.dataset.statusName ?? "";
+                        currentStatus.className = isServing
+                            ? "serving"
+                            : "stopped";
+
+                        const statusButton = document.getElementById(
+                            "editDishStatusButton"
+                        );
+                        statusButton.querySelector("i").className = isServing
+                            ? "fa-solid fa-eye-slash"
+                            : "fa-solid fa-eye";
+                        statusButton.querySelector("span").textContent = isServing
+                            ? "Ngừng phục vụ"
+                            : "Phục vụ trở lại";
 
 
                         openFoodModal(
                             "editDishModal"
                         );
 
+        }
+
+        document
+            .querySelectorAll(".edit-dish-row")
+            .forEach(function (row) {
+
+                row.addEventListener("click", function () {
+                    openDishEditor(row);
+                });
+
+                row.addEventListener("keydown", function (event) {
+                    if (event.key !== "Enter" && event.key !== " ") {
+                        return;
                     }
-                );
+
+                    event.preventDefault();
+                    openDishEditor(row);
+                });
 
             });
+
+
+        // =====================================================
+        // DISH PAGINATION
+        // =====================================================
+
+        const dishRows = Array.from(
+            document.querySelectorAll(".edit-dish-row")
+        );
+        const dishesPerPage = 10;
+        const visibleDishPageCount = 5;
+        const dishPageCount = Math.ceil(
+            dishRows.length / dishesPerPage
+        );
+        const dishPagination = document.getElementById(
+            "dishPagination"
+        );
+        const dishPageNumbers = document.getElementById(
+            "dishPageNumbers"
+        );
+        const dishPreviousPage = document.getElementById(
+            "dishPreviousPage"
+        );
+        const dishNextPage = document.getElementById(
+            "dishNextPage"
+        );
+        let currentDishPage = 1;
+
+        function renderDishPage(page) {
+            currentDishPage = Math.min(
+                Math.max(page, 1),
+                Math.max(dishPageCount, 1)
+            );
+
+            const firstDishIndex =
+                (currentDishPage - 1) * dishesPerPage;
+            const lastDishIndex =
+                firstDishIndex + dishesPerPage;
+
+            dishRows.forEach(function (row, index) {
+                row.hidden =
+                    index < firstDishIndex || index >= lastDishIndex;
+            });
+
+            dishPageNumbers.replaceChildren();
+
+            const firstVisiblePage =
+                Math.floor(
+                    (currentDishPage - 1) / visibleDishPageCount
+                ) * visibleDishPageCount + 1;
+            const lastVisiblePage = Math.min(
+                firstVisiblePage + visibleDishPageCount - 1,
+                dishPageCount
+            );
+
+            for (let pageNumber = firstVisiblePage;
+                pageNumber <= lastVisiblePage;
+                pageNumber++) {
+                const pageButton = document.createElement("button");
+                pageButton.type = "button";
+                pageButton.className = "food-page-button";
+                pageButton.textContent = pageNumber;
+                pageButton.setAttribute(
+                    "aria-label",
+                    `Chuyển đến trang ${pageNumber}`
+                );
+
+                if (pageNumber === currentDishPage) {
+                    pageButton.classList.add("active");
+                    pageButton.setAttribute("aria-current", "page");
+                }
+
+                pageButton.addEventListener("click", function () {
+                    renderDishPage(pageNumber);
+                });
+
+                dishPageNumbers.appendChild(pageButton);
+            }
+
+            dishPreviousPage.disabled = currentDishPage === 1;
+            dishNextPage.disabled =
+                currentDishPage === dishPageCount;
+        }
+
+        if (dishPageCount > 1) {
+            dishPagination.hidden = false;
+            dishPreviousPage.addEventListener("click", function () {
+                renderDishPage(currentDishPage - 1);
+            });
+            dishNextPage.addEventListener("click", function () {
+                renderDishPage(currentDishPage + 1);
+            });
+        }
+
+        if (dishPageCount > 0) {
+            renderDishPage(1);
+        }
 
 
         // =====================================================

@@ -28,6 +28,21 @@ public sealed class AuthController : Controller
         // CHỈ chuyển hướng vào trong khi CẢ HAI cookie rp_auth VÀ rp_api_token đều còn hợp lệ
         if (User.Identity?.IsAuthenticated == true && hasApiToken)
         {
+            var accessToken = Request.Cookies[ApiTokenCookie];
+
+            if (string.IsNullOrWhiteSpace(accessToken))
+            {
+                await HttpContext.SignOutAsync(
+                    CookieAuthenticationDefaults.AuthenticationScheme);
+
+                Response.Cookies.Delete(ApiTokenCookie);
+
+                return View(new LoginViewModel
+                {
+                    ReturnUrl = returnUrl
+                });
+            }
+
             if (User.IsInRole(RoleNames.Admin))
             {
                 return RedirectToAction("Index", "AdminHall");

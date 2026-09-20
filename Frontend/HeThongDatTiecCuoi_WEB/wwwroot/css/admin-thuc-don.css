@@ -113,24 +113,24 @@
 
 
 .food-button-gold {
-    background: var(--gold);
+    background: var(--gold, #d5ad2f);
     color: #23282d;
 }
 
 
     .food-button-gold:hover {
-        background: var(--gold-hover);
+        background: var(--gold-hover, #c69d22);
     }
 
 
 .food-button-dark {
-    background: var(--navy);
+    background: var(--navy, #26384a);
     color: white;
 }
 
 
     .food-button-dark:hover {
-        background: var(--navy-dark);
+        background: var(--navy-dark, #1e2d3b);
     }
 
 
@@ -854,8 +854,7 @@
 
 .food-table-wrapper {
     margin-top: 12px;
-    overflow: auto;
-    max-height: 690px;
+    overflow-x: auto;
     border-radius: 9px;
     border: 1px solid #eceef1;
 }
@@ -863,7 +862,7 @@
 
 .food-table {
     width: 100%;
-    min-width: 680px;
+    min-width: 560px;
     border-collapse: collapse;
     color: #4b535c;
     font-size: 11px;
@@ -898,7 +897,22 @@
 
 
     .food-table tbody tr:hover {
-        background: #f8f9fa;
+        background: #f3f7fb;
+    }
+
+    .food-table tbody tr[hidden] {
+        display: none;
+    }
+
+.food-dish-row {
+    cursor: pointer;
+    transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+
+    .food-dish-row:focus-visible {
+        outline: none;
+        background: #f3f7fb;
+        box-shadow: inset 3px 0 0 var(--gold);
     }
 
 
@@ -989,23 +1003,137 @@
 
 
     .food-dish-status.serving {
-        color: #677f6b;
+        padding: 5px 9px;
+        border: 1px solid #bbf7d0;
+        border-radius: 999px;
+        color: #166534;
+        background: #dcfce7;
     }
 
 
         .food-dish-status.serving::before {
-            background: #728c76;
+            background: #22c55e;
         }
 
 
     .food-dish-status.stopped {
-        color: #926d6d;
+        padding: 5px 9px;
+        border: 1px solid #e5e7eb;
+        border-radius: 999px;
+        color: #6b7280;
+        background: #f3f4f6;
     }
 
 
         .food-dish-status.stopped::before {
-            background: #ad8080;
+            background: #9ca3af;
         }
+
+
+/* =========================================================
+   DISH PAGINATION
+   ========================================================= */
+
+.food-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 18px 0 4px;
+}
+
+.food-pagination[hidden] {
+    display: none;
+}
+
+.food-page-numbers {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.food-page-button {
+    width: 36px;
+    height: 36px;
+    display: inline-grid;
+    place-items: center;
+    padding: 0;
+    border: 1px solid #e5eaf0;
+    border-radius: 8px;
+    color: #334155;
+    background: #f7f9fc;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.food-page-button:hover:not(:disabled),
+.food-page-button:focus-visible {
+    border-color: #cbd5e1;
+    color: #1f2d3a;
+    background: #edf2f7;
+    outline: none;
+}
+
+.food-page-button.active {
+    border-color: #263746;
+    color: #ffffff;
+    background: #263746;
+}
+
+.food-page-button:disabled {
+    color: #b5bdc8;
+    background: #f8fafc;
+    cursor: not-allowed;
+}
+
+
+/* =========================================================
+   DISH STATUS FORM
+   ========================================================= */
+
+.food-dish-status-form {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 15px 18px 18px;
+    border-top: 1px solid #e8e9eb;
+    background: #fafbfc;
+}
+
+.food-status-form-copy span,
+.food-status-form-copy strong {
+    display: block;
+}
+
+.food-status-form-copy span {
+    color: #8b9096;
+    font-size: 10px;
+}
+
+.food-status-form-copy strong {
+    margin-top: 4px;
+    font-size: 12px;
+}
+
+.food-status-form-copy strong.serving {
+    color: #15803d;
+}
+
+.food-status-form-copy strong.stopped {
+    color: #6b7280;
+}
+
+.food-button-status {
+    color: #ffffff;
+    background: #334155;
+}
+
+.food-button-status:hover {
+    background: #263442;
+}
 
 
 
