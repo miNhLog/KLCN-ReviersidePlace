@@ -32,6 +32,32 @@ public sealed class HallController : ControllerBase
         _statusService = statusService;
     }
 
+    [HttpGet("featured")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetFeaturedHalls(CancellationToken cancellationToken)
+    {
+        var halls = await _context.Halls.AsNoTracking()
+            .Where(hall => hall.Status.StatusCode == HallStatusCodes.Active)
+            .OrderBy(hall => hall.HallId)
+            .Take(3)
+            .Select(hall => new HallDto
+            {
+                HallId = hall.HallId,
+                HallCode = hall.HallCode,
+                HallName = hall.HallName,
+                MinimumCapacity = hall.MinimumCapacity,
+                MaximumCapacity = hall.MaximumCapacity,
+                RentalPrice = hall.RentalPrice,
+                Description = hall.Description,
+                ImageUrl = hall.ImageUrl,
+                Status = hall.Status.StatusCode,
+                StatusName = hall.Status.StatusName
+            })
+            .ToListAsync(cancellationToken);
+
+        return Ok(halls);
+    }
+
     [HttpGet]
     public async Task<IActionResult> GetHalls(CancellationToken cancellationToken)
     {

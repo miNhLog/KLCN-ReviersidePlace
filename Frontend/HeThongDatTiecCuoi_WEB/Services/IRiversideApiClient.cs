@@ -30,6 +30,9 @@ public interface IRiversideApiClient
 
 
     // Hall management
+    Task<ApiCallResult<List<HallDto>>> GetFeaturedHallsAsync(
+        CancellationToken cancellationToken);
+
     Task<ApiCallResult<List<HallDto>>> GetHallsAsync(
         string accessToken,
         CancellationToken cancellationToken);
