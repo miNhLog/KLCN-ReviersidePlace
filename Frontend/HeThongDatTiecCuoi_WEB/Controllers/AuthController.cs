@@ -43,12 +43,7 @@ public sealed class AuthController : Controller
                 });
             }
 
-            if (User.IsInRole(RoleNames.Admin))
-            {
-                return RedirectToAction("Index", "AdminHall");
-            }
-
-            return RedirectToAction("Dashboard", "Home");
+            return RedirectForRole(User.FindFirstValue(ClaimTypes.Role));
         }
 
         // Nếu có rp_auth nhưng mất rp_api_token (phiên lỗi), tự động dọn dẹp sạch sẽ
@@ -84,12 +79,7 @@ public sealed class AuthController : Controller
             return LocalRedirect(model.ReturnUrl);
         }
 
-        if (result.Value.User.RoleName == RoleNames.Admin)
-        {
-            return RedirectToAction("Index", "AdminHall");
-        }
-
-        return RedirectToAction("Dashboard", "Home");
+        return RedirectForRole(result.Value.User.RoleName);
     }
 
     [HttpGet("dang-ky")]
@@ -98,12 +88,7 @@ public sealed class AuthController : Controller
     {
         if (User.Identity?.IsAuthenticated == true)
         {
-            if (User.IsInRole(RoleNames.Admin))
-            {
-                return RedirectToAction("Index", "AdminHall");
-            }
-
-            return RedirectToAction("Dashboard", "Home");
+            return RedirectForRole(User.FindFirstValue(ClaimTypes.Role));
         }
 
         return View(new RegisterViewModel());
@@ -128,7 +113,7 @@ public sealed class AuthController : Controller
 
         await SignInAsync(result.Value, isPersistent: false);
         TempData["Success"] = "Tạo tài khoản thành công. Chào mừng anh/chị đến Riverside Palace!";
-        return RedirectToAction("Dashboard", "Home");
+        return RedirectToAction("Index", "Home");
     }
 
     [HttpGet("auth/forgot-password")]
@@ -192,6 +177,21 @@ public sealed class AuthController : Controller
         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         Response.Cookies.Delete(ApiTokenCookie);
         return RedirectToAction(nameof(Login));
+    }
+
+    private IActionResult RedirectForRole(string? roleName)
+    {
+        if (roleName == RoleNames.Admin)
+        {
+            return RedirectToAction("Index", "AdminHall");
+        }
+
+        if (roleName is RoleNames.Consultant or RoleNames.Coordinator)
+        {
+            return RedirectToAction("Dashboard", "Home");
+        }
+
+        return RedirectToAction("Index", "Home");
     }
 
     private async Task SignInAsync(AuthResponseDto auth, bool isPersistent)

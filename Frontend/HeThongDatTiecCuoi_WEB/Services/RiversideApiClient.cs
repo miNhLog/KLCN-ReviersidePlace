@@ -66,6 +66,50 @@ public sealed class RiversideApiClient : IRiversideApiClient
         CancellationToken cancellationToken) =>
         SendAsync<CurrentUserDto>(HttpMethod.Get, "api/auth/me", null, accessToken, cancellationToken);
 
+    public async Task<ApiCallResult<List<HallDto>>> GetFeaturedHallsAsync(
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = await SendAsync<List<HallDto>>(
+                HttpMethod.Get, "api/halls/featured", null, null, cancellationToken);
+
+            if (result.Value is not null && _httpClient.BaseAddress is not null)
+            {
+                foreach (var hall in result.Value)
+                {
+                    if (string.IsNullOrWhiteSpace(hall.ImageUrl))
+                    {
+                        continue;
+                    }
+
+                    if (Uri.TryCreate(hall.ImageUrl, UriKind.Absolute, out var absoluteImageUrl))
+                    {
+                        if (absoluteImageUrl.Scheme is not ("http" or "https"))
+                        {
+                            hall.ImageUrl = null;
+                        }
+                    }
+                    else
+                    {
+                        hall.ImageUrl = Uri.TryCreate(
+                            _httpClient.BaseAddress,
+                            hall.ImageUrl.TrimStart('/'),
+                            out var resolvedImageUrl)
+                            ? resolvedImageUrl.ToString()
+                            : null;
+                    }
+                }
+            }
+
+            return result;
+        }
+        catch (JsonException)
+        {
+            return ApiCallResult<List<HallDto>>.Failure("API trả về dữ liệu sảnh không hợp lệ.");
+        }
+    }
+
     public Task<ApiCallResult<List<HallDto>>> GetHallsAsync(
         string accessToken,
         CancellationToken cancellationToken) =>
