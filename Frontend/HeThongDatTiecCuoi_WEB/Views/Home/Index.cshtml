@@ -2,6 +2,7 @@
 @model HeThongDatTiecCuoi_WEB.Models.Home.HomeViewModel
 @{
     ViewData["Title"] = "Trang chủ";
+    ViewData["PublicActivePage"] = "home";
     var vi = CultureInfo.GetCultureInfo("vi-VN");
     var placeholderImage = Url.Content("~/images/home/hall-placeholder.jpg");
 }
@@ -14,35 +15,7 @@
 }
 
 <div class="home-page">
-    <header class="home-header">
-        <div class="home-container header-inner">
-            <a class="brand" asp-controller="Home" asp-action="Index" aria-label="Riverside Palace - Trang chủ"><span class="brand-mark" aria-hidden="true">✧</span><span class="brand-name">Riverside Palace</span></a>
-            <nav class="desktop-nav" aria-label="Điều hướng chính">
-                <a class="active" asp-controller="Home" asp-action="Index" aria-current="page">Trang chủ</a>
-                <a href="#" data-coming-soon>Sảnh tiệc</a><a href="#" data-coming-soon>Thực đơn</a><a href="#" data-coming-soon>Gói trang trí</a>
-                <button type="button" data-open-ai>Tư vấn AI</button><a href="#" data-coming-soon>Tiệc của tôi</a>
-            </nav>
-            <div class="header-actions">
-                @if (User.Identity?.IsAuthenticated == true)
-                {
-                    <details class="account-menu">
-                        <summary><span class="material-symbols-outlined" aria-hidden="true">person</span><span>Xin chào, @User.Identity.Name</span><span class="material-symbols-outlined account-chevron" aria-hidden="true">expand_more</span></summary>
-                        <div class="account-dropdown"><a href="#" data-coming-soon>Tiệc của tôi</a><form asp-controller="Auth" asp-action="Logout" method="post"><button type="submit">Đăng xuất</button></form></div>
-                    </details>
-                }
-                else
-                {
-                    <a class="login-link" asp-controller="Auth" asp-action="Login">Đăng nhập / Đăng ký</a>
-                    <span class="header-avatar material-symbols-outlined" aria-hidden="true">person</span>
-                }
-                <button class="mobile-menu-toggle" type="button" aria-label="Mở menu" aria-controls="mobileNavigation" aria-expanded="false"><span class="material-symbols-outlined" aria-hidden="true">menu</span></button>
-            </div>
-        </div>
-        <nav class="mobile-nav" id="mobileNavigation" aria-label="Điều hướng di động" hidden>
-            <a asp-controller="Home" asp-action="Index" aria-current="page">Trang chủ</a><a href="#" data-coming-soon>Sảnh tiệc</a><a href="#" data-coming-soon>Thực đơn</a><a href="#" data-coming-soon>Gói trang trí</a><button type="button" data-open-ai>Tư vấn AI</button><a href="#" data-coming-soon>Tiệc của tôi</a>
-        </nav>
-    </header>
-    <div class="mobile-nav-backdrop" hidden></div>
+    <partial name="_PublicHeader" />
 
     <main>
         <section class="hero" aria-labelledby="hero-title">
@@ -95,7 +68,7 @@
                             var image = string.IsNullOrWhiteSpace(hall.ImageUrl) ? placeholderImage : hall.ImageUrl;
                             <article class="hall-card">
                                 <div class="hall-image-wrap"><img src="@image" alt="Không gian @hall.HallName" loading="lazy" data-fallback="@placeholderImage" /><span class="capacity-badge"><span class="material-symbols-outlined" aria-hidden="true">groups</span> Sức chứa: @capacity</span><span class="hall-image-tag">@hall.HallCode</span></div>
-                                <div class="hall-content"><div class="hall-title-row"><h3>@hall.HallName</h3><span class="hall-status"><span class="material-symbols-outlined" aria-hidden="true">star</span> @hall.StatusName</span></div><p class="hall-description">@(string.IsNullOrWhiteSpace(hall.Description) ? "Không gian tiệc cưới sang trọng tại Riverside Palace." : hall.Description)</p><div class="hall-specs"><span class="spec-label">Thông tin sảnh:</span><span><span class="material-symbols-outlined" aria-hidden="true">groups</span> @capacity</span><span><span class="material-symbols-outlined" aria-hidden="true">confirmation_number</span> Mã sảnh: @hall.HallCode</span></div><div class="hall-bottom"><div><span class="price-label">Giá thuê sảnh</span><strong>@hall.RentalPrice.ToString("N0", vi) VNĐ</strong></div><button class="button hall-detail" type="button" data-hall-detail>Xem chi tiết <span class="material-symbols-outlined" aria-hidden="true">chevron_right</span></button></div></div>
+                                <div class="hall-content"><div class="hall-title-row"><h3>@hall.HallName</h3><span class="hall-status"><span class="material-symbols-outlined" aria-hidden="true">star</span> @hall.StatusName</span></div><p class="hall-description">@(string.IsNullOrWhiteSpace(hall.Description) ? "Không gian tiệc cưới sang trọng tại Riverside Palace." : hall.Description)</p><div class="hall-specs"><span class="spec-label">Thông tin sảnh:</span><span><span class="material-symbols-outlined" aria-hidden="true">groups</span> @capacity</span><span><span class="material-symbols-outlined" aria-hidden="true">confirmation_number</span> Mã sảnh: @hall.HallCode</span></div><div class="hall-bottom"><div><span class="price-label">Giá thuê sảnh</span><strong>@hall.RentalPrice.ToString("N0", vi) VNĐ</strong></div><a class="button hall-detail" asp-controller="Halls" asp-action="Details" asp-route-hallId="@hall.HallId">Xem chi tiết <span class="material-symbols-outlined" aria-hidden="true">chevron_right</span></a></div></div>
                             </article>
                         }
                     </div>
@@ -105,12 +78,7 @@
         </section>
     </main>
 
-    <footer class="home-footer"><div class="home-container"><div class="footer-grid">
-        <div class="footer-brand"><a class="brand" asp-controller="Home" asp-action="Index"><span class="brand-mark" aria-hidden="true">✧</span><span class="brand-name">Riverside Palace</span></a><p>Trung tâm Hội nghị Tiệc cưới đẳng cấp ven sông Bến Vân Đồn, mang phong cách kiến trúc châu Âu tinh tế và dịch vụ yến tiệc thượng hạng.</p><div class="social-links"><a href="#" data-coming-soon aria-label="Facebook"><span class="material-symbols-outlined" aria-hidden="true">public</span></a><a href="#" data-coming-soon aria-label="Instagram"><span class="material-symbols-outlined" aria-hidden="true">photo_camera</span></a><a href="#" data-coming-soon aria-label="YouTube"><span class="material-symbols-outlined" aria-hidden="true">smart_display</span></a><a href="mailto:event@riversidepalace.vn" aria-label="Email"><span class="material-symbols-outlined" aria-hidden="true">mail</span></a></div></div>
-        <div><h3>Liên Hệ</h3><ul class="contact-list"><li><span class="material-symbols-outlined" aria-hidden="true">location_on</span> 360D Bến Vân Đồn, Phường 1, Quận 4, TP. Hồ Chí Minh</li><li><span class="material-symbols-outlined" aria-hidden="true">call</span> (028) 6256 8888 · 0933 777 838</li><li><span class="material-symbols-outlined" aria-hidden="true">mail</span> event@riversidepalace.vn</li><li><span class="material-symbols-outlined" aria-hidden="true">schedule</span> 08:00 - 21:30 (Thứ 2 - Chủ Nhật)</li></ul></div>
-        <div><h3>Dịch Vụ</h3><ul class="footer-links"><li><a href="#" data-coming-soon>Hội trường &amp; Sảnh tiệc cưới</a></li><li><a href="#" data-coming-soon>Ẩm thực yến tiệc Fusion</a></li><li><a href="#" data-coming-soon>Gói chủ đề Concept cưới độc bản</a></li><li><a href="#" data-coming-soon>Hội nghị &amp; Sự kiện doanh nghiệp</a></li><li><a href="#" data-coming-soon>Nghi thức lễ gia tiên truyền thống</a></li></ul></div>
-        <div><h3>Nhận Ưu Đãi Đặc Quyền</h3><p>Đăng ký nhận cẩm nang cưới mùa mới và các gợi ý thiết kế tiệc cưới.</p><div class="newsletter"><input type="email" aria-label="Email nhận ưu đãi" placeholder="Email của bạn..." /><button type="button" data-coming-soon>Gửi</button></div></div>
-    </div><div class="footer-bottom"><span>© @DateTime.Now.Year Riverside Palace Convention Center. All rights reserved.</span><div><a href="#" data-coming-soon>Chính sách bảo mật</a><a href="#" data-coming-soon>Điều khoản sử dụng</a><a href="#" data-coming-soon>Sơ đồ địa điểm</a></div></div></div></footer>
+    <partial name="_PublicFooter" />
 
     <div class="ai-modal" id="aiAssistantModal" aria-hidden="true"><div class="ai-modal-backdrop" data-close-ai></div><section class="ai-dialog" role="dialog" aria-modal="true" aria-labelledby="aiModalTitle" tabindex="-1"><header class="ai-dialog-header"><span class="ai-dialog-icon material-symbols-outlined" aria-hidden="true">neurology</span><div><h2 id="aiModalTitle">Riverside AI Assistant</h2><span>Tư vấn viên thông minh 24/7</span></div><button class="ai-close" type="button" data-close-ai aria-label="Đóng cửa sổ tư vấn"><span class="material-symbols-outlined" aria-hidden="true">close</span></button></header><div class="ai-messages" id="aiMessages" role="log" aria-live="polite"><div class="chat-row assistant"><span class="chat-avatar" aria-hidden="true">AI</span><p>Xin chào! Tôi là trợ lý tư vấn của Riverside Palace. Tính năng tư vấn AI hiện đang được phát triển.</p></div></div><div class="quick-prompts"><button type="button" data-quick-prompt="Tôi muốn tìm hiểu về sảnh tiệc">Tìm hiểu sảnh tiệc</button><button type="button" data-quick-prompt="Tôi cần tư vấn thực đơn cưới">Tư vấn thực đơn</button><button type="button" data-quick-prompt="Tôi muốn lên kế hoạch tiệc cưới">Lên kế hoạch cưới</button></div><form class="ai-form" id="aiChatForm"><input id="aiChatInput" type="text" aria-label="Nhập tin nhắn cho Riverside AI Assistant" placeholder="Nhập câu hỏi của bạn..." autocomplete="off" /><button type="submit" aria-label="Gửi tin nhắn"><span class="material-symbols-outlined" aria-hidden="true">send</span></button></form></section></div>
     <div class="home-toast" role="status" aria-live="polite" hidden></div>

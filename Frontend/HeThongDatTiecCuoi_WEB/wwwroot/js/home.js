@@ -28,10 +28,6 @@
     page.querySelector('[data-search]').addEventListener('click', () => {
         showToast('Chức năng tìm kiếm sảnh đang được phát triển.');
     });
-    page.querySelectorAll('[data-hall-detail]').forEach(button => {
-        button.addEventListener('click', () => showToast('Chức năng xem chi tiết sảnh đang được phát triển.'));
-    });
-
     page.querySelectorAll('img[data-fallback]').forEach(image => {
         const useFallback = () => {
             const fallback = image.dataset.fallback;

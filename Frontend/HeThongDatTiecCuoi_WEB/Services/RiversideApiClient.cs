@@ -2,6 +2,7 @@ using HeThongDatTiecCuoi_WEB.Models.AdminAccount;
 using HeThongDatTiecCuoi_WEB.Models.AdminHall;
 using HeThongDatTiecCuoi_WEB.Models.Auth;
 using HeThongDatTiecCuoi_WEB.Models.Common;
+using HeThongDatTiecCuoi_WEB.Models.Halls;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -107,6 +108,66 @@ public sealed class RiversideApiClient : IRiversideApiClient
         catch (JsonException)
         {
             return ApiCallResult<List<HallDto>>.Failure("API trả về dữ liệu sảnh không hợp lệ.");
+        }
+    }
+
+    public async Task<ApiCallResult<PublicHallListResponse>> GetPublicHallsAsync(
+        string? keyword,
+        string? capacity,
+        string? priceRange,
+        string? sort,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken)
+    {
+        var query = new List<string>
+        {
+            $"page={Math.Max(1, page)}",
+            $"pageSize={Math.Clamp(pageSize, 1, 20)}"
+        };
+
+        AddQueryParameter(query, "keyword", keyword);
+        AddQueryParameter(query, "capacity", capacity);
+        AddQueryParameter(query, "priceRange", priceRange);
+        AddQueryParameter(query, "sort", sort);
+
+        try
+        {
+            var result = await SendAsync<PublicHallListResponse>(
+                HttpMethod.Get, $"api/halls/public?{string.Join('&', query)}", null, null, cancellationToken);
+
+            if (result.Value is not null)
+            {
+                foreach (var hall in result.Value.Items)
+                    hall.ImageUrl = ResolvePublicImageUrl(hall.ImageUrl);
+            }
+
+            return result;
+        }
+        catch (JsonException)
+        {
+            return ApiCallResult<PublicHallListResponse>.Failure("API trả về dữ liệu sảnh không hợp lệ.");
+        }
+    }
+
+    public async Task<ApiCallResult<PublicHallDetailDto>> GetPublicHallAsync(
+        int hallId,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = await SendAsync<PublicHallDetailDto>(
+                HttpMethod.Get, $"api/halls/public/{hallId}", null, null, cancellationToken);
+
+            if (result.Value is not null)
+                result.Value.ImageUrl = ResolvePublicImageUrl(result.Value.ImageUrl);
+
+            return result;
+        }
+        catch (JsonException)
+        {
+            return ApiCallResult<PublicHallDetailDto>.Failure(
+                "API trả về dữ liệu sảnh không hợp lệ.");
         }
     }
 
@@ -378,7 +439,9 @@ public sealed class RiversideApiClient : IRiversideApiClient
             }
 
             var error = await response.Content.ReadFromJsonAsync<ApiErrorDto>(JsonOptions, cancellationToken);
-            return ApiCallResult<T>.Failure(error?.Message ?? "Yêu cầu không thành công.");
+            return ApiCallResult<T>.Failure(
+                error?.Message ?? "Yêu cầu không thành công.",
+                (int)response.StatusCode);
         }
         catch (HttpRequestException)
         {
@@ -388,6 +451,25 @@ public sealed class RiversideApiClient : IRiversideApiClient
         {
             return ApiCallResult<T>.Failure("Backend API phản hồi quá lâu.");
         }
+    }
+
+    private static void AddQueryParameter(List<string> query, string name, string? value)
+    {
+        if (!string.IsNullOrWhiteSpace(value))
+            query.Add($"{name}={Uri.EscapeDataString(value.Trim())}");
+    }
+
+    private string? ResolvePublicImageUrl(string? imageUrl)
+    {
+        if (string.IsNullOrWhiteSpace(imageUrl) || _httpClient.BaseAddress is null)
+            return null;
+
+        if (Uri.TryCreate(imageUrl, UriKind.Absolute, out var absoluteImageUrl))
+            return absoluteImageUrl.Scheme is "http" or "https" ? absoluteImageUrl.ToString() : null;
+
+        return Uri.TryCreate(_httpClient.BaseAddress, imageUrl.TrimStart('/'), out var resolvedImageUrl)
+            ? resolvedImageUrl.ToString()
+            : null;
     }
     public async Task<ApiCallResult<AccountActionResponse>>
     UpdateEmployeeStatusAsync(

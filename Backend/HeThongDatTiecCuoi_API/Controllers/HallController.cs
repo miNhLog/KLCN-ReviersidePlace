@@ -32,6 +32,120 @@ public sealed class HallController : ControllerBase
         _statusService = statusService;
     }
 
+    [HttpGet("public")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetPublicHalls(
+        [FromQuery] string? keyword,
+        [FromQuery] string? capacity,
+        [FromQuery] string? priceRange,
+        [FromQuery] string? sort,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 6,
+        CancellationToken cancellationToken = default)
+    {
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 1, 20);
+
+        if (!TryGetCapacityRange(capacity, out var minimumCapacity, out var maximumCapacity))
+            return BadRequest(new { message = "Khoảng sức chứa không hợp lệ." });
+
+        if (!TryGetPriceRange(priceRange, out var minimumPrice, out var maximumPrice))
+            return BadRequest(new { message = "Khoảng giá thuê không hợp lệ." });
+
+        var normalizedSort = string.IsNullOrWhiteSpace(sort) ? "name-asc" : sort.Trim().ToLowerInvariant();
+        if (normalizedSort is not ("name-asc" or "price-asc" or "price-desc" or "capacity-desc"))
+            return BadRequest(new { message = "Tùy chọn sắp xếp không hợp lệ." });
+
+        var query = _context.Halls.AsNoTracking()
+            .Where(hall => hall.Status.StatusCode == HallStatusCodes.Active);
+
+        if (!string.IsNullOrWhiteSpace(keyword))
+        {
+            var term = keyword.Trim();
+            query = query.Where(hall => hall.HallName.Contains(term) || hall.HallCode.Contains(term));
+        }
+
+        if (minimumCapacity.HasValue)
+        {
+            var lower = minimumCapacity.Value;
+            query = maximumCapacity.HasValue
+                ? query.Where(hall => hall.MaximumCapacity >= lower
+                    && (hall.MinimumCapacity ?? 0) <= maximumCapacity.Value)
+                : query.Where(hall => hall.MaximumCapacity >= lower);
+        }
+
+        if (minimumPrice.HasValue)
+        {
+            var lower = minimumPrice.Value;
+            query = maximumPrice.HasValue
+                ? query.Where(hall => hall.RentalPrice >= lower && hall.RentalPrice <= maximumPrice.Value)
+                : query.Where(hall => hall.RentalPrice >= lower);
+        }
+
+        query = normalizedSort switch
+        {
+            "price-asc" => query.OrderBy(hall => hall.RentalPrice).ThenBy(hall => hall.HallName),
+            "price-desc" => query.OrderByDescending(hall => hall.RentalPrice).ThenBy(hall => hall.HallName),
+            "capacity-desc" => query.OrderByDescending(hall => hall.MaximumCapacity).ThenBy(hall => hall.HallName),
+            _ => query.OrderBy(hall => hall.HallName)
+        };
+
+        var totalItems = await query.CountAsync(cancellationToken);
+        var items = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(hall => new PublicHallDto
+            {
+                HallId = hall.HallId,
+                HallCode = hall.HallCode,
+                HallName = hall.HallName,
+                MinimumCapacity = hall.MinimumCapacity,
+                MaximumCapacity = hall.MaximumCapacity,
+                RentalPrice = hall.RentalPrice,
+                Description = hall.Description,
+                ImageUrl = hall.ImageUrl
+            })
+            .ToListAsync(cancellationToken);
+
+        return Ok(new PublicHallListResponse
+        {
+            Items = items,
+            Page = page,
+            PageSize = pageSize,
+            TotalItems = totalItems,
+            TotalPages = totalItems == 0 ? 0 : (int)Math.Ceiling(totalItems / (double)pageSize)
+        });
+    }
+
+    [HttpGet("public/{hallId:int}")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetPublicHall(
+        int hallId,
+        CancellationToken cancellationToken)
+    {
+        var hall = await _context.Halls.AsNoTracking()
+            .Where(item => item.HallId == hallId
+                && item.Status.StatusCode == HallStatusCodes.Active)
+            .Select(item => new PublicHallDetailDto
+            {
+                HallId = item.HallId,
+                HallCode = item.HallCode,
+                HallName = item.HallName,
+                MinimumCapacity = item.MinimumCapacity,
+                MaximumCapacity = item.MaximumCapacity,
+                RentalPrice = item.RentalPrice,
+                Description = item.Description,
+                ImageUrl = item.ImageUrl,
+                Status = item.Status.StatusCode,
+                StatusName = item.Status.StatusName
+            })
+            .SingleOrDefaultAsync(cancellationToken);
+
+        return hall is null
+            ? NotFound(new { message = "Không tìm thấy sảnh." })
+            : Ok(hall);
+    }
+
     [HttpGet("featured")]
     [AllowAnonymous]
     public async Task<IActionResult> GetFeaturedHalls(CancellationToken cancellationToken)
@@ -189,6 +303,38 @@ public sealed class HallController : ControllerBase
         var normalized = code?.Trim().ToUpperInvariant();
         if (string.IsNullOrWhiteSpace(normalized) || !ValidStatuses.Contains(normalized)) return null;
         return await _statusService.GetStatusAsync(StatusGroups.Hall, normalized, cancellationToken);
+    }
+
+    private static bool TryGetCapacityRange(string? value, out int? minimum, out int? maximum)
+    {
+        (int? Minimum, int? Maximum) range = value?.Trim().ToLowerInvariant() switch
+        {
+            null or "" => (null, null),
+            "under-200" => (0, 199),
+            "200-300" => (200, 300),
+            "300-500" => (300, 500),
+            "500-700" => (500, 700),
+            "over-700" => (701, null),
+            _ => (-1, -1)
+        };
+        (minimum, maximum) = range;
+        return minimum != -1;
+    }
+
+    private static bool TryGetPriceRange(string? value, out decimal? minimum, out decimal? maximum)
+    {
+        (decimal? Minimum, decimal? Maximum) range = value?.Trim().ToLowerInvariant() switch
+        {
+            null or "" => (null, null),
+            "under-20000000" => (0m, 19999999.99m),
+            "20000000-30000000" => (20000000m, 30000000m),
+            "30000000-40000000" => (30000000m, 40000000m),
+            "40000000-50000000" => (40000000m, 50000000m),
+            "over-50000000" => (50000000.01m, null),
+            _ => (-1m, -1m)
+        };
+        (minimum, maximum) = range;
+        return minimum != -1m;
     }
 
     private static string? Validate(string hallCode, string hallName, int? minimumCapacity,
