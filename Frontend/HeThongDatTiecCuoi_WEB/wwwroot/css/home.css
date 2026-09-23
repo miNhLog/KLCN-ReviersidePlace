@@ -134,8 +134,8 @@
 .hall-bottom { display: flex; align-items: end; justify-content: space-between; gap: 12px; margin-top: auto; padding-top: 4px; }
 .price-label { display: block; color: #59616b; font-size: 11px; }
 .hall-bottom strong { display: block; color: #735c00; font-size: 16px; line-height: 1.4; white-space: nowrap; }
-.hall-detail { min-height: 40px; padding: 7px 12px; background: var(--home-primary); color: white; font-size: 13px; white-space: nowrap; }
-.hall-detail:hover { background: var(--home-gold); color: var(--home-charcoal); }
+.home-page .hall-detail { min-height: 40px; padding: 7px 12px; background: var(--home-primary); color: white; font-size: 13px; white-space: nowrap; }
+.home-page .hall-detail:hover { background: var(--home-gold); color: var(--home-charcoal); }
 .empty-halls { border: 1px solid rgba(212,175,55,.2); border-radius: 12px; padding: 64px 24px; background: white; color: var(--home-muted); text-align: center; }
 .stats-grid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 16px; margin-top: 64px; }
 .stats-grid > div { display: flex; min-height: 90px; flex-direction: column; align-items: center; justify-content: center; border-radius: 10px; padding: 15px; background: white; text-align: center; box-shadow: 0 4px 20px -2px rgba(30,36,43,.04); }

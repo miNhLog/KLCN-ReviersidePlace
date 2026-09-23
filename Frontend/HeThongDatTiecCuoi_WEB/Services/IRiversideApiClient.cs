@@ -1,6 +1,7 @@
 ﻿using HeThongDatTiecCuoi_WEB.Models.AdminHall;
 using HeThongDatTiecCuoi_WEB.Models.AdminAccount;
 using HeThongDatTiecCuoi_WEB.Models.Auth;
+using HeThongDatTiecCuoi_WEB.Models.Halls;
 namespace HeThongDatTiecCuoi_WEB.Services;
 using HeThongDatTiecCuoi_WEB.Models.AdminMenu;
 using Microsoft.AspNetCore.Mvc;
@@ -31,6 +32,19 @@ public interface IRiversideApiClient
 
     // Hall management
     Task<ApiCallResult<List<HallDto>>> GetFeaturedHallsAsync(
+        CancellationToken cancellationToken);
+
+    Task<ApiCallResult<PublicHallListResponse>> GetPublicHallsAsync(
+        string? keyword,
+        string? capacity,
+        string? priceRange,
+        string? sort,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken);
+
+    Task<ApiCallResult<PublicHallDetailDto>> GetPublicHallAsync(
+        int hallId,
         CancellationToken cancellationToken);
 
     Task<ApiCallResult<List<HallDto>>> GetHallsAsync(
