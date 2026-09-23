@@ -1,0 +1,482 @@
+﻿@model HeThongDatTiecCuoi_WEB.Models.Recommendation.RecommendationRequestViewModel
+@{
+    ViewData["Title"] = "Dự Toán & Gợi Ý Gói Tiệc Cưới Tối Ưu - Riverside Palace";
+    Layout = "_Layout";
+}
+
+<!-- Nhúng Fonts & FontAwesome -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+    .client-recom-wrapper {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        color: #1E293B;
+    }
+
+        .client-recom-wrapper .font-serif {
+            font-family: 'Playfair Display', serif;
+        }
+
+    .gold-gradient-card {
+        background: linear-gradient(135deg, #FFFFFF 0%, #FAF8F5 100%);
+        border: 2px solid #B89758;
+    }
+
+    .badge-shimmer {
+        background: linear-gradient(90deg, #B89758 0%, #D4B270 50%, #B89758 100%);
+        background-size: 200% auto;
+        animation: shimmer 3s linear infinite;
+    }
+
+    @@keyframes shimmer {
+        0% {
+            background-position: 0% 50%;
+        }
+
+        50% {
+            background-position: 100% 50%;
+        }
+
+        100% {
+            background-position: 0% 50%;
+        }
+    }
+</style>
+
+<div class="client-recom-wrapper bg-[#FAF8F5] min-h-screen py-8 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-6xl mx-auto space-y-6">
+
+        <!-- ================= ĐIỀU HƯỚNG QUAY VỀ TRANG CHỦ ================= -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white px-5 py-3 rounded-2xl border border-slate-200 shadow-sm">
+            <nav aria-label="Breadcrumb" class="flex items-center gap-2 text-xs text-slate-500">
+                <a asp-controller="Home" asp-action="Index" class="hover:text-[#B89758] transition-colors flex items-center gap-1.5 font-semibold text-slate-700">
+                    <i class="fa-solid fa-house text-[11px]"></i>
+                    <span>Trang chủ</span>
+                </a>
+                <i class="fa-solid fa-chevron-right text-[9px] text-slate-300"></i>
+                <a asp-controller="Halls" asp-action="Index" class="hover:text-[#B89758] transition-colors hidden md:inline">
+                    Sảnh tiệc
+                </a>
+                <i class="fa-solid fa-chevron-right text-[9px] text-slate-300 hidden md:inline"></i>
+                <span class="text-[#B89758] font-bold">Gợi ý gói tiệc cưới Top 3</span>
+            </nav>
+
+            <a asp-controller="Home" asp-action="Index" class="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-[#B89758] transition-colors py-1.5 px-3.5 rounded-xl hover:bg-[#FAF8F5] border border-transparent hover:border-slate-200 self-start sm:self-auto">
+                <i class="fa-solid fa-arrow-left text-[11px]"></i>
+                <span>Quay về trang chủ</span>
+            </a>
+        </div>
+
+        <!-- ================= 1. HERO BANNER KHÁCH HÀNG ================= -->
+        <div class="text-center space-y-3 max-w-3xl mx-auto pt-2">
+            <span class="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-bold bg-[#B89758]/15 text-[#8C6D32] border border-[#B89758]/30">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> AI Wedding Recommendation
+            </span>
+            <h1 class="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 tracking-tight">
+                Thiết Kế Đám Cưới Trong Mơ
+            </h1>
+            <p class="text-sm sm:text-base text-slate-600">
+                Nhập ngân sách và mong muốn của hai bạn. Thuật toán thông minh của <strong>Riverside Palace</strong> sẽ tự động đối soát sức chứa 9 đại sảnh, 24 thực đơn và các concept trang trí để đề xuất <strong>Top 3 Gói Tiệc Cưới Tối Ưu Nhất</strong>.
+            </p>
+        </div>
+
+        <!-- ================= 2. FORM KHẢO SÁT 5 NHÓM TIÊU CHÍ ================= -->
+        <form id="clientRecomForm" onsubmit="handleAnalyzeCombos(event)" class="bg-white rounded-3xl border border-slate-200 p-6 sm:p-10 shadow-xl space-y-8">
+
+            <!-- Phần 1: Thông tin cặp đôi -->
+            <div>
+                <h3 class="font-bold text-sm text-slate-800 uppercase tracking-wider mb-4 flex items-center gap-2">
+                    <span class="w-6 h-6 rounded-full bg-[#B89758] text-white flex items-center justify-center text-xs font-bold">1</span>
+                    <span>Thông Tin Cặp Đôi</span>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1.5">Họ tên Cô dâu &amp; Chú rể *</label>
+                        <input type="text" id="coupleName" required placeholder="VD: Trần Hoàng &amp; Mai Phương" class="w-full px-4 py-3 bg-[#FAF8F5] border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:border-[#B89758] text-xs">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1.5">Số điện thoại liên hệ *</label>
+                        <input type="tel" id="phoneNumber" required placeholder="09xxxxxxxx" class="w-full px-4 py-3 bg-[#FAF8F5] border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:border-[#B89758] text-xs">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1.5">Email nhận bảng dự toán</label>
+                        <input type="email" id="email" placeholder="wedding@gmail.com" class="w-full px-4 py-3 bg-[#FAF8F5] border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:border-[#B89758] text-xs">
+                    </div>
+                </div>
+            </div>
+
+            <hr class="border-slate-100">
+
+            <!-- Phần 2: Thời gian & Kế hoạch chi phí -->
+            <div>
+                <h3 class="font-bold text-sm text-slate-800 uppercase tracking-wider mb-4 flex items-center gap-2">
+                    <span class="w-6 h-6 rounded-full bg-[#B89758] text-white flex items-center justify-center text-xs font-bold">2</span>
+                    <span>Thời Gian Tổ Chức &amp; Dự Toán Chi Phí</span>
+                </h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1.5">Ngày tổ chức dự kiến *</label>
+                        <input type="date" id="eventDate" required class="w-full px-4 py-3 bg-[#FAF8F5] border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:border-[#B89758] text-xs">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1.5">Buổi tiệc mong muốn *</label>
+                        <select id="shift" class="w-full px-4 py-3 bg-[#FAF8F5] border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:border-[#B89758] text-xs cursor-pointer">
+                            <option value="Ca tối" selected>Buổi tối (17:30 – 21:30)</option>
+                            <option value="Ca trưa">Buổi trưa (10:30 – 14:00)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1.5">Số lượng bàn tiệc chính thức *</label>
+                        <input type="number" id="officialTableCount" required min="5" max="250" value="25" class="w-full px-4 py-3 bg-[#FAF8F5] border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:border-[#B89758] text-xs">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1.5">Bàn tiệc dự phòng (Sơ cua)</label>
+                        <input type="number" id="spareTableCount" min="0" max="20" value="2" class="w-full px-4 py-3 bg-[#FAF8F5] border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:border-[#B89758] text-xs">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 text-xs">
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1.5">Tổng ngân sách dự trù (VNĐ) *</label>
+                        <input type="number" id="expectedBudget" required step="5000000" min="50000000" max="3000000000" value="250000000" class="w-full px-4 py-3 bg-[#FAF8F5] border border-slate-200 rounded-xl text-slate-800 font-bold focus:outline-none focus:border-[#B89758] text-xs">
+                        <span class="text-[11px] text-slate-400 mt-1 block">Khuyến nghị từ 100 triệu đến 1.5 tỷ đồng</span>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1.5">Mục tiêu ưu tiên của hai bạn</label>
+                        <select id="budgetPriority" class="w-full px-4 py-3 bg-[#FAF8F5] border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:border-[#B89758] text-xs cursor-pointer">
+                            <option value="BALANCED" selected>Cân đối hoàn hảo (Ẩm thực ngon &amp; Không gian đẹp)</option>
+                            <option value="PRIORITIZE_FOOD">Ưu tiên Ẩm thực (Set menu cao cấp phục vụ khách)</option>
+                            <option value="PRIORITIZE_DECOR">Ưu tiên Không gian (Sảnh tiệc hoành tráng &amp; hoa tươi)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <hr class="border-slate-100">
+
+            <!-- Phần 3: Phong cách & Trải nghiệm -->
+            <div>
+                <h3 class="font-bold text-sm text-slate-800 uppercase tracking-wider mb-4 flex items-center gap-2">
+                    <span class="w-6 h-6 rounded-full bg-[#B89758] text-white flex items-center justify-center text-xs font-bold">3</span>
+                    <span>Gu Thẩm Mỹ &amp; Phong Cách Tiệc Cưới</span>
+                </h3>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1.5">Không gian yêu thích</label>
+                        <select id="preferredSpaceType" class="w-full px-4 py-3 bg-[#FAF8F5] border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:border-[#B89758] text-xs cursor-pointer">
+                            <option value="">-- Tùy chọn theo gợi ý --</option>
+                            <option value="INDOOR_PILLARLESS">Đại sảnh vòm trần cao không cột (Grand Ballroom, Seine)</option>
+                            <option value="OUTDOOR_RIVER">Sân vườn lãng mạn ven sông (Green Riverside)</option>
+                            <option value="COZY_INTIMATE">Ấm cúng, tinh tế (Elbe, Danube, Amur)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1.5">Concept trang trí mong muốn</label>
+                        <select id="desiredStyle" class="w-full px-4 py-3 bg-[#FAF8F5] border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:border-[#B89758] text-xs cursor-pointer">
+                            <option value="Hiện đại / lãng mạn" selected>Hiện đại &amp; Lãng mạn (Tông xanh Elegant Blue)</option>
+                            <option value="Hoàng gia">Hoàng gia &amp; Quý phái (Royal Gold)</option>
+                            <option value="Sân vườn / lãng mạn">Sân vườn mộc mạc (The Color of Love)</option>
+                            <option value="Cổ tích / lãng mạn">Cổ tích ngọt ngào (Dear My Princess)</option>
+                            <option value="Nhẹ nhàng">Tối giản &amp; Tinh tế</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1.5">Phong vị ẩm thực tiệc cưới</label>
+                        <select id="foodPreference" class="w-full px-4 py-3 bg-[#FAF8F5] border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:border-[#B89758] text-xs cursor-pointer">
+                            <option value="EUROPEAN_FUSION" selected>Á - Âu Đương đại (Bò Mỹ, Cá hồi, Mì vịt quay)</option>
+                            <option value="SEAFOOD_PREMIUM">Đặc sản Hải sản Cao cấp (Cua, Tôm càng, Cá tầm)</option>
+                            <option value="ASIAN_TRADITIONAL">Á Đông Tinh Hoa (Hương vị truyền thống)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Dịch vụ gia tăng trọn gói -->
+                <div class="mt-4 pt-3 border-t border-slate-100">
+                    <span class="block font-semibold text-slate-700 mb-2.5 text-xs">Các dịch vụ cưới hai bạn muốn Riverside Palace chuẩn bị trọn gói:</span>
+                    <div class="flex flex-wrap gap-4 text-xs">
+                        <label class="inline-flex items-center gap-2 cursor-pointer text-slate-700">
+                            <input type="checkbox" name="services" value="DV001" checked class="rounded border-slate-300 text-[#B89758] focus:ring-[#B89758]">
+                            <span>MC Tiệc Cưới (+5.000.000 đ)</span>
+                        </label>
+                        <label class="inline-flex items-center gap-2 cursor-pointer text-slate-700">
+                            <input type="checkbox" name="services" value="DV002" checked class="rounded border-slate-300 text-[#B89758] focus:ring-[#B89758]">
+                            <span>Âm thanh &amp; Ánh sáng sân khấu (+12.000.000 đ)</span>
+                        </label>
+                        <label class="inline-flex items-center gap-2 cursor-pointer text-slate-700">
+                            <input type="checkbox" name="services" value="DV004" class="rounded border-slate-300 text-[#B89758] focus:ring-[#B89758]">
+                            <span>Vũ đoàn khai mạc tiệc (+7.000.000 đ)</span>
+                        </label>
+                        <label class="inline-flex items-center gap-2 cursor-pointer text-slate-700">
+                            <input type="checkbox" name="services" value="DV005" class="rounded border-slate-300 text-[#B89758] focus:ring-[#B89758]">
+                            <span>Đội ngũ Lễ tân đón khách (+3.000.000 đ)</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Nút gửi khảo sát -->
+            <div class="pt-3 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-100">
+                <a asp-controller="Home" asp-action="Index" class="text-xs text-slate-500 hover:text-[#B89758] transition-colors flex items-center gap-1.5 order-2 sm:order-1">
+                    <i class="fa-solid fa-chevron-left text-[10px]"></i>
+                    <span>Không muốn khảo sát? Về trang chủ</span>
+                </a>
+                <button type="submit" id="btnSubmitRecom" class="w-full sm:w-auto flex items-center justify-center gap-2.5 px-8 py-3.5 bg-[#B89758] hover:bg-[#8C6D32] text-white rounded-xl font-bold text-sm transition-all shadow-lg hover:shadow-xl cursor-pointer order-1 sm:order-2">
+                    <i class="fa-solid fa-sparkles"></i>
+                    <span>Xem Top 3 Gói Tiệc Đề Xuất</span>
+                </button>
+            </div>
+        </form>
+
+        <!-- ================= 3. TRẠNG THÁI CHỜ PHÂN TÍCH ================= -->
+        <div id="loadingState" class="hidden py-16 text-center space-y-4">
+            <div class="inline-block w-12 h-12 border-4 border-[#B89758]/20 border-t-[#B89758] rounded-full animate-spin"></div>
+            <p class="font-serif text-xl font-bold text-slate-800">Thuật toán đang tính toán gói tiệc tối ưu...</p>
+            <p class="text-xs text-slate-500 max-w-md mx-auto">
+                Hệ thống đang rà soát lịch trống tại 9 sảnh, so khớp đơn giá thực đơn và đánh giá chất lượng từ các cặp đôi đã tổ chức.
+            </p>
+        </div>
+
+        <!-- ================= 4. KHU VỰC TRÌNH DIỄN TOP 3 COMBO ================= -->
+        <div id="resultsSection" class="hidden space-y-8">
+
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                <div>
+                    <h2 class="font-serif text-xl sm:text-2xl font-bold text-slate-900">
+                        Gợi Ý Gói Tiệc Cưới Dành Riêng Cho Hai Bạn
+                    </h2>
+                    <p class="text-xs text-slate-500 mt-0.5" id="resNotice">
+                        Đã phân tích hàng trăm phương án để chọn ra 3 lựa chọn xuất sắc nhất.
+                    </p>
+                </div>
+                <div class="flex items-center gap-2 self-start sm:self-auto">
+                    <button type="button" onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors flex items-center gap-1.5">
+                        <i class="fa-solid fa-sliders text-[11px]"></i>
+                        <span>Đổi tiêu chí</span>
+                    </button>
+                    <a asp-controller="Home" asp-action="Index" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-[#FAF8F5] hover:bg-slate-100 text-slate-700 border border-slate-200 transition-colors flex items-center gap-1.5">
+                        <i class="fa-solid fa-house text-[11px]"></i>
+                        <span>Về trang chủ</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- 3 CỘT COMBO -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6" id="combosCardsContainer">
+                <!-- Javascript render động tại đây -->
+            </div>
+
+        </div>
+
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const d = new Date();
+            d.setDate(d.getDate() + 60);
+            document.getElementById('eventDate').value = d.toISOString().split('T')[0];
+        });
+
+        async function handleAnalyzeCombos(e) {
+            e.preventDefault();
+
+            const btn = document.getElementById('btnSubmitRecom');
+            const loading = document.getElementById('loadingState');
+            const results = document.getElementById('resultsSection');
+
+            btn.disabled = true;
+            btn.classList.add('opacity-50');
+            loading.classList.remove('hidden');
+            results.classList.add('hidden');
+
+            const selectedServices = [];
+            document.querySelectorAll('input[name="services"]:checked').forEach(cb => selectedServices.push(cb.value));
+
+            const payload = {
+                coupleName: document.getElementById('coupleName').value.trim(),
+                phoneNumber: document.getElementById('phoneNumber').value.trim(),
+                email: document.getElementById('email').value.trim(),
+                eventDate: document.getElementById('eventDate').value,
+                shift: document.getElementById('shift').value,
+                officialTableCount: parseInt(document.getElementById('officialTableCount').value),
+                spareTableCount: parseInt(document.getElementById('spareTableCount').value) || 0,
+                guestCount: (parseInt(document.getElementById('officialTableCount').value) + (parseInt(document.getElementById('spareTableCount').value) || 0)) * 10,
+                expectedBudget: parseFloat(document.getElementById('expectedBudget').value),
+                budgetPriority: document.getElementById('budgetPriority').value,
+                preferredSpaceType: document.getElementById('preferredSpaceType').value || null,
+                desiredStyle: document.getElementById('desiredStyle').value || null,
+                foodPreference: document.getElementById('foodPreference').value || null,
+                selectedServiceCodes: selectedServices
+            };
+
+            try {
+                const res = await fetch('/Recommendation/AnalyzeTop3', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await res.json();
+
+                btn.disabled = false;
+                btn.classList.remove('opacity-50');
+                loading.classList.add('hidden');
+
+                if (result.success && result.data) {
+                    renderCombosResult(result.data, payload);
+                    results.classList.remove('hidden');
+                    results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                } else {
+                    alert(result.message || 'Không tìm thấy gói tiệc khả dụng trong ngày và ca này. Vui lòng chọn ca hoặc ngày khác.');
+                }
+            } catch (err) {
+                console.error(err);
+                btn.disabled = false;
+                btn.classList.remove('opacity-50');
+                loading.classList.add('hidden');
+                alert('Lỗi kết nối máy chủ khi phân tích gói tiệc.');
+            }
+        }
+
+        function renderCombosResult(data, req) {
+            document.getElementById('resNotice').innerText = data.algorithmNotice || data.AlgorithmNotice;
+            const container = document.getElementById('combosCardsContainer');
+            container.innerHTML = '';
+
+            const combos = data.topCombos || data.TopCombos || [];
+            if (combos.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-3 py-12 bg-white rounded-3xl border border-slate-200 text-center text-slate-500 shadow-sm">
+                        <i class="fa-regular fa-calendar-xmark text-4xl text-slate-300 mb-3 block"></i>
+                        <p class="font-bold">Các sảnh phù hợp quy mô đã kín lịch vào thời gian hai bạn chọn.</p>
+                        <p class="text-xs mt-1">Vui lòng thử chọn ca trưa hoặc đổi sang một ngày khác gần đó nhé!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            combos.forEach(c => {
+                const isBest = (c.comboType || c.ComboType) === 'BALANCED';
+                const cardClass = isBest ? 'gold-gradient-card relative shadow-2xl' : 'bg-white border border-slate-200 shadow-md';
+                const badgeClass = isBest ? 'badge-shimmer text-white' : 'bg-slate-100 text-slate-700';
+
+                const matchScore = c.overallMatchScore ?? c.OverallMatchScore ?? 90;
+                const title = c.comboTitle || c.ComboTitle;
+                const badge = c.comboBadge || c.ComboBadge;
+                const totalCost = Number(c.totalEstimatedCost ?? c.TotalEstimatedCost ?? 0).toLocaleString('vi-VN');
+                const analysisText = c.budgetAnalysisText || c.BudgetAnalysisText || '';
+
+                const hallName = c.hallName || c.HallName;
+                const hallPrice = Number(c.hallRentalPrice ?? c.HallRentalPrice ?? 0).toLocaleString('vi-VN');
+                const hallCap = c.hallCapacity ?? c.HallCapacity ?? 0;
+
+                const menuName = c.menuName || c.MenuName;
+                const menuPrice = Number(c.menuPricePerTable ?? c.MenuPricePerTable ?? 0).toLocaleString('vi-VN');
+
+                const decorName = c.decorationPackageName || c.DecorationPackageName;
+                const decorPrice = Number(c.decorationPrice ?? c.DecorationPrice ?? 0).toLocaleString('vi-VN');
+                const decorStyle = c.decorationStyle || c.DecorationStyle;
+
+                const reasons = c.recommendationReasons || c.RecommendationReasons || [];
+                let reasonsHtml = '';
+                reasons.slice(0, 3).forEach(r => {
+                    reasonsHtml += `<li class="flex items-start gap-2"><i class="fa-solid fa-circle-check text-emerald-500 text-xs mt-0.5 shrink-0"></i><span>${r}</span></li>`;
+                });
+
+                container.innerHTML += `
+                    <div class="rounded-3xl p-6 flex flex-col justify-between transition-all hover:-translate-y-1 ${cardClass}">
+
+                        ${isBest ? `
+                            <div class="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-[11px] font-bold text-white uppercase tracking-wider bg-[#B89758] shadow-md flex items-center gap-1.5">
+                                <i class="fa-solid fa-crown text-[10px]"></i> Đề Xuất Hoàn Hảo Nhất
+                            </div>
+                        ` : ''}
+
+                        <div class="space-y-4 ${isBest ? 'pt-2' : ''}">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <span class="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full ${badgeClass}">
+                                        ${badge}
+                                    </span>
+                                    <h4 class="font-serif text-xl font-bold text-slate-900 mt-1.5">${title}</h4>
+                                </div>
+                                <div class="text-right">
+                                    <span class="text-[10px] text-slate-400 block font-semibold">Tương Thích</span>
+                                    <span class="font-sans font-black text-2xl text-[#B89758]">${matchScore}%</span>
+                                </div>
+                            </div>
+
+                            <!-- Điểm thành phần -->
+                            <div class="grid grid-cols-4 gap-1 bg-slate-50 p-2.5 rounded-2xl text-center text-[10px] border border-slate-100">
+                                <div><span class="text-slate-400 block">Ngân sách</span><strong class="text-slate-800">${c.budgetMatchScore ?? c.BudgetMatchScore}%</strong></div>
+                                <div><span class="text-slate-400 block">Sức chứa</span><strong class="text-slate-800">${c.spaceFitScore ?? c.SpaceFitScore}%</strong></div>
+                                <div><span class="text-slate-400 block">Phong cách</span><strong class="text-slate-800">${c.styleThemeScore ?? c.StyleThemeScore}%</strong></div>
+                                <div><span class="text-slate-400 block">Hài lòng</span><strong class="text-slate-800">${c.ratingCredibilityScore ?? c.RatingCredibilityScore}%</strong></div>
+                            </div>
+
+                            <!-- Hạng mục combo -->
+                            <div class="space-y-2.5 text-xs">
+                                <div class="p-3 bg-white rounded-2xl border border-slate-100">
+                                    <div class="flex justify-between font-bold text-slate-800">
+                                        <span><i class="fa-solid fa-archway text-[#B89758] mr-1.5"></i>${hallName}</span>
+                                        <span>${hallPrice} đ</span>
+                                    </div>
+                                    <span class="text-[11px] text-slate-500 block mt-0.5">Sức chứa: ${hallCap} bàn • Hệ thống đèn chiếu cao cấp</span>
+                                </div>
+
+                                <div class="p-3 bg-white rounded-2xl border border-slate-100">
+                                    <div class="flex justify-between font-bold text-slate-800">
+                                        <span><i class="fa-solid fa-utensils text-[#B89758] mr-1.5"></i>${menuName}</span>
+                                        <span>${menuPrice} đ/bàn</span>
+                                    </div>
+                                    <span class="text-[11px] text-slate-500 block mt-0.5">Định lượng 7 món thượng vị • Chuẩn 10 khách/bàn</span>
+                                </div>
+
+                                <div class="p-3 bg-white rounded-2xl border border-slate-100">
+                                    <div class="flex justify-between font-bold text-slate-800">
+                                        <span><i class="fa-solid fa-wand-magic-sparkles text-[#B89758] mr-1.5"></i>${decorName}</span>
+                                        <span>${decorPrice} đ</span>
+                                    </div>
+                                    <span class="text-[11px] text-slate-500 block mt-0.5">Tone chủ đạo: ${decorStyle}</span>
+                                </div>
+                            </div>
+
+                            <!-- Điểm nhấn gợi ý -->
+                            <div class="pt-1">
+                                <span class="text-[11px] font-bold text-slate-700 block mb-1.5">Điểm nổi bật:</span>
+                                <ul class="text-[11px] text-slate-600 space-y-1">
+                                    ${reasonsHtml}
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Footer: Tổng tiền & Nút đăng ký -->
+                        <div class="pt-5 mt-5 border-t border-slate-200/80">
+                            <div class="flex items-baseline justify-between mb-1">
+                                <span class="text-xs text-slate-500 font-medium">Dự toán trọn gói:</span>
+                                <span class="font-serif font-bold text-xl text-slate-900">${totalCost} đ</span>
+                            </div>
+                            <p class="text-[11px] text-emerald-600 font-bold mb-4">${analysisText}</p>
+
+                            <button type="button" onclick="customerRegisterBooking(${c.hallId ?? c.HallId}, '${hallName}', '${req.coupleName}', '${req.phoneNumber}', '${req.eventDate}', '${req.shift}', ${req.officialTableCount + req.spareTableCount})" class="w-full py-3 px-4 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md ${isBest ? 'bg-[#B89758] hover:bg-[#8C6D32] text-white hover:shadow-lg' : 'bg-[#1E293B] hover:bg-slate-900 text-white'}">
+                                <span>Đăng Ký Giữ Chỗ Gói Này</span>
+                                <i class="fa-solid fa-arrow-right text-[11px]"></i>
+                            </button>
+                        </div>
+
+                    </div>
+                `;
+            });
+        }
+
+        function customerRegisterBooking(hallId, hallName, coupleName, phone, eventDate, shift, totalTables) {
+            if (confirm(`Xác nhận gửi thông tin đăng ký giữ chỗ ${hallName} (${shift} ngày ${eventDate}) cho cặp đôi ${coupleName}? Chuyên viên Riverside Palace sẽ liên hệ lại trong vòng 30 phút.`)) {
+                alert("Cảm ơn hai bạn! Yêu cầu giữ chỗ gói tiệc đã được gửi thành công đến bộ phận tư vấn của Riverside Palace.");
+            }
+        }
+    </script>
+}

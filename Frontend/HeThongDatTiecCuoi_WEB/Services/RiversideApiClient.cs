@@ -8,6 +8,9 @@ using System.Net.Http.Json;
 using System.Text.Json;
 namespace HeThongDatTiecCuoi_WEB.Services;
 using HeThongDatTiecCuoi_WEB.Models.AdminMenu;
+using HeThongDatTiecCuoi_WEB.Models.AdminReport;
+using HeThongDatTiecCuoi_WEB.Models.AdminBooking;
+using HeThongDatTiecCuoi_WEB.Models.Recommendation;
 using Microsoft.AspNetCore.Mvc;
 
 public sealed class RiversideApiClient : IRiversideApiClient
@@ -923,5 +926,139 @@ public sealed class RiversideApiClient : IRiversideApiClient
             ? $"Yêu cầu không thành công ({(int)response.StatusCode})."
             : text;
     }
+    public async Task<ApiCallResult<RevenueBiViewModel>> GetRevenueBiReportAsync(
+    int year,
+    int quarter,
+    string? accessToken,
+    CancellationToken cancellationToken = default)
+    {
+        var uri = $"api/admin/reports/revenue-bi?year={year}&quarter={quarter}";
+        return await SendJsonAsync<RevenueBiViewModel>(
+            HttpMethod.Get,
+            uri,
+            null,
+            accessToken,
+            cancellationToken);
+    }
 
+    public async Task<ApiCallResult<HallScheduleMatrixDto>> GetHallScheduleMatrixAsync(
+    DateTime? startDate,
+    string? accessToken,
+    CancellationToken cancellationToken = default)
+    {
+        var uri = startDate.HasValue
+            ? $"api/admin/reports/hall-matrix?startDate={startDate.Value:yyyy-MM-dd}"
+            : "api/admin/reports/hall-matrix";
+
+        return await SendJsonAsync<HallScheduleMatrixDto>(
+            HttpMethod.Get,
+            uri,
+            null,
+            accessToken,
+            cancellationToken);
+    }
+
+    // Quản lý đặt tiệc
+    public async Task<ApiCallResult<BookingListResponseViewModel>> GetBookingsAsync(
+    BookingFilterRequestViewModel filter,
+    string? accessToken,
+    CancellationToken cancellationToken = default)
+    {
+        var queryParams = new List<string>
+    {
+        $"pageIndex={filter.PageIndex}",
+        $"pageSize={filter.PageSize}"
+    };
+
+        if (!string.IsNullOrWhiteSpace(filter.Keyword))
+            queryParams.Add($"keyword={Uri.EscapeDataString(filter.Keyword.Trim())}");
+
+        if (!string.IsNullOrWhiteSpace(filter.Status) && filter.Status != "ALL")
+            queryParams.Add($"status={Uri.EscapeDataString(filter.Status)}");
+
+        if (filter.HallId.HasValue && filter.HallId.Value > 0)
+            queryParams.Add($"hallId={filter.HallId.Value}");
+
+        if (filter.FromDate.HasValue)
+            queryParams.Add($"fromDate={filter.FromDate.Value:yyyy-MM-dd}");
+
+        if (filter.ToDate.HasValue)
+            queryParams.Add($"toDate={filter.ToDate.Value:yyyy-MM-dd}");
+
+        var uri = $"api/admin/bookings?{string.Join("&", queryParams)}";
+
+        return await SendJsonAsync<BookingListResponseViewModel>(
+            HttpMethod.Get,
+            uri,
+            null,
+            accessToken,
+            cancellationToken);
+    }
+
+    public async Task<ApiCallResult<BookingDetailViewModel>> GetBookingDetailAsync(
+        int id,
+        string? accessToken,
+        CancellationToken cancellationToken = default)
+    {
+        var uri = $"api/admin/bookings/{id}";
+        return await SendJsonAsync<BookingDetailViewModel>(
+            HttpMethod.Get,
+            uri,
+            null,
+            accessToken,
+            cancellationToken);
+    }
+
+    public async Task<ApiCallResult<dynamic>> CreateBookingAsync(
+        CreateBookingRequestViewModel request,
+        string? accessToken,
+        CancellationToken cancellationToken = default)
+    {
+        var uri = "api/admin/bookings";
+        return await SendJsonAsync<dynamic>(
+            HttpMethod.Post,
+            uri,
+            request,
+            accessToken,
+            cancellationToken);
+    }
+
+    public async Task<ApiCallResult<dynamic>> UpdateBookingStatusAsync(
+        int id,
+        UpdateBookingStatusRequestViewModel request,
+        string? accessToken,
+        CancellationToken cancellationToken = default)
+    {
+        var uri = $"api/admin/bookings/{id}/status";
+        return await SendJsonAsync<dynamic>(
+            HttpMethod.Put,
+            uri,
+            request,
+            accessToken,
+            cancellationToken);
+    }
+
+    // Hệ thống khuyến nghị
+    public async Task<ApiCallResult<RecommendationResponseViewModel>> GetTop3RecommendationsAsync(
+    RecommendationRequestViewModel request,
+    CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync("api/recommendations/suggest-top3", request, cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                return ApiCallResult<RecommendationResponseViewModel>.Failure($"Lỗi máy chủ ({response.StatusCode}): {errorContent}");
+            }
+
+            var result = await response.Content.ReadFromJsonAsync<RecommendationResponseViewModel>(cancellationToken: cancellationToken);
+            return ApiCallResult<RecommendationResponseViewModel>.Success(result ?? new RecommendationResponseViewModel());
+        }
+        catch (Exception ex)
+        {
+            return ApiCallResult<RecommendationResponseViewModel>.Failure($"Không thể kết nối thuật toán khuyến nghị: {ex.Message}");
+        }
+    }
 }
