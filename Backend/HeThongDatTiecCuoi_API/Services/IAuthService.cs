@@ -6,5 +6,6 @@ public interface IAuthService
 {
     Task<ServiceResult<AuthResponse>> RegisterAsync(RegisterRequest request, CancellationToken cancellationToken);
     Task<ServiceResult<AuthResponse>> LoginAsync(LoginRequest request, CancellationToken cancellationToken);
+    Task<ServiceResult<AuthResponse>> GoogleLoginAsync(GoogleLoginRequest request, CancellationToken cancellationToken);
     Task<ServiceResult<CurrentUserResponse>> GetCurrentUserAsync(int userId, CancellationToken cancellationToken);
 }

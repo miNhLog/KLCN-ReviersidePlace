@@ -1,6 +1,7 @@
 @model LoginViewModel
 @{
     ViewData["Title"] = "Đăng nhập";
+    var googleClientId = ViewData["GoogleClientId"] as string;
 }
 
 @section Styles {
@@ -29,16 +30,31 @@
             <h2>Đăng Nhập</h2>
             <p class="subtitle">Vui lòng nhập thông tin để truy cập tài khoản và dịch vụ</p>
 
+<<<<<<< Updated upstream
+=======
+            @if (TempData["Success"] is string successMessage)
+            {
+                <div class="alert-success">@successMessage</div>
+            }
+            @if (TempData["Error"] is string errorMessage)
+            {
+                <div class="alert-error">@errorMessage</div>
+            }
+
+>>>>>>> Stashed changes
             <form asp-action="Login" asp-controller="Auth" method="post" novalidate>
                 <input asp-for="ReturnUrl" type="hidden" />
                 <div asp-validation-summary="ModelOnly" class="alert-error"></div>
 
+<<<<<<< Updated upstream
                 <div class="account-tabs" role="group" aria-label="Loại tài khoản">
                     <button type="button" class="tab-button @(Model.LoaiTaiKhoan == "Customer" ? "active" : "")" data-account-type="Customer">Khách hàng / Chủ tiệc</button>
                     <button type="button" class="tab-button @(Model.LoaiTaiKhoan == "Staff" ? "active" : "")" data-account-type="Staff">Cán bộ nhân viên</button>
                 </div>
                 <input asp-for="LoaiTaiKhoan" type="hidden" id="accountType" />
 
+=======
+>>>>>>> Stashed changes
                 <div class="field">
                     <label asp-for="DinhDanh">EMAIL HOẶC SỐ ĐIỆN THOẠI <i>*</i></label>
                     <div class="input-wrap"><span>✉</span><input asp-for="DinhDanh" placeholder="example@email.com hoặc 0903xxxxxx" autocomplete="username" /></div>
@@ -57,12 +73,48 @@
                 </div>
 
                 <button class="primary-button" type="submit">Đăng Nhập <span>→</span></button>
-
-                <div class="divider"><span>HOẶC TIẾP TỤC VỚI</span></div>
-                <button class="google-button" type="button" disabled title="Google Login thuộc giai đoạn 2"><b>G</b> Đăng nhập nhanh với Google</button>
-                <p class="switch-page">Chưa có tài khoản? <a asp-action="Register">Đăng ký tài khoản mới ngay</a></p>
             </form>
+
+            <div class="divider"><span>HOẶC TIẾP TỤC VỚI</span></div>
+            @if (!string.IsNullOrWhiteSpace(googleClientId))
+            {
+                <div id="g_id_onload"
+                     data-client_id="@googleClientId"
+                     data-context="signin"
+                     data-ux_mode="popup"
+                     data-callback="handleGoogleCredentialResponse"
+                     data-auto_prompt="false">
+                </div>
+                <div class="google-signin-host">
+                    <div class="g_id_signin"
+                         data-type="standard"
+                         data-shape="rectangular"
+                         data-theme="outline"
+                         data-text="signin_with"
+                         data-size="large"
+                         data-logo_alignment="left"
+                         data-width="400">
+                    </div>
+                </div>
+                <form id="googleAuthForm" asp-action="Google" asp-controller="Auth" method="post" class="google-auth-form">
+                    <input id="googleCredential" name="Credential" type="hidden" />
+                    <input id="googleRememberMe" name="RememberMe" type="hidden" value="false" />
+                    <input name="ReturnUrl" type="hidden" value="@Model.ReturnUrl" />
+                </form>
+            }
+            else
+            {
+                <button class="google-button" type="button" disabled title="Thiếu cấu hình GoogleAuth:ClientId"><b>G</b> Chưa cấu hình Google Login</button>
+            }
+            <p class="switch-page">Chưa có tài khoản? <a asp-action="Register">Đăng ký tài khoản mới ngay</a></p>
             <footer>Hotline hỗ trợ: <strong>0933 777 888</strong> <span>│</span> 360D Bến Vân Đồn, P.1, Q.4, TP.HCM</footer>
         </div>
     </section>
 </main>
+
+@section Scripts {
+    @if (!string.IsNullOrWhiteSpace(googleClientId))
+    {
+        <script src="https://accounts.google.com/gsi/client" async defer></script>
+    }
+}

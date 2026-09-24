@@ -44,6 +44,15 @@ builder.Services
     .ValidateOnStart();
 builder.Services.Configure<DevelopmentAccountsOptions>(
     builder.Configuration.GetSection(DevelopmentAccountsOptions.SectionName));
+<<<<<<< Updated upstream
+=======
+builder.Services.Configure<SmtpOptions>(
+    builder.Configuration.GetSection(SmtpOptions.SectionName));
+builder.Services.Configure<PasswordResetOptions>(
+    builder.Configuration.GetSection(PasswordResetOptions.SectionName));
+builder.Services.Configure<GoogleAuthOptions>(
+    builder.Configuration.GetSection(GoogleAuthOptions.SectionName));
+>>>>>>> Stashed changes
 
 var jwtOptions = builder.Configuration
     .GetSection(JwtOptions.SectionName)
@@ -70,6 +79,13 @@ builder.Services.AddAuthorization();
 builder.Services.AddScoped<IPasswordHasher<NguoiDung>, PasswordHasher<NguoiDung>>();
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+<<<<<<< Updated upstream
+=======
+builder.Services.AddSingleton<IGoogleTokenValidator, GoogleTokenValidator>();
+builder.Services.AddScoped<IStatusService, StatusService>();
+builder.Services.AddScoped<IEmailService, SmtpEmailService>();
+builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
+>>>>>>> Stashed changes
 builder.Services.AddScoped<DevelopmentAuthSeeder>();
 
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];

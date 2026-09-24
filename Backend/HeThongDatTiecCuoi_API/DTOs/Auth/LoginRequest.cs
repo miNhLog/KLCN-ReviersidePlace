@@ -12,9 +12,13 @@ public sealed class LoginRequest
     [StringLength(100)]
     public string MatKhau { get; init; } = string.Empty;
 
+<<<<<<< Updated upstream
     [Required]
     [RegularExpression("^(Customer|Staff)$", ErrorMessage = "Loại tài khoản không hợp lệ.")]
     public string LoaiTaiKhoan { get; init; } = "Customer";
 
     public bool GhiNhoDangNhap { get; init; }
+=======
+    public bool RememberMe { get; init; }
+>>>>>>> Stashed changes
 }

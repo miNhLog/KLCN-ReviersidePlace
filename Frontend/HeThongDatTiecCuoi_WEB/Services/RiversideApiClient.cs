@@ -20,10 +20,25 @@ public sealed class RiversideApiClient : IRiversideApiClient
         CancellationToken cancellationToken) =>
         SendAsync<AuthResponseDto>(HttpMethod.Post, "api/auth/login", new
         {
+<<<<<<< Updated upstream
             model.DinhDanh,
             model.MatKhau,
             model.LoaiTaiKhoan,
             model.GhiNhoDangNhap
+=======
+            model.Identifier,
+            model.Password,
+            model.RememberMe
+        }, null, cancellationToken);
+
+    public Task<ApiCallResult<AuthResponseDto>> GoogleLoginAsync(
+        GoogleLoginViewModel model,
+        CancellationToken cancellationToken) =>
+        SendAsync<AuthResponseDto>(HttpMethod.Post, "api/auth/google", new
+        {
+            model.Credential,
+            model.RememberMe
+>>>>>>> Stashed changes
         }, null, cancellationToken);
 
     public Task<ApiCallResult<AuthResponseDto>> RegisterAsync(

@@ -1,13 +1,4 @@
 document.addEventListener("DOMContentLoaded", () => {
-    const accountTypeInput = document.querySelector("#accountType");
-    document.querySelectorAll(".tab-button").forEach(button => {
-        button.addEventListener("click", () => {
-            document.querySelectorAll(".tab-button").forEach(item => item.classList.remove("active"));
-            button.classList.add("active");
-            if (accountTypeInput) accountTypeInput.value = button.dataset.accountType;
-        });
-    });
-
     document.querySelectorAll(".toggle-password").forEach(button => {
         button.addEventListener("click", () => {
             const input = button.parentElement?.querySelector("input");
@@ -30,3 +21,21 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 });
+
+window.handleGoogleCredentialResponse = response => {
+    const form = document.querySelector("#googleAuthForm");
+    const credentialInput = document.querySelector("#googleCredential");
+    if (!form || !credentialInput || !response?.credential) {
+        return;
+    }
+
+    credentialInput.value = response.credential;
+
+    const rememberMe = document.querySelector("#RememberMe");
+    const googleRememberMe = document.querySelector("#googleRememberMe");
+    if (googleRememberMe) {
+        googleRememberMe.value = rememberMe?.checked ? "true" : "false";
+    }
+
+    form.submit();
+};

@@ -44,6 +44,62 @@ public sealed class AuthController : ControllerBase
         return ToActionResult(result);
     }
 
+<<<<<<< Updated upstream
+=======
+    [HttpPost("google")]
+    [AllowAnonymous]
+    [EnableRateLimiting("auth")]
+    [ProducesResponseType<AuthResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<AuthResponse>(StatusCodes.Status201Created)]
+    [ProducesResponseType<ApiErrorResponse>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ApiErrorResponse>(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> Google(
+        GoogleLoginRequest request,
+        CancellationToken cancellationToken)
+    {
+        var result = await _authService.GoogleLoginAsync(request, cancellationToken);
+        return ToActionResult(result);
+    }
+
+    [HttpPost("forgot-password")]
+    [AllowAnonymous]
+    [EnableRateLimiting("auth")]
+    public async Task<IActionResult> ForgotPassword(
+        [FromBody] ForgotPasswordRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _passwordResetService.SendResetLinkForEmailAsync(
+                request.Email, cancellationToken);
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            _logger.LogError(exception, "Không thể gửi email đặt lại mật khẩu.");
+        }
+
+        return Ok(new
+        {
+            message = "Nếu email tồn tại trong hệ thống, hướng dẫn đặt lại mật khẩu sẽ được gửi."
+        });
+    }
+
+    [HttpPost("reset-password")]
+    [AllowAnonymous]
+    [EnableRateLimiting("auth")]
+    public async Task<IActionResult> ResetPassword(
+        [FromBody] ResetPasswordRequest request,
+        CancellationToken cancellationToken)
+    {
+        var result = await _passwordResetService.ResetPasswordAsync(
+            request.Token,
+            request.NewPassword,
+            request.ConfirmPassword,
+            cancellationToken);
+        return ToActionResult(result);
+    }
+
+>>>>>>> Stashed changes
     [HttpGet("me")]
     [Authorize]
     [ProducesResponseType<CurrentUserResponse>(StatusCodes.Status200OK)]

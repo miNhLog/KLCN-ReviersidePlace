@@ -1,4 +1,9 @@
 using System.Text.RegularExpressions;
+<<<<<<< Updated upstream
+=======
+using HeThongDatTiecCuoi_API.Constants;
+using HeThongDatTiecCuoi_API.Constants.StatusCodes;
+>>>>>>> Stashed changes
 using HeThongDatTiecCuoi_API.Data;
 using HeThongDatTiecCuoi_API.DTOs.Auth;
 using HeThongDatTiecCuoi_API.Models;
@@ -9,18 +14,37 @@ namespace HeThongDatTiecCuoi_API.Services;
 
 public sealed partial class AuthService : IAuthService
 {
+    private const string GoogleProvider = "Google";
+
     private readonly ApplicationDbContext _db;
     private readonly IPasswordHasher<NguoiDung> _passwordHasher;
     private readonly IJwtTokenService _jwtTokenService;
+<<<<<<< Updated upstream
 
     public AuthService(
         ApplicationDbContext db,
         IPasswordHasher<NguoiDung> passwordHasher,
         IJwtTokenService jwtTokenService)
+=======
+    private readonly IStatusService _statusService;
+    private readonly IGoogleTokenValidator _googleTokenValidator;
+
+    public AuthService(
+        ApplicationDbContext db,
+        IPasswordHasher<User> passwordHasher,
+        IJwtTokenService jwtTokenService,
+        IStatusService statusService,
+        IGoogleTokenValidator googleTokenValidator)
+>>>>>>> Stashed changes
     {
         _db = db;
         _passwordHasher = passwordHasher;
         _jwtTokenService = jwtTokenService;
+<<<<<<< Updated upstream
+=======
+        _statusService = statusService;
+        _googleTokenValidator = googleTokenValidator;
+>>>>>>> Stashed changes
     }
 
     public async Task<ServiceResult<AuthResponse>> RegisterAsync(
@@ -71,8 +95,13 @@ public sealed partial class AuthService : IAuthService
                 VaiTroID = customerRole.VaiTroID,
                 VaiTro = customerRole,
                 Email = email,
+<<<<<<< Updated upstream
                 TrangThai = "Hoạt động",
                 NgayTao = DateTime.Now
+=======
+                StatusId = accountStatusId,
+                CreatedAt = DateTime.UtcNow
+>>>>>>> Stashed changes
             };
             user.MatKhauHash = _passwordHasher.HashPassword(user, request.MatKhau);
 
@@ -88,11 +117,17 @@ public sealed partial class AuthService : IAuthService
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
 
+<<<<<<< Updated upstream
             user.KhachHang = customer;
             var token = _jwtTokenService.CreateAccessToken(user, rememberMe: false);
             return ServiceResult<AuthResponse>.Success(
                 new AuthResponse(token.Token, token.ExpiresAtUtc, ToCurrentUser(user)),
                 StatusCodes.Status201Created);
+=======
+            var hydratedUser = await UserQuery()
+                .SingleAsync(x => x.UserId == user.UserId, cancellationToken);
+            return CreateAuthenticationResult(hydratedUser, rememberMe: false, StatusCodes.Status201Created);
+>>>>>>> Stashed changes
         }
         catch (DbUpdateException)
         {
@@ -107,6 +142,7 @@ public sealed partial class AuthService : IAuthService
         LoginRequest request,
         CancellationToken cancellationToken)
     {
+<<<<<<< Updated upstream
         var identifier = request.DinhDanh.Trim();
         var isStaffLogin = request.LoaiTaiKhoan == "Staff";
 
@@ -116,47 +152,88 @@ public sealed partial class AuthService : IAuthService
             .Include(x => x.NhanVien);
 
         NguoiDung? user;
+=======
+        var identifier = request.Identifier.Trim();
+        User? user;
+
+>>>>>>> Stashed changes
         if (identifier.Contains('@'))
         {
             var email = identifier.ToLowerInvariant();
-            user = await query.SingleOrDefaultAsync(x => x.Email == email, cancellationToken);
+            user = await UserQuery()
+                .SingleOrDefaultAsync(x => x.Email == email, cancellationToken);
         }
         else
         {
+<<<<<<< Updated upstream
             var phone = NormalizePhone(identifier);
             user = isStaffLogin
                 ? await query.SingleOrDefaultAsync(x => x.NhanVien != null && x.NhanVien.SoDienThoai == phone, cancellationToken)
                 : await query.SingleOrDefaultAsync(x => x.KhachHang != null && x.KhachHang.SoDienThoai == phone, cancellationToken);
+=======
+            var phone = PhoneNumberHelper.Normalize(identifier);
+            var matches = await UserQuery()
+                .Where(x =>
+                    (x.Customer != null && x.Customer.PhoneNumber == phone) ||
+                    (x.Employee != null && x.Employee.PhoneNumber == phone))
+                .Take(2)
+                .ToListAsync(cancellationToken);
+
+            if (matches.Count > 1)
+            {
+                return ServiceResult<AuthResponse>.Failure(
+                    "Số điện thoại đang gắn với nhiều tài khoản. Vui lòng đăng nhập bằng email.",
+                    StatusCodes.Status409Conflict);
+            }
+
+            user = matches.SingleOrDefault();
+>>>>>>> Stashed changes
         }
 
-        if (user is null || !MatchesSelectedAccountType(user, isStaffLogin))
+        if (user is null)
         {
             return InvalidCredentials();
         }
 
+<<<<<<< Updated upstream
         if (user.TrangThai != "Hoạt động")
+=======
+        var accountFailure = ValidateAccountCanSignIn(user);
+        if (accountFailure is not null)
+>>>>>>> Stashed changes
         {
-            return ServiceResult<AuthResponse>.Failure(
-                "Tài khoản đang bị khóa hoặc đã ngừng hoạt động.",
-                StatusCodes.Status403Forbidden);
+            return accountFailure;
         }
 
+<<<<<<< Updated upstream
         if (isStaffLogin && user.NhanVien is not null && user.NhanVien.TrangThai != "Đang làm việc")
+=======
+        var passwordHash = user.PasswordHash;
+        if (string.IsNullOrWhiteSpace(passwordHash))
+>>>>>>> Stashed changes
         {
             return ServiceResult<AuthResponse>.Failure(
-                "Tài khoản nhân viên hiện không được phép đăng nhập.",
-                StatusCodes.Status403Forbidden);
+                "Tài khoản này chưa có mật khẩu. Hãy đăng nhập bằng Google hoặc dùng Quên mật khẩu để tạo mật khẩu.",
+                StatusCodes.Status401Unauthorized);
         }
 
         PasswordVerificationResult verification;
         try
         {
+<<<<<<< Updated upstream
             verification = _passwordHasher.VerifyHashedPassword(user, user.MatKhauHash, request.MatKhau);
+=======
+            verification = _passwordHasher.VerifyHashedPassword(
+                user,
+                passwordHash,
+                request.Password);
+>>>>>>> Stashed changes
         }
         catch (FormatException)
         {
             return InvalidCredentials();
         }
+
         if (verification == PasswordVerificationResult.Failed)
         {
             return InvalidCredentials();
@@ -168,27 +245,202 @@ public sealed partial class AuthService : IAuthService
             await _db.SaveChangesAsync(cancellationToken);
         }
 
+<<<<<<< Updated upstream
         var token = _jwtTokenService.CreateAccessToken(user, request.GhiNhoDangNhap);
         return ServiceResult<AuthResponse>.Success(
             new AuthResponse(token.Token, token.ExpiresAtUtc, ToCurrentUser(user)));
+=======
+        return CreateAuthenticationResult(user, request.RememberMe);
+    }
+
+    public async Task<ServiceResult<AuthResponse>> GoogleLoginAsync(
+        GoogleLoginRequest request,
+        CancellationToken cancellationToken)
+    {
+        GoogleUserInfo? googleUser;
+        try
+        {
+            googleUser = await _googleTokenValidator.ValidateAsync(
+                request.Credential,
+                cancellationToken);
+        }
+        catch (InvalidOperationException exception)
+        {
+            return ServiceResult<AuthResponse>.Failure(
+                exception.Message,
+                StatusCodes.Status503ServiceUnavailable);
+        }
+        catch (HttpRequestException)
+        {
+            return ServiceResult<AuthResponse>.Failure(
+                "Không thể xác minh tài khoản Google lúc này. Vui lòng thử lại.",
+                StatusCodes.Status503ServiceUnavailable);
+        }
+
+        if (googleUser is null)
+        {
+            return ServiceResult<AuthResponse>.Failure(
+                "Thông tin xác thực Google không hợp lệ hoặc đã hết hạn.",
+                StatusCodes.Status401Unauthorized);
+        }
+
+        var linkedLogin = await _db.ExternalLogins
+            .Include(x => x.User)
+                .ThenInclude(x => x.Role)
+            .Include(x => x.User)
+                .ThenInclude(x => x.Status)
+            .Include(x => x.User)
+                .ThenInclude(x => x.Customer)
+            .Include(x => x.User)
+                .ThenInclude(x => x.Employee)
+                    .ThenInclude(x => x!.Status)
+            .SingleOrDefaultAsync(
+                x => x.Provider == GoogleProvider &&
+                     x.ProviderUserId == googleUser.Subject,
+                cancellationToken);
+
+        if (linkedLogin is not null)
+        {
+            var accountFailure = ValidateAccountCanSignIn(linkedLogin.User);
+            if (accountFailure is not null)
+            {
+                return accountFailure;
+            }
+
+            if (!string.Equals(
+                    linkedLogin.ProviderEmail,
+                    googleUser.Email,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                linkedLogin.ProviderEmail = googleUser.Email;
+                await _db.SaveChangesAsync(cancellationToken);
+            }
+
+            return CreateAuthenticationResult(linkedLogin.User, request.RememberMe);
+        }
+
+        await using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            var user = await UserQuery()
+                .SingleOrDefaultAsync(x => x.Email == googleUser.Email, cancellationToken);
+
+            if (user is not null)
+            {
+                var accountFailure = ValidateAccountCanSignIn(user);
+                if (accountFailure is not null)
+                {
+                    await transaction.RollbackAsync(cancellationToken);
+                    return accountFailure;
+                }
+
+                var alreadyLinked = await _db.ExternalLogins.AnyAsync(
+                    x => x.UserId == user.UserId && x.Provider == GoogleProvider,
+                    cancellationToken);
+                if (alreadyLinked)
+                {
+                    await transaction.RollbackAsync(cancellationToken);
+                    return ServiceResult<AuthResponse>.Failure(
+                        "Email này đã liên kết với một tài khoản Google khác.",
+                        StatusCodes.Status409Conflict);
+                }
+
+                if (user.Role.RoleName == RoleNames.Customer && user.Customer is null)
+                {
+                    user.Customer = new Customer
+                    {
+                        User = user,
+                        FullName = googleUser.DisplayName,
+                        PhoneNumber = null
+                    };
+                }
+            }
+            else
+            {
+                var customerRole = await _db.Roles.SingleOrDefaultAsync(
+                    x => x.RoleName == RoleNames.Customer,
+                    cancellationToken);
+                if (customerRole is null)
+                {
+                    await transaction.RollbackAsync(cancellationToken);
+                    return ServiceResult<AuthResponse>.Failure(
+                        "Hệ thống chưa có vai trò Khách hàng.",
+                        StatusCodes.Status500InternalServerError);
+                }
+
+                var accountStatusId = await _statusService.GetStatusIdAsync(
+                    StatusGroups.Account,
+                    AccountStatusCodes.Active,
+                    cancellationToken);
+
+                user = new User
+                {
+                    RoleId = customerRole.RoleId,
+                    Role = customerRole,
+                    Email = googleUser.Email,
+                    PasswordHash = null,
+                    StatusId = accountStatusId,
+                    CreatedAt = DateTime.UtcNow,
+                    Customer = new Customer
+                    {
+                        FullName = googleUser.DisplayName,
+                        PhoneNumber = null
+                    }
+                };
+                _db.Users.Add(user);
+            }
+
+            _db.ExternalLogins.Add(new ExternalLogin
+            {
+                User = user,
+                Provider = GoogleProvider,
+                ProviderUserId = googleUser.Subject,
+                ProviderEmail = googleUser.Email,
+                LinkedAt = DateTime.UtcNow
+            });
+
+            await _db.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+
+            var hydratedUser = await UserQuery()
+                .SingleAsync(x => x.UserId == user.UserId, cancellationToken);
+            return CreateAuthenticationResult(hydratedUser, request.RememberMe);
+        }
+        catch (DbUpdateException)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            return ServiceResult<AuthResponse>.Failure(
+                "Không thể liên kết tài khoản Google. Tài khoản có thể vừa được sử dụng ở một phiên khác.",
+                StatusCodes.Status409Conflict);
+        }
+>>>>>>> Stashed changes
     }
 
     public async Task<ServiceResult<CurrentUserResponse>> GetCurrentUserAsync(
         int userId,
         CancellationToken cancellationToken)
     {
+<<<<<<< Updated upstream
         var user = await _db.NguoiDung
             .AsNoTracking()
             .Include(x => x.VaiTro)
             .Include(x => x.KhachHang)
             .Include(x => x.NhanVien)
             .SingleOrDefaultAsync(x => x.NguoiDungID == userId, cancellationToken);
+=======
+        var user = await UserQuery()
+            .AsNoTracking()
+            .SingleOrDefaultAsync(x => x.UserId == userId, cancellationToken);
+>>>>>>> Stashed changes
 
         return user is null
-            ? ServiceResult<CurrentUserResponse>.Failure("Không tìm thấy người dùng.", StatusCodes.Status404NotFound)
+            ? ServiceResult<CurrentUserResponse>.Failure(
+                "Không tìm thấy người dùng.",
+                StatusCodes.Status404NotFound)
             : ServiceResult<CurrentUserResponse>.Success(ToCurrentUser(user));
     }
 
+<<<<<<< Updated upstream
     private static bool MatchesSelectedAccountType(
     NguoiDung user,
     bool isStaffLogin) =>
@@ -198,6 +450,48 @@ public sealed partial class AuthService : IAuthService
             RoleNames.Staff or
             RoleNames.Coordinator
         : user.VaiTro.TenVaiTro == RoleNames.Customer;
+=======
+    private IQueryable<User> UserQuery() => _db.Users
+        .Include(x => x.Role)
+        .Include(x => x.Status)
+        .Include(x => x.Customer)
+        .Include(x => x.Employee)
+            .ThenInclude(x => x!.Status);
+
+    private static ServiceResult<AuthResponse>? ValidateAccountCanSignIn(User user)
+    {
+        if (user.Status.StatusCode != AccountStatusCodes.Active)
+        {
+            return ServiceResult<AuthResponse>.Failure(
+                "Tài khoản đang bị khóa hoặc đã ngừng hoạt động.",
+                StatusCodes.Status403Forbidden);
+        }
+
+        if (user.Role.RoleName is RoleNames.Consultant or RoleNames.Coordinator)
+        {
+            if (user.Employee is null ||
+                user.Employee.Status.StatusCode != EmployeeStatusCodes.Active)
+            {
+                return ServiceResult<AuthResponse>.Failure(
+                    "Tài khoản nhân viên hiện không được phép đăng nhập.",
+                    StatusCodes.Status403Forbidden);
+            }
+        }
+
+        return null;
+    }
+
+    private ServiceResult<AuthResponse> CreateAuthenticationResult(
+        User user,
+        bool rememberMe,
+        int statusCode = StatusCodes.Status200OK)
+    {
+        var token = _jwtTokenService.CreateAccessToken(user, rememberMe);
+        return ServiceResult<AuthResponse>.Success(
+            new AuthResponse(token.Token, token.ExpiresAtUtc, ToCurrentUser(user)),
+            statusCode);
+    }
+>>>>>>> Stashed changes
 
     private static CurrentUserResponse ToCurrentUser(NguoiDung user) => new(
         user.NguoiDungID,

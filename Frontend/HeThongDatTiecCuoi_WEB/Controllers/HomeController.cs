@@ -10,8 +10,27 @@ public sealed class HomeController : Controller
             ? RedirectToAction(nameof(Dashboard))
             : RedirectToAction("Login", "Auth");
 
+<<<<<<< Updated upstream
     [Authorize]
     public IActionResult Dashboard() => View();
+=======
+    [Authorize(
+        Roles = RoleNames.Admin + "," +
+                RoleNames.Consultant + "," +
+                RoleNames.Coordinator)]
+    public IActionResult Dashboard()
+    {
+        // Admin truy cập trực tiếp /Home/Dashboard
+        // cũng chuyển về trang quản lý sảnh
+        if (User.IsInRole(RoleNames.Admin))
+        {
+            return RedirectToAction("Index", "AdminHall");
+        }
+
+        return View();
+    }
+
+>>>>>>> Stashed changes
 
     [HttpGet("khong-co-quyen")]
     public IActionResult AccessDenied() => View();

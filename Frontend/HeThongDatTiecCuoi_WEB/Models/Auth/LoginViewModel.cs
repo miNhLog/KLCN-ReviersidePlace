@@ -13,7 +13,11 @@ public sealed class LoginViewModel
     [Display(Name = "Mật khẩu")]
     public string MatKhau { get; set; } = string.Empty;
 
+<<<<<<< Updated upstream
     public string LoaiTaiKhoan { get; set; } = "Customer";
     public bool GhiNhoDangNhap { get; set; }
+=======
+    public bool RememberMe { get; set; }
+>>>>>>> Stashed changes
     public string? ReturnUrl { get; set; }
 }

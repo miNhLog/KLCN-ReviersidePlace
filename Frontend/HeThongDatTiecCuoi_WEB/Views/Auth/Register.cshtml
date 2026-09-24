@@ -1,6 +1,7 @@
 @model RegisterViewModel
 @{
     ViewData["Title"] = "Đăng ký tài khoản";
+    var googleClientId = ViewData["GoogleClientId"] as string;
 }
 
 @section Styles {
@@ -69,11 +70,47 @@
                 <span asp-validation-for="DongYDieuKhoan" class="field-error"></span>
 
                 <button class="primary-button" type="submit">Tạo Tài Khoản Khách Hàng <span>→</span></button>
-                <div class="divider"><span>HOẶC ĐĂNG KÝ NHANH</span></div>
-                <button class="google-button" type="button" disabled title="Google Login thuộc giai đoạn 2"><b>G</b> Đăng ký nhanh bằng tài khoản Google</button>
-                <p class="switch-page">Đã có tài khoản Riverside Palace? <a asp-action="Login">Đăng nhập tại đây</a></p>
             </form>
+
+            <div class="divider"><span>HOẶC ĐĂNG KÝ NHANH</span></div>
+            @if (!string.IsNullOrWhiteSpace(googleClientId))
+            {
+                <div id="g_id_onload"
+                     data-client_id="@googleClientId"
+                     data-context="signup"
+                     data-ux_mode="popup"
+                     data-callback="handleGoogleCredentialResponse"
+                     data-auto_prompt="false">
+                </div>
+                <div class="google-signin-host">
+                    <div class="g_id_signin"
+                         data-type="standard"
+                         data-shape="rectangular"
+                         data-theme="outline"
+                         data-text="signup_with"
+                         data-size="large"
+                         data-logo_alignment="left"
+                         data-width="400">
+                    </div>
+                </div>
+                <form id="googleAuthForm" asp-action="Google" asp-controller="Auth" method="post" class="google-auth-form">
+                    <input id="googleCredential" name="Credential" type="hidden" />
+                    <input id="googleRememberMe" name="RememberMe" type="hidden" value="false" />
+                </form>
+            }
+            else
+            {
+                <button class="google-button" type="button" disabled title="Thiếu cấu hình GoogleAuth:ClientId"><b>G</b> Chưa cấu hình Google Login</button>
+            }
+            <p class="switch-page">Đã có tài khoản Riverside Palace? <a asp-action="Login">Đăng nhập tại đây</a></p>
             <footer>Hotline hỗ trợ: <strong>0933 777 888</strong> <span>│</span> 360D Bến Vân Đồn, P.1, Q.4, TP.HCM</footer>
         </div>
     </section>
 </main>
+
+@section Scripts {
+    @if (!string.IsNullOrWhiteSpace(googleClientId))
+    {
+        <script src="https://accounts.google.com/gsi/client" async defer></script>
+    }
+}

@@ -1,10 +1,13 @@
 using HeThongDatTiecCuoi_WEB.Services;
+using HeThongDatTiecCuoi_WEB.Options;
 using Microsoft.AspNetCore.Authentication.Cookies;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddHttpContextAccessor();
+builder.Services.Configure<GoogleAuthOptions>(
+    builder.Configuration.GetSection(GoogleAuthOptions.SectionName));
 builder.Services
     .AddHttpClient<IRiversideApiClient, RiversideApiClient>(client =>
     {
