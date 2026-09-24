@@ -4,6 +4,9 @@ using HeThongDatTiecCuoi_WEB.Models.Auth;
 using HeThongDatTiecCuoi_WEB.Models.Halls;
 namespace HeThongDatTiecCuoi_WEB.Services;
 using HeThongDatTiecCuoi_WEB.Models.AdminMenu;
+using HeThongDatTiecCuoi_WEB.Models.AdminReport;
+using HeThongDatTiecCuoi_WEB.Models.AdminBooking;
+using HeThongDatTiecCuoi_WEB.Models.Recommendation;
 using Microsoft.AspNetCore.Mvc;
 
 public interface IRiversideApiClient
@@ -214,5 +217,40 @@ public interface IRiversideApiClient
         List<int> dishIds,
         string accessToken,
         CancellationToken cancellationToken);
+    Task<ApiCallResult<RevenueBiViewModel>> GetRevenueBiReportAsync(
+        int year,
+        int quarter,
+        string? accessToken,
+        CancellationToken cancellationToken = default);
 
+    Task<ApiCallResult<HallScheduleMatrixDto>> GetHallScheduleMatrixAsync(
+        DateTime? startDate,
+        string? accessToken,
+        CancellationToken cancellationToken = default);
+
+    Task<ApiCallResult<BookingListResponseViewModel>> GetBookingsAsync(
+    BookingFilterRequestViewModel filter,
+    string? accessToken,
+    CancellationToken cancellationToken = default);
+
+    Task<ApiCallResult<BookingDetailViewModel>> GetBookingDetailAsync(
+        int id,
+        string? accessToken,
+        CancellationToken cancellationToken = default);
+
+    Task<ApiCallResult<dynamic>> CreateBookingAsync(
+        CreateBookingRequestViewModel request,
+        string? accessToken,
+        CancellationToken cancellationToken = default);
+
+    Task<ApiCallResult<dynamic>> UpdateBookingStatusAsync(
+        int id,
+        UpdateBookingStatusRequestViewModel request,
+        string? accessToken,
+        CancellationToken cancellationToken = default);
+
+    // Thay thế đoạn cuối bằng:
+    Task<ApiCallResult<RecommendationResponseViewModel>> GetTop3RecommendationsAsync(
+        RecommendationRequestViewModel request,
+        CancellationToken cancellationToken = default);
 }
