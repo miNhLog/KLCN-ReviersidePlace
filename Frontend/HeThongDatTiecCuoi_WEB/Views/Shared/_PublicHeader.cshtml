@@ -14,7 +14,9 @@
             <a href="#" data-coming-soon>Gói trang trí</a>
             <a class="@(activePage == "recommendation" ? "active" : null)" asp-controller="Recommendation" asp-action="Index" aria-current="@(activePage == "recommendation" ? "page" : null)">Gợi ý gói tiệc</a>
             <button type="button" data-open-ai>Tư vấn AI</button>
-            <a href="#" data-coming-soon>Tiệc của tôi</a>
+            <a asp-controller="MyBookings" asp-action="Index" class="nav-link @(ViewData["PublicActivePage"]?.ToString() == "my-bookings" ? "active" : "")">
+                Tiệc của tôi
+            </a>
         </nav>
         <div class="header-actions">
             @if (User.Identity?.IsAuthenticated == true)
@@ -26,7 +28,9 @@
                         <span class="material-symbols-outlined account-chevron" aria-hidden="true">expand_more</span>
                     </summary>
                     <div class="account-dropdown">
-                        <a href="#" data-coming-soon>Tiệc của tôi</a>
+                        <a asp-controller="MyBookings" asp-action="Index" class="nav-link @(ViewData["PublicActivePage"]?.ToString() == "my-bookings" ? "active" : "")">
+                            Tiệc của tôi
+                        </a>
                         <form asp-controller="Auth" asp-action="Logout" method="post">
                             <button type="submit">Đăng xuất</button>
                         </form>

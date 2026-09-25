@@ -150,7 +150,36 @@ public class RecommendationController : ControllerBase
                     var reasons = new List<string>();
 
                     string decorStyle = decor.PhongCach ?? "";
+                    // 1. Ánh xạ tên Decor sang Concept TikTok Trend để hiển thị thu hút
                     string decorName = decor.TenGoi;
+                    if (decor.TenGoi.Contains("Royal") || decor.TenGoi.Contains("Hoàng gia"))
+                    {
+                        decorName = "✨ Royal Versailles Gold (Hoàng Gia Cổ Điển)";
+                    }
+                    else if (decor.TenGoi.Contains("Elegant Blue"))
+                    {
+                        decorName = "🌊 Midnight Celestial Blue (Đêm Huyền Bí Sắc Xanh)";
+                    }
+                    else if (decor.TenGoi.Contains("Color of Love") || decor.TenGoi.Contains("Sân vườn"))
+                    {
+                        decorName = "🌿 Botanical Garden Muse (Vườn Cổ Tích Rustic)";
+                    }
+                    else if (decor.TenGoi.Contains("Princess") || decor.TenGoi.Contains("Cổ tích"))
+                    {
+                        decorName = "🌸 Fairy Princesscore (Công Chúa Ngọt Ngào)";
+                    }
+                    else if (decor.TenGoi.Contains("Endless Love") || decor.TenGoi.Contains("Lãng mạn"))
+                    {
+                        decorName = "🕊️ Pure Minimalism (Trắng Pha Lê Tinh Giản)";
+                    }
+                    else if (decor.TenGoi.Contains("ven sông"))
+                    {
+                        decorName = "🌅 Riverside Sunset Romance (Hoàng Hôn Ven Sông)";
+                    }
+                    else if (decor.TenGoi.Contains("cuối năm") || decor.TenGoi.Contains("Nhẹ nhàng"))
+                    {
+                        decorName = "❄️ Cozy Winter Romance (Ấm Áp & Tinh Tế)";
+                    }
                     string menuName = menu.MenuName;
                     string menuDesc = menu.Description ?? "";
 
@@ -295,5 +324,228 @@ public class RecommendationController : ControllerBase
             AlgorithmNotice = $"Hệ thống đã phân tích {totalCombosCount} phương án để chọn ra Top 3 gói tiệc tối ưu nhất.",
             AnalyzedAt = DateTime.Now
         });
+    }
+    [HttpGet("hall-availability")]
+    public async Task<IActionResult> GetHallAvailability([FromQuery] string? date)
+    {
+        // 1. Phân tích an toàn ngày truyền lên (tránh lỗi xung đột định dạng MM/dd/yyyy và yyyy-MM-dd)
+        DateTime targetDate;
+        if (string.IsNullOrWhiteSpace(date) || !DateTime.TryParse(date, out targetDate))
+        {
+            targetDate = DateTime.Today.AddMonths(2);
+        }
+        targetDate = targetDate.Date;
+
+        // 2. Lấy danh sách sảnh đang hoạt động từ DB
+        var halls = await _context.Halls
+            .Where(h => h.StatusId == 301)
+            .OrderBy(h => h.HallId)
+            .Select(h => new
+            {
+                HallId = h.HallId,
+                HallName = h.HallName,
+                HallCode = h.HallCode,
+                Capacity = h.MaximumCapacity,
+                RentalPrice = h.RentalPrice
+            })
+            .ToListAsync();
+
+        // 3. Lấy các ca đã có tiệc vào ngày này (StatusId = 402 hoặc 403)
+        var bookedSchedules = await _context.HallSchedules
+            .Where(hs => hs.Date == targetDate && (hs.StatusId == 402 || hs.StatusId == 403))
+            .Select(hs => new { hs.HallId, hs.Shift })
+            .ToListAsync();
+
+        // 4. Trả về kết quả thực tế từ CSDL
+        var result = halls.Select(h => new
+        {
+            hallId = h.HallId,
+            hallName = h.HallName,
+            hallCode = h.HallCode,
+            capacity = h.Capacity,
+            rentalPrice = h.RentalPrice,
+            isNoonAvailable = !bookedSchedules.Any(s => s.HallId == h.HallId && s.Shift == "Ca trưa"),
+            isEveningAvailable = !bookedSchedules.Any(s => s.HallId == h.HallId && s.Shift == "Ca tối")
+        }).ToList();
+
+        return Ok(new
+        {
+            queryDate = targetDate.ToString("yyyy-MM-dd"),
+            halls = result
+        });
+    }
+
+
+    [HttpPost("register-booking")]
+    public async Task<IActionResult> RegisterPublicBooking([FromBody] RegisterPublicBookingDto request)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(request.CustomerName) || string.IsNullOrWhiteSpace(request.PhoneNumber))
+            {
+                return BadRequest(new { success = false, message = "Vui lòng cung cấp họ tên và số điện thoại liên hệ." });
+            }
+
+            var cleanPhone = request.PhoneNumber.Trim();
+            var targetDate = request.EventDate.Date;
+
+            // 1. Kiểm tra hoặc tự động tạo mới Khách hàng theo SĐT hoặc UserId
+            var customer = await _context.Set<Customer>()
+                .FirstOrDefaultAsync(c => c.PhoneNumber == cleanPhone || (request.UserId.HasValue && c.UserId == request.UserId.Value));
+
+            if (customer == null)
+            {
+                customer = new Customer
+                {
+                    FullName = request.CustomerName.Trim(),
+                    PhoneNumber = cleanPhone,
+                    UserId = request.UserId // Gắn tài khoản đăng nhập
+                };
+                _context.Set<Customer>().Add(customer);
+                await _context.SaveChangesAsync();
+            }
+            else
+            {
+                // Nếu khách hàng đã tồn tại nhưng chưa liên kết UserId thì cập nhật bổ sung
+                if (request.UserId.HasValue && !customer.UserId.HasValue)
+                {
+                    customer.UserId = request.UserId.Value;
+                    await _context.SaveChangesAsync();
+                }
+
+                // Kiểm tra ràng buộc đơn tiệc đang hoạt động
+                var activeBooking = await _context.Set<WeddingBooking>()
+                    .Where(b => b.CustomerId == customer.CustomerId && b.Status != "Đã hủy" && b.Status != "Hoàn tất")
+                    .OrderByDescending(b => b.BookedAt)
+                    .FirstOrDefaultAsync();
+
+                if (activeBooking != null)
+                {
+                    return BadRequest(new
+                    {
+                        success = false,
+                        isDuplicate = true,
+                        currentBookingCode = activeBooking.BookingCode,
+                        currentStatus = activeBooking.Status,
+                        message = $"Hai bạn hiện đã có đơn tiệc [{activeBooking.BookingCode}] đang ở trạng thái '{activeBooking.Status}'. Mỗi khách hàng chỉ giữ chỗ 01 phương án tại một thời điểm. Vui lòng kiểm tra tại mục 'Tiệc của tôi' hoặc hủy đơn cũ trước khi đăng ký gói mới."
+                    });
+                }
+            }
+
+            // 2. Kiểm tra hoặc khởi tạo Lịch sảnh (HallSchedule) an toàn
+            var schedule = await _context.HallSchedules
+                .FirstOrDefaultAsync(hs => hs.HallId == request.HallId && hs.Date == targetDate && hs.Shift == request.Shift);
+
+            if (schedule == null)
+            {
+                var validStatusId = await _context.HallSchedules
+                    .Select(hs => hs.StatusId)
+                    .FirstOrDefaultAsync();
+                if (validStatusId == 0) validStatusId = 401;
+
+                schedule = new HallSchedule
+                {
+                    HallId = request.HallId,
+                    Date = targetDate,
+                    Shift = request.Shift,
+                    StatusId = validStatusId
+                };
+                _context.HallSchedules.Add(schedule);
+                await _context.SaveChangesAsync();
+            }
+            else if (schedule.StatusId == 402 || schedule.StatusId == 403)
+            {
+                return BadRequest(new { success = false, message = $"Sảnh này vào {request.Shift} ngày {request.EventDate:dd/MM/yyyy} vừa được khách khác đặt. Vui lòng chọn ca hoặc sảnh khác." });
+            }
+
+            // 3. Tính toán đơn giá chi tiết từ CSDL
+            var hall = await _context.Halls.FindAsync(request.HallId);
+            decimal hallPrice = hall?.RentalPrice ?? 0;
+
+            decimal menuPricePerTable = 0;
+            if (request.MenuId.HasValue)
+            {
+                var menu = await _context.Menus.FindAsync(request.MenuId.Value);
+                if (menu != null) menuPricePerTable = menu.PricePerTable;
+            }
+
+            decimal decorPrice = 0;
+            if (request.DecorationPackageId.HasValue)
+            {
+                var decor = await _context.DecorPackages.FindAsync(request.DecorationPackageId.Value);
+                if (decor != null) decorPrice = decor.Gia;
+            }
+
+            decimal totalMenuPrice = menuPricePerTable * request.TableCount;
+            decimal estimatedTotal = totalMenuPrice + hallPrice + decorPrice;
+
+            // 4. Lấy nhân viên tư vấn phụ trách hợp lệ
+            int? consultantEmployeeId = await _context.Set<WeddingBooking>()
+                .Where(b => b.ConsultantEmployeeId.HasValue && b.ConsultantEmployeeId.Value > 0)
+                .Select(b => b.ConsultantEmployeeId)
+                .FirstOrDefaultAsync();
+
+            if (!consultantEmployeeId.HasValue)
+            {
+                var rawConn = _context.Database.GetDbConnection();
+                bool needToClose = rawConn.State != System.Data.ConnectionState.Open;
+                if (needToClose) await rawConn.OpenAsync();
+
+                try
+                {
+                    using var cmd = rawConn.CreateCommand();
+                    cmd.CommandText = "SELECT TOP 1 NhanVienID FROM dbo.NhanVien ORDER BY NhanVienID ASC";
+                    var scalar = await cmd.ExecuteScalarAsync();
+                    if (scalar != null && scalar != DBNull.Value)
+                    {
+                        consultantEmployeeId = Convert.ToInt32(scalar);
+                    }
+                }
+                finally
+                {
+                    if (needToClose) rawConn.Close();
+                }
+            }
+
+            // 5. Khởi tạo đơn đặt tiệc WeddingBooking
+            var bookingCode = $"DT-{DateTime.Now:yyyyMMdd}-{new Random().Next(1000, 9999)}";
+            var booking = new WeddingBooking
+            {
+                BookingCode = bookingCode,
+                CustomerId = customer.CustomerId,
+                HallScheduleId = schedule.HallScheduleId,
+                MenuId = request.MenuId,
+                DecorationPackageId = request.DecorationPackageId,
+                ConsultantEmployeeId = consultantEmployeeId,
+                ExpectedBudget = request.ExpectedBudget,
+                DesiredStyle = request.DesiredStyle,
+                TableCount = request.TableCount,
+                GuestCount = request.TableCount * 10,
+                FinalHallPrice = hallPrice,
+                FinalMenuPrice = totalMenuPrice,
+                FinalDecorationPrice = decorPrice,
+                EstimatedTotal = estimatedTotal,
+                SpecialRequests = request.SpecialRequests,
+                Status = "Chờ xác nhận",
+                BookedAt = DateTime.Now,
+                UpdatedAt = DateTime.Now
+            };
+
+            _context.Set<WeddingBooking>().Add(booking);
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                success = true,
+                message = "Đăng ký giữ chỗ thành công!",
+                bookingCode = booking.BookingCode,
+                bookingId = booking.BookingId
+            });
+        }
+        catch (Exception ex)
+        {
+            var msg = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
+            return BadRequest(new { success = false, message = $"Lỗi CSDL khi tạo đơn: {msg}" });
+        }
     }
 }

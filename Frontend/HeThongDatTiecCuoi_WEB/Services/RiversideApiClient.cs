@@ -1061,4 +1061,130 @@ public sealed class RiversideApiClient : IRiversideApiClient
             return ApiCallResult<RecommendationResponseViewModel>.Failure($"Không thể kết nối thuật toán khuyến nghị: {ex.Message}");
         }
     }
+
+    public async Task<ApiCallResult<dynamic>> GetHallAvailabilityRealtimeAsync(DateTime date, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync($"api/recommendations/hall-availability?date={date:yyyy-MM-dd}", cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                return ApiCallResult<dynamic>.Failure("Không thể lấy dữ liệu lịch sảnh từ máy chủ.");
+            }
+            var data = await response.Content.ReadFromJsonAsync<dynamic>(cancellationToken: cancellationToken);
+            return ApiCallResult<dynamic>.Success(data);
+        }
+        catch (Exception ex)
+        {
+            return ApiCallResult<dynamic>.Failure($"Lỗi: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiCallResult<HallAvailabilityResponseViewModel>> GetHallAvailabilityRealtimeAsync(string dateStr, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync($"api/recommendations/hall-availability?date={dateStr}", cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                var err = await response.Content.ReadAsStringAsync(cancellationToken);
+                return ApiCallResult<HallAvailabilityResponseViewModel>.Failure($"Lỗi máy chủ ({response.StatusCode}): {err}");
+            }
+
+            var data = await response.Content.ReadFromJsonAsync<HallAvailabilityResponseViewModel>(cancellationToken: cancellationToken);
+            return ApiCallResult<HallAvailabilityResponseViewModel>.Success(data ?? new HallAvailabilityResponseViewModel());
+        }
+        catch (Exception ex)
+        {
+            return ApiCallResult<HallAvailabilityResponseViewModel>.Failure($"Lỗi kết nối API: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiCallResult<string>> RegisterPublicBookingAsync(
+     PublicBookingRequestViewModel request,
+     CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync("api/recommendations/register-booking", request, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                var err = await response.Content.ReadAsStringAsync(cancellationToken);
+                try
+                {
+                    using var doc = System.Text.Json.JsonDocument.Parse(err);
+                    if (doc.RootElement.TryGetProperty("message", out var msgElem))
+                    {
+                        return ApiCallResult<string>.Failure(msgElem.GetString() ?? err);
+                    }
+                }
+                catch { }
+                return ApiCallResult<string>.Failure(err);
+            }
+
+            var result = await response.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>(cancellationToken: cancellationToken);
+            string code = result.TryGetProperty("bookingCode", out var codeElem) ? codeElem.GetString() ?? "DT-ONLINE" : "DT-ONLINE";
+            return ApiCallResult<string>.Success(code);
+        }
+        catch (Exception ex)
+        {
+            return ApiCallResult<string>.Failure($"Lỗi kết nối API: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiCallResult<List<HeThongDatTiecCuoi_WEB.Models.MyBookings.MyBookingViewModel>>> GetMyBookingsAsync(string? phone, int? userId = null, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var queryParams = new List<string>();
+            if (!string.IsNullOrWhiteSpace(phone))
+            {
+                queryParams.Add($"phone={Uri.EscapeDataString(phone.Trim())}");
+            }
+            if (userId.HasValue && userId.Value > 0)
+            {
+                queryParams.Add($"userId={userId.Value}");
+            }
+
+            var queryString = queryParams.Count > 0 ? "?" + string.Join("&", queryParams) : "";
+            var response = await _httpClient.GetAsync($"api/my-bookings{queryString}", cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                return ApiCallResult<List<HeThongDatTiecCuoi_WEB.Models.MyBookings.MyBookingViewModel>>.Failure("Không thể lấy danh sách đơn tiệc cưới.");
+            }
+
+            var doc = await response.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>(cancellationToken: cancellationToken);
+            if (doc.TryGetProperty("data", out var dataElem))
+            {
+                var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var list = System.Text.Json.JsonSerializer.Deserialize<List<HeThongDatTiecCuoi_WEB.Models.MyBookings.MyBookingViewModel>>(dataElem.GetRawText(), options);
+                return ApiCallResult<List<HeThongDatTiecCuoi_WEB.Models.MyBookings.MyBookingViewModel>>.Success(list ?? new List<HeThongDatTiecCuoi_WEB.Models.MyBookings.MyBookingViewModel>());
+            }
+
+            return ApiCallResult<List<HeThongDatTiecCuoi_WEB.Models.MyBookings.MyBookingViewModel>>.Success(new List<HeThongDatTiecCuoi_WEB.Models.MyBookings.MyBookingViewModel>());
+        }
+        catch (Exception ex)
+        {
+            return ApiCallResult<List<HeThongDatTiecCuoi_WEB.Models.MyBookings.MyBookingViewModel>>.Failure($"Lỗi: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiCallResult<bool>> CancelBookingAsync(int bookingId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = await _httpClient.PutAsync($"api/my-bookings/{bookingId}/cancel", null, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                var err = await response.Content.ReadAsStringAsync(cancellationToken);
+                return ApiCallResult<bool>.Failure(err);
+            }
+            return ApiCallResult<bool>.Success(true);
+        }
+        catch (Exception ex)
+        {
+            return ApiCallResult<bool>.Failure($"Lỗi: {ex.Message}");
+        }
+    }
 }

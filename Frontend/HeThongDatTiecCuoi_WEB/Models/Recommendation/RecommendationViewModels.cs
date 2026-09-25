@@ -115,3 +115,37 @@ public class RecommendationResponseViewModel
     public string AlgorithmNotice { get; set; } = string.Empty;
     public DateTime AnalyzedAt { get; set; } = DateTime.Now;
 }
+
+public class HallAvailabilityResponseViewModel
+{
+    public string QueryDate { get; set; } = string.Empty;
+    public List<HallSlotItemViewModel> Halls { get; set; } = new();
+}
+
+public class HallSlotItemViewModel
+{
+    public int HallId { get; set; }
+    public string HallName { get; set; } = string.Empty;
+    public string HallCode { get; set; } = string.Empty;
+    public int Capacity { get; set; }
+    public decimal RentalPrice { get; set; }
+    public bool IsNoonAvailable { get; set; }
+    public bool IsEveningAvailable { get; set; }
+}
+
+public class PublicBookingRequestViewModel
+{
+    public int? UserId { get; set; } // Thêm trường này
+    public string CustomerName { get; set; } = string.Empty;
+    public string PhoneNumber { get; set; } = string.Empty;
+    public string? Email { get; set; }
+    public DateTime EventDate { get; set; }
+    public string Shift { get; set; } = "Ca tối";
+    public int HallId { get; set; }
+    public int? MenuId { get; set; }
+    public int? DecorationPackageId { get; set; }
+    public int TableCount { get; set; }
+    public decimal? ExpectedBudget { get; set; }
+    public string? DesiredStyle { get; set; }
+    public string? SpecialRequests { get; set; }
+}
