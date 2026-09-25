@@ -139,3 +139,21 @@ public class RecommendationResponseDto
     public string AlgorithmNotice { get; set; } = string.Empty;
     public DateTime AnalyzedAt { get; set; } = DateTime.Now;
 }
+
+
+public class RegisterPublicBookingDto
+{
+    public int? UserId { get; set; } // Bổ sung để liên kết tài khoản đang đăng nhập
+    public string CustomerName { get; set; } = string.Empty;
+    public string PhoneNumber { get; set; } = string.Empty;
+    public string? Email { get; set; }
+    public DateTime EventDate { get; set; }
+    public string Shift { get; set; } = "Ca tối";
+    public int HallId { get; set; }
+    public int? MenuId { get; set; }
+    public int? DecorationPackageId { get; set; }
+    public int TableCount { get; set; }
+    public decimal? ExpectedBudget { get; set; }
+    public string DesiredStyle { get; set; } = string.Empty;
+    public string? SpecialRequests { get; set; }
+}

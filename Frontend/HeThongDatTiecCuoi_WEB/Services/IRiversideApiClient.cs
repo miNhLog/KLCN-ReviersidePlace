@@ -253,4 +253,17 @@ public interface IRiversideApiClient
     Task<ApiCallResult<RecommendationResponseViewModel>> GetTop3RecommendationsAsync(
         RecommendationRequestViewModel request,
         CancellationToken cancellationToken = default);
+
+
+    Task<ApiCallResult<dynamic>> GetHallAvailabilityRealtimeAsync(DateTime date, CancellationToken cancellationToken = default);
+   
+    
+    Task<ApiCallResult<HallAvailabilityResponseViewModel>> GetHallAvailabilityRealtimeAsync(string dateStr, CancellationToken cancellationToken = default);
+
+    Task<ApiCallResult<string>> RegisterPublicBookingAsync(
+    PublicBookingRequestViewModel request,
+    CancellationToken cancellationToken = default);
+
+    Task<ApiCallResult<List<HeThongDatTiecCuoi_WEB.Models.MyBookings.MyBookingViewModel>>> GetMyBookingsAsync(string? phone, int? userId = null, CancellationToken cancellationToken = default);
+    Task<ApiCallResult<bool>> CancelBookingAsync(int bookingId, CancellationToken cancellationToken = default);
 }
