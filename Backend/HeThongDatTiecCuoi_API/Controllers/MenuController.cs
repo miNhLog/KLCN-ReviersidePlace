@@ -31,6 +31,97 @@ public sealed class MenuController : ControllerBase
         _statusService = statusService;
     }
 
+    [HttpGet("public")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetPublicMenus(
+        [FromQuery] string? keyword,
+        [FromQuery] string? priceRange,
+        [FromQuery] string? sort,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 6,
+        CancellationToken cancellationToken = default)
+    {
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 1, 20);
+
+        if (!TryGetPriceRange(priceRange, out var minimumPrice, out var maximumPrice))
+        {
+            return BadRequest(new { message = "Khoảng giá thực đơn không hợp lệ." });
+        }
+
+        var normalizedSort = string.IsNullOrWhiteSpace(sort)
+            ? "name-asc"
+            : sort.Trim().ToLowerInvariant();
+
+        if (normalizedSort is not ("name-asc" or "price-asc" or "price-desc" or "dish-count-desc"))
+        {
+            return BadRequest(new { message = "Tùy chọn sắp xếp không hợp lệ." });
+        }
+
+        var query = _context.Menus
+            .AsNoTracking()
+            .Where(menu => menu.Status.StatusCode == MenuStatusCodes.Active);
+
+        if (!string.IsNullOrWhiteSpace(keyword))
+        {
+            var term = keyword.Trim();
+            query = query.Where(menu => menu.MenuName.Contains(term));
+        }
+
+        if (minimumPrice.HasValue)
+        {
+            query = query.Where(menu => menu.PricePerTable >= minimumPrice.Value);
+        }
+
+        if (maximumPrice.HasValue)
+        {
+            query = query.Where(menu => menu.PricePerTable < maximumPrice.Value);
+        }
+
+        var projectedQuery = query.Select(menu => new PublicMenuDto
+        {
+            MenuId = menu.MenuId,
+            MenuName = menu.MenuName,
+            Description = menu.Description,
+            PricePerTable = menu.PricePerTable,
+            DishCount = menu.MenuDishes.Count(menuDish =>
+                menuDish.Dish.Status.StatusCode == DishStatusCodes.Active)
+        });
+
+        projectedQuery = normalizedSort switch
+        {
+            "price-asc" => projectedQuery
+                .OrderBy(menu => menu.PricePerTable)
+                .ThenBy(menu => menu.MenuName),
+            "price-desc" => projectedQuery
+                .OrderByDescending(menu => menu.PricePerTable)
+                .ThenBy(menu => menu.MenuName),
+            "dish-count-desc" => projectedQuery
+                .OrderByDescending(menu => menu.DishCount)
+                .ThenBy(menu => menu.MenuName),
+            _ => projectedQuery
+                .OrderBy(menu => menu.MenuName)
+                .ThenBy(menu => menu.MenuId)
+        };
+
+        var totalItems = await projectedQuery.CountAsync(cancellationToken);
+        var items = await projectedQuery
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+
+        return Ok(new PublicMenuListResponse
+        {
+            Items = items,
+            Page = page,
+            PageSize = pageSize,
+            TotalItems = totalItems,
+            TotalPages = totalItems == 0
+                ? 0
+                : (int)Math.Ceiling(totalItems / (double)pageSize)
+        });
+    }
+
     [HttpGet]
     public async Task<IActionResult> GetMenus(
         [FromQuery] string? keyword,
@@ -442,6 +533,25 @@ public sealed class MenuController : ControllerBase
             .SingleAsync(cancellationToken);
 
         return bookingCount > 0;
+    }
+
+    private static bool TryGetPriceRange(
+        string? value,
+        out decimal? minimum,
+        out decimal? maximum)
+    {
+        (decimal? Minimum, decimal? Maximum) range = value?.Trim().ToLowerInvariant() switch
+        {
+            null or "" => (null, null),
+            "under-10000000" => (null, 10000000m),
+            "10000000-15000000" => (10000000m, 15000000m),
+            "15000000-20000000" => (15000000m, 20000000m),
+            "over-20000000" => (20000000m, null),
+            _ => (-1m, -1m)
+        };
+
+        (minimum, maximum) = range;
+        return minimum != -1m;
     }
 
     private static MenuDto ToDto(Menu menu, Status? status = null) => new()

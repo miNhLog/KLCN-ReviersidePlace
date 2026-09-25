@@ -3,6 +3,7 @@ using HeThongDatTiecCuoi_WEB.Models.AdminHall;
 using HeThongDatTiecCuoi_WEB.Models.Auth;
 using HeThongDatTiecCuoi_WEB.Models.Common;
 using HeThongDatTiecCuoi_WEB.Models.Halls;
+using HeThongDatTiecCuoi_WEB.Models.Menus;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -171,6 +172,40 @@ public sealed class RiversideApiClient : IRiversideApiClient
         {
             return ApiCallResult<PublicHallDetailDto>.Failure(
                 "API trả về dữ liệu sảnh không hợp lệ.");
+        }
+    }
+
+    public async Task<ApiCallResult<PublicMenuListResponse>> GetPublicMenusAsync(
+        string? keyword,
+        string? priceRange,
+        string? sort,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken)
+    {
+        var query = new List<string>
+        {
+            $"page={Math.Max(1, page)}",
+            $"pageSize={Math.Clamp(pageSize, 1, 20)}"
+        };
+
+        AddQueryParameter(query, "keyword", keyword);
+        AddQueryParameter(query, "priceRange", priceRange);
+        AddQueryParameter(query, "sort", sort);
+
+        try
+        {
+            return await SendAsync<PublicMenuListResponse>(
+                HttpMethod.Get,
+                $"api/menus/public?{string.Join('&', query)}",
+                null,
+                null,
+                cancellationToken);
+        }
+        catch (JsonException)
+        {
+            return ApiCallResult<PublicMenuListResponse>.Failure(
+                "API trả về dữ liệu thực đơn không hợp lệ.");
         }
     }
 

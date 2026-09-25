@@ -1,5 +1,5 @@
 (() => {
-    const page = document.querySelector('.hall-list-page, .hall-detail-page');
+    const page = document.querySelector('.hall-list-page, .hall-detail-page, .menu-list-page');
     if (!page) return;
 
     const menuButton = page.querySelector('.mobile-menu-toggle');

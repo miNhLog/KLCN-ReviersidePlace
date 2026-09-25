@@ -10,7 +10,7 @@
         <nav class="desktop-nav" aria-label="Điều hướng chính">
             <a class="@(activePage == "home" ? "active" : null)" asp-controller="Home" asp-action="Index" aria-current="@(activePage == "home" ? "page" : null)">Trang chủ</a>
             <a class="@(activePage == "halls" ? "active" : null)" asp-controller="Halls" asp-action="Index" aria-current="@(activePage == "halls" ? "page" : null)">Sảnh tiệc</a>
-            <a href="#" data-coming-soon>Thực đơn</a>
+            <a class="@(activePage == "menus" ? "active" : null)" asp-controller="Menus" asp-action="Index" aria-current="@(activePage == "menus" ? "page" : null)">Thực đơn</a>
             <a href="#" data-coming-soon>Gói trang trí</a>
             <a class="@(activePage == "recommendation" ? "active" : null)" asp-controller="Recommendation" asp-action="Index" aria-current="@(activePage == "recommendation" ? "page" : null)">Gợi ý gói tiệc</a>
             <button type="button" data-open-ai>Tư vấn AI</button>
@@ -50,7 +50,7 @@
     <nav class="mobile-nav" id="mobileNavigation" aria-label="Điều hướng di động" hidden>
         <a asp-controller="Home" asp-action="Index" aria-current="@(activePage == "home" ? "page" : null)">Trang chủ</a>
         <a asp-controller="Halls" asp-action="Index" aria-current="@(activePage == "halls" ? "page" : null)">Sảnh tiệc</a>
-        <a href="#" data-coming-soon>Thực đơn</a>
+        <a class="@(activePage == "menus" ? "active" : null)" asp-controller="Menus" asp-action="Index" aria-current="@(activePage == "menus" ? "page" : null)">Thực đơn</a>
         <a href="#" data-coming-soon>Gói trang trí</a>
         <a class="@(activePage == "recommendation" ? "active" : null)" asp-controller="Recommendation" asp-action="Index" aria-current="@(activePage == "recommendation" ? "page" : null)">Gợi ý gói tiệc</a>
         <button type="button" data-open-ai>Tư vấn AI</button>

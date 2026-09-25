@@ -2,6 +2,7 @@
 using HeThongDatTiecCuoi_WEB.Models.AdminAccount;
 using HeThongDatTiecCuoi_WEB.Models.Auth;
 using HeThongDatTiecCuoi_WEB.Models.Halls;
+using HeThongDatTiecCuoi_WEB.Models.Menus;
 namespace HeThongDatTiecCuoi_WEB.Services;
 using HeThongDatTiecCuoi_WEB.Models.AdminMenu;
 using HeThongDatTiecCuoi_WEB.Models.AdminReport;
@@ -48,6 +49,14 @@ public interface IRiversideApiClient
 
     Task<ApiCallResult<PublicHallDetailDto>> GetPublicHallAsync(
         int hallId,
+        CancellationToken cancellationToken);
+
+    Task<ApiCallResult<PublicMenuListResponse>> GetPublicMenusAsync(
+        string? keyword,
+        string? priceRange,
+        string? sort,
+        int page,
+        int pageSize,
         CancellationToken cancellationToken);
 
     Task<ApiCallResult<List<HallDto>>> GetHallsAsync(
