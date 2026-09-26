@@ -151,21 +151,43 @@
     <!-- ĐỒNG BỘ 100% HEADER NHƯ TRANG CHỦ -->
     <partial name="_PublicHeader" />
 
-    <main class="recom-main-wrapper">
-        <div class="recom-box-limit">
+    <!-- ================= HERO BANNER ĐỒNG BỘ HOÀNG GIA ================= -->
+    <section class="recom-hero-banner" style="position: relative; background: linear-gradient(180deg, rgba(15, 23, 42, 0.76) 0%, rgba(15, 23, 42, 0.90) 100%), url('/images/home/hero-wedding.jpg') center center / cover no-repeat; padding: 85px 20px 75px 20px; text-align: center; color: #FFFFFF; border-bottom: 2.5px solid #B89758; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);">
+        <div style="max-width: 860px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; gap: 14px;">
 
-            <!-- Banner giới thiệu -->
-            <div style="text-align: center; max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; gap: 12px;">
-                <span style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 999px; font-size: 11px; font-weight: 700; background: rgba(184, 151, 88, 0.15); color: #8C6D32; border: 1px solid rgba(184, 151, 88, 0.3);">
-                    <i class="fa-solid fa-wand-magic-sparkles"></i> AI Wedding Recommendation Engine
+         
+
+            <!-- Tiêu đề trang trọng -->
+            <h1 style="font-family: 'Playfair Display', serif; font-size: 42px; font-weight: 800; color: #FFFFFF; margin: 0; line-height: 1.25; text-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);">
+                Thiết Kế Đám Cưới Theo Ngân Sách &amp; Gu Thẩm Mỹ Của Hai Bạn
+            </h1>
+
+            <!-- Đoạn mô tả giá trị hệ thống -->
+            <p style="font-size: 15px; color: #CBD5E1; margin: 0; line-height: 1.7; max-width: 720px; font-weight: 400;">
+                Nhập dự toán ngân sách và phong cách mong muốn. Hệ thống sẽ rà soát dữ liệu thời gian thực tại <strong>9 đại sảnh</strong>, <strong>24 set thực đơn</strong> và <strong>các concept decor hot trend</strong> để trích xuất <strong>Top 3 Gói Tiệc Cưới Tối Ưu Nhất</strong> cho hai bạn.
+            </p>
+
+            <!-- Thanh thống kê thông số nổi bật (Highlights Pill) -->
+            <div style="display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 20px; margin-top: 8px; padding: 10px 26px; background: rgba(255, 255, 255, 0.08); border-radius: 999px; backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.15); font-size: 12.5px; color: #F1F5F9;">
+                <span style="display: inline-flex; align-items: center; gap: 7px;">
+                    <i class="fa-solid fa-archway" style="color: #D4AF37;"></i> 9 Đại sảnh Hoàng gia
                 </span>
-                <h1 style="font-family: 'Playfair Display', serif; font-size: 38px; font-weight: 700; color: #0F172A; margin: 0; line-height: 1.2;">
-                    Thiết Kế Đám Cưới Trong Mơ
-                </h1>
-                <p style="font-size: 14px; color: #64748B; margin: 0; line-height: 1.6;">
-                    Nhập kế hoạch dự toán ngân sách và ý tưởng của hai bạn. Thuật toán sẽ rà soát dữ liệu thực tế tại 9 đại sảnh, 24 set thực đơn và các concept decor để đề xuất <strong>Top 3 Gói Tiệc Tối Ưu Nhất</strong>.
-                </p>
+                <span style="color: rgba(255, 255, 255, 0.25);">|</span>
+                <span style="display: inline-flex; align-items: center; gap: 7px;">
+                    <i class="fa-solid fa-utensils" style="color: #D4AF37;"></i> 24 Bộ Thực đơn 5 Sao
+                </span>
+                <span style="color: rgba(255, 255, 255, 0.25);">|</span>
+                <span style="display: inline-flex; align-items: center; gap: 7px;">
+                    <i class="fa-solid fa-bolt-lightning" style="color: #D4AF37;"></i> Đánh giá đa tiêu chí WSM &lt; 1s
+                </span>
             </div>
+
+        </div>
+    </section>
+
+    <!-- PHẦN NỘI DUNG CHÍNH (FORM KHẢO SÁT & KẾT QUẢ) -->
+    <main class="recom-main-wrapper" style="padding-top: 40px;">
+        <div class="recom-box-limit">
 
             <!-- Form khảo sát 5 nhóm tiêu chí -->
             <form id="clientRecomForm" onsubmit="handleAnalyzeCombos(event)" class="recom-card" style="padding: 36px; display: flex; flex-direction: column; gap: 28px;">
@@ -450,7 +472,57 @@
         </button>
     </div>
 </div>
+<!-- ================= MODAL CẢNH BÁO / THÔNG BÁO HỆ THỐNG CHUYÊN NGHIỆP ================= -->
+<div id="appNoticeModal" class="recom-custom-modal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(4px); z-index: 10000; align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: #FFFFFF; border-radius: 26px; max-width: 460px; width: 100%; padding: 32px 26px; position: relative; box-sizing: border-box; text-align: center; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); border: 1.5px solid #F1ECE1; animation: noticePop 0.28s ease-out;">
 
+        <!-- Nút đóng góc phải -->
+        <button type="button" onclick="closeAppNotice()" style="position: absolute; top: 16px; right: 16px; width: 32px; height: 32px; border-radius: 50%; border: none; background: #F8FAFC; color: #94A3B8; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 15px; transition: all 0.2s;">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+
+        <!-- Icon cảnh báo linh hoạt theo loại lỗi -->
+        <div id="noticeIconBox" style="width: 68px; height: 68px; border-radius: 50%; background: #FFFBEB; border: 2px solid #FDE68A; color: #D97706; display: flex; align-items: center; justify-content: center; font-size: 28px; margin: 0 auto 16px auto; box-shadow: 0 8px 18px -4px rgba(217, 119, 6, 0.2);">
+            <i id="noticeIcon" class="fa-solid fa-calendar-xmark"></i>
+        </div>
+
+        <span id="noticeBadge" style="display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #B45309; background: #FEF3C7; padding: 4px 12px; border-radius: 999px; margin-bottom: 8px;">
+            Lưu Ý Lịch Trình
+        </span>
+
+        <h3 id="noticeTitle" style="font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: #0F172A; margin: 0 0 10px 0;">
+            Thời Gian Không Hợp Lệ
+        </h3>
+
+        <div style="background: #FAF8F5; border-radius: 14px; border: 1px solid #EAE2D2; padding: 14px 16px; margin-bottom: 22px; text-align: center;">
+            <p id="noticeMessage" style="font-size: 13.5px; color: #475569; margin: 0; line-height: 1.55; word-break: break-word;">
+                Thông điệp cảnh báo sẽ hiển thị tại đây.
+            </p>
+        </div>
+
+        <!-- Nút xác nhận hành động -->
+        <button type="button" onclick="closeAppNotice()" style="width: 100%; padding: 13px 20px; border-radius: 12px; background: linear-gradient(135deg, #B89758 0%, #9F7E3E 100%); color: #FFFFFF; font-weight: 700; font-size: 13.5px; border: none; cursor: pointer; box-shadow: 0 4px 14px rgba(184, 151, 88, 0.35); transition: all 0.2s;">
+            <i class="fa-solid fa-calendar-check" style="margin-right: 6px;"></i> Chọn Lại Ngày Tổ Chức
+        </button>
+    </div>
+</div>
+
+<style>
+    @@keyframes noticePop {
+        0%
+
+    {
+        transform: scale(0.92);
+        opacity: 0;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    }
+</style>
 <style>
     @@keyframes spin {
         0% {
@@ -575,17 +647,118 @@
         let currentPayload = null;
         let selectedComboToBook = null;
 
+        // =========================================================================
+        // 1. KHỞI TẠO & RÀNG BUỘC THỜI GIAN (HÔM NAY + 30 NGÀY -> 18 THÁNG)
+        // =========================================================================
         document.addEventListener('DOMContentLoaded', () => {
-            const d = new Date();
-            d.setDate(d.getDate() + 60);
-            const dateStr = d.toISOString().split('T')[0];
-            document.getElementById('eventDate').value = dateStr;
-            document.getElementById('modalDatePicker').value = dateStr;
+            const dateInput = document.getElementById('eventDate');
+            const modalDateInput = document.getElementById('modalDatePicker');
+
+            const today = new Date();
+
+            // Ngày tối thiểu: Hôm nay + 30 ngày
+            const minDate = new Date(today);
+            minDate.setDate(today.getDate() + 30);
+            const minYear = minDate.getFullYear();
+            const minMonth = String(minDate.getMonth() + 1).padStart(2, '0');
+            const minDay = String(minDate.getDate()).padStart(2, '0');
+            const minDateStr = `${minYear}-${minMonth}-${minDay}`;
+
+            // Ngày tối đa: Hôm nay + 540 ngày (12 tháng)
+            const maxDate = new Date(today);
+            maxDate.setDate(today.getDate() + 365);
+            const maxDateStr = maxDate.toISOString().split('T')[0];
+
+            // Ngày mặc định gợi ý: Cách 60 ngày
+            const defaultDate = new Date(today);
+            defaultDate.setDate(today.getDate() + 60);
+            const defaultDateStr = defaultDate.toISOString().split('T')[0];
+
+            // Gán giới hạn cho cả 2 ô chọn ngày (ô chính và ô trong modal lịch sảnh)
+            [dateInput, modalDateInput].forEach(inp => {
+                if (inp) {
+                    inp.setAttribute('min', minDateStr);
+                    inp.setAttribute('max', maxDateStr);
+                    inp.value = defaultDateStr;
+                }
+            });
+
+            // Bắt sự kiện người dùng tự gõ bàn phím ngày quá khứ / dưới 30 ngày
+            if (dateInput) {
+                dateInput.addEventListener('change', function () {
+                    validateEventDate(this, minDate, maxDate, minDateStr, `${minDay}/${minMonth}/${minYear}`);
+                });
+            }
+            if (modalDateInput) {
+                modalDateInput.addEventListener('change', function () {
+                    validateEventDate(this, minDate, maxDate, minDateStr, `${minDay}/${minMonth}/${minYear}`);
+                });
+            }
         });
+
+        function validateEventDate(inputEl, minDate, maxDate, minDateStr, formattedMinDate) {
+             if (!inputEl.value) return;
+
+             const chosen = new Date(inputEl.value);
+             chosen.setHours(0, 0, 0, 0);
+
+             const checkMin = new Date(minDate);
+             checkMin.setHours(0, 0, 0, 0);
+
+             const checkMax = new Date(maxDate);
+             checkMax.setHours(0, 0, 0, 0);
+
+             // 1. Kiểm tra mốc 30 ngày
+             if (chosen < checkMin) {
+                 showAppNotice(
+                     "Thời Gian Không Hợp Lệ",
+                     `Để đảm bảo công tác chuẩn bị sảnh và ẩm thực chu đáo nhất, Riverside Palace chỉ tiếp nhận tiệc cưới cách ngày hiện tại tối thiểu 30 ngày (từ ngày ${formattedMinDate} trở đi).`,
+                     "warning"
+                 );
+                 inputEl.value = minDateStr;
+                 return;
+             }
+
+             // 2. Kiểm tra mốc tối đa 1 năm
+             if (chosen > checkMax) {
+                 showAppNotice(
+                     "Thời Gian Vượt Giới Hạn",
+                     "Riverside Palace chỉ mở đặt lịch trong phạm vi 12 tháng (1 năm) tới để đảm bảo tính chuẩn xác của biểu giá dịch vụ và thực đơn.",
+                     "warning"
+                 );
+                 inputEl.value = minDateStr;
+                 return;
+             }
+
+             // 3. Kiểm tra Ngày nghỉ Tết Nguyên Đán 2027 (04/02/2027 - 12/02/2027)
+             const tet2027Start = new Date(2027, 1, 4); // Tháng 2 là index 1
+             const tet2027End = new Date(2027, 1, 12);
+             if (chosen >= tet2027Start && chosen <= tet2027End) {
+                 showAppNotice(
+                     "Trung Tâm Tạm Ngưng Nhận Tiệc",
+                     "Thời gian hai bạn chọn rơi vào kỳ nghỉ Tết Nguyên Đán 2027 của trung tâm (từ 04/02 đến 12/02/2027). Riverside Palace tạm ngưng phục vụ tiệc cưới trong đợt này. Quý khách vui lòng chọn ngày tổ chức sau kỳ nghỉ Tết.",
+                     "warning"
+                 );
+                 inputEl.value = minDateStr;
+                 return;
+             }
+
+             // 4. Kiểm tra Ngày Quốc Khánh (02/09 hàng năm)
+             if (chosen.getDate() === 2 && chosen.getMonth() === 8) { // Tháng 9 là index 8
+                 showAppNotice(
+                     "Ngày Bảo Trì Định Kỳ",
+                     "Ngày 02/09 trung tâm tạm ngưng nhận tiệc cưới để thực hiện công tác bảo trì kỹ thuật toàn diện và phục vụ các sự kiện khánh tiết.",
+                     "warning"
+                 );
+                 inputEl.value = minDateStr;
+                 return;
+             }
+         }
 
         function handleDateChanged() {
             const val = document.getElementById('eventDate').value;
-            document.getElementById('modalDatePicker').value = val;
+            const modalDatePicker = document.getElementById('modalDatePicker');
+            if (modalDatePicker) modalDatePicker.value = val;
         }
 
         function validateTableCounts() {
@@ -605,9 +778,38 @@
             spareInput.value = spare;
         }
 
+        // =========================================================================
+        // 2. HÀM BÓC TÁCH THÔNG ĐIỆP LỖI SẠCH TỪ CHUỖI JSON
+        // =========================================================================
+        function extractCleanErrorMessage(rawMsg) {
+            if (!rawMsg) return "Có lỗi xảy ra trong quá trình xử lý yêu cầu.";
+            try {
+                const jsonStart = rawMsg.indexOf('{');
+                if (jsonStart !== -1) {
+                    const jsonPart = rawMsg.substring(jsonStart);
+                    const parsed = JSON.parse(jsonPart);
+                    if (parsed.message) {
+                        return parsed.message;
+                    }
+                }
+            } catch (e) {
+                // Nếu không bóc tách được JSON thì trả về chuỗi gốc đã lọc bớt tiền tố
+            }
+            return rawMsg.replace(/^Lỗi máy chủ \(BadRequest\):\s*/i, '');
+        }
+
+        // =========================================================================
+        // 3. XỬ LÝ PHÂN TÍCH GỢI Ý TOP 3 COMBO
+        // =========================================================================
         async function handleAnalyzeCombos(e) {
             e.preventDefault();
             validateTableCounts();
+
+            const dateVal = document.getElementById('eventDate').value;
+            if (!dateVal) {
+                showAppNotice("Chưa Chọn Ngày", "Vui lòng chọn ngày tổ chức tiệc cưới.", "warning");
+                return;
+            }
 
             const btn = document.getElementById('btnSubmitRecom');
             const loading = document.getElementById('loadingState');
@@ -625,7 +827,7 @@
                 coupleName: document.getElementById('coupleName').value.trim(),
                 phoneNumber: document.getElementById('phoneNumber').value.trim(),
                 email: document.getElementById('email').value.trim(),
-                eventDate: document.getElementById('eventDate').value,
+                eventDate: dateVal,
                 shift: document.getElementById('shift').value,
                 officialTableCount: parseInt(document.getElementById('officialTableCount').value),
                 spareTableCount: parseInt(document.getElementById('spareTableCount').value) || 1,
@@ -655,13 +857,15 @@
                     results.style.display = 'flex';
                     results.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 } else {
-                    alert(result.message || 'Không tìm thấy gói tiệc khả dụng trong ngày và ca này. Hãy nhấn "Xem Lịch & Ca Trống" để chọn thời điểm phù hợp.');
+                    // Bóc tách thông điệp lỗi sạch và hiển thị Popup chuyên nghiệp
+                    const cleanMsg = extractCleanErrorMessage(result.message);
+                    showAppNotice("Thông Báo Lịch Trình", cleanMsg, "warning");
                 }
             } catch (err) {
                 btn.disabled = false;
                 btn.style.opacity = '1';
                 loading.style.display = 'none';
-                alert('Lỗi kết nối khi phân tích gói tiệc.');
+                showAppNotice("Lỗi Kết Nối", "Không thể kết nối đến máy chủ phân tích. Vui lòng thử lại sau.", "error");
             }
         }
 
@@ -848,15 +1052,13 @@
 
             try {
                 const res = await fetch(`/Recommendation/GetHallAvailability?date=${encodeURIComponent(dateStr)}`);
-                if (!res.ok) {
-                    container.innerHTML = `<div style="padding: 24px; text-align: center; color: #EF4444;">Lỗi máy chủ (${res.status}). Vui lòng kiểm tra lại.</div>`;
-                    return;
-                }
                 const json = await res.json();
-                if (json.success && json.data && json.data.halls) {
+
+                if (res.ok && json.success && json.data && json.data.halls) {
                     renderRealShowtimeMatrix(json.data.halls, dateStr);
                 } else {
-                    container.innerHTML = `<div style="padding: 24px; text-align: center; color: #EF4444;">${json.message || 'Không thể tải dữ liệu lịch sảnh.'}</div>`;
+                    const cleanMsg = extractCleanErrorMessage(json.message || 'Không thể tải dữ liệu lịch sảnh.');
+                    container.innerHTML = `<div style="padding: 24px; text-align: center; color: #EF4444;"><i class="fa-solid fa-triangle-exclamation" style="margin-right: 6px;"></i>${cleanMsg}</div>`;
                 }
             } catch (e) {
                 container.innerHTML = `<div style="padding: 24px; text-align: center; color: #EF4444;">Lỗi kết nối máy chủ.</div>`;
@@ -897,7 +1099,7 @@
             document.getElementById('eventDate').value = dateStr;
             document.getElementById('shift').value = shift;
             closeShowtimeModal();
-            alert(`Đã chọn sảnh trống vào ngày: ${dateStr} (${shift})!\nHãy nhấn nút "Tính Toán & Trích Xuất Top 3 Combo" để cập nhật phương án.`);
+            showAppNotice("Đã Chọn Lịch Sảnh", `Đã cập nhật ngày ${dateStr} (${shift}). Hãy nhấn nút "Tính Toán & Trích Xuất Top 3 Combo" để nhận phương án tối ưu.`, "success");
         }
 
         function closeShowtimeModal() {
@@ -927,7 +1129,10 @@
             document.getElementById('bookingConfirmModal').style.display = 'none';
         }
 
-               async function submitActualBooking() {
+        // =========================================================================
+        // 4. GỬI ĐĂNG KÝ GIỮ CHỖ THỰC TẾ
+        // =========================================================================
+        async function submitActualBooking() {
             const btn = document.getElementById('btnSubmitBooking');
             btn.disabled = true;
             btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Đang kiểm tra & lưu đơn tiệc...';
@@ -960,7 +1165,6 @@
                 closeBookingModal();
 
                 if (result.success) {
-                    // Điền thông tin vào Popup thành công
                     document.getElementById('succBookingCode').innerText = result.bookingCode || 'DT-ONLINE';
                     document.getElementById('succCouple').innerText = currentPayload.coupleName;
                     document.getElementById('succHall').innerText = selectedComboToBook.hallName;
@@ -969,24 +1173,84 @@
 
                     document.getElementById('bookingSuccessModal').style.display = 'flex';
                 } else {
-                    // Nếu khách hàng đã có đơn tiệc đang hoạt động
-                    if (result.message && (result.message.includes("đã có đơn tiệc") || result.message.includes("giữ chỗ 01 phương án"))) {
-                        document.getElementById('duplicateNoticeMsg').innerText = result.message;
+                    const cleanMsg = extractCleanErrorMessage(result.message);
+
+                    // Nếu khách đã có đơn tiệc hoạt động -> Mở modal cảnh báo đơn trùng
+                    if (cleanMsg.includes("đã có đơn tiệc") || cleanMsg.includes("giữ chỗ 01 phương án")) {
+                        document.getElementById('duplicateNoticeMsg').innerText = cleanMsg;
                         document.getElementById('duplicateBookingModal').style.display = 'flex';
                     } else {
-                        alert(result.message || 'Chưa thể lưu đơn đặt tiệc lúc này.');
+                        showAppNotice("Chưa Thể Giữ Chỗ", cleanMsg, "warning");
                     }
                 }
             } catch (e) {
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fa-solid fa-check"></i> Gửi Thông Tin Đăng Ký Giữ Chỗ';
                 closeBookingModal();
-                alert('Lỗi kết nối khi gửi thông tin giữ chỗ.');
+                showAppNotice("Lỗi Kết Nối", "Không thể gửi yêu cầu giữ chỗ tiệc cưới lúc này.", "error");
             }
+        }
+
+        // =========================================================================
+        // 5. CÁC HÀM ĐIỀU KHIỂN MODAL POPUP THÔNG BÁO HOÀNG GIA
+        // =========================================================================
+        function showAppNotice(title, message, type = 'warning') {
+            const modal = document.getElementById('appNoticeModal');
+            const iconBox = document.getElementById('noticeIconBox');
+            const icon = document.getElementById('noticeIcon');
+            const badge = document.getElementById('noticeBadge');
+            const titleEl = document.getElementById('noticeTitle');
+            const msgEl = document.getElementById('noticeMessage');
+
+            titleEl.innerText = title;
+            msgEl.innerText = message;
+
+            if (type === 'error') {
+                iconBox.style.background = '#FEF2F2';
+                iconBox.style.borderColor = '#FECACA';
+                iconBox.style.color = '#DC2626';
+                badge.style.background = '#FEE2E2';
+                badge.style.color = '#DC2626';
+                badge.innerText = 'Cảnh Báo Lỗi';
+                icon.className = 'fa-solid fa-triangle-exclamation';
+            } else if (type === 'success') {
+                iconBox.style.background = '#ECFDF5';
+                iconBox.style.borderColor = '#A7F3D0';
+                iconBox.style.color = '#059669';
+                badge.style.background = '#D1FAE5';
+                badge.style.color = '#065F46';
+                badge.innerText = 'Thành Công';
+                icon.className = 'fa-solid fa-circle-check';
+            } else {
+                iconBox.style.background = '#FFFBEB';
+                iconBox.style.borderColor = '#FDE68A';
+                iconBox.style.color = '#D97706';
+                badge.style.background = '#FEF3C7';
+                badge.style.color = '#B45309';
+                badge.innerText = 'Lưu Ý Lịch Trình';
+                icon.className = 'fa-solid fa-calendar-xmark';
+            }
+
+            modal.style.display = 'flex';
+        }
+
+        function closeAppNotice() {
+            document.getElementById('appNoticeModal').style.display = 'none';
+            const dateInput = document.getElementById('eventDate');
+            if (dateInput) {
+                dateInput.focus();
+            }
+        }
+
+        function closeSuccessModal() {
+            document.getElementById('bookingSuccessModal').style.display = 'none';
         }
 
         function closeDuplicateModal() {
             document.getElementById('duplicateBookingModal').style.display = 'none';
         }
     </script>
+}
+        });
+    });
 }
