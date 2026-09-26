@@ -29,6 +29,43 @@ public class RecommendationController : ControllerBase
             return BadRequest(ModelState);
         }
 
+        // =========================================================================
+        // RÀNG BUỘC THỜI GIAN TỔ CHỨC: Tối thiểu 30 ngày, tối đa 540 ngày (18 tháng)
+        // =========================================================================
+        var minAllowedDate = DateTime.Today.AddDays(30);
+        var maxAllowedDate = DateTime.Today.AddDays(365);
+
+
+        if (request.EventDate.Date < minAllowedDate)
+        {
+            return BadRequest(new
+            {
+                success = false,
+                message = $"Ngày tổ chức ({request.EventDate:dd/MM/yyyy}) không hợp lệ. Để đảm bảo công tác chuẩn bị sảnh và nguyên liệu ẩm thực chu đáo nhất, Riverside Palace chỉ tiếp nhận tiệc cưới cách ngày hiện tại tối thiểu 30 ngày (từ ngày {minAllowedDate:dd/MM/yyyy} trở đi)."
+            });
+        }
+
+        if (request.EventDate.Date > maxAllowedDate)
+        {
+            return BadRequest(new
+            {
+                success = false,
+                message = "Hệ thống chỉ tiếp nhận đặt lịch trong phạm vi 12 tháng tới để bảo đảm tính chuẩn xác của biểu phí dịch vụ."
+            });
+        }
+
+        // KIỂM TRA NGÀY NGHỈ LỄ TẾT / ĐÓNG CỬA TRUNG TÂM (BLACKOUT DATES)
+        if (CheckBlackoutDate(request.EventDate.Date, out string blackoutReason))
+        {
+            return BadRequest(new
+            {
+                success = false,
+                isBlackout = true,
+                message = blackoutReason
+            });
+        }
+
+
         var totalTables = request.OfficialTableCount + request.SpareTableCount;
 
         // 1. LỌC SẢNH KHẢ DỤNG: ĐỦ SỨC CHỨA & LỊCH TRỐNG
@@ -150,7 +187,6 @@ public class RecommendationController : ControllerBase
                     var reasons = new List<string>();
 
                     string decorStyle = decor.PhongCach ?? "";
-                    // 1. Ánh xạ tên Decor sang Concept TikTok Trend để hiển thị thu hút
                     string decorName = decor.TenGoi;
                     if (decor.TenGoi.Contains("Royal") || decor.TenGoi.Contains("Hoàng gia"))
                     {
@@ -223,7 +259,7 @@ public class RecommendationController : ControllerBase
                     // Tiêu chí 4: Tín nhiệm lịch sử (Trọng số 15%)
                     double ratingScore = (hallAvgRating / 5.0) * 100;
 
-                    // Điểm tổng hợp
+                    // Điểm tổng hợp WSM
                     double overallScore = (budgetScore * 0.35) + (spaceScore * 0.25) + (styleScore * 0.25) + (ratingScore * 0.15);
                     overallScore = Math.Round(overallScore, 1);
 
@@ -274,7 +310,6 @@ public class RecommendationController : ControllerBase
         // 5. TRÍCH XUẤT TOP 3 COMBO
         var top3Result = new List<ComboSuggestionDto>();
 
-        // COMBO 1: CÂN BẰNG HOÀN HẢO (Điểm tổng hợp cao nhất)
         var bestOverall = scoredCombos.OrderByDescending(c => c.OverallMatchScore).FirstOrDefault();
         if (bestOverall != null)
         {
@@ -285,7 +320,6 @@ public class RecommendationController : ControllerBase
             top3Result.Add(bestOverall);
         }
 
-        // COMBO 2: TỐI ƯU NGÂN SÁCH (Tiết kiệm chi phí)
         var bestEconomy = scoredCombos
             .Where(c => c.BudgetDifference >= 0 && c != bestOverall)
             .OrderBy(c => c.TotalEstimatedCost)
@@ -300,7 +334,6 @@ public class RecommendationController : ControllerBase
             top3Result.Add(bestEconomy);
         }
 
-        // COMBO 3: ĐẲNG CẤP HOÀNG GIA (Trải nghiệm cao cấp)
         var bestLuxury = scoredCombos
             .Where(c => c != bestOverall && c != bestEconomy)
             .OrderByDescending(c => c.MenuPricePerTable + c.DecorationPrice)
@@ -325,10 +358,10 @@ public class RecommendationController : ControllerBase
             AnalyzedAt = DateTime.Now
         });
     }
+
     [HttpGet("hall-availability")]
     public async Task<IActionResult> GetHallAvailability([FromQuery] string? date)
     {
-        // 1. Phân tích an toàn ngày truyền lên (tránh lỗi xung đột định dạng MM/dd/yyyy và yyyy-MM-dd)
         DateTime targetDate;
         if (string.IsNullOrWhiteSpace(date) || !DateTime.TryParse(date, out targetDate))
         {
@@ -336,7 +369,29 @@ public class RecommendationController : ControllerBase
         }
         targetDate = targetDate.Date;
 
-        // 2. Lấy danh sách sảnh đang hoạt động từ DB
+        // KIỂM TRA RÀNG BUỘC THỜI GIAN TRA CỨU
+        var minAllowedDate = DateTime.Today.AddDays(30);
+        if (targetDate < minAllowedDate)
+        {
+            return BadRequest(new
+            {
+                success = false,
+                message = $"Ngày tra cứu ({targetDate:dd/MM/yyyy}) không hợp lệ. Vui lòng chọn ngày cách thời điểm hiện tại tối thiểu 30 ngày."
+            });
+        }
+
+        // KIỂM TRA NGÀY ĐÓNG CỬA
+        if (CheckBlackoutDate(targetDate, out string blackoutReason))
+        {
+            return BadRequest(new
+            {
+                success = false,
+                isBlackout = true,
+                message = blackoutReason
+            });
+        }
+
+        // Lấy danh sách sảnh đang hoạt động từ DB
         var halls = await _context.Halls
             .Where(h => h.StatusId == 301)
             .OrderBy(h => h.HallId)
@@ -350,13 +405,12 @@ public class RecommendationController : ControllerBase
             })
             .ToListAsync();
 
-        // 3. Lấy các ca đã có tiệc vào ngày này (StatusId = 402 hoặc 403)
+        // Lấy các ca đã có tiệc vào ngày này (StatusId = 402 hoặc 403)
         var bookedSchedules = await _context.HallSchedules
             .Where(hs => hs.Date == targetDate && (hs.StatusId == 402 || hs.StatusId == 403))
             .Select(hs => new { hs.HallId, hs.Shift })
             .ToListAsync();
 
-        // 4. Trả về kết quả thực tế từ CSDL
         var result = halls.Select(h => new
         {
             hallId = h.HallId,
@@ -375,7 +429,6 @@ public class RecommendationController : ControllerBase
         });
     }
 
-
     [HttpPost("register-booking")]
     public async Task<IActionResult> RegisterPublicBooking([FromBody] RegisterPublicBookingDto request)
     {
@@ -389,6 +442,40 @@ public class RecommendationController : ControllerBase
             var cleanPhone = request.PhoneNumber.Trim();
             var targetDate = request.EventDate.Date;
 
+            // =========================================================================
+            // RÀNG BUỘC THỜI GIAN: Chặn tạo đơn ở quá khứ hoặc dưới 30 ngày
+            // =========================================================================
+            var minAllowedDate = DateTime.Today.AddDays(30);
+            var maxAllowedDate = DateTime.Today.AddDays(540);
+
+            if (targetDate < minAllowedDate)
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    message = $"Ngày tổ chức ({request.EventDate:dd/MM/yyyy}) không hợp lệ. Vui lòng chọn ngày tổ chức cách thời điểm hiện tại tối thiểu 30 ngày."
+                });
+            }
+
+            if (targetDate > maxAllowedDate)
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    message = "Hệ thống chỉ tiếp nhận đặt tiệc trong phạm vi 18 tháng tới."
+                });
+            }
+
+            // CHẶN TẠO ĐƠN GIỮ CHỖ VÀO NGÀY NGHỈ / LỄ TẾT
+            if (CheckBlackoutDate(targetDate, out string blackoutReason))
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    message = blackoutReason
+                });
+            }
+
             // 1. Kiểm tra hoặc tự động tạo mới Khách hàng theo SĐT hoặc UserId
             var customer = await _context.Set<Customer>()
                 .FirstOrDefaultAsync(c => c.PhoneNumber == cleanPhone || (request.UserId.HasValue && c.UserId == request.UserId.Value));
@@ -399,14 +486,13 @@ public class RecommendationController : ControllerBase
                 {
                     FullName = request.CustomerName.Trim(),
                     PhoneNumber = cleanPhone,
-                    UserId = request.UserId // Gắn tài khoản đăng nhập
+                    UserId = request.UserId
                 };
                 _context.Set<Customer>().Add(customer);
                 await _context.SaveChangesAsync();
             }
             else
             {
-                // Nếu khách hàng đã tồn tại nhưng chưa liên kết UserId thì cập nhật bổ sung
                 if (request.UserId.HasValue && !customer.UserId.HasValue)
                 {
                     customer.UserId = request.UserId.Value;
@@ -548,4 +634,40 @@ public class RecommendationController : ControllerBase
             return BadRequest(new { success = false, message = $"Lỗi CSDL khi tạo đơn: {msg}" });
         }
     }
+
+    // =========================================================================
+    // HÀM KIỂM TRA NGÀY ĐÓNG CỬA / NGHỈ LỄ TẾT / BẢO TRÌ (BLACKOUT DATES)
+    // =========================================================================
+    private bool CheckBlackoutDate(DateTime targetDate, out string reason)
+    {
+        reason = string.Empty;
+
+        // 1. Đợt nghỉ Tết Nguyên Đán năm 2026 (Từ 28 Tết đến Mùng 6 Tết Bính Ngọ: 15/02/2026 - 22/02/2026)
+        var tet2026Start = new DateTime(2026, 2, 15);
+        var tet2026End = new DateTime(2026, 2, 22);
+        if (targetDate >= tet2026Start && targetDate <= tet2026End)
+        {
+            reason = $"Ngày {targetDate:dd/MM/yyyy} trùng vào đợt nghỉ Tết Nguyên Đán 2026 của trung tâm (từ 15/02 đến 22/02/2026). Riverside Palace tạm ngưng tiếp nhận tổ chức tiệc cưới trong thời gian này.";
+            return true;
+        }
+
+        // 2. Đợt nghỉ Tết Nguyên Đán năm 2027 (Từ 28 Tết đến Mùng 6 Tết Đinh Mùi: 04/02/2027 - 12/02/2027)
+        var tet2027Start = new DateTime(2027, 2, 4);
+        var tet2027End = new DateTime(2027, 2, 12);
+        if (targetDate >= tet2027Start && targetDate <= tet2027End)
+        {
+            reason = $"Ngày {targetDate:dd/MM/yyyy} trùng vào lịch nghỉ Tết Nguyên Đán 2027 của trung tâm (từ 04/02 đến 12/02/2027). Quý khách vui lòng chọn ngày tổ chức sau đợt nghỉ Tết.";
+            return true;
+        }
+
+        // 3. Đợt đại tu kỹ thuật định kỳ toàn chuỗi trung tâm (Ví dụ thường niên: Ngày 02/09)
+        if (targetDate.Month == 9 && targetDate.Day == 2)
+        {
+            reason = $"Ngày {targetDate:dd/MM/yyyy} là ngày Quốc Khánh, trung tâm dành trọn khuôn viên cho các sự kiện cấp quốc gia và bảo trì kỹ thuật tổng thể.";
+            return true;
+        }
+
+        return false;
+    }
+
 }
