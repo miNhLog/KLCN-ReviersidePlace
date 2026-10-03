@@ -1,19 +1,12 @@
 document.addEventListener("DOMContentLoaded", () => {
-    const accountTypeInput = document.querySelector("#accountType");
-    document.querySelectorAll(".tab-button").forEach(button => {
-        button.addEventListener("click", () => {
-            document.querySelectorAll(".tab-button").forEach(item => item.classList.remove("active"));
-            button.classList.add("active");
-            if (accountTypeInput) accountTypeInput.value = button.dataset.accountType;
-        });
-    });
-
     document.querySelectorAll(".toggle-password").forEach(button => {
         button.addEventListener("click", () => {
             const input = button.parentElement?.querySelector("input");
             if (!input) return;
             input.type = input.type === "password" ? "text" : "password";
             button.setAttribute("aria-label", input.type === "password" ? "Hiện mật khẩu" : "Ẩn mật khẩu");
+            const icon = button.querySelector(".material-symbols-outlined");
+            if (icon) icon.textContent = input.type === "password" ? "visibility" : "visibility_off";
         });
     });
 

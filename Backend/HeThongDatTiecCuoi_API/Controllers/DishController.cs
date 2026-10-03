@@ -13,7 +13,7 @@ namespace HeThongDatTiecCuoi_API.Controllers;
 
 [ApiController]
 [Route("api/dishes")]
-[Authorize(Roles = RoleNames.Admin)]
+[Authorize(Roles = RoleNames.Admin + "," + RoleNames.Manager)]
 public sealed class DishController : ControllerBase
 {
     private static readonly string[] ValidCategories =

@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace HeThongDatTiecCuoi_WEB.Controllers;
 
-[Authorize(Roles = RoleNames.Admin)]
+[Authorize(Roles = RoleNames.Admin + "," + RoleNames.Manager)]
 public class AdminPricingPolicyController : Controller
 {
     private const string ApiTokenCookie = "rp_api_token";

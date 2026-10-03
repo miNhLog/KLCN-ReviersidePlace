@@ -1,13 +1,16 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 using HeThongDatTiecCuoi_API.Data;
 using HeThongDatTiecCuoi_API.DTOs.PricingPolicy;
 using HeThongDatTiecCuoi_API.Constants;
+using HeThongDatTiecCuoi_API.Models;
 
 namespace HeThongDatTiecCuoi_API.Controllers
 {
     [Route("api/admin/pricing-policy")]
     [ApiController]
+    [Authorize(Roles = RoleNames.Admin + "," + RoleNames.Manager)]
     public class AdminPricingPolicyController : ControllerBase
     {
         private readonly ApplicationDbContext _context;

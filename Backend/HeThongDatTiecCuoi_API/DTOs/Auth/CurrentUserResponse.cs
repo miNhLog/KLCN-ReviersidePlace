@@ -6,4 +6,5 @@ public sealed record CurrentUserResponse(
     string FullName,
     string? PhoneNumber,
     string RoleName,
-    string Status);
+    string Status,
+    bool MustChangePassword);

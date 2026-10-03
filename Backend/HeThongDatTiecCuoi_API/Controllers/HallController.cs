@@ -13,7 +13,7 @@ namespace HeThongDatTiecCuoi_API.Controllers;
 
 [ApiController]
 [Route("api/halls")]
-[Authorize(Roles = RoleNames.Admin)]
+[Authorize(Roles = RoleNames.Admin + "," + RoleNames.Manager)]
 public sealed class HallController : ControllerBase
 {
     private static readonly string[] ValidStatuses =

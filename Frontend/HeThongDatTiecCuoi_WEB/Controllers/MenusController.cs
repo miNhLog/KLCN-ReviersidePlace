@@ -31,7 +31,7 @@ public sealed class MenusController : Controller
             return RedirectToAction("Index", "AdminMenu");
         }
 
-        if (User.IsInRole(RoleNames.Consultant) || User.IsInRole(RoleNames.Coordinator))
+        if (User.IsInRole(RoleNames.Coordinator))
         {
             return RedirectToAction("Dashboard", "Home");
         }
@@ -86,7 +86,7 @@ public sealed class MenusController : Controller
             return RedirectToAction("Index", "AdminMenu");
         }
 
-        if (User.IsInRole(RoleNames.Consultant) || User.IsInRole(RoleNames.Coordinator))
+        if (User.IsInRole(RoleNames.Coordinator))
         {
             return RedirectToAction("Dashboard", "Home");
         }

@@ -7,30 +7,50 @@ using HeThongDatTiecCuoi_API.Helpers;
 using HeThongDatTiecCuoi_API.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using System.Text.Json.Serialization;
 
 namespace HeThongDatTiecCuoi_API.Services;
 
 public sealed partial class AuthService : IAuthService
 {
+    public async Task<ServiceResult<object>> ChangePasswordAsync(int userId, ChangePasswordRequest request, CancellationToken cancellationToken)
+    {
+        if (request.NewPassword != request.ConfirmPassword || !StrongPasswordRegex().IsMatch(request.NewPassword))
+            return ServiceResult<object>.Failure("Mật khẩu mới không hợp lệ hoặc xác nhận không khớp.", StatusCodes.Status400BadRequest);
+        var user = await _db.Users.SingleOrDefaultAsync(x => x.UserId == userId, cancellationToken);
+        if (user is null || _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, request.CurrentPassword) == PasswordVerificationResult.Failed)
+            return ServiceResult<object>.Failure("Mật khẩu hiện tại không chính xác.", StatusCodes.Status400BadRequest);
+        user.PasswordHash = _passwordHasher.HashPassword(user, request.NewPassword);
+        user.MustChangePassword = false;
+        user.UpdatedAt = DateTime.Now;
+        await _db.SaveChangesAsync(cancellationToken);
+        return ServiceResult<object>.Success(new { message = "Đổi mật khẩu thành công." });
+    }
     private readonly ApplicationDbContext _db;
     private readonly IPasswordHasher<User> _passwordHasher;
     private readonly IJwtTokenService _jwtTokenService;
     private readonly IStatusService _statusService;
+    private readonly IHttpClientFactory _httpClientFactory;
 
     public AuthService(
         ApplicationDbContext db,
         IPasswordHasher<User> passwordHasher,
         IJwtTokenService jwtTokenService,
-        IStatusService statusService)
+        IStatusService statusService,
+        IHttpClientFactory httpClientFactory)
     {
         _db = db;
         _passwordHasher = passwordHasher;
         _jwtTokenService = jwtTokenService;
         _statusService = statusService;
+        _httpClientFactory = httpClientFactory;
     }
 
-    public async Task<ServiceResult<AuthResponse>> RegisterAsync(
-        RegisterRequest request,
+ #if false
+    public async Task<ServiceResult<AuthResponse>> RegisterRemovedAsync(
+        LoginRequest request,
         CancellationToken cancellationToken)
     {
         var email = request.Email.Trim().ToLowerInvariant();
@@ -151,12 +171,12 @@ public sealed partial class AuthService : IAuthService
         }
     }
 
+ #endif
     public async Task<ServiceResult<AuthResponse>> LoginAsync(
         LoginRequest request,
         CancellationToken cancellationToken)
     {
         var identifier = request.Identifier.Trim();
-        var isStaffLogin = request.AccountType == "Staff";
 
         IQueryable<User> query = _db.Users
             .Include(x => x.Role)
@@ -175,12 +195,18 @@ public sealed partial class AuthService : IAuthService
         else
         {
             var phone = PhoneNumberHelper.Normalize(identifier);
-            user = isStaffLogin
-                ? await query.SingleOrDefaultAsync(x => x.Employee != null && x.Employee.PhoneNumber == phone, cancellationToken)
-                : await query.SingleOrDefaultAsync(x => x.Customer != null && x.Customer.PhoneNumber == phone, cancellationToken);
+            user = await query.SingleOrDefaultAsync(
+                x => (x.Employee != null && x.Employee.PhoneNumber == phone) ||
+                     (x.Customer != null && x.Customer.PhoneNumber == phone),
+                cancellationToken);
         }
 
-        if (user is null || !MatchesSelectedAccountType(user, isStaffLogin))
+        if (user is null)
+        {
+            return InvalidCredentials();
+        }
+
+        if (user.Role.RoleName == RoleNames.Customer)
         {
             return InvalidCredentials();
         }
@@ -229,6 +255,64 @@ public sealed partial class AuthService : IAuthService
             new AuthResponse(token.Token, token.ExpiresAtUtc, ToCurrentUser(user)));
     }
 
+    public async Task<ServiceResult<AuthResponse>> LoginWithGoogleAsync(
+        GoogleLoginRequest request,
+        CancellationToken cancellationToken)
+    {
+        GoogleUserInfo? userInfo;
+        try
+        {
+            var client = _httpClientFactory.CreateClient();
+            using var googleRequest = new HttpRequestMessage(
+                HttpMethod.Get,
+                "https://www.googleapis.com/oauth2/v3/userinfo");
+            googleRequest.Headers.Authorization =
+                new AuthenticationHeaderValue("Bearer", request.AccessToken);
+
+            using var googleResponse = await client.SendAsync(googleRequest, cancellationToken);
+            if (!googleResponse.IsSuccessStatusCode)
+                return InvalidCredentials();
+
+            userInfo = await googleResponse.Content.ReadFromJsonAsync<GoogleUserInfo>(
+                cancellationToken: cancellationToken);
+        }
+        catch (HttpRequestException)
+        {
+            return InvalidCredentials();
+        }
+
+        if (userInfo is null || userInfo.EmailVerified is not true ||
+            string.IsNullOrWhiteSpace(userInfo.Email))
+            return InvalidCredentials();
+
+        var email = userInfo.Email.Trim().ToLowerInvariant();
+        var user = await _db.Users
+            .Include(x => x.Role).Include(x => x.Status).Include(x => x.DataStatus)
+            .Include(x => x.Customer)
+            .Include(x => x.Employee).ThenInclude(x => x!.DataStatus)
+            .SingleOrDefaultAsync(x => x.Email == email, cancellationToken);
+
+        if (user is null)
+            return ServiceResult<AuthResponse>.Failure(
+                "Email Google chưa được cấp tài khoản nhân viên Riverside Palace.",
+                StatusCodes.Status404NotFound);
+
+        if (user.Role.RoleName == RoleNames.Customer)
+            return InvalidCredentials();
+
+        if (user.Status.StatusCode != AccountStatusCodes.Active ||
+            user.DataStatus.DataStatusCode != DataStatusCodes.Existing ||
+            (user.Employee is not null && user.Employee.DataStatus.DataStatusCode != DataStatusCodes.Existing) ||
+            (user.Customer is not null && user.Customer.DataStatusId != user.DataStatusId))
+            return ServiceResult<AuthResponse>.Failure(
+                "Tài khoản hoặc hồ sơ hiện không được phép đăng nhập.",
+                StatusCodes.Status403Forbidden);
+
+        var token = _jwtTokenService.CreateAccessToken(user, request.RememberMe);
+        return ServiceResult<AuthResponse>.Success(
+            new AuthResponse(token.Token, token.ExpiresAtUtc, ToCurrentUser(user)));
+    }
+
     public async Task<ServiceResult<CurrentUserResponse>> GetCurrentUserAsync(
         int userId,
         CancellationToken cancellationToken)
@@ -248,24 +332,14 @@ public sealed partial class AuthService : IAuthService
             : ServiceResult<CurrentUserResponse>.Success(ToCurrentUser(user));
     }
 
-    private static bool MatchesSelectedAccountType(
-    User user,
-    bool isStaffLogin) =>
-    isStaffLogin
-        ? user.Role.RoleName is
-            RoleNames.Admin or
-            RoleNames.Manager or
-            RoleNames.HallManager or
-            RoleNames.Coordinator
-        : user.Role.RoleName == RoleNames.Customer;
-
     private static CurrentUserResponse ToCurrentUser(User user) => new(
         user.UserId,
         user.Email,
         user.Customer?.FullName ?? user.Employee?.FullName ?? user.Email,
         user.Customer?.PhoneNumber ?? user.Employee?.PhoneNumber,
         user.Role.RoleName,
-        user.Status.StatusCode);
+        user.Status.StatusCode,
+        user.MustChangePassword);
 
     private static ServiceResult<AuthResponse> InvalidCredentials() =>
         ServiceResult<AuthResponse>.Failure(
@@ -274,6 +348,10 @@ public sealed partial class AuthService : IAuthService
 
     private static string CreateCustomerCode() =>
         $"KH{Guid.NewGuid():N}"[..20].ToUpperInvariant();
+
+    private sealed record GoogleUserInfo(
+        [property: JsonPropertyName("email")] string? Email,
+        [property: JsonPropertyName("email_verified")] bool? EmailVerified);
 
     [GeneratedRegex(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,100}$")]
     private static partial Regex StrongPasswordRegex();

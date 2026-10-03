@@ -27,18 +27,6 @@ public sealed class AuthController : ControllerBase
         _logger = logger;
     }
 
-    [HttpPost("register")]
-    [AllowAnonymous]
-    [EnableRateLimiting("auth")]
-    [ProducesResponseType<AuthResponse>(StatusCodes.Status201Created)]
-    [ProducesResponseType<ApiErrorResponse>(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType<ApiErrorResponse>(StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> Register(RegisterRequest request, CancellationToken cancellationToken)
-    {
-        var result = await _authService.RegisterAsync(request, cancellationToken);
-        return ToActionResult(result);
-    }
-
     [HttpPost("login")]
     [AllowAnonymous]
     [EnableRateLimiting("auth")]
@@ -49,6 +37,14 @@ public sealed class AuthController : ControllerBase
     {
         var result = await _authService.LoginAsync(request, cancellationToken);
         return ToActionResult(result);
+    }
+
+    [HttpPost("change-password")]
+    [Authorize]
+    public async Task<IActionResult> ChangePassword(ChangePasswordRequest request, CancellationToken cancellationToken)
+    {
+        if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId)) return Unauthorized();
+        return ToActionResult(await _authService.ChangePasswordAsync(userId, request, cancellationToken));
     }
 
     [HttpPost("forgot-password")]
@@ -86,6 +82,15 @@ public sealed class AuthController : ControllerBase
             request.NewPassword,
             request.ConfirmPassword,
             cancellationToken);
+        return ToActionResult(result);
+    }
+
+    [HttpPost("google-login")]
+    [AllowAnonymous]
+    [EnableRateLimiting("auth")]
+    public async Task<IActionResult> GoogleLogin(GoogleLoginRequest request, CancellationToken cancellationToken)
+    {
+        var result = await _authService.LoginWithGoogleAsync(request, cancellationToken);
         return ToActionResult(result);
     }
 

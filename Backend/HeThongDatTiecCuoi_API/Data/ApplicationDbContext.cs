@@ -105,6 +105,7 @@ public sealed class ApplicationDbContext : DbContext
             entity.Property(x => x.CreatedAt).HasColumnName("NgayTao").HasPrecision(0).HasDefaultValueSql("SYSDATETIME()");
             entity.Property(x => x.UpdatedAt).HasColumnName("NgayCapNhat").HasPrecision(0);
             entity.Property(x => x.DataStatusId).HasColumnName("TrangThaiDuLieuID").HasDefaultValue((byte)1);
+            entity.Property(x => x.MustChangePassword).HasColumnName("BatBuocDoiMatKhau").HasDefaultValue(false);
             entity.HasIndex(x => x.Email).IsUnique();
             entity.HasIndex(x => x.RoleId, "UX_TaiKhoan_Admin_Active")
                 .IsUnique()

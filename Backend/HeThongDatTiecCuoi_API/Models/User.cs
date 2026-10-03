@@ -10,6 +10,7 @@ public sealed class User
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
     public byte DataStatusId { get; set; }
+    public bool MustChangePassword { get; set; }
 
     public Role Role { get; set; } = null!;
     public Status Status { get; set; } = null!;

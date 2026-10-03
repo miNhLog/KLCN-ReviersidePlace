@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Security.Cryptography;
 using HeThongDatTiecCuoi_API.Constants.StatusCodes;
 using HeThongDatTiecCuoi_API.Constants;
 using HeThongDatTiecCuoi_API.Data;
@@ -9,6 +10,7 @@ using HeThongDatTiecCuoi_API.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
 using HeThongDatTiecCuoi_API.Services;
 
@@ -253,17 +255,20 @@ public sealed class AdminAccountController : ControllerBase
             }
         }
 
-        var employeeCode = await GenerateEmployeeCodeAsync(cancellationToken);
-
         if (string.IsNullOrWhiteSpace(email) ||
             string.IsNullOrWhiteSpace(fullName) ||
             string.IsNullOrWhiteSpace(phoneNumber) ||
-            string.IsNullOrWhiteSpace(request.Password))
+            !Regex.IsMatch(request.InitialPassword, @"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,100}$"))
         {
             return BadRequest(new
             {
-                message = "Vui lòng nhập đầy đủ thông tin bắt buộc."
+                message = "Vui lòng nhập đầy đủ thông tin và mật khẩu ban đầu phải có chữ hoa, chữ thường, số, ký tự đặc biệt, tối thiểu 8 ký tự."
             });
+        }
+
+        if (request.InitialPassword != request.ConfirmPassword)
+        {
+            return BadRequest(new { message = "Mật khẩu ban đầu và xác nhận mật khẩu không khớp." });
         }
 
         if (email.Length > 255 || fullName.Length > 150 || phoneNumber.Length > 20)
@@ -318,17 +323,7 @@ public sealed class AdminAccountController : ControllerBase
             });
         }
 
-        if (request.Password.Length < 8 ||
-            !request.Password.Any(char.IsUpper) ||
-            !request.Password.Any(char.IsLower) ||
-            !request.Password.Any(char.IsDigit) ||
-            !request.Password.Any(character => !char.IsLetterOrDigit(character)))
-        {
-            return BadRequest(new
-            {
-                message = "Mật khẩu phải có ít nhất 8 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt."
-            });
-        }
+        var employeeCode = await GenerateEmployeeCodeAsync(role.RoleName, cancellationToken);
 
         await using var transaction =
             await _context.Database.BeginTransactionAsync(cancellationToken);
@@ -352,7 +347,8 @@ public sealed class AdminAccountController : ControllerBase
 
             user.PasswordHash = _passwordHasher.HashPassword(
                 user,
-                request.Password);
+                request.InitialPassword);
+            user.MustChangePassword = true;
 
             _context.Users.Add(user);
             await _context.SaveChangesAsync(cancellationToken);
@@ -372,12 +368,12 @@ public sealed class AdminAccountController : ControllerBase
 
             return StatusCode(StatusCodes.Status201Created, new
             {
-                message = "Tạo tài khoản nhân viên thành công.",
+                message = "Đã tạo tài khoản. Admin hãy bàn giao email, mật khẩu ban đầu và yêu cầu nhân viên đổi mật khẩu ngay lần đăng nhập đầu tiên.",
                 userId = user.UserId,
                 email = user.Email,
                 employeeCode = employee.EmployeeCode,
                 fullName = employee.FullName,
-                roleName = role.RoleName
+                roleName = role.RoleName,
             });
         }
         catch
@@ -589,6 +585,7 @@ public sealed class AdminAccountController : ControllerBase
             userExists = await _passwordResetService.SendResetLinkForUserAsync(
                 userId, cancellationToken);
         }
+
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
             return StatusCode(StatusCodes.Status503ServiceUnavailable, new
@@ -610,11 +607,20 @@ public sealed class AdminAccountController : ControllerBase
     }
 
     private async Task<string> GenerateEmployeeCodeAsync(
+        string roleName,
         CancellationToken cancellationToken)
     {
+        var prefix = roleName switch
+        {
+            RoleNames.Manager => "QL",
+            RoleNames.HallManager => "QLS",
+            RoleNames.Coordinator => "DP",
+            _ => "NV"
+        };
+
         var employeeCodes = await _context.Employees
             .AsNoTracking()
-            .Where(employee => employee.EmployeeCode.StartsWith("NV"))
+            .Where(employee => employee.EmployeeCode.StartsWith(prefix))
             .Select(employee => employee.EmployeeCode)
             .ToListAsync(cancellationToken);
 
@@ -622,12 +628,13 @@ public sealed class AdminAccountController : ControllerBase
 
         foreach (var employeeCode in employeeCodes)
         {
-            if (employeeCode.Length <= 2)
+            if (!employeeCode.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) ||
+                employeeCode.Length <= prefix.Length)
             {
                 continue;
             }
 
-            var numericPart = employeeCode[2..];
+            var numericPart = employeeCode[prefix.Length..];
 
             if (int.TryParse(numericPart, out var number) &&
                 number > highestNumber)
@@ -636,7 +643,7 @@ public sealed class AdminAccountController : ControllerBase
             }
         }
 
-        return $"NV{highestNumber + 1:D4}";
+        return $"{prefix}{highestNumber + 1:D3}";
     }
 
     [HttpPatch("employees/{userId:int}/status")]

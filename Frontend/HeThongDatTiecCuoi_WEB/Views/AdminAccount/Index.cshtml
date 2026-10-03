@@ -3,7 +3,7 @@
 @{
     Layout = "_AdminLayout";
 
-    ViewData["Title"] = "Phân quyền tài khoản";
+    ViewData["Title"] = "Quản lý tài khoản & phân quyền";
     ViewData["ActiveMenu"] = "Account";
 
     var adminAccounts = Model.Accounts
@@ -12,13 +12,14 @@
 
     var employeeAccounts = Model.Accounts
         .Where(x =>
-            x.RoleName == "Nhân viên tư vấn" ||
-            x.RoleName == "Nhân viên điều phối")
+            x.RoleName == RoleNames.Manager ||
+            x.RoleName == RoleNames.HallManager ||
+            x.RoleName == RoleNames.Coordinator)
         .ToList();
 
-    var customerAccounts = Model.Accounts
-        .Where(x => x.RoleName == "Khách hàng")
-        .ToList();
+    var managerAccounts = employeeAccounts.Where(x => x.RoleName == RoleNames.Manager).ToList();
+    var hallManagerAccounts = employeeAccounts.Where(x => x.RoleName == RoleNames.HallManager).ToList();
+    var coordinatorAccounts = employeeAccounts.Where(x => x.RoleName == RoleNames.Coordinator).ToList();
 }
 
 <link rel="stylesheet"
@@ -30,19 +31,14 @@
 
     <div>
         <div class="breadcrumb">
-            Quản trị hệ thống
+            Quản trị nghiệp vụ
             <span>›</span>
-            <strong>Phân quyền tài khoản</strong>
+            <strong>Quản lý tài khoản</strong>
         </div>
-
         <h2>
-            Quản Lý Tài Khoản & Phân Quyền
+            Quản lý tài khoản
         </h2>
-    </div>
-
-    <div class="system-status">
-        <span></span>
-        Dữ liệu đang kết nối
+        <p class="account-page-subtitle">Quản lý nhân sự và trạng thái tài khoản trong hệ thống</p>
     </div>
 
 </header>
@@ -73,7 +69,6 @@
             </div>
         </div>
 
-
         <div class="summary-card">
             <div class="summary-icon active-icon">
                 <i class="fa-solid fa-circle-check"></i>
@@ -97,28 +92,11 @@
             </div>
 
             <div>
-                <span>Tạm khóa</span>
+                <span>Bị khóa</span>
 
                 <strong>
                     @Model.Accounts.Count(
-                                        x => x.Status == AccountStatusCodes.Suspended
-                                        )
-                </strong>
-            </div>
-        </div>
-
-
-        <div class="summary-card">
-            <div class="summary-icon inactive-icon">
-                <i class="fa-solid fa-user-slash"></i>
-            </div>
-
-            <div>
-                <span>Ngừng hoạt động</span>
-
-                <strong>
-                    @Model.Accounts.Count(
-                                        x => x.Status == AccountStatusCodes.Inactive
+                    x => x.Status == AccountStatusCodes.Locked
                                         )
                 </strong>
             </div>
@@ -198,30 +176,16 @@
                 }
 
 
-                @if (Model.Status == AccountStatusCodes.Suspended)
+                @if (Model.Status == AccountStatusCodes.Locked)
                 {
-                    <option value="@AccountStatusCodes.Suspended" selected>
-                        Tạm khóa
+                    <option value="@AccountStatusCodes.Locked" selected>
+                        Bị khóa
                     </option>
                 }
                 else
                 {
-                    <option value="@AccountStatusCodes.Suspended">
-                        Tạm khóa
-                    </option>
-                }
-
-
-                @if (Model.Status == AccountStatusCodes.Inactive)
-                {
-                    <option value="@AccountStatusCodes.Inactive" selected>
-                        Ngừng hoạt động
-                    </option>
-                }
-                else
-                {
-                    <option value="@AccountStatusCodes.Inactive">
-                        Ngừng hoạt động
+                    <option value="@AccountStatusCodes.Locked">
+                        Bị khóa
                     </option>
                 }
 
@@ -253,7 +217,7 @@
                 id="openAddAccountModal">
 
             <i class="fa-solid fa-user-plus"></i>
-            Thêm nhân viên
+            Thêm tài khoản nội bộ
 
         </button>
 
@@ -265,17 +229,17 @@
      ===================================================== -->
     @if (adminAccounts.Count > 0)
     {
-        <div class="account-section">
+        <div class="account-section account-panel admin-role-panel">
 
             <div class="account-section-title">
                 <div>
                     <h3>
                         <i class="fa-solid fa-user-shield"></i>
-                        Tài Khoản Quản Trị Hệ Thống
+                        Quản trị viên hệ thống
                     </h3>
 
                     <p>
-                        Tài khoản có quyền quản trị cao nhất trong hệ thống
+                        Quản trị và vận hành hệ thống
                     </p>
                 </div>
 
@@ -292,7 +256,7 @@
                     var statusClass =
                     account.Status == AccountStatusCodes.Active
                     ? "account-status-active"
-                    : account.Status == AccountStatusCodes.Suspended
+                    : account.Status == AccountStatusCodes.Locked
                     ? "account-status-locked"
                     : "account-status-inactive";
 
@@ -351,220 +315,34 @@
          TÀI KHOẢN NHÂN VIÊN
          ===================================================== -->
 
-    <div class="account-panel account-section">
-
-        <div class="account-panel-header">
-
-            <div>
-                <h3>
-                    <i class="fa-solid fa-user-tie"></i>
-                    Tài Khoản Nhân Viên
-                </h3>
-
-                <p>
-                    Quản lý nhân viên tư vấn và nhân viên điều phối
-                </p>
-            </div>
-
-            <span>
-                @employeeAccounts.Count nhân viên
-            </span>
-
+    @foreach (var roleSection in new[] {
+            new { Title = "Quản lý", Subtitle = "Điều hành hoạt động kinh doanh và giám sát nghiệp vụ", Icon = "fa-briefcase", Accounts = managerAccounts },
+            new { Title = "Quản lý sảnh", Subtitle = "Quản lý sảnh, lịch sảnh và tình trạng sử dụng", Icon = "fa-building", Accounts = hallManagerAccounts },
+            new { Title = "Nhân viên điều phối", Subtitle = "Theo dõi và điều phối quá trình tổ chức tiệc", Icon = "fa-calendar-check", Accounts = coordinatorAccounts }
+    })
+    {
+        <div class="account-panel account-role-panel">
+                <div class="account-panel-header"><div><h3><i class="fa-solid @roleSection.Icon"></i> @roleSection.Title</h3><p>@roleSection.Subtitle</p></div><span>@roleSection.Accounts.Count nhân viên</span></div>
+                @if (roleSection.Accounts.Count == 0)
+                {
+                    <div class="account-empty compact-empty"><span>Chưa có tài khoản</span></div>
+                }
+                else
+                {
+                    <div class="account-table-wrapper"><table class="account-table employee-table"><thead><tr><th>Nhân viên</th><th>Mã NV</th><th>Liên hệ</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody>
+                    @foreach (var account in roleSection.Accounts)
+                    {
+                        var statusClass = account.Status == AccountStatusCodes.Active ? "account-status-active" : "account-status-locked";
+                        <tr><td><div class="account-user"><div class="account-avatar"><i class="fa-solid fa-user-tie"></i></div><div><strong>@account.FullName</strong><span>@account.Email</span></div></div></td><td><strong class="employee-code">@account.EmployeeCode</strong></td><td><span>@account.Email</span><small class="contact-phone"><i class="fa-solid fa-phone"></i> @(account.PhoneNumber ?? "—")</small></td><td><select class="account-status inline-status-select @statusClass" aria-label="Trạng thái tài khoản" data-user-id="@account.UserId" data-previous-status="@account.Status"><option value="@AccountStatusCodes.Active" selected="@(account.Status == AccountStatusCodes.Active)">Hoạt động</option><option value="@AccountStatusCodes.Locked" selected="@(account.Status == AccountStatusCodes.Locked)">Bị khóa</option></select></td><td><div class="account-actions"><button type="button" class="account-action-button edit-account" title="Chỉnh sửa" data-user-id="@account.UserId" data-employee-code="@account.EmployeeCode" data-full-name="@account.FullName" data-email="@account.Email" data-phone-number="@account.PhoneNumber" data-role-id="@account.RoleId"><i class="fa-regular fa-pen-to-square"></i></button><button type="button" class="account-action-button password-account" title="Đặt lại mật khẩu" data-user-id="@account.UserId" data-email="@account.Email"><i class="fa-solid fa-key"></i></button></div></td></tr>
+                    }
+                    </tbody></table></div>
+                }
         </div>
-
-
-        @if (employeeAccounts.Count == 0)
-        {
-            <div class="account-empty">
-
-                <i class="fa-solid fa-user-tie"></i>
-
-                <strong>Không tìm thấy nhân viên</strong>
-
-                <span>
-                    Không có tài khoản nhân viên phù hợp với bộ lọc.
-                </span>
-
-            </div>
-        }
-        else
-        {
-            <div class="account-table-wrapper">
-
-                <table class="account-table employee-table">
-
-                    <thead>
-                        <tr>
-                            <th>Nhân viên</th>
-                            <th>Vai trò</th>
-                            <th>Mã NV</th>
-                            <th>Số điện thoại</th>
-                            <th>Trạng thái tài khoản</th>
-                            <th>Trạng thái nhân viên</th>
-                            <th>Ngày tạo</th>
-                            <th>Thao tác</th>
-                        </tr>
-                    </thead>
-
-
-                    <tbody>
-
-                        @foreach (var account in employeeAccounts)
-                        {
-                            var statusClass =
-                            account.Status == AccountStatusCodes.Active
-                            ? "account-status-active"
-                            : account.Status == AccountStatusCodes.Suspended
-                            ? "account-status-locked"
-                            : "account-status-inactive";
-
-                            <tr>
-
-                                <td>
-                                    <div class="account-user">
-
-                                        <div class="account-avatar">
-                                            <i class="fa-solid fa-user-tie"></i>
-                                        </div>
-
-                                        <div>
-
-                                            <strong>
-                                                @account.FullName
-                                            </strong>
-
-                                            <span>
-                                                @account.Email
-                                            </span>
-
-                                            <small>
-                                                ID: @account.UserId
-                                            </small>
-
-                                        </div>
-
-                                    </div>
-                                </td>
-
-
-                                <td>
-                                    <span class="role-badge">
-                                        @account.RoleName
-                                    </span>
-                                </td>
-
-
-                                <td>
-                                    <strong class="employee-code">
-                                        @account.EmployeeCode
-                                    </strong>
-                                </td>
-
-
-                                <td>
-                                    @(account.PhoneNumber ?? "—")
-                                </td>
-
-
-                                <td>
-                                    <span class="account-status @statusClass">
-
-                                        <i class="fa-solid fa-circle"></i>
-
-                                        @(string.IsNullOrWhiteSpace(account.StatusName) ? StatusDisplayNames.GetAccountStatusName(account.Status) : account.StatusName)
-
-                                    </span>
-                                </td>
-
-
-                                <td>
-                                    <select class="employee-status-select"
-                                            data-user-id="@account.UserId"
-                                            data-old-value="@account.EmployeeStatus">
-
-                                        <option value="@EmployeeStatusCodes.Active"
-                                                selected="@(account.EmployeeStatus == EmployeeStatusCodes.Active)">
-                                            Đang làm việc
-                                        </option>
-
-                                        <option value="@EmployeeStatusCodes.OnLeave"
-                                                selected="@(account.EmployeeStatus == EmployeeStatusCodes.OnLeave)">
-                                            Tạm nghỉ
-                                        </option>
-
-                                        <option value="@EmployeeStatusCodes.Terminated"
-                                                selected="@(account.EmployeeStatus == EmployeeStatusCodes.Terminated)">
-                                            Đã nghỉ việc
-                                        </option>
-
-                                    </select>
-                                </td>
-
-
-                                <td>
-                                    @account.CreatedAt.ToString("dd/MM/yyyy")
-                                </td>
-
-
-                                <td>
-
-                                    <div class="account-actions">
-
-                                        <button type="button"
-                                                class="account-action-button edit-account"
-                                                title="Chỉnh sửa"
-                                                data-user-id="@account.UserId"
-                                                data-employee-code="@account.EmployeeCode"
-                                                data-full-name="@account.FullName"
-                                                data-email="@account.Email"
-                                                data-phone-number="@account.PhoneNumber"
-                                                data-role-id="@account.RoleId">
-
-
-                                            <i class="fa-regular fa-pen-to-square"></i>
-                                        </button>
-
-
-                                        <button type="button"
-                                                class="account-action-button status-account"
-                                                title="Thay đổi trạng thái tài khoản"
-                                                data-user-id="@account.UserId"
-                                                data-full-name="@account.FullName"
-                                                data-email="@account.Email"
-                                                data-status="@account.Status">
-
-                                            <i class="fa-solid fa-shield-halved"></i>
-                                        </button>
-
-
-                                        <button type="button"
-                                                class="account-action-button password-account"
-                                                title="Gửi liên kết đặt lại mật khẩu"
-                                                data-user-id="@account.UserId"
-                                                data-email="@account.Email">
-
-                                            <i class="fa-solid fa-key"></i>
-
-                                        </button>
-
-                                    </div>
-
-                                </td>
-
-                            </tr>
-                        }
-
-                    </tbody>
-
-                </table>
-
-            </div>
-        }
-
-    </div>
+    }
 
 
 
+    @* CUSTOMER_ACCOUNTS_REMOVED
     <!-- =====================================================
          TÀI KHOẢN KHÁCH HÀNG
          ===================================================== -->
@@ -629,7 +407,7 @@
                             var statusClass =
                             account.Status == AccountStatusCodes.Active
                             ? "account-status-active"
-                            : account.Status == AccountStatusCodes.Suspended
+                            : account.Status == AccountStatusCodes.Locked
                             ? "account-status-locked"
                             : "account-status-inactive";
 
@@ -730,6 +508,7 @@
         }
 
     </div>
+    *@
 </section>
 <!-- MODAL THÊM NHÂN VIÊN -->
 <div id="addAccountModal" class="account-modal-overlay">
@@ -739,8 +518,8 @@
         <div class="account-modal-header">
 
             <div>
-                <h3>Thêm Tài Khoản Nhân Viên</h3>
-                <p>Tạo tài khoản đăng nhập cho nhân viên nội bộ</p>
+                <h3>Thêm Tài Khoản Nội Bộ</h3>
+                <p>Thiết lập thông tin và mật khẩu ban đầu cho tài khoản nội bộ</p>
             </div>
 
             <button type="button"
@@ -799,6 +578,15 @@
                            placeholder="Có thể để trống" />
                 </div>
 
+                <div class="account-form-group">
+                    <label>Mật khẩu ban đầu <span>*</span></label>
+                    <input type="password" name="InitialPassword" minlength="8" required autocomplete="new-password" placeholder="Có chữ hoa, số và ký tự đặc biệt" />
+                </div>
+                <div class="account-form-group">
+                    <label>Nhập lại mật khẩu <span>*</span></label>
+                    <input type="password" name="ConfirmPassword" minlength="8" required autocomplete="new-password" placeholder="Nhập lại mật khẩu ban đầu" />
+                </div>
+
 
                 <!-- ROLE -->
                 <div class="account-form-group">
@@ -816,8 +604,9 @@
 
                         @foreach (var role in Model.Roles)
                         {
-                            if (role.RoleName == "Nhân viên tư vấn" ||
-                            role.RoleName == "Nhân viên điều phối")
+                            if (role.RoleName == RoleNames.Manager ||
+                                role.RoleName == RoleNames.HallManager ||
+                                role.RoleName == RoleNames.Coordinator)
                             {
                                 <option value="@role.RoleId">
                                     @role.RoleName
@@ -826,29 +615,6 @@
                         }
 
                     </select>
-                </div>
-
-
-
-
-                <!-- PASSWORD -->
-                <div class="account-form-group">
-                    <label>
-                        Mật khẩu
-                        <span>*</span>
-                    </label>
-
-                    <input type="password"
-                           name="Password"
-                           required
-                           minlength="8"
-                           autocomplete="new-password"
-                           placeholder="Nhập mật khẩu mới" />
-
-                    <small>
-                        Tối thiểu 8 ký tự, có chữ hoa, chữ thường,
-                        số và ký tự đặc biệt.
-                    </small>
                 </div>
 
             </div>
@@ -993,8 +759,9 @@
 
                         @foreach (var role in Model.Roles)
                         {
-                            if (role.RoleName == "Nhân viên tư vấn" ||
-                            role.RoleName == "Nhân viên điều phối")
+                            if (role.RoleName == RoleNames.Manager ||
+                                role.RoleName == RoleNames.HallManager ||
+                                role.RoleName == RoleNames.Coordinator)
                             {
                                 <option value="@role.RoleId">
                                     @role.RoleName
@@ -1100,12 +867,8 @@
                         Hoạt động
                     </option>
 
-                    <option value="@AccountStatusCodes.Suspended">
-                        Tạm khóa
-                    </option>
-
-                    <option value="@AccountStatusCodes.Inactive">
-                        Ngừng hoạt động
+                    <option value="@AccountStatusCodes.Locked">
+                        Bị khóa
                     </option>
 
                 </select>
@@ -1118,7 +881,7 @@
                 <i class="fa-solid fa-circle-info"></i>
 
                 <span>
-                    Tạm khóa chỉ ngăn tài khoản đăng nhập.
+                    Bị khóa chỉ ngăn tài khoản đăng nhập.
                     Trạng thái làm việc của nhân viên không bị thay đổi.
                 </span>
 
@@ -1347,6 +1110,7 @@
                     }
 
 
+                    alert(result.message ?? "Đã tạo tài khoản nội bộ thành công.");
                     window.location.reload();
 
                 }
@@ -1678,109 +1442,34 @@
             }
         );
 
-                // =====================================================
-        // DROPDOWN TRẠNG THÁI NHÂN VIÊN
-        // =====================================================
-
-        const employeeStatusSelects =
-            document.querySelectorAll(".employee-status-select");
-
-
-        employeeStatusSelects.forEach(function (select) {
-
+        document.querySelectorAll(".inline-status-select").forEach(function (select) {
             select.addEventListener("change", async function () {
-
-                const userId = select.dataset.userId;
-
-                const oldValue =
-                    select.dataset.oldValue;
-
-                const newValue =
-                    select.value;
-
-
-                if (oldValue === newValue) {
-                    return;
-                }
-
-
-                const formData =
-                    new FormData();
-
-                formData.append(
-                    "status",
-                    newValue
-                );
-
-
-                // Lấy AntiForgeryToken đã có sẵn trên trang
-                const token =
-                    document.querySelector(
-                        'input[name="__RequestVerificationToken"]'
-                    );
-
-                if (token) {
-                    formData.append(
-                        "__RequestVerificationToken",
-                        token.value
-                    );
-                }
-
+                const previousStatus = select.dataset.previousStatus;
+                const formData = new FormData();
+                formData.append("status", select.value);
+                const antiForgeryToken = document.querySelector('input[name="__RequestVerificationToken"]');
+                if (antiForgeryToken) formData.append("__RequestVerificationToken", antiForgeryToken.value);
 
                 select.disabled = true;
-
-
                 try {
-
-                    const response =
-                        await fetch(
-                            `/admin/quan-ly-tai-khoan/trang-thai-nhan-vien/${userId}`,
-                            {
-                                method: "POST",
-                                body: formData
-                            }
-                        );
-
-
-                    const result =
-                        await response.json();
-
-
+                    const response = await fetch(`/admin/quan-ly-tai-khoan/trang-thai/${select.dataset.userId}`, {
+                        method: "POST",
+                        body: formData
+                    });
+                    const result = await response.json();
                     if (!result.success) {
-
-                        alert(
-                            result.message
-                            ?? "Không thể cập nhật trạng thái nhân viên."
-                        );
-
-                        select.value = oldValue;
-
+                        alert(result.message ?? "Không thể cập nhật trạng thái.");
+                        select.value = previousStatus;
                         return;
                     }
-
-
-                    // Cập nhật giá trị cũ để lần sau so sánh
-                    select.dataset.oldValue =
-                        newValue;
-
-                }
-                catch (error) {
-
-                    alert(
-                        "Không thể kết nối đến hệ thống."
-                    );
-
-                    select.value =
-                        oldValue;
-
-                }
-                finally {
-
+                    window.location.reload();
+                } catch (error) {
+                    alert("Không thể kết nối đến hệ thống.");
+                    select.value = previousStatus;
+                } finally {
                     select.disabled = false;
                 }
-
             });
-
         });
 
                 // =====================================================

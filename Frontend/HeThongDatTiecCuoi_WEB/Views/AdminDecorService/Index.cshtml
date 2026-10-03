@@ -3,10 +3,7 @@
     Layout = "_AdminLayout";
 }
 
-<!-- Nhúng Fonts & Icons chuẩn theo hệ thống thiết kế Opulent Serenade (DESIGN.md) -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<!-- Font dùng chung được nạp bởi _AdminLayout. -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://cdn.tailwindcss.com"></script>
 <!-- Thêm thư viện SheetJS để xuất Excel thực tế -->
@@ -749,7 +746,55 @@
             }
         ];
 
-        document.addEventListener('DOMContentLoaded', () => {
+        async function loadCatalogData() {
+            decorData = [];
+            serviceData = [];
+
+            try {
+                const [decorResponse, serviceResponse] = await Promise.all([
+                    fetch('/AdminDecorService/data/decor'),
+                    fetch('/AdminDecorService/data/service')
+                ]);
+                const [decorPayload, servicePayload] = await Promise.all([
+                    decorResponse.json(),
+                    serviceResponse.json()
+                ]);
+
+                if (!decorResponse.ok || !decorPayload.success || !serviceResponse.ok || !servicePayload.success) {
+                    throw new Error(decorPayload.message || servicePayload.message || 'Không thể tải danh mục.');
+                }
+
+                decorData = (decorPayload.data || []).map(item => ({
+                    id: item.decorationPackageId,
+                    ma: item.packageCode,
+                    ten: item.packageName,
+                    phanLoai: item.style,
+                    gia: item.price,
+                    moTa: item.description || '',
+                    spec1: 'Theo cấu hình gói',
+                    spec2: 'Theo kế hoạch vận hành',
+                    hinhAnh: item.imageUrl || '',
+                    trangThai: item.statusCode === 'ACTIVE' ? 'Áp dụng' : 'Ngừng áp dụng'
+                }));
+                serviceData = (servicePayload.data || []).map(item => ({
+                    id: item.serviceId,
+                    ma: item.serviceCode,
+                    ten: item.serviceName,
+                    phanLoai: item.serviceType || 'Khác',
+                    gia: item.price,
+                    moTa: item.description || '',
+                    spec1: 'Theo cấu hình dịch vụ',
+                    spec2: 'Theo kế hoạch vận hành',
+                    hinhAnh: '',
+                    trangThai: item.statusCode === 'ACTIVE' ? 'Áp dụng' : 'Ngừng áp dụng'
+                }));
+            } catch (error) {
+                alert(error.message || 'Không thể tải danh mục từ hệ thống.');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadCatalogData();
             switchMainTab('decor');
 
             document.addEventListener('click', function(event) {
@@ -1137,16 +1182,16 @@
             document.getElementById('decor-modal-title').innerText = currentTab === 'decor' ? 'Thêm gói Decor mới' : 'Thêm Dịch Vụ Mới';
 
             if (currentTab === 'decor') {
-                document.getElementById('decor-code').value = 'DC-ROY-0' + (decorData.length + 1);
-                document.getElementById('decor-name').value = 'Hoàng Kim Dạ Yến';
-                document.getElementById('decor-price').value = '72000000';
-                document.getElementById('decor-setup-time').value = '4.0 giờ trước ca tiệc';
-                document.getElementById('decor-desc').value = 'Gói trang trí Hoàng Kim Dạ Yến sử dụng gam màu vàng Champagne kết hợp trắng ngà thanh thoát, hoa lan hồ điệp tươi kết hợp hoa hồng nhập khẩu. Điểm nhấn là vòm cổng pha lê cao cấp và hệ đèn chandelier lộng lẫy kiến tạo không gian đại sảnh đẳng cấp quý tộc.';
-            } else {
-                document.getElementById('decor-code').value = 'DV-SND-0' + (serviceData.length + 1);
+                document.getElementById('decor-code').value = 'DC-' + Date.now();
                 document.getElementById('decor-name').value = '';
-                document.getElementById('decor-price').value = '10000000';
-                document.getElementById('decor-setup-time').value = '2.0 giờ trước ca tiệc';
+                document.getElementById('decor-price').value = '';
+                document.getElementById('decor-setup-time').value = '';
+                document.getElementById('decor-desc').value = '';
+            } else {
+                document.getElementById('decor-code').value = 'DV-' + Date.now();
+                document.getElementById('decor-name').value = '';
+                document.getElementById('decor-price').value = '';
+                document.getElementById('decor-setup-time').value = '';
                 document.getElementById('decor-desc').value = '';
             }
 
@@ -1212,38 +1257,44 @@
         }
 
         // 13. SUBMIT FORM
-        function handleDecorFormSubmit(e) {
+        async function handleDecorFormSubmit(e) {
             e.preventDefault();
             const id = parseInt(document.getElementById('decor-form-id').value);
-            const list = currentTab === 'decor' ? decorData : serviceData;
-
             const isCheckedActive = document.getElementById('radio-decor-active').checked;
-            const previewImgSrc = document.getElementById('decor-preview-img').src;
-            const isCardHidden = document.getElementById('decor-image-preview-card').classList.contains('hidden');
+            const isDecor = currentTab === 'decor';
+            const payload = isDecor
+                ? {
+                    packageCode: document.getElementById('decor-code').value.trim(),
+                    packageName: document.getElementById('decor-name').value.trim(),
+                    style: document.getElementById('decor-style').value.trim(),
+                    description: document.getElementById('decor-desc').value.trim(),
+                    price: parseFloat(document.getElementById('decor-price').value),
+                    statusCode: isCheckedActive ? 'ACTIVE' : 'INACTIVE'
+                }
+                : {
+                    serviceCode: document.getElementById('decor-code').value.trim(),
+                    serviceName: document.getElementById('decor-name').value.trim(),
+                    serviceType: document.getElementById('decor-style').value.trim(),
+                    description: document.getElementById('decor-desc').value.trim(),
+                    price: parseFloat(document.getElementById('decor-price').value),
+                    statusCode: isCheckedActive ? 'ACTIVE' : 'INACTIVE'
+                };
 
-            const record = {
-                id: id === 0 ? Date.now() : id,
-                ma: document.getElementById('decor-code').value.trim(),
-                ten: document.getElementById('decor-name').value.trim(),
-                phanLoai: document.getElementById('decor-style').value.trim(),
-                gia: parseFloat(document.getElementById('decor-price').value),
-                spec1: 'Backdrop • Lối đi • Bàn VIP',
-                spec2: document.getElementById('decor-setup-time').value.trim(),
-                moTa: document.getElementById('decor-desc').value.trim(),
-                hinhAnh: isCardHidden ? '' : previewImgSrc,
-                trangThai: isCheckedActive ? 'Áp dụng' : 'Ngừng áp dụng'
-            };
-
-            if (id === 0) {
-                list.unshift(record);
-            } else {
-                const index = list.findIndex(x => x.id === id);
-                if (index !== -1) list[index] = record;
+            const endpoint = isDecor ? '/AdminDecorService/data/decor' : '/AdminDecorService/data/service';
+            const response = await fetch(id === 0 ? endpoint : `${endpoint}/${id}`, {
+                method: id === 0 ? 'POST' : 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const result = await response.json();
+            if (!response.ok || !result.success) {
+                alert(result.message || 'Không thể lưu danh mục.');
+                return;
             }
 
             closeDecorModal();
-            populateCategoryFilter();
-            applyFilters();
+            await loadCatalogData();
+            switchMainTab(currentTab);
         }
 
         // 14. XUẤT EXCEL

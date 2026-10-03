@@ -7,8 +7,7 @@ public static class StatusDisplayNames
     public static string GetAccountStatusName(string? status) => status switch
     {
         AccountStatusCodes.Active => "Hoạt động",
-        AccountStatusCodes.Suspended => "Tạm khóa",
-        AccountStatusCodes.Inactive => "Ngừng hoạt động",
+        AccountStatusCodes.Locked => "Bị khóa",
         _ => status ?? string.Empty
     };
 

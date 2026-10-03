@@ -12,7 +12,7 @@ namespace HeThongDatTiecCuoi_API.Controllers;
 
 [ApiController]
 [Route("api/hall-schedules")]
-[Authorize(Roles = RoleNames.Admin)]
+[Authorize(Roles = RoleNames.Admin + "," + RoleNames.Manager)]
 public sealed class HallScheduleController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
@@ -173,11 +173,11 @@ public sealed class HallScheduleController : ControllerBase
         }
 
         if (statusCode != HallScheduleStatusCodes.Available &&
-            statusCode != HallScheduleStatusCodes.Booked)
+            statusCode != HallScheduleStatusCodes.Locked)
         {
             return BadRequest(new
             {
-                message = "Trạng thái lịch sảnh chỉ có thể là AVAILABLE hoặc BOOKED."
+                message = "Trạng thái lịch sảnh chỉ có thể là AVAILABLE hoặc LOCKED."
             });
         }
 

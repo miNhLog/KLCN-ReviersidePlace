@@ -72,6 +72,29 @@ public sealed class AdminAccountController : Controller
         return View(model);
     }
 
+    [HttpGet("tong-quan")]
+    public async Task<IActionResult> Dashboard(CancellationToken cancellationToken)
+    {
+        var accessToken = Request.Cookies[ApiTokenCookie];
+        if (string.IsNullOrWhiteSpace(accessToken))
+        {
+            return RedirectToAction("Login", "Auth");
+        }
+
+        var accountsResult = await _apiClient.GetAccountsAsync(
+            accessToken, null, null, null, cancellationToken);
+
+        return View(new AccountManagementViewModel
+        {
+            Accounts = accountsResult.Succeeded && accountsResult.Value is not null
+                ? accountsResult.Value
+                : [],
+            ErrorMessage = accountsResult.Succeeded
+                ? null
+                : accountsResult.Error ?? "Không thể tải dữ liệu tổng quan hệ thống."
+        });
+    }
+
     [HttpPost("them-nhan-vien")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> CreateEmployee(
@@ -193,8 +216,7 @@ public sealed class AdminAccountController : Controller
         var validStatuses = new[]
         {
             AccountStatusCodes.Active,
-            AccountStatusCodes.Suspended,
-            AccountStatusCodes.Inactive
+            AccountStatusCodes.Locked
         };
 
         if (!validStatuses.Contains(status))

@@ -12,11 +12,14 @@ namespace HeThongDatTiecCuoi_WEB.Controllers;
 public sealed class AuthController : Controller
 {
     private const string ApiTokenCookie = "rp_api_token";
+    private const string ExternalCookieScheme = "External";
     private readonly IRiversideApiClient _apiClient;
+    private readonly IConfiguration _configuration;
 
-    public AuthController(IRiversideApiClient apiClient)
+    public AuthController(IRiversideApiClient apiClient, IConfiguration configuration)
     {
         _apiClient = apiClient;
+        _configuration = configuration;
     }
 
     [HttpGet("dang-nhap")]
@@ -74,6 +77,7 @@ public sealed class AuthController : Controller
         }
 
         await SignInAsync(result.Value, model.RememberMe);
+        if (result.Value.User.MustChangePassword) return RedirectToAction(nameof(ChangePassword));
         if (!string.IsNullOrWhiteSpace(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl))
         {
             return LocalRedirect(model.ReturnUrl);
@@ -82,38 +86,65 @@ public sealed class AuthController : Controller
         return RedirectForRole(result.Value.User.RoleName);
     }
 
-    [HttpGet("dang-ky")]
-    [AllowAnonymous]
-    public IActionResult Register()
-    {
-        if (User.Identity?.IsAuthenticated == true)
-        {
-            return RedirectForRole(User.FindFirstValue(ClaimTypes.Role));
-        }
+    [HttpGet("doi-mat-khau")]
+    [Authorize]
+    public IActionResult ChangePassword() => View(new ChangePasswordViewModel());
 
-        return View(new RegisterViewModel());
+    [HttpPost("doi-mat-khau")]
+    [Authorize]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ChangePassword(ChangePasswordViewModel model, CancellationToken cancellationToken)
+    {
+        var token = Request.Cookies[ApiTokenCookie];
+        if (string.IsNullOrWhiteSpace(token)) return RedirectToAction(nameof(Login));
+        var result = await _apiClient.ChangePasswordAsync(model, token, cancellationToken);
+        if (!result.Succeeded) { ModelState.AddModelError(string.Empty, result.Error ?? "Không thể đổi mật khẩu."); return View(model); }
+        return RedirectForRole(User.FindFirstValue(ClaimTypes.Role));
     }
 
-    [HttpPost("dang-ky")]
+    [HttpGet("auth/google")]
     [AllowAnonymous]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Register(RegisterViewModel model, CancellationToken cancellationToken)
+    public IActionResult GoogleLogin(string? returnUrl = null, bool rememberMe = false)
     {
-        if (!ModelState.IsValid)
+        if (string.IsNullOrWhiteSpace(_configuration["Google:ClientId"]) ||
+            string.IsNullOrWhiteSpace(_configuration["Google:ClientSecret"]))
         {
-            return View(model);
+            TempData["Error"] = "Đăng nhập Google chưa được cấu hình.";
+            return RedirectToAction(nameof(Login), new { returnUrl });
         }
 
-        var result = await _apiClient.RegisterAsync(model, cancellationToken);
+        var redirectUrl = Url.Action(nameof(GoogleCallback), new { returnUrl, rememberMe });
+        return Challenge(new AuthenticationProperties { RedirectUri = redirectUrl }, "Google");
+    }
+
+    [HttpGet("auth/google-callback")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GoogleCallback(
+        string? returnUrl,
+        bool rememberMe,
+        CancellationToken cancellationToken)
+    {
+        var external = await HttpContext.AuthenticateAsync(ExternalCookieScheme);
+        var accessToken = external.Properties?.GetTokenValue("access_token");
+        await HttpContext.SignOutAsync(ExternalCookieScheme);
+
+        if (!external.Succeeded || string.IsNullOrWhiteSpace(accessToken))
+        {
+            TempData["Error"] = "Google không trả về thông tin đăng nhập hợp lệ.";
+            return RedirectToAction(nameof(Login), new { returnUrl });
+        }
+
+        var result = await _apiClient.LoginWithGoogleAsync(accessToken, rememberMe, cancellationToken);
         if (!result.Succeeded || result.Value is null)
         {
-            ModelState.AddModelError(string.Empty, result.Error ?? "Đăng ký không thành công.");
-            return View(model);
+            TempData["Error"] = result.Error ?? "Đăng nhập Google không thành công.";
+            return RedirectToAction(nameof(Login), new { returnUrl });
         }
 
-        await SignInAsync(result.Value, isPersistent: false);
-        TempData["Success"] = "Tạo tài khoản thành công. Chào mừng anh/chị đến Riverside Palace!";
-        return RedirectToAction("Index", "Home");
+        await SignInAsync(result.Value, rememberMe);
+        return !string.IsNullOrWhiteSpace(returnUrl) && Url.IsLocalUrl(returnUrl)
+            ? LocalRedirect(returnUrl)
+            : RedirectForRole(result.Value.User.RoleName);
     }
 
     [HttpGet("auth/forgot-password")]
@@ -186,7 +217,7 @@ public sealed class AuthController : Controller
             return RedirectToAction("Index", "AdminHall");
         }
 
-        if (roleName is RoleNames.Consultant or RoleNames.Coordinator)
+        if (roleName is RoleNames.Manager or RoleNames.HallManager or RoleNames.Coordinator)
         {
             return RedirectToAction("Dashboard", "Home");
         }

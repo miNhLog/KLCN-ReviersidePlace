@@ -38,7 +38,6 @@ public sealed class DevelopmentAuthSeeder
         var roles = await EnsureRolesAsync(cancellationToken);
         await UpsertAccountAsync(_options.AdminEmail, _options.AdminPassword, roles[RoleNames.Admin], cancellationToken);
         await UpsertAccountAsync(_options.StaffEmail, _options.StaffPassword, roles[RoleNames.Coordinator], cancellationToken);
-        await UpsertAccountAsync(_options.CustomerEmail, _options.CustomerPassword, roles[RoleNames.Customer], cancellationToken);
         await _db.SaveChangesAsync(cancellationToken);
     }
 
@@ -117,25 +116,12 @@ public sealed class DevelopmentAuthSeeder
             user.Employee = new Employee
             {
                 User = user,
-                EmployeeCode = "NV001",
+                EmployeeCode = "DP001",
                 FullName = "Nhân viên điều phối",
                 PhoneNumber = "0912345678",
                 DataStatusId = existingDataStatus.DataStatusId
             };
         }
 
-        if (role.RoleName == RoleNames.Customer && user.Customer is null)
-        {
-            user.Customer = new Customer
-            {
-                User = user,
-                CustomerCode = "KH000001",
-                FullName = "Khách hàng mẫu",
-                PhoneNumber = "0901234567",
-                Email = normalizedEmail,
-                CreatedAt = DateTime.Now,
-                DataStatusId = existingDataStatus.DataStatusId
-            };
-        }
     }
 }

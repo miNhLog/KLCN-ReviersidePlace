@@ -221,7 +221,7 @@
         vertical-align: middle;
     }
 
-    .account-table tbody tr:hover {
+.account-table tbody tr:hover {
         background: #fffdf7;
     }
 
@@ -233,6 +233,24 @@
     align-items: center;
     gap: 10px;
     min-width: 220px;
+}
+
+.account-table tbody tr.account-role-divider:hover {
+    background: #fbf8f1;
+}
+
+.account-role-divider td {
+    padding: 12px 16px;
+    background: #fbf8f1;
+    color: #8d6b2f;
+    font-weight: 800;
+    letter-spacing: .02em;
+    border-top: 1px solid #eadfc9;
+    border-bottom: 1px solid #eadfc9;
+}
+
+.account-role-divider i {
+    margin-right: 8px;
 }
 
 .account-avatar {
@@ -313,6 +331,34 @@
     color: #991b1b;
 }
 
+/* Trang tài khoản theo phong cách dashboard Riverside Palace. */
+.account-content { padding: 18px 24px 42px; background: linear-gradient(135deg, #faf9f6, #f3f1eb); min-height: 100vh; }
+.account-content, .top-header, .account-content button, .account-content input, .account-content select { font-family: "Segoe UI", Arial, sans-serif; }
+.top-header { padding: 22px 24px 12px; background: linear-gradient(100deg, #fff, #fbfaf6); border-bottom: 1px solid #ebe5d8; }
+.top-header h2 { margin: 0; color: #18222f; font-family: inherit; font-size: 28px; font-weight: 700; }
+.account-page-subtitle { margin: 4px 0 0; color: #7c8490; font-size: 13px; }
+.top-header .breadcrumb { margin: 0 0 7px; color: #637c9c; font-family: inherit; font-size: 14px; }
+.top-header .breadcrumb strong { color: #b58a3b; font-weight: 650; }
+.top-header .breadcrumb span { color: #8c9aac; padding: 0 8px; }
+.account-summary { grid-template-columns: repeat(4, 1fr); }
+.summary-card { border-color: #eee8dc; border-radius: 11px; padding: 14px 18px; box-shadow: 0 5px 18px rgba(60,47,25,.045); }
+.account-panel { border-color: #eadfca; border-radius: 10px; }
+.account-panel-header { padding: 13px 18px; border-bottom-color: #efe6d8; background: linear-gradient(90deg, #fffdf9, #f8f4ec); }
+.account-panel-header h3 { color: #79511f; font-family: inherit; font-size: 16px; }
+.account-section-title h3, .summary-card strong, .admin-account-info strong { font-family: inherit; }
+.account-panel-header > span { background: #fbefd5; border-radius: 20px; color: #936b2b; padding: 5px 10px; }
+.account-role-panel { margin-top: 16px; box-shadow: 0 4px 16px rgba(83,59,24,.035); }
+.account-role-panel .account-panel-header h3 { font-size: 15px; }
+.compact-empty { min-height: 82px; align-items: flex-start; justify-content: center; padding: 18px; }
+.contact-phone { display: block; color: #7b8491; font-size: 11px; margin-top: 4px; }
+.contact-phone i { color: #b58a3b; margin-right: 4px; }
+.account-table th { background: #f2f2f2; padding: 9px 13px; }
+.account-table td { padding: 10px 13px; }
+.account-table tbody tr:hover { background: #fffaf0; }
+.account-status-locked { background: #fff0d8; color: #a35a03; }
+
+@media (max-width: 900px) { .account-summary { grid-template-columns: 1fr; } }
+
 
 /* ACTION */
 
@@ -391,6 +437,86 @@
     .account-search {
         width: 100%;
     }
+}
+
+/* Khung quản trị viên là một panel riêng, dùng màu navy/gold để phân biệt. */
+.account-section-title h3 {
+    font-family: "Segoe UI", Arial, sans-serif;
+    letter-spacing: 0;
+    word-spacing: normal;
+}
+
+.admin-role-panel {
+    background: linear-gradient(135deg, #182433, #202f40);
+    border-color: #496176;
+    box-shadow: 0 8px 22px rgba(20, 33, 47, .14);
+}
+
+.admin-role-panel .account-section-title {
+    margin: 0;
+    padding: 16px 20px 12px;
+    align-items: center;
+    border-bottom: 1px solid rgba(224, 189, 79, .25);
+}
+
+.admin-role-panel .account-section-title h3 { color: #f7ead4; }
+.admin-role-panel .account-section-title p { color: #c4cfdb; }
+.admin-role-panel .account-section-title > span { color: #f0cf83; }
+.admin-role-panel .admin-account-grid { padding: 14px; }
+.admin-role-panel .admin-account-card {
+    background: rgba(10, 20, 31, .32);
+    border-color: rgba(224, 189, 79, .32);
+    box-shadow: none;
+}
+
+/* Khung chưa có dữ liệu chỉ cao bằng một thông báo. */
+.account-empty.compact-empty {
+    min-height: 0;
+    height: auto;
+    padding: 20px 18px;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Đồng bộ font với trang Quản lý Sảnh & Lịch; giữ nguyên bảng màu hiện có. */
+.account-content,
+.account-content h1, .account-content h2, .account-content h3,
+.account-content h4, .account-content strong,
+.account-content button, .account-content input, .account-content select,
+.top-header, .top-header h2, .top-header .breadcrumb {
+    font-family: "Segoe UI", Arial, sans-serif;
+}
+
+.inline-status-select {
+    appearance: auto;
+    border: 0;
+    cursor: pointer;
+    outline: 0;
+    padding: 5px 22px 5px 9px;
+    font-family: inherit;
+}
+
+.inline-status-select:disabled { cursor: wait; opacity: .7; }
+
+.role-distribution {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+    padding: 18px;
+}
+
+.role-distribution > div {
+    border: 1px solid #e2e5e9;
+    border-radius: 12px;
+    padding: 16px;
+    background: #fff;
+}
+
+.role-distribution span { display: block; color: #64748b; font-size: 12px; }
+.role-distribution strong { display: block; margin-top: 5px; color: #1e242b; font-size: 24px; }
+
+@media (max-width: 700px) {
+    .role-distribution { grid-template-columns: 1fr; }
 }
 /* =========================
    ACCOUNT MODAL

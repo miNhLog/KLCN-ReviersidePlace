@@ -12,9 +12,5 @@ public sealed class LoginRequest
     [StringLength(100)]
     public string Password { get; init; } = string.Empty;
 
-    [Required]
-    [RegularExpression("^(Customer|Staff)$", ErrorMessage = "Loại tài khoản không hợp lệ.")]
-    public string AccountType { get; init; } = "Customer";
-
     public bool RememberMe { get; init; }
 }

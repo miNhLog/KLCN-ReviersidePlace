@@ -1,5 +1,11 @@
+@using HeThongDatTiecCuoi_WEB.Constants
 @{
     var activePage = ViewData["PublicActivePage"] as string ?? string.Empty;
+    var isInternalUser = User.IsInRole(RoleNames.Admin)
+        || User.IsInRole(RoleNames.Manager)
+        || User.IsInRole(RoleNames.HallManager)
+        || User.IsInRole(RoleNames.Coordinator);
+    var dashboardController = User.IsInRole(RoleNames.Admin) ? "AdminAccount" : "Home";
 }
 <header class="home-header">
     <div class="home-container header-inner">
@@ -21,6 +27,15 @@
         <div class="header-actions">
             @if (User.Identity?.IsAuthenticated == true)
             {
+                @if (isInternalUser)
+                {
+                    <a asp-controller="@dashboardController"
+                       asp-action="Dashboard"
+                       class="backoffice-link">
+                        <span class="material-symbols-outlined" aria-hidden="true">dashboard</span>
+                        <span>Về trang quản trị</span>
+                    </a>
+                }
                 <details class="account-menu">
                     <summary>
                         <span class="material-symbols-outlined" aria-hidden="true">person</span>
@@ -28,6 +43,10 @@
                         <span class="material-symbols-outlined account-chevron" aria-hidden="true">expand_more</span>
                     </summary>
                     <div class="account-dropdown">
+                        @if (isInternalUser)
+                        {
+                            <a asp-controller="@dashboardController" asp-action="Dashboard">Về trang quản trị</a>
+                        }
                         <a asp-controller="MyBookings" asp-action="Index" class="nav-link @(ViewData["PublicActivePage"]?.ToString() == "my-bookings" ? "active" : "")">
                             Tiệc của tôi
                         </a>
@@ -39,7 +58,6 @@
             }
             else
             {
-                <a class="login-link" asp-controller="Auth" asp-action="Login">Đăng nhập / Đăng ký</a>
                 <span class="header-avatar material-symbols-outlined" aria-hidden="true">person</span>
             }
             <button class="mobile-menu-toggle" type="button" aria-label="Mở menu" aria-controls="mobileNavigation" aria-expanded="false">
