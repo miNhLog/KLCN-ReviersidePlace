@@ -76,6 +76,17 @@ public sealed partial class AuthService : IAuthService
                 StatusCodes.Status500InternalServerError);
         }
 
+        var existingDataStatus = await _db.DataStatuses.SingleOrDefaultAsync(
+            x => x.DataStatusCode == DataStatusCodes.Existing,
+            cancellationToken);
+
+        if (existingDataStatus is null)
+        {
+            return ServiceResult<AuthResponse>.Failure(
+                "Hệ thống chưa có trạng thái dữ liệu EXISTING. Vui lòng chạy script khởi tạo dữ liệu.",
+                StatusCodes.Status500InternalServerError);
+        }
+
         await using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
 
         try
@@ -91,15 +102,20 @@ public sealed partial class AuthService : IAuthService
                 Role = customerRole,
                 Email = email,
                 StatusId = accountStatusId,
-                CreatedAt = DateTime.Now
+                CreatedAt = DateTime.Now,
+                DataStatusId = existingDataStatus.DataStatusId
             };
             user.PasswordHash = _passwordHasher.HashPassword(user, request.Password);
 
             var customer = new Customer
             {
                 User = user,
+                CustomerCode = CreateCustomerCode(),
                 FullName = request.FullName.Trim(),
-                PhoneNumber = phone
+                PhoneNumber = phone,
+                Email = email,
+                CreatedAt = DateTime.Now,
+                DataStatusId = existingDataStatus.DataStatusId
             };
 
             _db.Users.Add(user);
@@ -145,9 +161,10 @@ public sealed partial class AuthService : IAuthService
         IQueryable<User> query = _db.Users
             .Include(x => x.Role)
             .Include(x => x.Status)
+            .Include(x => x.DataStatus)
             .Include(x => x.Customer)
             .Include(x => x.Employee)
-                .ThenInclude(x => x!.Status);
+                .ThenInclude(x => x!.DataStatus);
 
         User? user;
         if (identifier.Contains('@'))
@@ -175,12 +192,14 @@ public sealed partial class AuthService : IAuthService
                 StatusCodes.Status403Forbidden);
         }
 
-        if (isStaffLogin &&
-            user.Employee is not null &&
-            user.Employee.Status.StatusCode != EmployeeStatusCodes.Active)
+        if (user.DataStatus.DataStatusCode != DataStatusCodes.Existing ||
+            (user.Employee is not null &&
+             user.Employee.DataStatus.DataStatusCode != DataStatusCodes.Existing) ||
+            (user.Customer is not null &&
+             user.Customer.DataStatusId != user.DataStatusId))
         {
             return ServiceResult<AuthResponse>.Failure(
-                "Tài khoản nhân viên hiện không được phép đăng nhập.",
+                "Tài khoản hoặc hồ sơ hiện không được phép đăng nhập.",
                 StatusCodes.Status403Forbidden);
         }
 
@@ -218,9 +237,10 @@ public sealed partial class AuthService : IAuthService
             .AsNoTracking()
             .Include(x => x.Role)
             .Include(x => x.Status)
+            .Include(x => x.DataStatus)
             .Include(x => x.Customer)
             .Include(x => x.Employee)
-                .ThenInclude(x => x!.Status)
+                .ThenInclude(x => x!.DataStatus)
             .SingleOrDefaultAsync(x => x.UserId == userId, cancellationToken);
 
         return user is null
@@ -234,7 +254,8 @@ public sealed partial class AuthService : IAuthService
     isStaffLogin
         ? user.Role.RoleName is
             RoleNames.Admin or
-            RoleNames.Consultant or
+            RoleNames.Manager or
+            RoleNames.HallManager or
             RoleNames.Coordinator
         : user.Role.RoleName == RoleNames.Customer;
 
@@ -250,6 +271,9 @@ public sealed partial class AuthService : IAuthService
         ServiceResult<AuthResponse>.Failure(
             "Thông tin đăng nhập không chính xác.",
             StatusCodes.Status401Unauthorized);
+
+    private static string CreateCustomerCode() =>
+        $"KH{Guid.NewGuid():N}"[..20].ToUpperInvariant();
 
     [GeneratedRegex(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,100}$")]
     private static partial Regex StrongPasswordRegex();

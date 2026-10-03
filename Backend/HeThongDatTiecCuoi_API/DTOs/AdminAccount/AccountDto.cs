@@ -4,7 +4,7 @@ public sealed class AccountDto
 {
     public int UserId { get; set; }
     public string Email { get; set; } = string.Empty;
-    public int RoleId { get; set; }
+    public byte RoleId { get; set; }
     public string RoleName { get; set; } = string.Empty;
     public string? FullName { get; set; }
     public string? EmployeeCode { get; set; }
@@ -12,6 +12,8 @@ public sealed class AccountDto
     public string Status { get; set; } = string.Empty;
     public string StatusName { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
-    public string? EmployeeStatus { get; set; }
-    public string? EmployeeStatusName { get; set; }
+    public string DataStatus { get; set; } = string.Empty;
+    public string DataStatusName { get; set; } = string.Empty;
+    public string? EmployeeDataStatus { get; set; }
+    public string? EmployeeDataStatusName { get; set; }
 }

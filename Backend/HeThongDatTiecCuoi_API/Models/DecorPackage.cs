@@ -1,21 +1,16 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+namespace HeThongDatTiecCuoi_API.Models;
 
-namespace HeThongDatTiecCuoi_API.Models
+public sealed class DecorPackage
 {
-    [Table("GoiTrangTri")]
-    public class DecorPackage
-    {
-        [Key]
-        public int GoiTrangTriID { get; set; }
-        [Required]
-        public string MaGoi { get; set; } = string.Empty;
-        [Required]
-        public string TenGoi { get; set; } = string.Empty;
-        public string? PhongCach { get; set; }
-        public string? MoTa { get; set; }
-        public decimal Gia { get; set; }
-        public string? HinhAnh { get; set; }
-        public string TrangThai { get; set; } = "Áp dụng";
-    }
+    public int GoiTrangTriID { get; set; }
+    public string MaGoi { get; set; } = string.Empty;
+    public string TenGoi { get; set; } = string.Empty;
+    public string PhongCach { get; set; } = string.Empty;
+    public string? MoTa { get; set; }
+    public decimal Gia { get; set; }
+    public int StatusId { get; set; }
+    public byte DataStatusId { get; set; }
+    public Status Status { get; set; } = null!;
+    public DataStatus DataStatus { get; set; } = null!;
+    public ICollection<ImageAsset> Images { get; set; } = [];
 }

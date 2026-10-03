@@ -10,7 +10,11 @@ public sealed class MenuDish
 
     public int SortOrder { get; set; }
 
+    public byte DataStatusId { get; set; }
+
     public Menu Menu { get; set; } = null!;
 
     public Dish Dish { get; set; } = null!;
+
+    public DataStatus DataStatus { get; set; } = null!;
 }

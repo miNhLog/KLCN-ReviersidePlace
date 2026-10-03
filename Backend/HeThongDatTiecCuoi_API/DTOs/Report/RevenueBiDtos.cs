@@ -87,7 +87,7 @@ public class HallMatrixSlotDto
 {
     public DateTime Date { get; set; }
     public string Shift { get; set; } = string.Empty; // "Ca trưa" hoặc "Ca tối"
-    public int StatusId { get; set; } // 401: Trống, 402: Đã đặt, 403: Tạm khóa
+    public int StatusId { get; set; }
     public string StatusText { get; set; } = "Trống";
     public string? BookingCode { get; set; }
     public string? CustomerName { get; set; }

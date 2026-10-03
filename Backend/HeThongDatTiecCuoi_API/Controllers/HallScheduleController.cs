@@ -33,7 +33,10 @@ public sealed class HallScheduleController : ControllerBase
         var weekStartDate = startDate.Date;
         var weekEndDate = weekStartDate.AddDays(6);
 
-        var hallsQuery = _context.Halls.Include(hall => hall.Status).AsQueryable();
+        var hallsQuery = _context.Halls
+            .Include(hall => hall.Status)
+            .Where(hall => hall.DataStatus.DataStatusCode == DataStatusCodes.Existing)
+            .AsQueryable();
 
         if (hallId.HasValue)
         {
@@ -61,6 +64,8 @@ public sealed class HallScheduleController : ControllerBase
             .Where(schedule =>
                 schedule.Date >= weekStartDate &&
                 schedule.Date <= weekEndDate &&
+                schedule.DataStatus.DataStatusCode == DataStatusCodes.Existing &&
+                schedule.Hall.DataStatus.DataStatusCode == DataStatusCodes.Existing &&
                 (!hallId.HasValue || schedule.HallId == hallId.Value))
             .OrderBy(schedule => schedule.HallId)
             .ThenBy(schedule => schedule.Date)
@@ -72,12 +77,13 @@ public sealed class HallScheduleController : ControllerBase
             HallScheduleStatusCodes.Booked,
             cancellationToken) ?? throw new InvalidOperationException("Thiếu trạng thái lịch sảnh BOOKED.");
 
+        var scheduleIds = hallSchedules.Select(schedule => schedule.HallScheduleId).ToList();
         var bookings = await _context.WeddingBookings
             .Include(booking => booking.Customer)
+            .Include(booking => booking.Status)
             .Where(booking =>
-                booking.HallSchedule.Date >= weekStartDate &&
-                booking.HallSchedule.Date <= weekEndDate &&
-                booking.Status != "Đã hủy")
+                scheduleIds.Contains(booking.HallScheduleId) &&
+                BookingStatusCodes.OccupyingSchedule.Contains(booking.Status.StatusCode))
             .ToListAsync(cancellationToken);
 
         var scheduleGroups = halls.Select(hall => new
@@ -106,7 +112,6 @@ public sealed class HallScheduleController : ControllerBase
                         statusName = booking is not null
                             ? bookedStatus.StatusName
                             : item.Status.StatusName,
-                        notes = item.Notes,
                         booking = booking is null
                             ? null
                             : new
@@ -114,9 +119,9 @@ public sealed class HallScheduleController : ControllerBase
                                 bookingId = booking.BookingId,
                                 bookingCode = booking.BookingCode,
                                 customerName = booking.Customer.FullName,
-                                tableCount = booking.TableCount,
                                 guestCount = booking.GuestCount,
-                                bookingStatus = booking.Status
+                                bookingStatusCode = booking.Status.StatusCode,
+                                bookingStatusName = booking.Status.StatusName
                             }
                     };
                 })
@@ -139,7 +144,11 @@ public sealed class HallScheduleController : ControllerBase
     {
         var statusCode = request.Status?.Trim().ToUpperInvariant();
 
-        var hallSchedule = await _context.HallSchedules.FindAsync([hallScheduleId], cancellationToken);
+        var hallSchedule = await _context.HallSchedules.SingleOrDefaultAsync(
+            schedule => schedule.HallScheduleId == hallScheduleId &&
+                schedule.DataStatus.DataStatusCode == DataStatusCodes.Existing &&
+                schedule.Hall.DataStatus.DataStatusCode == DataStatusCodes.Existing,
+            cancellationToken);
 
         if (hallSchedule is null)
         {
@@ -152,7 +161,7 @@ public sealed class HallScheduleController : ControllerBase
         var hasBooking = await _context.WeddingBookings
             .AnyAsync(booking =>
                 booking.HallScheduleId == hallScheduleId &&
-                booking.Status != "Đã hủy",
+                BookingStatusCodes.OccupyingSchedule.Contains(booking.Status.StatusCode),
                 cancellationToken);
 
         if (hasBooking)
@@ -164,11 +173,11 @@ public sealed class HallScheduleController : ControllerBase
         }
 
         if (statusCode != HallScheduleStatusCodes.Available &&
-            statusCode != HallScheduleStatusCodes.Locked)
+            statusCode != HallScheduleStatusCodes.Booked)
         {
             return BadRequest(new
             {
-                message = "Admin chỉ được chuyển trạng thái giữa Trống và Tạm khóa."
+                message = "Trạng thái lịch sảnh chỉ có thể là AVAILABLE hoặc BOOKED."
             });
         }
 
@@ -201,7 +210,8 @@ public sealed class HallScheduleController : ControllerBase
         var existingSchedules = await _context.HallSchedules
             .Where(schedule =>
                 schedule.Date >= startDate &&
-                schedule.Date <= endDate)
+                schedule.Date <= endDate &&
+                schedule.DataStatus.DataStatusCode == DataStatusCodes.Existing)
             .ToListAsync(cancellationToken);
 
         var availableStatusId = await _statusService.GetStatusIdAsync(
@@ -209,11 +219,12 @@ public sealed class HallScheduleController : ControllerBase
             HallScheduleStatusCodes.Available,
             cancellationToken);
 
-        var shifts = new[]
-        {
-            "Ca trưa",
-            "Ca tối"
-        };
+        var existingDataStatus = await _context.DataStatuses.SingleOrDefaultAsync(
+            status => status.DataStatusCode == DataStatusCodes.Existing,
+            cancellationToken) ?? throw new InvalidOperationException(
+            "Thiếu trạng thái dữ liệu EXISTING.");
+
+        var shifts = new[] { HallShiftNames.Lunch, HallShiftNames.Dinner };
 
         foreach (var hall in halls)
         {
@@ -238,7 +249,8 @@ public sealed class HallScheduleController : ControllerBase
                         HallId = hall.HallId,
                         Date = date,
                         Shift = shift,
-                        StatusId = availableStatusId
+                        StatusId = availableStatusId,
+                        DataStatusId = existingDataStatus.DataStatusId
                     });
                 }
             }

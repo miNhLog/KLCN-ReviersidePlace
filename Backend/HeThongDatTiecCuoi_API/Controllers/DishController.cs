@@ -51,7 +51,11 @@ public sealed class DishController : ControllerBase
         [FromQuery] string? status,
         CancellationToken cancellationToken)
     {
-        var query = _context.Dishes.AsNoTracking().AsQueryable();
+        var query = _context.Dishes.AsNoTracking()
+            .Where(dish =>
+                dish.DataStatus.DataStatusCode == DataStatusCodes.Existing &&
+                dish.Status.StatusGroup == StatusGroups.Dish)
+            .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(keyword))
         {
@@ -81,6 +85,7 @@ public sealed class DishController : ControllerBase
                 DishCode = dish.DishCode,
                 DishName = dish.DishName,
                 Category = dish.Category,
+                Price = dish.Price,
                 ImageUrl = dish.ImageUrl,
                 Status = dish.Status.StatusCode,
                 StatusName = dish.Status.StatusName
@@ -106,6 +111,16 @@ public sealed class DishController : ControllerBase
             return BadRequest(new { message = "Nhóm món không hợp lệ." });
         }
 
+        if (request.DishName.Trim().Length > 200 || request.Category.Trim().Length > 100)
+        {
+            return BadRequest(new { message = "Tên hoặc nhóm món vượt quá độ dài cho phép." });
+        }
+
+        if (request.Price < 0)
+        {
+            return BadRequest(new { message = "Giá món không hợp lệ." });
+        }
+
         var dishCodes = await _context.Dishes
             .AsNoTracking()
             .Select(dish => dish.DishCode)
@@ -123,13 +138,18 @@ public sealed class DishController : ControllerBase
             StatusGroups.Dish,
             DishStatusCodes.Active,
             cancellationToken) ?? throw new InvalidOperationException("Thiếu trạng thái món ăn ACTIVE.");
+        var existingDataStatus = await GetDataStatusAsync(
+            DataStatusCodes.Existing,
+            cancellationToken);
 
         var dish = new Dish
         {
             DishCode = $"MA{highestNumber + 1:D3}",
             DishName = request.DishName.Trim(),
             Category = request.Category.Trim(),
-            StatusId = activeStatus.StatusId
+            Price = request.Price,
+            StatusId = activeStatus.StatusId,
+            DataStatusId = existingDataStatus.DataStatusId
         };
 
         _context.Dishes.Add(dish);
@@ -146,7 +166,10 @@ public sealed class DishController : ControllerBase
     {
         var dish = await _context.Dishes
             .Include(item => item.Status)
-            .FirstOrDefaultAsync(item => item.DishId == dishId, cancellationToken);
+            .FirstOrDefaultAsync(item =>
+                item.DishId == dishId &&
+                item.DataStatus.DataStatusCode == DataStatusCodes.Existing,
+                cancellationToken);
 
         if (dish is null)
         {
@@ -164,8 +187,19 @@ public sealed class DishController : ControllerBase
             return BadRequest(new { message = "Nhóm món không hợp lệ." });
         }
 
+        if (request.DishName.Trim().Length > 200 || request.Category.Trim().Length > 100)
+        {
+            return BadRequest(new { message = "Tên hoặc nhóm món vượt quá độ dài cho phép." });
+        }
+
+        if (request.Price < 0)
+        {
+            return BadRequest(new { message = "Giá món không hợp lệ." });
+        }
+
         dish.DishName = request.DishName.Trim();
         dish.Category = request.Category.Trim();
+        dish.Price = request.Price;
 
         await _context.SaveChangesAsync(cancellationToken);
         return Ok(ToDto(dish));
@@ -179,7 +213,10 @@ public sealed class DishController : ControllerBase
     {
         var dish = await _context.Dishes
             .Include(item => item.Status)
-            .FirstOrDefaultAsync(item => item.DishId == dishId, cancellationToken);
+            .FirstOrDefaultAsync(item =>
+                item.DishId == dishId &&
+                item.DataStatus.DataStatusCode == DataStatusCodes.Existing,
+                cancellationToken);
 
         if (dish is null)
         {
@@ -216,7 +253,10 @@ public sealed class DishController : ControllerBase
     {
         var dish = await _context.Dishes
             .Include(item => item.Status)
-            .FirstOrDefaultAsync(item => item.DishId == dishId, cancellationToken);
+            .FirstOrDefaultAsync(item =>
+                item.DishId == dishId &&
+                item.DataStatus.DataStatusCode == DataStatusCodes.Existing,
+                cancellationToken);
 
         if (dish is null)
         {
@@ -268,7 +308,10 @@ public sealed class DishController : ControllerBase
         CancellationToken cancellationToken)
     {
         var dish = await _context.Dishes
-            .FirstOrDefaultAsync(item => item.DishId == dishId, cancellationToken);
+            .FirstOrDefaultAsync(item =>
+                item.DishId == dishId &&
+                item.DataStatus.DataStatusCode == DataStatusCodes.Existing,
+                cancellationToken);
 
         if (dish is null)
         {
@@ -305,10 +348,19 @@ public sealed class DishController : ControllerBase
         DishCode = dish.DishCode,
         DishName = dish.DishName,
         Category = dish.Category,
+        Price = dish.Price,
         ImageUrl = dish.ImageUrl,
         Status = (status ?? dish.Status).StatusCode,
         StatusName = (status ?? dish.Status).StatusName
     };
+
+    private async Task<DataStatus> GetDataStatusAsync(
+        string code,
+        CancellationToken cancellationToken) =>
+        await _context.DataStatuses.SingleOrDefaultAsync(
+            status => status.DataStatusCode == code,
+            cancellationToken) ?? throw new InvalidOperationException(
+            $"Thiếu trạng thái dữ liệu {code}.");
 
     private static void DeleteExistingImage(string? imageUrl, string imageDirectory)
     {

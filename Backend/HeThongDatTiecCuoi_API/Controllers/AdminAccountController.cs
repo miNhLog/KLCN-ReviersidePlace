@@ -112,11 +112,13 @@ public sealed class AdminAccountController : ControllerBase
                 Status = item.user.Status.StatusCode,
                 StatusName = item.user.Status.StatusName,
                 CreatedAt = item.user.CreatedAt,
-                EmployeeStatus = item.employee != null
-                    ? item.employee.Status.StatusCode
+                DataStatus = item.user.DataStatus.DataStatusCode,
+                DataStatusName = item.user.DataStatus.DataStatusName,
+                EmployeeDataStatus = item.employee != null
+                    ? item.employee.DataStatus.DataStatusCode
                     : null,
-                EmployeeStatusName = item.employee != null
-                    ? item.employee.Status.StatusName
+                EmployeeDataStatusName = item.employee != null
+                    ? item.employee.DataStatus.DataStatusName
                     : null
             })
             .ToListAsync(cancellationToken);
@@ -174,8 +176,7 @@ public sealed class AdminAccountController : ControllerBase
         var validStatuses = new[]
         {
             AccountStatusCodes.Active,
-            AccountStatusCodes.Suspended,
-            AccountStatusCodes.Inactive
+            AccountStatusCodes.Locked
         };
 
         if (!validStatuses.Contains(statusCode))
@@ -204,14 +205,14 @@ public sealed class AdminAccountController : ControllerBase
         }
 
         user.StatusId = status.StatusId;
+        user.UpdatedAt = DateTime.Now;
 
         await _context.SaveChangesAsync(cancellationToken);
 
         var message = statusCode switch
         {
             AccountStatusCodes.Active => "Mở khóa tài khoản thành công.",
-            AccountStatusCodes.Suspended => "Tạm khóa tài khoản thành công.",
-            AccountStatusCodes.Inactive => "Ngừng hoạt động tài khoản thành công.",
+            AccountStatusCodes.Locked => "Khóa tài khoản thành công.",
             _ => "Cập nhật trạng thái tài khoản thành công."
         };
 
@@ -231,9 +232,7 @@ public sealed class AdminAccountController : ControllerBase
     {
         var email = request.Email.Trim().ToLowerInvariant();
         var fullName = request.FullName.Trim();
-        var phoneNumber = string.IsNullOrWhiteSpace(request.PhoneNumber)
-            ? null
-            : PhoneNumberHelper.Normalize(request.PhoneNumber);
+        var phoneNumber = PhoneNumberHelper.Normalize(request.PhoneNumber);
 
         if (!string.IsNullOrWhiteSpace(phoneNumber))
         {
@@ -258,11 +257,20 @@ public sealed class AdminAccountController : ControllerBase
 
         if (string.IsNullOrWhiteSpace(email) ||
             string.IsNullOrWhiteSpace(fullName) ||
+            string.IsNullOrWhiteSpace(phoneNumber) ||
             string.IsNullOrWhiteSpace(request.Password))
         {
             return BadRequest(new
             {
                 message = "Vui lòng nhập đầy đủ thông tin bắt buộc."
+            });
+        }
+
+        if (email.Length > 255 || fullName.Length > 150 || phoneNumber.Length > 20)
+        {
+            return BadRequest(new
+            {
+                message = "Email, họ tên hoặc số điện thoại vượt quá độ dài cho phép."
             });
         }
 
@@ -292,12 +300,13 @@ public sealed class AdminAccountController : ControllerBase
             });
         }
 
-        if (role.RoleName != RoleNames.Consultant &&
+        if (role.RoleName != RoleNames.Manager &&
+            role.RoleName != RoleNames.HallManager &&
             role.RoleName != RoleNames.Coordinator)
         {
             return BadRequest(new
             {
-                message = "Endpoint này chỉ dùng để tạo tài khoản nhân viên tư vấn hoặc nhân viên điều phối."
+                message = "Endpoint này chỉ dùng để tạo tài khoản Quản lý, Quản lý sảnh hoặc Nhân viên điều phối."
             });
         }
 
@@ -328,15 +337,17 @@ public sealed class AdminAccountController : ControllerBase
         {
             var accountStatusId = await _statusService.GetStatusIdAsync(
                 StatusGroups.Account, AccountStatusCodes.Active, cancellationToken);
-            var employeeStatusId = await _statusService.GetStatusIdAsync(
-                StatusGroups.Employee, EmployeeStatusCodes.Active, cancellationToken);
+            var existingDataStatus = await _context.DataStatuses.SingleAsync(
+                item => item.DataStatusCode == DataStatusCodes.Existing,
+                cancellationToken);
 
             var user = new User
             {
                 RoleId = request.RoleId,
                 Email = email,
                 StatusId = accountStatusId,
-                CreatedAt = DateTime.Now
+                CreatedAt = DateTime.Now,
+                DataStatusId = existingDataStatus.DataStatusId
             };
 
             user.PasswordHash = _passwordHasher.HashPassword(
@@ -352,7 +363,7 @@ public sealed class AdminAccountController : ControllerBase
                 EmployeeCode = employeeCode,
                 FullName = fullName,
                 PhoneNumber = phoneNumber,
-                StatusId = employeeStatusId
+                DataStatusId = existingDataStatus.DataStatusId
             };
 
             _context.Employees.Add(employee);
@@ -384,9 +395,7 @@ public sealed class AdminAccountController : ControllerBase
     {
         var email = request.Email.Trim().ToLowerInvariant();
         var fullName = request.FullName.Trim();
-        var phoneNumber = string.IsNullOrWhiteSpace(request.PhoneNumber)
-            ? null
-            : PhoneNumberHelper.Normalize(request.PhoneNumber);
+        var phoneNumber = PhoneNumberHelper.Normalize(request.PhoneNumber);
 
         if (!string.IsNullOrWhiteSpace(phoneNumber))
         {
@@ -409,31 +418,31 @@ public sealed class AdminAccountController : ControllerBase
             }
         }
 
-        var employeeStatus = string.IsNullOrWhiteSpace(request.EmployeeStatus)
+        var employeeDataStatus = string.IsNullOrWhiteSpace(request.DataStatus)
             ? null
-            : request.EmployeeStatus.Trim();
+            : request.DataStatus.Trim().ToUpperInvariant();
 
-        Status? updatedEmployeeStatus = null;
-        if (employeeStatus is not null)
+        DataStatus? updatedEmployeeDataStatus = null;
+        if (employeeDataStatus is not null)
         {
-            var validEmployeeStatuses = new[]
+            var validDataStatuses = new[]
             {
-                EmployeeStatusCodes.Active,
-                EmployeeStatusCodes.OnLeave,
-                EmployeeStatusCodes.Terminated
+                DataStatusCodes.Existing,
+                DataStatusCodes.Deleted
             };
 
-            if (!validEmployeeStatuses.Contains(employeeStatus))
+            if (!validDataStatuses.Contains(employeeDataStatus))
             {
                 return BadRequest(new
                 {
-                    message = "Trạng thái nhân viên không hợp lệ."
+                    message = "Trạng thái dữ liệu nhân viên không hợp lệ."
                 });
             }
         }
 
         if (string.IsNullOrWhiteSpace(email) ||
-            string.IsNullOrWhiteSpace(fullName))
+            string.IsNullOrWhiteSpace(fullName) ||
+            string.IsNullOrWhiteSpace(phoneNumber))
         {
             return BadRequest(new
             {
@@ -441,11 +450,11 @@ public sealed class AdminAccountController : ControllerBase
             });
         }
 
-        if (email.Length > 150)
+        if (email.Length > 255)
         {
             return BadRequest(new
             {
-                message = "Email không được vượt quá 150 ký tự."
+                message = "Email không được vượt quá 255 ký tự."
             });
         }
 
@@ -457,7 +466,7 @@ public sealed class AdminAccountController : ControllerBase
             });
         }
 
-        if (phoneNumber is not null && phoneNumber.Length > 20)
+        if (phoneNumber.Length > 20)
         {
             return BadRequest(new
             {
@@ -480,7 +489,7 @@ public sealed class AdminAccountController : ControllerBase
         }
 
         var employee = await _context.Employees
-            .Include(existingEmployee => existingEmployee.Status)
+            .Include(existingEmployee => existingEmployee.DataStatus)
             .FirstOrDefaultAsync(
                 existingEmployee => existingEmployee.UserId == userId,
                 cancellationToken);
@@ -507,12 +516,13 @@ public sealed class AdminAccountController : ControllerBase
             });
         }
 
-        if (role.RoleName != RoleNames.Consultant &&
+        if (role.RoleName != RoleNames.Manager &&
+            role.RoleName != RoleNames.HallManager &&
             role.RoleName != RoleNames.Coordinator)
         {
             return BadRequest(new
             {
-                message = "Nhân viên chỉ có thể thuộc vai trò Tư vấn hoặc Điều phối."
+                message = "Nhân viên chỉ có thể thuộc vai trò Quản lý, Quản lý sảnh hoặc Nhân viên điều phối."
             });
         }
 
@@ -532,20 +542,22 @@ public sealed class AdminAccountController : ControllerBase
 
         user.Email = email;
         user.RoleId = request.RoleId;
+        user.UpdatedAt = DateTime.Now;
         employee.FullName = fullName;
         employee.PhoneNumber = phoneNumber;
 
-        if (employeeStatus is not null)
+        if (employeeDataStatus is not null)
         {
-            var resolvedEmployeeStatus = await _statusService.GetStatusAsync(
-                StatusGroups.Employee, employeeStatus, cancellationToken);
-            if (resolvedEmployeeStatus is null)
+            var resolvedDataStatus = await _context.DataStatuses.SingleOrDefaultAsync(
+                item => item.DataStatusCode == employeeDataStatus,
+                cancellationToken);
+            if (resolvedDataStatus is null)
             {
-                return BadRequest(new { message = "Trạng thái nhân viên chưa được cấu hình." });
+                return BadRequest(new { message = "Trạng thái dữ liệu chưa được cấu hình." });
             }
 
-            employee.StatusId = resolvedEmployeeStatus.StatusId;
-            updatedEmployeeStatus = resolvedEmployeeStatus;
+            employee.DataStatusId = resolvedDataStatus.DataStatusId;
+            updatedEmployeeDataStatus = resolvedDataStatus;
         }
 
         await _context.SaveChangesAsync(cancellationToken);
@@ -561,8 +573,8 @@ public sealed class AdminAccountController : ControllerBase
             roleName = role.RoleName,
             accountStatus = user.Status.StatusCode,
             accountStatusName = user.Status.StatusName,
-            employeeStatus = (updatedEmployeeStatus ?? employee.Status).StatusCode,
-            employeeStatusName = (updatedEmployeeStatus ?? employee.Status).StatusName
+            employeeDataStatus = (updatedEmployeeDataStatus ?? employee.DataStatus).DataStatusCode,
+            employeeDataStatusName = (updatedEmployeeDataStatus ?? employee.DataStatus).DataStatusName
         });
     }
 
@@ -584,6 +596,7 @@ public sealed class AdminAccountController : ControllerBase
                 message = "Chưa thể gửi email đặt lại mật khẩu. Vui lòng kiểm tra cấu hình SMTP."
             });
         }
+
         if (!userExists)
         {
             return NotFound(new { message = "Không tìm thấy tài khoản." });
@@ -635,9 +648,8 @@ public sealed class AdminAccountController : ControllerBase
         var statusCode = request.Status?.Trim().ToUpperInvariant();
         var validStatuses = new[]
         {
-            EmployeeStatusCodes.Active,
-            EmployeeStatusCodes.OnLeave,
-            EmployeeStatusCodes.Terminated
+            DataStatusCodes.Existing,
+            DataStatusCodes.Deleted
         };
 
         if (string.IsNullOrWhiteSpace(statusCode) ||
@@ -645,7 +657,7 @@ public sealed class AdminAccountController : ControllerBase
         {
             return BadRequest(new
             {
-                message = "Trạng thái nhân viên không hợp lệ."
+                message = "Trạng thái dữ liệu nhân viên không hợp lệ."
             });
         }
 
@@ -662,24 +674,25 @@ public sealed class AdminAccountController : ControllerBase
             });
         }
 
-        var status = await _statusService.GetStatusAsync(
-            StatusGroups.Employee, statusCode, cancellationToken);
+        var status = await _context.DataStatuses.SingleOrDefaultAsync(
+            item => item.DataStatusCode == statusCode,
+            cancellationToken);
         if (status is null)
         {
-            return BadRequest(new { message = "Trạng thái nhân viên chưa được cấu hình." });
+            return BadRequest(new { message = "Trạng thái dữ liệu chưa được cấu hình." });
         }
 
-        employee.StatusId = status.StatusId;
+        employee.DataStatusId = status.DataStatusId;
 
         await _context.SaveChangesAsync(cancellationToken);
 
         return Ok(new
         {
-            message = "Cập nhật trạng thái nhân viên thành công.",
+            message = "Cập nhật trạng thái dữ liệu nhân viên thành công.",
             userId,
             employeeCode = employee.EmployeeCode,
-            employeeStatus = status.StatusCode,
-            employeeStatusName = status.StatusName
+            employeeDataStatus = status.DataStatusCode,
+            employeeDataStatusName = status.DataStatusName
         });
     }
 }

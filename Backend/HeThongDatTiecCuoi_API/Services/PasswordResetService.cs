@@ -2,6 +2,7 @@ using System.Data;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using HeThongDatTiecCuoi_API.Constants;
 using HeThongDatTiecCuoi_API.Data;
 using HeThongDatTiecCuoi_API.Models;
 using HeThongDatTiecCuoi_API.Options;
@@ -39,7 +40,10 @@ public sealed partial class PasswordResetService : IPasswordResetService
         var normalizedEmail = email.Trim().ToLowerInvariant();
         var user = await _context.Users
             .AsNoTracking()
-            .SingleOrDefaultAsync(item => item.Email == normalizedEmail, cancellationToken);
+            .SingleOrDefaultAsync(
+                item => item.Email == normalizedEmail &&
+                        item.DataStatus.DataStatusCode == DataStatusCodes.Existing,
+                cancellationToken);
 
         if (user is null)
         {
@@ -56,7 +60,10 @@ public sealed partial class PasswordResetService : IPasswordResetService
     {
         var user = await _context.Users
             .AsNoTracking()
-            .SingleOrDefaultAsync(item => item.UserId == userId, cancellationToken);
+            .SingleOrDefaultAsync(
+                item => item.UserId == userId &&
+                        item.DataStatus.DataStatusCode == DataStatusCodes.Existing,
+                cancellationToken);
 
         if (user is null)
         {
@@ -112,6 +119,7 @@ public sealed partial class PasswordResetService : IPasswordResetService
         }
 
         resetToken.User.PasswordHash = _passwordHasher.HashPassword(resetToken.User, newPassword);
+        resetToken.User.UpdatedAt = now;
         resetToken.UsedAt = now;
         await _context.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);

@@ -2,6 +2,8 @@
 using Microsoft.EntityFrameworkCore;
 using HeThongDatTiecCuoi_API.Data;
 using HeThongDatTiecCuoi_API.DTOs.Report;
+using HeThongDatTiecCuoi_API.Constants;
+using HeThongDatTiecCuoi_API.Constants.StatusCodes;
 
 namespace HeThongDatTiecCuoi_API.Controllers;
 
@@ -25,22 +27,26 @@ public class AdminReportController : ControllerBase
             .Include(b => b.HallSchedule)
                 .ThenInclude(hs => hs!.Hall)
             .AsNoTracking()
-            .Where(b => b.BookedAt.HasValue && b.BookedAt.Value.Year == year && b.Status != "Đã hủy");
+            .Where(b => b.BookedAt.Year == year &&
+                b.Status.StatusGroup == StatusGroups.Booking &&
+                b.Status.StatusCode != BookingStatusCodes.Cancelled);
 
         // Lọc theo Quý nếu có chọn
         if (quarter >= 1 && quarter <= 4)
         {
             int startMonth = (quarter - 1) * 3 + 1;
             int endMonth = startMonth + 2;
-            query = query.Where(b => b.BookedAt!.Value.Month >= startMonth && b.BookedAt.Value.Month <= endMonth);
+            query = query.Where(b => b.BookedAt.Month >= startMonth && b.BookedAt.Month <= endMonth);
         }
 
         var bookings = await query.ToListAsync();
-        var halls = await _context.Halls.AsNoTracking().ToListAsync();
+        var halls = await _context.Halls.AsNoTracking()
+            .Where(hall => hall.DataStatus.DataStatusCode == DataStatusCodes.Existing)
+            .ToListAsync();
 
         // 2. Tính toán tổng hợp các chỉ số KPI
         var totalRev = bookings.Sum(b => b.EstimatedTotal ?? 0m);
-        var totalTables = bookings.Sum(b => b.TableCount ?? 0);
+        var totalTables = bookings.Sum(b => (int)Math.Ceiling(b.GuestCount / 10m));
         var totalBookingsCount = bookings.Count;
         var avgPerTable = totalTables > 0 ? Math.Round(totalRev / totalTables, 0) : 0m;
 
@@ -64,7 +70,7 @@ public class AdminReportController : ControllerBase
 
         for (int m = minM; m <= maxM; m++)
         {
-            var inMonth = bookings.Where(b => b.BookedAt!.Value.Month == m).ToList();
+            var inMonth = bookings.Where(b => b.BookedAt.Month == m).ToList();
             monthlyList.Add(new MonthlyRevenueDto
             {
                 Month = m,
@@ -75,7 +81,7 @@ public class AdminReportController : ControllerBase
         }
 
         // 4. Cơ cấu doanh thu (Ẩm thực, Sảnh, Decor)
-        var totalFnb = bookings.Sum(b => (b.FinalMenuPrice ?? 0m) * (b.TableCount ?? 0));
+        var totalFnb = bookings.Sum(b => (b.FinalMenuPrice ?? 0m) * (int)Math.Ceiling(b.GuestCount / 10m));
         var totalHall = bookings.Sum(b => b.FinalHallPrice ?? 0m);
         var totalDecor = bookings.Sum(b => b.FinalDecorationPrice ?? 0m);
         var grandTotal = totalFnb + totalHall + totalDecor;
@@ -129,10 +135,10 @@ public class AdminReportController : ControllerBase
                 BookingCode = b.BookingCode,
                 CustomerName = b.Customer != null ? b.Customer.FullName : $"Khách hàng #{b.CustomerId}",
                 HallName = b.HallSchedule?.Hall != null ? b.HallSchedule.Hall.HallName : "Sảnh tiệc",
-                EventDate = b.HallSchedule != null ? b.HallSchedule.Date : (b.BookedAt ?? DateTime.Now),
-                TableCount = b.TableCount ?? 0,
+                EventDate = b.HallSchedule!.Date,
+                TableCount = (int)Math.Ceiling(b.GuestCount / 10m),
                 TotalAmount = b.EstimatedTotal ?? 0m,
-                Status = b.Status
+                Status = b.Status.StatusName
             }).ToList();
 
         return Ok(new RevenueBiReportDto
@@ -171,24 +177,37 @@ public class AdminReportController : ControllerBase
         }
 
         // 2. Lấy 9 sảnh, lịch sảnh và đơn đặt tiệc trong tuần
-        var halls = await _context.Halls.AsNoTracking().OrderBy(h => h.HallId).ToListAsync();
+        var halls = await _context.Halls.AsNoTracking()
+            .Where(hall => hall.DataStatus.DataStatusCode == DataStatusCodes.Existing)
+            .OrderBy(h => h.HallId)
+            .ToListAsync();
 
         var schedules = await _context.HallSchedules
+            .Include(schedule => schedule.Status)
             .AsNoTracking()
-            .Where(ls => ls.Date >= start && ls.Date <= end)
+            .Where(ls =>
+                ls.Date >= start &&
+                ls.Date <= end &&
+                ls.DataStatus.DataStatusCode == DataStatusCodes.Existing &&
+                ls.Hall.DataStatus.DataStatusCode == DataStatusCodes.Existing)
             .ToListAsync();
+
+        var availableStatus = await _context.Statuses.AsNoTracking()
+            .SingleAsync(status =>
+                status.StatusGroup == StatusGroups.HallSchedule &&
+                status.StatusCode == HallScheduleStatusCodes.Available);
 
         var scheduleIds = schedules.Select(s => s.HallScheduleId).ToList();
 
         var bookings = await _context.WeddingBookings
             .Include(b => b.Customer)
             .AsNoTracking()
-            .Where(b => b.HallScheduleId.HasValue && scheduleIds.Contains(b.HallScheduleId.Value))
+            .Where(b => scheduleIds.Contains(b.HallScheduleId))
             .ToListAsync();
 
         // 3. Ghép nối thành ma trận 9 sảnh x 14 ca tiệc
         var matrixRows = new List<HallMatrixRowDto>();
-        string[] shifts = { "Ca trưa", "Ca tối" };
+        string[] shifts = { HallShiftNames.Lunch, HallShiftNames.Dinner };
 
         foreach (var hall in halls)
         {
@@ -209,19 +228,19 @@ public class AdminReportController : ControllerBase
                     {
                         Date = day.Date,
                         Shift = shift,
-                        StatusId = sch != null ? sch.StatusId : 401,
-                        StatusText = sch != null && sch.StatusId == 402 ? "Đã đặt" : (sch != null && sch.StatusId == 403 ? "Tạm khóa" : "Trống")
+                        StatusId = sch?.StatusId ?? availableStatus.StatusId,
+                        StatusText = sch?.Status.StatusName ?? availableStatus.StatusName
                     };
 
-                    if (sch != null && sch.StatusId == 402)
+                    if (sch?.Status.StatusCode == HallScheduleStatusCodes.Booked)
                     {
                         var bk = bookings.FirstOrDefault(b => b.HallScheduleId == sch.HallScheduleId);
                         if (bk != null)
                         {
                             slot.BookingCode = bk.BookingCode;
                             slot.CustomerName = bk.Customer != null ? bk.Customer.FullName : $"KH #{bk.CustomerId}";
-                            slot.TableCount = bk.TableCount;
-                            slot.BookingStatus = bk.Status;
+                            slot.TableCount = (int)Math.Ceiling(bk.GuestCount / 10m);
+                            slot.BookingStatus = bk.Status.StatusName;
                         }
                     }
 

@@ -108,7 +108,8 @@ public sealed class AuthController : ControllerBase
     [HttpGet("staff-only")]
     [Authorize(
     Roles = RoleNames.Admin + "," +
-            RoleNames.Consultant + "," +
+            RoleNames.Manager + "," +
+            RoleNames.HallManager + "," +
             RoleNames.Coordinator)]
     public IActionResult StaffOnly()
     {

@@ -60,7 +60,10 @@ public sealed class MenuController : ControllerBase
 
         var query = _context.Menus
             .AsNoTracking()
-            .Where(menu => menu.Status.StatusCode == MenuStatusCodes.Active);
+            .Where(menu =>
+                menu.DataStatus.DataStatusCode == DataStatusCodes.Existing &&
+                menu.Status.StatusGroup == StatusGroups.Menu &&
+                menu.Status.StatusCode == MenuStatusCodes.Active);
 
         if (!string.IsNullOrWhiteSpace(keyword))
         {
@@ -85,6 +88,9 @@ public sealed class MenuController : ControllerBase
             Description = menu.Description,
             PricePerTable = menu.PricePerTable,
             DishCount = menu.MenuDishes.Count(menuDish =>
+                menuDish.DataStatus.DataStatusCode == DataStatusCodes.Existing &&
+                menuDish.Dish.DataStatus.DataStatusCode == DataStatusCodes.Existing &&
+                menuDish.Dish.Status.StatusGroup == StatusGroups.Dish &&
                 menuDish.Dish.Status.StatusCode == DishStatusCodes.Active)
         });
 
@@ -131,6 +137,8 @@ public sealed class MenuController : ControllerBase
         var menu = await _context.Menus
             .AsNoTracking()
             .Where(item => item.MenuId == menuId
+                && item.DataStatus.DataStatusCode == DataStatusCodes.Existing
+                && item.Status.StatusGroup == StatusGroups.Menu
                 && item.Status.StatusCode == MenuStatusCodes.Active)
             .Select(item => new PublicMenuDetailDto
             {
@@ -150,6 +158,9 @@ public sealed class MenuController : ControllerBase
         var dishes = await _context.MenuDishes
             .AsNoTracking()
             .Where(menuDish => menuDish.MenuId == menuId
+                && menuDish.DataStatus.DataStatusCode == DataStatusCodes.Existing
+                && menuDish.Dish.DataStatus.DataStatusCode == DataStatusCodes.Existing
+                && menuDish.Dish.Status.StatusGroup == StatusGroups.Dish
                 && menuDish.Dish.Status.StatusCode == DishStatusCodes.Active)
             .OrderBy(menuDish => menuDish.SortOrder)
             .Select(menuDish => new PublicMenuDishDto
@@ -158,6 +169,7 @@ public sealed class MenuController : ControllerBase
                 DishCode = menuDish.Dish.DishCode,
                 DishName = menuDish.Dish.DishName,
                 Category = menuDish.Dish.Category,
+                Price = menuDish.Dish.Price,
                 ImageUrl = menuDish.Dish.ImageUrl,
                 SortOrder = menuDish.SortOrder
             })
@@ -174,7 +186,11 @@ public sealed class MenuController : ControllerBase
         [FromQuery] string? status,
         CancellationToken cancellationToken)
     {
-        var query = _context.Menus.AsNoTracking().AsQueryable();
+        var query = _context.Menus.AsNoTracking()
+            .Where(menu =>
+                menu.DataStatus.DataStatusCode == DataStatusCodes.Existing &&
+                menu.Status.StatusGroup == StatusGroups.Menu)
+            .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(keyword))
         {
@@ -197,6 +213,8 @@ public sealed class MenuController : ControllerBase
                 MenuId = menu.MenuId,
                 MenuCode = menu.MenuCode,
                 MenuName = menu.MenuName,
+                MenuType = menu.MenuType,
+                CustomerId = menu.CustomerId,
                 Description = menu.Description,
                 PricePerTable = menu.PricePerTable,
                 Status = menu.Status.StatusCode,
@@ -215,6 +233,11 @@ public sealed class MenuController : ControllerBase
         if (string.IsNullOrWhiteSpace(request.MenuName))
         {
             return BadRequest(new { message = "Tên thực đơn không được để trống." });
+        }
+
+        if (request.MenuName.Trim().Length > 200 || request.Description?.Trim().Length > 1000)
+        {
+            return BadRequest(new { message = "Tên hoặc mô tả thực đơn vượt quá độ dài cho phép." });
         }
 
         if (request.PricePerTable < 0)
@@ -239,16 +262,22 @@ public sealed class MenuController : ControllerBase
             StatusGroups.Menu,
             MenuStatusCodes.Active,
             cancellationToken) ?? throw new InvalidOperationException("Thiếu trạng thái thực đơn ACTIVE.");
+        var existingDataStatus = await GetDataStatusAsync(
+            DataStatusCodes.Existing,
+            cancellationToken);
 
         var menu = new Menu
         {
             MenuCode = $"TD{highestNumber + 1:D3}",
             MenuName = request.MenuName.Trim(),
+            MenuType = MenuTypes.Standard,
+            CustomerId = null,
             Description = string.IsNullOrWhiteSpace(request.Description)
                 ? null
                 : request.Description.Trim(),
             PricePerTable = request.PricePerTable,
-            StatusId = activeStatus.StatusId
+            StatusId = activeStatus.StatusId,
+            DataStatusId = existingDataStatus.DataStatusId
         };
 
         _context.Menus.Add(menu);
@@ -265,7 +294,10 @@ public sealed class MenuController : ControllerBase
     {
         var menu = await _context.Menus
             .Include(item => item.Status)
-            .FirstOrDefaultAsync(item => item.MenuId == menuId, cancellationToken);
+            .FirstOrDefaultAsync(item =>
+                item.MenuId == menuId &&
+                item.DataStatus.DataStatusCode == DataStatusCodes.Existing,
+                cancellationToken);
 
         if (menu is null)
         {
@@ -275,6 +307,11 @@ public sealed class MenuController : ControllerBase
         if (string.IsNullOrWhiteSpace(request.MenuName))
         {
             return BadRequest(new { message = "Tên thực đơn không được để trống." });
+        }
+
+        if (request.MenuName.Trim().Length > 200 || request.Description?.Trim().Length > 1000)
+        {
+            return BadRequest(new { message = "Tên hoặc mô tả thực đơn vượt quá độ dài cho phép." });
         }
 
         if (request.PricePerTable < 0)
@@ -300,7 +337,10 @@ public sealed class MenuController : ControllerBase
     {
         var menu = await _context.Menus
             .Include(item => item.Status)
-            .FirstOrDefaultAsync(item => item.MenuId == menuId, cancellationToken);
+            .FirstOrDefaultAsync(item =>
+                item.MenuId == menuId &&
+                item.DataStatus.DataStatusCode == DataStatusCodes.Existing,
+                cancellationToken);
 
         if (menu is null)
         {
@@ -340,7 +380,10 @@ public sealed class MenuController : ControllerBase
 
         var dishes = await _context.MenuDishes
             .AsNoTracking()
-            .Where(menuDish => menuDish.MenuId == menuId)
+            .Where(menuDish =>
+                menuDish.MenuId == menuId &&
+                menuDish.DataStatus.DataStatusCode == DataStatusCodes.Existing &&
+                menuDish.Dish.DataStatus.DataStatusCode == DataStatusCodes.Existing)
             .OrderBy(menuDish => menuDish.SortOrder)
             .Select(menuDish => new MenuDishDto
             {
@@ -349,6 +392,7 @@ public sealed class MenuController : ControllerBase
                 DishCode = menuDish.Dish.DishCode,
                 DishName = menuDish.Dish.DishName,
                 Category = menuDish.Dish.Category,
+                Price = menuDish.Dish.Price,
                 ImageUrl = menuDish.Dish.ImageUrl,
                 Status = menuDish.Dish.Status.StatusCode,
                 StatusName = menuDish.Dish.Status.StatusName,
@@ -381,42 +425,54 @@ public sealed class MenuController : ControllerBase
         var dish = await _context.Dishes
             .Include(item => item.Status)
             .AsNoTracking()
-            .FirstOrDefaultAsync(item => item.DishId == request.DishId, cancellationToken);
+            .FirstOrDefaultAsync(item =>
+                item.DishId == request.DishId &&
+                item.DataStatus.DataStatusCode == DataStatusCodes.Existing,
+                cancellationToken);
 
         if (dish is null)
         {
             return NotFound(new { message = "Không tìm thấy món ăn." });
         }
 
-        if (dish.Status.StatusCode != DishStatusCodes.Active)
+        if (dish.Status.StatusGroup != StatusGroups.Dish ||
+            dish.Status.StatusCode != DishStatusCodes.Active)
         {
             return Conflict(new { message = "Chỉ có thể thêm món đang phục vụ vào thực đơn." });
         }
 
-        var alreadyExists = await _context.MenuDishes
-            .AsNoTracking()
-            .AnyAsync(
+        var existingDataStatus = await GetDataStatusAsync(
+            DataStatusCodes.Existing,
+            cancellationToken);
+        var existingMenuDish = await _context.MenuDishes
+            .SingleOrDefaultAsync(
                 menuDish => menuDish.MenuId == menuId && menuDish.DishId == request.DishId,
                 cancellationToken);
 
-        if (alreadyExists)
+        if (existingMenuDish?.DataStatusId == existingDataStatus.DataStatusId)
         {
             return Conflict(new { message = "Món ăn đã tồn tại trong thực đơn." });
         }
 
         var lastSortOrder = await _context.MenuDishes
-            .Where(menuDish => menuDish.MenuId == menuId)
+            .Where(menuDish =>
+                menuDish.MenuId == menuId &&
+                menuDish.DataStatus.DataStatusCode == DataStatusCodes.Existing)
             .Select(menuDish => (int?)menuDish.SortOrder)
             .MaxAsync(cancellationToken) ?? 0;
 
-        var menuDish = new MenuDish
+        var menuDish = existingMenuDish ?? new MenuDish
         {
             MenuId = menuId,
-            DishId = request.DishId,
-            SortOrder = lastSortOrder + 1
+            DishId = request.DishId
         };
+        menuDish.SortOrder = lastSortOrder + 1;
+        menuDish.DataStatusId = existingDataStatus.DataStatusId;
 
-        _context.MenuDishes.Add(menuDish);
+        if (existingMenuDish is null)
+        {
+            _context.MenuDishes.Add(menuDish);
+        }
         await _context.SaveChangesAsync(cancellationToken);
 
         var response = new MenuDishDto
@@ -426,6 +482,7 @@ public sealed class MenuController : ControllerBase
             DishCode = dish.DishCode,
             DishName = dish.DishName,
             Category = dish.Category,
+            Price = dish.Price,
             ImageUrl = dish.ImageUrl,
             Status = dish.Status.StatusCode,
             StatusName = dish.Status.StatusName,
@@ -456,7 +513,9 @@ public sealed class MenuController : ControllerBase
 
         var menuDish = await _context.MenuDishes
             .FirstOrDefaultAsync(
-                item => item.MenuId == menuId && item.DishId == dishId,
+                item => item.MenuId == menuId &&
+                    item.DishId == dishId &&
+                    item.DataStatus.DataStatusCode == DataStatusCodes.Existing,
                 cancellationToken);
 
         if (menuDish is null)
@@ -468,11 +527,20 @@ public sealed class MenuController : ControllerBase
         await using var transaction =
             await _context.Database.BeginTransactionAsync(cancellationToken);
 
-        _context.MenuDishes.Remove(menuDish);
+        var deletedDataStatus = await GetDataStatusAsync(
+            DataStatusCodes.Deleted,
+            cancellationToken);
+        var existingDataStatus = await GetDataStatusAsync(
+            DataStatusCodes.Existing,
+            cancellationToken);
+        menuDish.DataStatusId = deletedDataStatus.DataStatusId;
         await _context.SaveChangesAsync(cancellationToken);
 
         await _context.MenuDishes
-            .Where(item => item.MenuId == menuId && item.SortOrder > removedSortOrder)
+            .Where(item =>
+                item.MenuId == menuId &&
+                item.SortOrder > removedSortOrder &&
+                item.DataStatusId == existingDataStatus.DataStatusId)
             .ExecuteUpdateAsync(
                 setters => setters.SetProperty(
                     item => item.SortOrder,
@@ -517,6 +585,7 @@ public sealed class MenuController : ControllerBase
         var currentDishIds = await _context.MenuDishes
             .AsNoTracking()
             .Where(menuDish => menuDish.MenuId == menuId)
+            .Where(menuDish => menuDish.DataStatus.DataStatusCode == DataStatusCodes.Existing)
             .Select(menuDish => menuDish.DishId)
             .ToListAsync(cancellationToken);
 
@@ -531,22 +600,31 @@ public sealed class MenuController : ControllerBase
 
         try
         {
-            await _context.MenuDishes
-                .Where(menuDish => menuDish.MenuId == menuId)
-                .ExecuteUpdateAsync(
-                    setters => setters.SetProperty(
-                        menuDish => menuDish.SortOrder,
-                        menuDish => -menuDish.MenuDishId),
-                    cancellationToken);
-
             var menuDishes = await _context.MenuDishes
-                .Where(menuDish => menuDish.MenuId == menuId)
+                .Where(menuDish =>
+                    menuDish.MenuId == menuId &&
+                    menuDish.DataStatus.DataStatusCode == DataStatusCodes.Existing)
                 .ToListAsync(cancellationToken);
+
+            var existingDataStatus = await GetDataStatusAsync(
+                DataStatusCodes.Existing,
+                cancellationToken);
+            var deletedDataStatus = await GetDataStatusAsync(
+                DataStatusCodes.Deleted,
+                cancellationToken);
+
+            foreach (var menuDish in menuDishes)
+            {
+                menuDish.DataStatusId = deletedDataStatus.DataStatusId;
+            }
+            await _context.SaveChangesAsync(cancellationToken);
 
             for (var index = 0; index < request.DishIds.Count; index++)
             {
                 var dishId = request.DishIds[index];
-                menuDishes.First(item => item.DishId == dishId).SortOrder = index + 1;
+                var menuDish = menuDishes.First(item => item.DishId == dishId);
+                menuDish.SortOrder = index + 1;
+                menuDish.DataStatusId = existingDataStatus.DataStatusId;
             }
 
             await _context.SaveChangesAsync(cancellationToken);
@@ -564,7 +642,10 @@ public sealed class MenuController : ControllerBase
     private Task<bool> MenuExistsAsync(int menuId, CancellationToken cancellationToken) =>
         _context.Menus
             .AsNoTracking()
-            .AnyAsync(menu => menu.MenuId == menuId, cancellationToken);
+            .AnyAsync(menu =>
+                menu.MenuId == menuId &&
+                menu.DataStatus.DataStatusCode == DataStatusCodes.Existing,
+                cancellationToken);
 
     private async Task<bool> IsMenuInUseAsync(
         int menuId,
@@ -605,10 +686,20 @@ public sealed class MenuController : ControllerBase
         MenuId = menu.MenuId,
         MenuCode = menu.MenuCode,
         MenuName = menu.MenuName,
+        MenuType = menu.MenuType,
+        CustomerId = menu.CustomerId,
         Description = menu.Description,
         PricePerTable = menu.PricePerTable,
         Status = (status ?? menu.Status).StatusCode,
         StatusName = (status ?? menu.Status).StatusName
     };
+
+    private async Task<DataStatus> GetDataStatusAsync(
+        string code,
+        CancellationToken cancellationToken) =>
+        await _context.DataStatuses.SingleOrDefaultAsync(
+            status => status.DataStatusCode == code,
+            cancellationToken) ?? throw new InvalidOperationException(
+            $"Thiếu trạng thái dữ liệu {code}.");
 
 }

@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using HeThongDatTiecCuoi_API.Data;
 using HeThongDatTiecCuoi_API.DTOs.PricingPolicy;
+using HeThongDatTiecCuoi_API.Constants;
 
 namespace HeThongDatTiecCuoi_API.Controllers
 {
@@ -120,6 +121,7 @@ namespace HeThongDatTiecCuoi_API.Controllers
             var halls = await _context.Halls
                 .Include(h => h.Status) // Nạp bảng Status liên kết
                 .AsNoTracking()
+                .Where(h => h.DataStatus.DataStatusCode == DataStatusCodes.Existing)
                 .OrderBy(h => h.HallId)
                 .ToListAsync();
 
@@ -147,7 +149,9 @@ namespace HeThongDatTiecCuoi_API.Controllers
         {
             var hall = await _context.Halls
                 .Include(h => h.Status)
-                .FirstOrDefaultAsync(h => h.HallId == id);
+                .FirstOrDefaultAsync(h =>
+                    h.HallId == id &&
+                    h.DataStatus.DataStatusCode == DataStatusCodes.Existing);
 
             if (hall == null)
                 return NotFound(new { success = false, message = "Không tìm thấy thông tin sảnh." });
@@ -174,7 +178,9 @@ namespace HeThongDatTiecCuoi_API.Controllers
         [HttpPut("hall-price/{sanhId}")]
         public async Task<IActionResult> UpdateHallBasePrice(int sanhId, [FromBody] UpdateHallPriceRequest req)
         {
-            var hall = await _context.Halls.FindAsync(sanhId);
+            var hall = await _context.Halls.FirstOrDefaultAsync(h =>
+                h.HallId == sanhId &&
+                h.DataStatus.DataStatusCode == DataStatusCodes.Existing);
             if (hall == null)
                 return NotFound(new { success = false, message = "Không tìm thấy đại sảnh." });
 

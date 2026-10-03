@@ -37,21 +37,28 @@ public sealed class DevelopmentAuthSeeder
 
         var roles = await EnsureRolesAsync(cancellationToken);
         await UpsertAccountAsync(_options.AdminEmail, _options.AdminPassword, roles[RoleNames.Admin], cancellationToken);
-        await UpsertAccountAsync(_options.StaffEmail, _options.StaffPassword, roles[RoleNames.Consultant], cancellationToken);
+        await UpsertAccountAsync(_options.StaffEmail, _options.StaffPassword, roles[RoleNames.Coordinator], cancellationToken);
         await UpsertAccountAsync(_options.CustomerEmail, _options.CustomerPassword, roles[RoleNames.Customer], cancellationToken);
         await _db.SaveChangesAsync(cancellationToken);
     }
 
     private async Task<Dictionary<string, Role>> EnsureRolesAsync(CancellationToken cancellationToken)
     {
-        var required = new[] { RoleNames.Admin, RoleNames.Consultant, RoleNames.Customer };
+        var required = new Dictionary<byte, string>
+        {
+            [1] = RoleNames.Admin,
+            [2] = RoleNames.Manager,
+            [3] = RoleNames.HallManager,
+            [4] = RoleNames.Coordinator,
+            [5] = RoleNames.Customer
+        };
         var roles = await _db.Roles
-            .Where(role => required.Contains(role.RoleName))
+            .Where(role => required.Values.Contains(role.RoleName))
             .ToDictionaryAsync(role => role.RoleName, cancellationToken);
 
-        foreach (var name in required.Where(name => !roles.ContainsKey(name)))
+        foreach (var (roleId, name) in required.Where(item => !roles.ContainsKey(item.Value)))
         {
-            var role = new Role { RoleName = name };
+            var role = new Role { RoleId = roleId, RoleName = name };
             _db.Roles.Add(role);
             roles[name] = role;
         }
@@ -74,6 +81,9 @@ public sealed class DevelopmentAuthSeeder
         var normalizedEmail = email.Trim().ToLowerInvariant();
         var accountStatusId = await _statusService.GetStatusIdAsync(
             StatusGroups.Account, AccountStatusCodes.Active, cancellationToken);
+        var existingDataStatus = await _db.DataStatuses.SingleAsync(
+            status => status.DataStatusCode == DataStatusCodes.Existing,
+            cancellationToken);
         var user = await _db.Users
             .Include(x => x.Customer)
             .Include(x => x.Employee)
@@ -87,7 +97,8 @@ public sealed class DevelopmentAuthSeeder
                 Role = role,
                 RoleId = role.RoleId,
                 StatusId = accountStatusId,
-                CreatedAt = DateTime.Now
+                CreatedAt = DateTime.Now,
+                DataStatusId = existingDataStatus.DataStatusId
             };
             _db.Users.Add(user);
         }
@@ -96,21 +107,20 @@ public sealed class DevelopmentAuthSeeder
             user.Role = role;
             user.RoleId = role.RoleId;
             user.StatusId = accountStatusId;
+            user.DataStatusId = existingDataStatus.DataStatusId;
         }
 
         user.PasswordHash = _hasher.HashPassword(user, password);
 
-        if (role.RoleName == RoleNames.Consultant && user.Employee is null)
+        if (role.RoleName == RoleNames.Coordinator && user.Employee is null)
         {
-            var employeeStatusId = await _statusService.GetStatusIdAsync(
-                StatusGroups.Employee, EmployeeStatusCodes.Active, cancellationToken);
             user.Employee = new Employee
             {
                 User = user,
                 EmployeeCode = "NV001",
-                FullName = "Nhân viên tư vấn",
+                FullName = "Nhân viên điều phối",
                 PhoneNumber = "0912345678",
-                StatusId = employeeStatusId
+                DataStatusId = existingDataStatus.DataStatusId
             };
         }
 
@@ -119,8 +129,12 @@ public sealed class DevelopmentAuthSeeder
             user.Customer = new Customer
             {
                 User = user,
+                CustomerCode = "KH000001",
                 FullName = "Khách hàng mẫu",
-                PhoneNumber = "0901234567"
+                PhoneNumber = "0901234567",
+                Email = normalizedEmail,
+                CreatedAt = DateTime.Now,
+                DataStatusId = existingDataStatus.DataStatusId
             };
         }
     }

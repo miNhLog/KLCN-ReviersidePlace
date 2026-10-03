@@ -9,7 +9,11 @@ public sealed class Hall
     public int MaximumCapacity { get; set; }
     public decimal RentalPrice { get; set; }
     public string? Description { get; set; }
-    public string? ImageUrl { get; set; }
     public int StatusId { get; set; }
+    public byte DataStatusId { get; set; }
     public Status Status { get; set; } = null!;
+    public DataStatus DataStatus { get; set; } = null!;
+    public ICollection<HallSchedule> Schedules { get; set; } = [];
+    public ICollection<ImageAsset> Images { get; set; } = [];
+    public ICollection<HallManagerAssignment> HallManagerAssignments { get; set; } = [];
 }

@@ -1,21 +1,15 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+namespace HeThongDatTiecCuoi_API.Models;
 
-namespace HeThongDatTiecCuoi_API.Models
+public sealed class ServiceItem
 {
-    [Table("DichVu")]
-    public class ServiceItem
-    {
-        [Key]
-        public int DichVuID { get; set; }
-        [Required]
-        public string MaDichVu { get; set; } = string.Empty;
-        [Required]
-        public string TenDichVu { get; set; } = string.Empty;
-        public string? LoaiDichVu { get; set; }
-        public string? MoTa { get; set; }
-        public decimal Gia { get; set; }
-        public string? HinhAnh { get; set; }
-        public string TrangThai { get; set; } = "Áp dụng";
-    }
+    public int DichVuID { get; set; }
+    public string MaDichVu { get; set; } = string.Empty;
+    public string TenDichVu { get; set; } = string.Empty;
+    public string? LoaiDichVu { get; set; }
+    public string? MoTa { get; set; }
+    public decimal Gia { get; set; }
+    public int StatusId { get; set; }
+    public byte DataStatusId { get; set; }
+    public Status Status { get; set; } = null!;
+    public DataStatus DataStatus { get; set; } = null!;
 }

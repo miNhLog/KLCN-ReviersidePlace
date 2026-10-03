@@ -8,13 +8,19 @@ public sealed class Dish
 
     public string DishName { get; set; } = string.Empty;
 
-    public string? Category { get; set; }
+    public string Category { get; set; } = string.Empty;
+
+    public decimal Price { get; set; }
 
     public string? ImageUrl { get; set; }
 
     public int StatusId { get; set; }
 
+    public byte DataStatusId { get; set; }
+
     public Status Status { get; set; } = null!;
+
+    public DataStatus DataStatus { get; set; } = null!;
 
     public ICollection<MenuDish> MenuDishes { get; set; } = [];
 }

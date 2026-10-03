@@ -14,7 +14,7 @@ public sealed class RegisterRequest
 
     [Required(ErrorMessage = "Vui lòng nhập email.")]
     [EmailAddress(ErrorMessage = "Email không hợp lệ.")]
-    [StringLength(150)]
+    [StringLength(255)]
     public string Email { get; init; } = string.Empty;
 
     [Required(ErrorMessage = "Vui lòng nhập mật khẩu.")]
