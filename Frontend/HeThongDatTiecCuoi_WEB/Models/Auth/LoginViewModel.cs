@@ -13,7 +13,6 @@ public sealed class LoginViewModel
     [Display(Name = "Mật khẩu")]
     public string Password { get; set; } = string.Empty;
 
-    public string AccountType { get; set; } = "Customer";
     public bool RememberMe { get; set; }
     public string? ReturnUrl { get; set; }
 }

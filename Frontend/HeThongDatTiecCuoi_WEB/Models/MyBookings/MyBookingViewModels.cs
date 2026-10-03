@@ -23,6 +23,4 @@ public class MyBookingViewModel
     public string Status { get; set; } = string.Empty;
     public DateTime BookedAt { get; set; }
     public string? SpecialRequests { get; set; }
-    public string? ConsultantName { get; set; }
-    public string? ConsultantPhone { get; set; }
 }

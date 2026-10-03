@@ -16,14 +16,16 @@ public sealed class HomeController : Controller
     }
 
     [AllowAnonymous]
-    public async Task<IActionResult> Index(CancellationToken cancellationToken)
+    public async Task<IActionResult> Index(
+        bool publicSite = false,
+        CancellationToken cancellationToken = default)
     {
-        if (User.IsInRole(RoleNames.Admin))
+        if (!publicSite && User.IsInRole(RoleNames.Admin))
         {
             return RedirectToAction("Index", "AdminHall");
         }
 
-        if (User.IsInRole(RoleNames.Consultant) || User.IsInRole(RoleNames.Coordinator))
+        if (!publicSite && User.IsInRole(RoleNames.Coordinator))
         {
             return RedirectToAction(nameof(Dashboard));
         }
@@ -48,6 +50,31 @@ public sealed class HomeController : Controller
             return RedirectToAction("Index", "AdminHall");
         }
 
+        return View();
+    }
+
+    [Authorize(Roles = RoleNames.Manager)]
+    public IActionResult HallManagerAssignments()
+    {
+        return View();
+    }
+
+    [Authorize(Roles = RoleNames.HallManager)]
+    public IActionResult CoordinationAssignments()
+    {
+        return View();
+    }
+
+    [Authorize(Roles = RoleNames.Coordinator)]
+    public IActionResult AssignedParties()
+    {
+        return View();
+    }
+
+    [Authorize(Roles = RoleNames.Coordinator)]
+    public IActionResult AssignedPartyDetail(int bookingId)
+    {
+        ViewData["BookingId"] = bookingId;
         return View();
     }
 

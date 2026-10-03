@@ -17,9 +17,11 @@ public interface IRiversideApiClient
         LoginViewModel model,
         CancellationToken cancellationToken);
 
-    Task<ApiCallResult<AuthResponseDto>> RegisterAsync(
-        RegisterViewModel model,
+    Task<ApiCallResult<AuthResponseDto>> LoginWithGoogleAsync(
+        string accessToken,
+        bool rememberMe,
         CancellationToken cancellationToken);
+    Task<ApiCallResult<MessageResponseDto>> ChangePasswordAsync(ChangePasswordViewModel model, string accessToken, CancellationToken cancellationToken);
 
     Task<ApiCallResult<MessageResponseDto>> ForgotPasswordAsync(
         ForgotPasswordViewModel model,

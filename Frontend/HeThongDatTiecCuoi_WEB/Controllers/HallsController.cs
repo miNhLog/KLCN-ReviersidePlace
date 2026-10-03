@@ -30,7 +30,7 @@ public sealed class HallsController : Controller
         if (User.IsInRole(RoleNames.Admin))
             return RedirectToAction("Index", "AdminHall");
 
-        if (User.IsInRole(RoleNames.Consultant) || User.IsInRole(RoleNames.Coordinator))
+        if (User.IsInRole(RoleNames.Coordinator))
             return RedirectToAction("Dashboard", "Home");
 
         page = Math.Max(1, page);
@@ -77,7 +77,7 @@ public sealed class HallsController : Controller
         if (User.IsInRole(RoleNames.Admin))
             return RedirectToAction("Index", "AdminHall");
 
-        if (User.IsInRole(RoleNames.Consultant) || User.IsInRole(RoleNames.Coordinator))
+        if (User.IsInRole(RoleNames.Coordinator))
             return RedirectToAction("Dashboard", "Home");
 
         var result = await _apiClient.GetPublicHallAsync(hallId, cancellationToken);

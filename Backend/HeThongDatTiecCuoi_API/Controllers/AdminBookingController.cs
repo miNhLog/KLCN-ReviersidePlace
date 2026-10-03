@@ -4,6 +4,7 @@ using HeThongDatTiecCuoi_API.Data;
 using HeThongDatTiecCuoi_API.DTOs.Booking;
 using HeThongDatTiecCuoi_API.Models;
 using HeThongDatTiecCuoi_API.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,6 +12,7 @@ namespace HeThongDatTiecCuoi_API.Controllers;
 
 [Route("api/admin/bookings")]
 [ApiController]
+[Authorize(Roles = RoleNames.Admin + "," + RoleNames.Manager)]
 public sealed class AdminBookingController : ControllerBase
 {
     private readonly ApplicationDbContext _context;

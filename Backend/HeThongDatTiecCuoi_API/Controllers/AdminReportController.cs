@@ -1,14 +1,17 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 using HeThongDatTiecCuoi_API.Data;
 using HeThongDatTiecCuoi_API.DTOs.Report;
 using HeThongDatTiecCuoi_API.Constants;
 using HeThongDatTiecCuoi_API.Constants.StatusCodes;
+using HeThongDatTiecCuoi_API.Models;
 
 namespace HeThongDatTiecCuoi_API.Controllers;
 
 [Route("api/admin/reports")]
 [ApiController]
+[Authorize(Roles = RoleNames.Admin + "," + RoleNames.Manager)]
 public class AdminReportController : ControllerBase
 {
     private readonly ApplicationDbContext _context;

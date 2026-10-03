@@ -31,22 +31,21 @@ public sealed class RiversideApiClient : IRiversideApiClient
         {
             model.Identifier,
             model.Password,
-            model.AccountType,
             model.RememberMe
         }, null, cancellationToken);
 
-    public Task<ApiCallResult<AuthResponseDto>> RegisterAsync(
-        RegisterViewModel model,
+    public Task<ApiCallResult<AuthResponseDto>> LoginWithGoogleAsync(
+        string accessToken,
+        bool rememberMe,
         CancellationToken cancellationToken) =>
-        SendAsync<AuthResponseDto>(HttpMethod.Post, "api/auth/register", new
+        SendAsync<AuthResponseDto>(HttpMethod.Post, "api/auth/google-login", new
         {
-            model.FullName,
-            model.PhoneNumber,
-            model.Email,
-            model.Password,
-            model.ConfirmPassword,
-            model.AcceptTerms
+            AccessToken = accessToken,
+            RememberMe = rememberMe
         }, null, cancellationToken);
+
+    public Task<ApiCallResult<MessageResponseDto>> ChangePasswordAsync(ChangePasswordViewModel model, string accessToken, CancellationToken cancellationToken) =>
+        SendAsync<MessageResponseDto>(HttpMethod.Post, "api/auth/change-password", model, accessToken, cancellationToken);
 
     public Task<ApiCallResult<MessageResponseDto>> ForgotPasswordAsync(
         ForgotPasswordViewModel model,

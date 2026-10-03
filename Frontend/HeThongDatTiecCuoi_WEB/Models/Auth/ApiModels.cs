@@ -6,7 +6,8 @@ public sealed record CurrentUserDto(
     string FullName,
     string? PhoneNumber,
     string RoleName,
-    string Status);
+    string Status,
+    bool MustChangePassword);
 
 public sealed record AuthResponseDto(
     string AccessToken,
@@ -15,6 +16,12 @@ public sealed record AuthResponseDto(
 
 public sealed record ApiErrorDto(string Message, Dictionary<string, string[]>? Errors = null);
 public sealed record MessageResponseDto(string Message);
+public sealed class ChangePasswordViewModel
+{
+    public string CurrentPassword { get; set; } = string.Empty;
+    public string NewPassword { get; set; } = string.Empty;
+    public string ConfirmPassword { get; set; } = string.Empty;
+}
 
 public sealed record ApiCallResult<T>(bool Succeeded, T? Value, string? Error, int? StatusCode = null)
 {

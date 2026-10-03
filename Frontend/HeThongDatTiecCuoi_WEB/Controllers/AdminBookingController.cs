@@ -9,7 +9,7 @@ using HeThongDatTiecCuoi_WEB.Services;
 
 namespace HeThongDatTiecCuoi_WEB.Controllers;
 
-[Authorize(Roles = RoleNames.Admin)]
+[Authorize(Roles = RoleNames.Admin + "," + RoleNames.Manager)]
 public class AdminBookingController : Controller
 {
     private const string ApiTokenCookie = "rp_api_token";

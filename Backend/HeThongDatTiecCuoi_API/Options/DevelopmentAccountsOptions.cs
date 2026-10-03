@@ -9,6 +9,4 @@ public sealed class DevelopmentAccountsOptions
     public string AdminPassword { get; init; } = string.Empty;
     public string StaffEmail { get; init; } = string.Empty;
     public string StaffPassword { get; init; } = string.Empty;
-    public string CustomerEmail { get; init; } = string.Empty;
-    public string CustomerPassword { get; init; } = string.Empty;
 }
