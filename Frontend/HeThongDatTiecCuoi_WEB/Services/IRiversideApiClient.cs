@@ -59,6 +59,10 @@ public interface IRiversideApiClient
         int pageSize,
         CancellationToken cancellationToken);
 
+    Task<ApiCallResult<PublicMenuDetailDto>> GetPublicMenuDetailAsync(
+        int menuId,
+        CancellationToken cancellationToken);
+
     Task<ApiCallResult<List<HallDto>>> GetHallsAsync(
         string accessToken,
         CancellationToken cancellationToken);

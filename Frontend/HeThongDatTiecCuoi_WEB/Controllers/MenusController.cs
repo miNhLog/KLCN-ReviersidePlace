@@ -74,4 +74,49 @@ public sealed class MenusController : Controller
                 : result.Error ?? "Không thể tải danh sách thực đơn. Vui lòng thử lại sau."
         });
     }
+
+    [HttpGet("{menuId:int}")]
+    [AllowAnonymous]
+    public async Task<IActionResult> Details(
+        int menuId,
+        CancellationToken cancellationToken)
+    {
+        if (User.IsInRole(RoleNames.Admin))
+        {
+            return RedirectToAction("Index", "AdminMenu");
+        }
+
+        if (User.IsInRole(RoleNames.Consultant) || User.IsInRole(RoleNames.Coordinator))
+        {
+            return RedirectToAction("Dashboard", "Home");
+        }
+
+        var result = await _apiClient.GetPublicMenuDetailAsync(menuId, cancellationToken);
+        if (!result.Succeeded || result.Value is null)
+        {
+            if (result.StatusCode == StatusCodes.Status404NotFound)
+            {
+                Response.StatusCode = StatusCodes.Status404NotFound;
+                return View(new MenuDetailViewModel { IsNotFound = true });
+            }
+
+            Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
+            return View(new MenuDetailViewModel
+            {
+                ErrorMessage = "Không thể tải thông tin thực đơn. Vui lòng thử lại sau."
+            });
+        }
+
+        var menu = result.Value;
+        return View(new MenuDetailViewModel
+        {
+            MenuId = menu.MenuId,
+            MenuCode = menu.MenuCode,
+            MenuName = menu.MenuName,
+            Description = menu.Description,
+            PricePerTable = menu.PricePerTable,
+            DishCount = menu.DishCount,
+            Dishes = menu.Dishes
+        });
+    }
 }

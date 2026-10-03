@@ -122,6 +122,52 @@ public sealed class MenuController : ControllerBase
         });
     }
 
+    [HttpGet("public/{menuId:int}")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetPublicMenu(
+        int menuId,
+        CancellationToken cancellationToken)
+    {
+        var menu = await _context.Menus
+            .AsNoTracking()
+            .Where(item => item.MenuId == menuId
+                && item.Status.StatusCode == MenuStatusCodes.Active)
+            .Select(item => new PublicMenuDetailDto
+            {
+                MenuId = item.MenuId,
+                MenuCode = item.MenuCode,
+                MenuName = item.MenuName,
+                Description = item.Description,
+                PricePerTable = item.PricePerTable
+            })
+            .SingleOrDefaultAsync(cancellationToken);
+
+        if (menu is null)
+        {
+            return NotFound(new { message = "Không tìm thấy thực đơn." });
+        }
+
+        var dishes = await _context.MenuDishes
+            .AsNoTracking()
+            .Where(menuDish => menuDish.MenuId == menuId
+                && menuDish.Dish.Status.StatusCode == DishStatusCodes.Active)
+            .OrderBy(menuDish => menuDish.SortOrder)
+            .Select(menuDish => new PublicMenuDishDto
+            {
+                DishId = menuDish.DishId,
+                DishCode = menuDish.Dish.DishCode,
+                DishName = menuDish.Dish.DishName,
+                Category = menuDish.Dish.Category,
+                ImageUrl = menuDish.Dish.ImageUrl,
+                SortOrder = menuDish.SortOrder
+            })
+            .ToListAsync(cancellationToken);
+
+        menu.Dishes = dishes;
+        menu.DishCount = dishes.Count;
+        return Ok(menu);
+    }
+
     [HttpGet]
     public async Task<IActionResult> GetMenus(
         [FromQuery] string? keyword,

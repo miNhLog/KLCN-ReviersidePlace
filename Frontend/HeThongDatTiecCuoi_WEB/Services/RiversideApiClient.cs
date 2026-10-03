@@ -209,6 +209,36 @@ public sealed class RiversideApiClient : IRiversideApiClient
         }
     }
 
+    public async Task<ApiCallResult<PublicMenuDetailDto>> GetPublicMenuDetailAsync(
+        int menuId,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = await SendAsync<PublicMenuDetailDto>(
+                HttpMethod.Get,
+                $"api/menus/public/{menuId}",
+                null,
+                null,
+                cancellationToken);
+
+            if (result.Value is not null)
+            {
+                foreach (var dish in result.Value.Dishes)
+                {
+                    dish.ImageUrl = ResolvePublicImageUrl(dish.ImageUrl);
+                }
+            }
+
+            return result;
+        }
+        catch (JsonException)
+        {
+            return ApiCallResult<PublicMenuDetailDto>.Failure(
+                "API trả về dữ liệu chi tiết thực đơn không hợp lệ.");
+        }
+    }
+
     public Task<ApiCallResult<List<HallDto>>> GetHallsAsync(
         string accessToken,
         CancellationToken cancellationToken) =>

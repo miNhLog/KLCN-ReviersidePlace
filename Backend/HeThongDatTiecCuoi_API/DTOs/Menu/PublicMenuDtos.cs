@@ -17,3 +17,24 @@ public sealed class PublicMenuListResponse
     public int TotalItems { get; set; }
     public int TotalPages { get; set; }
 }
+
+public sealed class PublicMenuDetailDto
+{
+    public int MenuId { get; set; }
+    public string MenuCode { get; set; } = string.Empty;
+    public string MenuName { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public decimal PricePerTable { get; set; }
+    public int DishCount { get; set; }
+    public IReadOnlyList<PublicMenuDishDto> Dishes { get; set; } = [];
+}
+
+public sealed class PublicMenuDishDto
+{
+    public int DishId { get; set; }
+    public string DishCode { get; set; } = string.Empty;
+    public string DishName { get; set; } = string.Empty;
+    public string? Category { get; set; }
+    public string? ImageUrl { get; set; }
+    public int SortOrder { get; set; }
+}
