@@ -13,6 +13,7 @@ public sealed class AuthController : Controller
 {
     private const string ApiTokenCookie = "rp_api_token";
     private const string ExternalCookieScheme = "External";
+    public const string MustChangePasswordClaim = "must_change_password";
     private readonly IRiversideApiClient _apiClient;
     private readonly IConfiguration _configuration;
 
@@ -95,10 +96,14 @@ public sealed class AuthController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> ChangePassword(ChangePasswordViewModel model, CancellationToken cancellationToken)
     {
+        if (!ModelState.IsValid) return View(model);
+
         var token = Request.Cookies[ApiTokenCookie];
         if (string.IsNullOrWhiteSpace(token)) return RedirectToAction(nameof(Login));
         var result = await _apiClient.ChangePasswordAsync(model, token, cancellationToken);
         if (!result.Succeeded) { ModelState.AddModelError(string.Empty, result.Error ?? "Không thể đổi mật khẩu."); return View(model); }
+        await UpdateMustChangePasswordClaimAsync(false);
+        TempData["Success"] = result.Value?.Message ?? "Đổi mật khẩu thành công.";
         return RedirectForRole(User.FindFirstValue(ClaimTypes.Role));
     }
 
@@ -232,7 +237,8 @@ public sealed class AuthController : Controller
             new(ClaimTypes.NameIdentifier, auth.User.UserId.ToString()),
             new(ClaimTypes.Name, auth.User.FullName),
             new(ClaimTypes.Email, auth.User.Email),
-            new(ClaimTypes.Role, auth.User.RoleName)
+            new(ClaimTypes.Role, auth.User.RoleName),
+            new(MustChangePasswordClaim, auth.User.MustChangePassword.ToString())
         };
 
         var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
@@ -259,5 +265,22 @@ public sealed class AuthController : Controller
             IsEssential = true,
             Expires = expireTime
         });
+    }
+
+    private async Task UpdateMustChangePasswordClaimAsync(bool mustChangePassword)
+    {
+        var ticket = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        var claims = User.Claims
+            .Where(claim => claim.Type != MustChangePasswordClaim)
+            .Append(new Claim(MustChangePasswordClaim, mustChangePassword.ToString()))
+            .ToList();
+        await HttpContext.SignInAsync(
+            CookieAuthenticationDefaults.AuthenticationScheme,
+            new ClaimsPrincipal(new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme)),
+            new AuthenticationProperties
+            {
+                IsPersistent = ticket.Properties?.IsPersistent ?? false,
+                ExpiresUtc = ticket.Properties?.ExpiresUtc
+            });
     }
 }

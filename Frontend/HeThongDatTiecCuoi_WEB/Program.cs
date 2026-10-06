@@ -1,3 +1,4 @@
+using HeThongDatTiecCuoi_WEB.Controllers;
 using HeThongDatTiecCuoi_WEB.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 
@@ -72,6 +73,28 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
 app.UseAuthentication();
+
+// A temporary password is not enough to enter any Back Office route. The flag is
+// issued from the authenticated login response and is cleared only after the API
+// accepts the password change.
+app.Use(async (context, next) =>
+{
+    var mustChangePassword = bool.TryParse(
+        context.User.FindFirst(AuthController.MustChangePasswordClaim)?.Value,
+        out var value) && value;
+    var path = context.Request.Path;
+    var isPasswordRoute = path.StartsWithSegments("/doi-mat-khau");
+    var isLogoutRoute = path.StartsWithSegments("/dang-xuat");
+
+    if (context.User.Identity?.IsAuthenticated == true &&
+        mustChangePassword && !isPasswordRoute && !isLogoutRoute)
+    {
+        context.Response.Redirect("/doi-mat-khau");
+        return;
+    }
+
+    await next();
+});
 app.UseAuthorization();
 
 app.MapControllerRoute(

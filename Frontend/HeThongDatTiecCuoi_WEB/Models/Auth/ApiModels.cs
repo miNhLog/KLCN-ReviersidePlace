@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace HeThongDatTiecCuoi_WEB.Models.Auth;
 
 public sealed record CurrentUserDto(
@@ -18,8 +20,14 @@ public sealed record ApiErrorDto(string Message, Dictionary<string, string[]>? E
 public sealed record MessageResponseDto(string Message);
 public sealed class ChangePasswordViewModel
 {
+    [Required(ErrorMessage = "Vui lòng nhập mật khẩu hiện tại.")]
     public string CurrentPassword { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Vui lòng nhập mật khẩu mới.")]
     public string NewPassword { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Vui lòng xác nhận mật khẩu mới.")]
+    [Compare(nameof(NewPassword), ErrorMessage = "Mật khẩu xác nhận không khớp.")]
     public string ConfirmPassword { get; set; } = string.Empty;
 }
 
