@@ -36,25 +36,24 @@
                         <span>Về trang quản trị</span>
                     </a>
                 }
-                <details class="account-menu">
-                    <summary>
-                        <span class="material-symbols-outlined" aria-hidden="true">person</span>
-                        <span>Xin chào, @User.Identity.Name</span>
-                        <span class="material-symbols-outlined account-chevron" aria-hidden="true">expand_more</span>
-                    </summary>
-                    <div class="account-dropdown">
-                        @if (isInternalUser)
-                        {
-                            <a asp-controller="@dashboardController" asp-action="Dashboard">Về trang quản trị</a>
-                        }
-                        <a asp-controller="MyBookings" asp-action="Index" class="nav-link @(ViewData["PublicActivePage"]?.ToString() == "my-bookings" ? "active" : "")">
-                            Tiệc của tôi
-                        </a>
-                        <form asp-controller="Auth" asp-action="Logout" method="post">
-                            <button type="submit">Đăng xuất</button>
-                        </form>
-                    </div>
-                </details>
+                @if (!isInternalUser)
+                {
+                    <details class="account-menu">
+                        <summary>
+                            <span class="material-symbols-outlined" aria-hidden="true">person</span>
+                            <span>Xin chào, @User.Identity.Name</span>
+                            <span class="material-symbols-outlined account-chevron" aria-hidden="true">expand_more</span>
+                        </summary>
+                        <div class="account-dropdown">
+                            <a asp-controller="MyBookings" asp-action="Index" class="nav-link @(ViewData["PublicActivePage"]?.ToString() == "my-bookings" ? "active" : "")">
+                                Tiệc của tôi
+                            </a>
+                            <form asp-controller="Auth" asp-action="Logout" method="post">
+                                <button type="submit">Đăng xuất</button>
+                            </form>
+                        </div>
+                    </details>
+                }
             }
             else
             {

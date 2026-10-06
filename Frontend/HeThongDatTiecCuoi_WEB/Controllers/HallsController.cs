@@ -28,7 +28,7 @@ public sealed class HallsController : Controller
         CancellationToken cancellationToken = default)
     {
         if (User.IsInRole(RoleNames.Admin))
-            return RedirectToAction("Index", "AdminHall");
+            return RedirectToAction("Dashboard", "AdminAccount");
 
         if (User.IsInRole(RoleNames.Coordinator))
             return RedirectToAction("Dashboard", "Home");
@@ -75,7 +75,7 @@ public sealed class HallsController : Controller
         CancellationToken cancellationToken)
     {
         if (User.IsInRole(RoleNames.Admin))
-            return RedirectToAction("Index", "AdminHall");
+            return RedirectToAction("Dashboard", "AdminAccount");
 
         if (User.IsInRole(RoleNames.Coordinator))
             return RedirectToAction("Dashboard", "Home");

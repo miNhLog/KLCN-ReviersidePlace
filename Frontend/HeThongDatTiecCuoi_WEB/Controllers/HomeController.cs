@@ -22,7 +22,7 @@ public sealed class HomeController : Controller
     {
         if (!publicSite && User.IsInRole(RoleNames.Admin))
         {
-            return RedirectToAction("Index", "AdminHall");
+            return RedirectToAction("Dashboard", "AdminAccount");
         }
 
         if (!publicSite && User.IsInRole(RoleNames.Coordinator))
@@ -44,10 +44,10 @@ public sealed class HomeController : Controller
     public IActionResult Dashboard()
     {
         // Admin truy cập trực tiếp /Home/Dashboard
-        // cũng chuyển về trang quản lý sảnh
+        // được đưa về trang tổng quan hệ thống.
         if (User.IsInRole(RoleNames.Admin))
         {
-            return RedirectToAction("Index", "AdminHall");
+            return RedirectToAction("Dashboard", "AdminAccount");
         }
 
         return View();

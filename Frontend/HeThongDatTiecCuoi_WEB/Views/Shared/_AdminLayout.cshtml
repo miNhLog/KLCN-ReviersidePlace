@@ -1,4 +1,5 @@
 @using HeThongDatTiecCuoi_WEB.Constants
+@using System.Globalization
 @{
     var currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? string.Empty;
     var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? string.Empty;
@@ -13,6 +14,9 @@
     var isHallManager = User.IsInRole(RoleNames.HallManager);
     var isCoordinator = User.IsInRole(RoleNames.Coordinator);
     var dashboardController = isAdmin ? "AdminAccount" : "Home";
+    var vietnameseCulture = CultureInfo.GetCultureInfo("vi-VN");
+    var currentDateText = DateTime.Today.ToString("dddd, dd 'tháng' MM 'năm' yyyy", vietnameseCulture);
+    currentDateText = char.ToUpper(currentDateText[0], vietnameseCulture) + currentDateText[1..];
 
     bool IsActive(string controller, string action = "Index") =>
         string.Equals(currentController, controller, StringComparison.OrdinalIgnoreCase) &&
@@ -38,6 +42,10 @@
 
     <link rel="stylesheet"
           href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap"
+          rel="stylesheet" />
     <link rel="stylesheet"
           href="~/css/admin-hall.css"
           asp-append-version="true" />
@@ -114,10 +122,13 @@
                             <span class="sidebar-icon" aria-hidden="true"><i class="fa-solid fa-users"></i></span>
                             <span class="sidebar-label">Quản lý tài khoản</span>
                         </a>
-                        <button type="button" class="sidebar-item developing" data-sidebar-tooltip="Nhật ký hệ thống">
+                        <a asp-controller="AdminAuditLog" asp-action="Index"
+                           class="sidebar-item @(IsActive("AdminAuditLog") ? "active" : string.Empty)"
+                           aria-current="@(IsActive("AdminAuditLog") ? "page" : null)"
+                           data-sidebar-tooltip="Nhật ký hệ thống">
                             <span class="sidebar-icon" aria-hidden="true"><i class="fa-solid fa-clock-rotate-left"></i></span>
                             <span class="sidebar-label">Nhật ký hệ thống</span>
-                        </button>
+                        </a>
                     </nav>
                 </section>
                 <section class="sidebar-section" aria-labelledby="adminProfileMenuTitle">
@@ -319,16 +330,7 @@
 
             </div>
 
-            <footer class="sidebar-footer"
-                    data-sidebar-tooltip="@displayName · @roleName">
-                <div class="sidebar-account">
-                    <div class="avatar" aria-hidden="true">@initials</div>
-                    <div class="user-info">
-                        <strong>@displayName</strong>
-                        <span>@roleName</span>
-                    </div>
-                </div>
-
+            <footer class="sidebar-footer">
                 <a asp-controller="Home"
                    asp-action="Index"
                    asp-route-publicSite="true"
@@ -337,21 +339,71 @@
                    title="Về trang chủ Riverside Palace"
                    data-sidebar-tooltip="Về trang chủ Riverside Palace">
                     <i class="fa-solid fa-house" aria-hidden="true"></i>
+                    <span>Về trang chủ Riverside Palace</span>
                 </a>
-
-                <form method="post" action="/dang-xuat" class="sidebar-logout-form">
-                    @Html.AntiForgeryToken()
-                    <button type="submit"
-                            class="logout-button"
-                            aria-label="Đăng xuất"
-                            title="Đăng xuất">
-                        <i class="fa-solid fa-arrow-right-from-bracket" aria-hidden="true"></i>
-                    </button>
-                </form>
             </footer>
         </aside>
 
         <main class="main-content" id="adminMainContent">
+            <header class="backoffice-topbar" aria-label="Thanh công cụ quản trị">
+                <div class="topbar-left">
+                    <label class="topbar-search">
+                        <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                        <span class="visually-hidden">Tìm kiếm</span>
+                        <input id="backofficeSearch" type="search" placeholder="Tìm kiếm chức năng, dữ liệu..." autocomplete="off" aria-controls="backofficeSearchResults" aria-expanded="false" />
+                        <span id="backofficeSearchResults" class="topbar-search-results" role="listbox" aria-label="Kết quả tìm kiếm chức năng"></span>
+                    </label>
+                </div>
+                <div class="topbar-right">
+                    <div class="topbar-date" title="Ngày hiện tại">
+                        <i class="fa-regular fa-calendar" aria-hidden="true"></i>
+                        <span>@currentDateText</span>
+                    </div>
+                    <span class="topbar-divider" aria-hidden="true"></span>
+                    <div class="topbar-notifications">
+                        <button type="button"
+                                class="topbar-notification"
+                                id="notificationButton"
+                                aria-label="Mở thông báo"
+                                aria-controls="notificationPanel"
+                                aria-expanded="false">
+                            <i class="fa-regular fa-bell" aria-hidden="true"></i>
+                        </button>
+                        <section class="notification-panel"
+                                 id="notificationPanel"
+                                 aria-label="Thông báo"
+                                 hidden>
+                            <header class="notification-panel-header">
+                                <i class="fa-regular fa-bell" aria-hidden="true"></i>
+                                <h2>Thông báo</h2>
+                            </header>
+                            <div class="notification-empty-state">
+                                <i class="fa-regular fa-bell-slash" aria-hidden="true"></i>
+                                <p>Không có thông báo</p>
+                            </div>
+                        </section>
+                    </div>
+                    <span class="topbar-divider" aria-hidden="true"></span>
+                    <details class="topbar-account">
+                        <summary class="topbar-user" aria-label="Mở menu tài khoản">
+                            <span class="topbar-avatar" aria-hidden="true">@initials</span>
+                            <span class="topbar-user-text">
+                                <strong class="topbar-user-name" title="@displayName">@displayName</strong>
+                                <span class="topbar-user-role">@roleName</span>
+                            </span>
+                            <i class="fa-solid fa-chevron-down topbar-chevron" aria-hidden="true"></i>
+                        </summary>
+                        <div class="user-dropdown">
+                            <a asp-controller="Auth" asp-action="ChangePassword"><i class="fa-solid fa-key" aria-hidden="true"></i>Đổi mật khẩu</a>
+                            <div class="user-dropdown-divider" aria-hidden="true"></div>
+                            <form asp-controller="Auth" asp-action="Logout" method="post">
+                                @Html.AntiForgeryToken()
+                                <button type="submit"><i class="fa-solid fa-arrow-right-from-bracket" aria-hidden="true"></i>Đăng xuất</button>
+                            </form>
+                        </div>
+                    </details>
+                </div>
+            </header>
             @RenderBody()
         </main>
     </div>

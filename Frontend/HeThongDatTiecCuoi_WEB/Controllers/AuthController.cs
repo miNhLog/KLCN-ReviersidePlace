@@ -219,7 +219,7 @@ public sealed class AuthController : Controller
     {
         if (roleName == RoleNames.Admin)
         {
-            return RedirectToAction("Index", "AdminHall");
+            return RedirectToAction("Dashboard", "AdminAccount");
         }
 
         if (roleName is RoleNames.Manager or RoleNames.HallManager or RoleNames.Coordinator)

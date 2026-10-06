@@ -362,6 +362,7 @@ public sealed class RiversideApiClient : IRiversideApiClient
         string? keyword,
         int? roleId,
         string? status,
+        bool? mustChangePassword,
         CancellationToken cancellationToken)
     {
         var query = new List<string>();
@@ -381,6 +382,11 @@ public sealed class RiversideApiClient : IRiversideApiClient
             query.Add($"status={Uri.EscapeDataString(status)}");
         }
 
+        if (mustChangePassword.HasValue)
+        {
+            query.Add($"mustChangePassword={mustChangePassword.Value.ToString().ToLowerInvariant()}");
+        }
+
         var uri = "api/admin/accounts";
 
         if (query.Count > 0)
@@ -391,6 +397,53 @@ public sealed class RiversideApiClient : IRiversideApiClient
         return SendAsync<List<AccountDto>>(
             HttpMethod.Get,
             uri,
+            null,
+            accessToken,
+            cancellationToken);
+    }
+
+    public Task<ApiCallResult<SystemDashboardViewModel>> GetSystemDashboardAsync(
+        string accessToken,
+        DateTime? fromDate,
+        DateTime? toDate,
+        CancellationToken cancellationToken)
+    {
+        var query = new List<string>();
+        if (fromDate.HasValue) query.Add($"fromDate={fromDate.Value:yyyy-MM-dd}");
+        if (toDate.HasValue) query.Add($"toDate={toDate.Value:yyyy-MM-dd}");
+        var uri = "api/admin/accounts/dashboard" + (query.Count == 0 ? string.Empty : "?" + string.Join("&", query));
+
+        return SendAsync<SystemDashboardViewModel>(
+            HttpMethod.Get,
+            uri,
+            null,
+            accessToken,
+            cancellationToken);
+    }
+
+    public Task<ApiCallResult<AuditLogPageViewModel>> GetAuditLogsAsync(
+        string accessToken,
+        int page,
+        int pageSize,
+        string? action,
+        DateTime? fromDate,
+        DateTime? toDate,
+        string? keyword,
+        CancellationToken cancellationToken)
+    {
+        var query = new List<string>
+        {
+            $"page={Math.Max(1, page)}",
+            $"pageSize={Math.Clamp(pageSize, 1, 100)}"
+        };
+        if (!string.IsNullOrWhiteSpace(action)) query.Add($"action={Uri.EscapeDataString(action)}");
+        if (fromDate.HasValue) query.Add($"fromDate={fromDate.Value:yyyy-MM-dd}");
+        if (toDate.HasValue) query.Add($"toDate={toDate.Value:yyyy-MM-dd}");
+        if (!string.IsNullOrWhiteSpace(keyword)) query.Add($"keyword={Uri.EscapeDataString(keyword)}");
+
+        return SendAsync<AuditLogPageViewModel>(
+            HttpMethod.Get,
+            "api/admin/audit-logs?" + string.Join("&", query),
             null,
             accessToken,
             cancellationToken);
@@ -435,6 +488,21 @@ public sealed class RiversideApiClient : IRiversideApiClient
         return SendAsync<AccountActionResponse>(
             HttpMethod.Put,
             $"api/admin/accounts/employees/{userId}",
+            model,
+            accessToken,
+            cancellationToken);
+    }
+
+    public Task<ApiCallResult<AccountActionResponse>>
+        UpdateAdministratorAccountAsync(
+            int userId,
+            UpdateAdministratorAccountRequest model,
+            string accessToken,
+            CancellationToken cancellationToken)
+    {
+        return SendAsync<AccountActionResponse>(
+            HttpMethod.Put,
+            $"api/admin/accounts/administrator/{userId}",
             model,
             accessToken,
             cancellationToken);

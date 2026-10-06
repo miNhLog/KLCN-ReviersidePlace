@@ -114,6 +114,23 @@ public interface IRiversideApiClient
         string? keyword,
         int? roleId,
         string? status,
+        bool? mustChangePassword,
+        CancellationToken cancellationToken);
+
+    Task<ApiCallResult<SystemDashboardViewModel>> GetSystemDashboardAsync(
+        string accessToken,
+        DateTime? fromDate,
+        DateTime? toDate,
+        CancellationToken cancellationToken);
+
+    Task<ApiCallResult<AuditLogPageViewModel>> GetAuditLogsAsync(
+        string accessToken,
+        int page,
+        int pageSize,
+        string? action,
+        DateTime? fromDate,
+        DateTime? toDate,
+        string? keyword,
         CancellationToken cancellationToken);
 
     Task<ApiCallResult<List<RoleDto>>> GetRolesAsync(
@@ -128,6 +145,12 @@ public interface IRiversideApiClient
     Task<ApiCallResult<AccountActionResponse>> UpdateEmployeeAccountAsync(
         int userId,
         UpdateEmployeeAccountRequest model,
+        string accessToken,
+        CancellationToken cancellationToken);
+
+    Task<ApiCallResult<AccountActionResponse>> UpdateAdministratorAccountAsync(
+        int userId,
+        UpdateAdministratorAccountRequest model,
         string accessToken,
         CancellationToken cancellationToken);
 
