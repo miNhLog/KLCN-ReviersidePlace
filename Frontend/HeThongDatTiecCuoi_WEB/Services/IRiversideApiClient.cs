@@ -8,10 +8,24 @@ using HeThongDatTiecCuoi_WEB.Models.AdminMenu;
 using HeThongDatTiecCuoi_WEB.Models.AdminReport;
 using HeThongDatTiecCuoi_WEB.Models.AdminBooking;
 using HeThongDatTiecCuoi_WEB.Models.Recommendation;
+using HeThongDatTiecCuoi_WEB.Models.RoleChangeRequest;
+using HeThongDatTiecCuoi_WEB.Models.Notification;
 using Microsoft.AspNetCore.Mvc;
 
 public interface IRiversideApiClient
 {
+    Task<ApiCallResult<List<NotificationViewModel>>> GetRecentNotificationsAsync(string accessToken, int limit, CancellationToken cancellationToken);
+    Task<ApiCallResult<NotificationCountViewModel>> GetUnreadNotificationCountAsync(string accessToken, CancellationToken cancellationToken);
+    Task<ApiCallResult<NotificationPageViewModel>> GetNotificationsAsync(string accessToken, int page, int pageSize, string? readStatus, CancellationToken cancellationToken);
+    Task<ApiCallResult<NotificationUpdateViewModel>> MarkNotificationReadAsync(string accessToken, int id, CancellationToken cancellationToken);
+    Task<ApiCallResult<NotificationUpdateViewModel>> MarkAllNotificationsReadAsync(string accessToken, CancellationToken cancellationToken);
+    Task<ApiCallResult<List<RoleChangeCandidateViewModel>>> GetRoleChangeCandidatesAsync(string accessToken, CancellationToken cancellationToken);
+    Task<ApiCallResult<List<RoleChangeRequestViewModel>>> GetManagerRoleChangeRequestsAsync(string accessToken, CancellationToken cancellationToken);
+    Task<ApiCallResult<RoleChangeRequestViewModel>> CreateRoleChangeRequestAsync(CreateRoleChangeRequestViewModel model, string accessToken, CancellationToken cancellationToken);
+    Task<ApiCallResult<List<AdminRoleChangeRequestViewModel>>> GetAdminRoleChangeRequestsAsync(string? status, string? keyword, string accessToken, CancellationToken cancellationToken);
+    Task<ApiCallResult<ActionResponseDto>> ApproveRoleChangeRequestAsync(int id, string accessToken, CancellationToken cancellationToken);
+    Task<ApiCallResult<ActionResponseDto>> RejectRoleChangeRequestAsync(int id, RejectRoleChangeRequestViewModel model, string accessToken, CancellationToken cancellationToken);
+
     // Auth
     Task<ApiCallResult<AuthResponseDto>> LoginAsync(
         LoginViewModel model,

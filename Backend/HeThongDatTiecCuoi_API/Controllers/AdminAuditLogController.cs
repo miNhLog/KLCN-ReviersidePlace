@@ -1,6 +1,7 @@
 using HeThongDatTiecCuoi_API.Constants;
 using HeThongDatTiecCuoi_API.Data;
 using HeThongDatTiecCuoi_API.DTOs.AuditLog;
+using HeThongDatTiecCuoi_API.Helpers;
 using HeThongDatTiecCuoi_API.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -14,122 +15,69 @@ namespace HeThongDatTiecCuoi_API.Controllers;
 public sealed class AdminAuditLogController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
-
     public AdminAuditLogController(ApplicationDbContext context) => _context = context;
 
     [HttpGet]
-    public async Task<ActionResult<AuditLogPageDto>> GetAuditLogs(
-        int page = 1,
-        int pageSize = 20,
-        string? action = null,
-        DateTime? fromDate = null,
-        DateTime? toDate = null,
-        string? keyword = null,
-        CancellationToken cancellationToken = default)
+    public async Task<ActionResult<AuditLogPageDto>> GetAuditLogs(int page = 1, int pageSize = 20,
+        string? action = null, DateTime? fromDate = null, DateTime? toDate = null,
+        string? keyword = null, CancellationToken cancellationToken = default)
     {
-        page = Math.Max(1, page);
-        pageSize = Math.Clamp(pageSize, 1, 100);
-        action = string.IsNullOrWhiteSpace(action)
-            ? null
-            : action.Trim().ToUpperInvariant();
-        keyword = string.IsNullOrWhiteSpace(keyword)
-            ? null
-            : keyword.Trim();
-        fromDate = fromDate?.Date;
-        toDate = toDate?.Date;
+        page = Math.Max(1, page); pageSize = Math.Clamp(pageSize, 1, 100);
+        action = string.IsNullOrWhiteSpace(action) ? null : action.Trim().ToUpperInvariant();
+        keyword = string.IsNullOrWhiteSpace(keyword) ? null : keyword.Trim();
+        fromDate = fromDate?.Date; toDate = toDate?.Date;
+        if (fromDate.HasValue && toDate.HasValue && toDate < fromDate) return BadRequest(new { message = "Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu." });
+        if (keyword?.Length > 200) return BadRequest(new { message = "Từ khóa tìm kiếm không được vượt quá 200 ký tự." });
+        if (action is not null && !AuditActions.AdminVisibleActions.Contains(action)) return BadRequest(new { message = "Loại thao tác không hợp lệ." });
 
-        if (fromDate.HasValue && toDate.HasValue && toDate < fromDate)
-        {
-            return BadRequest(new { message = "Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu." });
-        }
-
-        if (keyword?.Length > 200)
-        {
-            return BadRequest(new { message = "Từ khóa tìm kiếm không được vượt quá 200 ký tự." });
-        }
-
-        var query =
-            from log in _context.AuditLogs.AsNoTracking()
-            join actorUserRecord in _context.Users.AsNoTracking() on log.UserId equals actorUserRecord.UserId into actorUsers
-            from actorUser in actorUsers.DefaultIfEmpty()
-            join actorEmployeeRecord in _context.Employees.AsNoTracking() on log.UserId equals actorEmployeeRecord.UserId into actorEmployees
-            from actorEmployee in actorEmployees.DefaultIfEmpty()
-            join targetUserRecord in _context.Users.AsNoTracking() on log.EntityId equals (long)targetUserRecord.UserId into targetUsers
-            from targetUser in targetUsers.DefaultIfEmpty()
-            join targetEmployeeRecord in _context.Employees.AsNoTracking() on log.EntityId equals (long)targetEmployeeRecord.UserId into targetEmployees
-            from targetEmployee in targetEmployees.DefaultIfEmpty()
-            where log.EntityName == AuditEntityNames.User && AuditActions.AccountActions.Contains(log.Action)
-            select new { log, actorUser, actorEmployee, targetUser, targetEmployee };
-
-        if (action is not null)
-        {
-            if (!AuditActions.AccountActions.Contains(action))
-            {
-                return BadRequest(new { message = "Loại thao tác không hợp lệ." });
-            }
-            query = query.Where(item => item.log.Action == action);
-        }
-
-        if (fromDate.HasValue)
-        {
-            query = query.Where(item => item.log.Timestamp >= fromDate.Value);
-        }
-
-        if (toDate.HasValue)
-        {
-            var endExclusive = toDate.Value.AddDays(1);
-            query = query.Where(item => item.log.Timestamp < endExclusive);
-        }
-
+        var query = _context.AuditLogs.AsNoTracking().Where(log => AuditActions.AdminVisibleActions.Contains(log.Action));
+        if (action is not null) query = query.Where(log => log.Action == action);
+        if (fromDate.HasValue) query = query.Where(log => log.Timestamp >= fromDate.Value);
+        if (toDate.HasValue) { var endExclusive = toDate.Value.AddDays(1); query = query.Where(log => log.Timestamp < endExclusive); }
         if (keyword is not null)
         {
-            query = query.Where(item =>
-                (item.actorUser != null && item.actorUser.Email.Contains(keyword)) ||
-                (item.actorEmployee != null && item.actorEmployee.FullName.Contains(keyword)) ||
-                (item.targetUser != null && item.targetUser.Email.Contains(keyword)) ||
-                (item.targetEmployee != null &&
-                    (item.targetEmployee.EmployeeCode.Contains(keyword) || item.targetEmployee.FullName.Contains(keyword))) ||
-                (item.log.Notes != null && item.log.Notes.Contains(keyword)));
+            query = query.Where(log => log.Action.Contains(keyword) || (log.Notes != null && log.Notes.Contains(keyword)) ||
+                (log.User != null && (log.User.Email.Contains(keyword) || (log.User.Employee != null && log.User.Employee.FullName.Contains(keyword)))) ||
+                (log.EntityName == AuditEntityNames.User && _context.Users.Any(user => user.UserId == log.EntityId &&
+                    (user.Email.Contains(keyword) || (user.Employee != null && (user.Employee.FullName.Contains(keyword) || user.Employee.EmployeeCode.Contains(keyword)))))) ||
+                (log.EntityName == AuditEntityNames.RoleChangeRequest && _context.RoleChangeRequests.Any(request => request.RoleChangeRequestId == log.EntityId &&
+                    (request.Employee.FullName.Contains(keyword) || (request.EmployeeCodeBefore ?? request.Employee.EmployeeCode).Contains(keyword) ||
+                     (request.EmployeeCodeAfter != null && request.EmployeeCodeAfter.Contains(keyword))))));
         }
 
         var totalItems = await query.CountAsync(cancellationToken);
         var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
-        if (totalPages > 0 && page > totalPages)
-        {
-            page = totalPages;
-        }
-
-        var items = await query
-            .OrderByDescending(item => item.log.Timestamp)
-            .ThenByDescending(item => item.log.AuditLogId)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .Select(item => new AuditLogDto
+        if (totalPages > 0 && page > totalPages) page = totalPages;
+        var rawItems = await query.OrderByDescending(log => log.Timestamp).ThenByDescending(log => log.AuditLogId)
+            .Skip((page - 1) * pageSize).Take(pageSize)
+            .Select(log => new
             {
-                AuditLogId = item.log.AuditLogId,
-                Timestamp = item.log.Timestamp,
-                ActorUserId = item.log.UserId,
-                Actor = item.actorEmployee != null
-                    ? item.actorEmployee.FullName + " (" + item.actorUser!.Email + ")"
-                    : item.actorUser != null ? item.actorUser.Email : "Hệ thống",
-                Action = item.log.Action,
-                TargetUserId = item.log.EntityId,
-                Target = item.targetEmployee != null
-                    ? item.targetEmployee.EmployeeCode + " - " + item.targetEmployee.FullName
-                    : item.targetUser != null ? item.targetUser.Email : "Tài khoản #" + item.log.EntityId,
-                OldData = item.log.OldData,
-                NewData = item.log.NewData,
-                Notes = item.log.Notes
-            })
-            .ToListAsync(cancellationToken);
+                log.AuditLogId, log.Timestamp, log.UserId, log.Action, log.EntityName, log.EntityId, log.OldData, log.NewData, log.Notes,
+                ActorEmail = log.User == null ? null : log.User.Email,
+                ActorName = log.User != null && log.User.Employee != null ? log.User.Employee.FullName : null,
+                AccountEmail = log.EntityName == AuditEntityNames.User ? _context.Users.Where(x => x.UserId == log.EntityId).Select(x => x.Email).FirstOrDefault() : null,
+                AccountCode = log.EntityName == AuditEntityNames.User ? _context.Employees.Where(x => x.UserId == log.EntityId).Select(x => x.EmployeeCode).FirstOrDefault() : null,
+                AccountName = log.EntityName == AuditEntityNames.User ? _context.Employees.Where(x => x.UserId == log.EntityId).Select(x => x.FullName).FirstOrDefault() : null,
+                RequestName = log.EntityName == AuditEntityNames.RoleChangeRequest ? _context.RoleChangeRequests.Where(x => x.RoleChangeRequestId == log.EntityId).Select(x => x.Employee.FullName).FirstOrDefault() : null,
+                RequestCode = log.EntityName == AuditEntityNames.RoleChangeRequest ? _context.RoleChangeRequests.Where(x => x.RoleChangeRequestId == log.EntityId).Select(x => x.EmployeeCodeAfter ?? x.EmployeeCodeBefore ?? x.Employee.EmployeeCode).FirstOrDefault() : null
+            }).ToListAsync(cancellationToken);
 
-        return Ok(new AuditLogPageDto
+        var items = rawItems.Select(item =>
         {
-            Items = items,
-            Page = page,
-            PageSize = pageSize,
-            TotalItems = totalItems,
-            TotalPages = totalPages
-        });
+            var actorName = item.ActorName ?? item.ActorEmail ?? "Tài khoản không còn tồn tại";
+            var target = item.EntityName == AuditEntityNames.RoleChangeRequest
+                ? $"Yêu cầu #{item.EntityId}" + (item.RequestName is null ? "" : $" - {item.RequestCode} - {item.RequestName}")
+                : item.AccountName is not null ? $"{item.AccountCode} - {item.AccountName}" : item.AccountEmail ?? $"Tài khoản #{item.EntityId}";
+            return new AuditLogDto
+            {
+                AuditLogId = item.AuditLogId, Timestamp = item.Timestamp, ActorUserId = item.UserId,
+                ActorName = actorName, ActorEmail = item.ActorEmail,
+                Actor = item.ActorName is not null && item.ActorEmail is not null ? $"{item.ActorName} ({item.ActorEmail})" : actorName,
+                Action = item.Action, EntityName = item.EntityName, EntityId = item.EntityId,
+                TargetUserId = item.EntityId, Target = target, Notes = item.Notes,
+                OldData = AuditDataSanitizer.Sanitize(item.OldData), NewData = AuditDataSanitizer.Sanitize(item.NewData)
+            };
+        }).ToList();
+        return Ok(new AuditLogPageDto { Items = items, Page = page, PageSize = pageSize, TotalItems = totalItems, TotalPages = totalPages });
     }
 }

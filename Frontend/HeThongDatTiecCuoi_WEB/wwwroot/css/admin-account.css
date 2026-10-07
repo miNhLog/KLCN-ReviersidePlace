@@ -1183,6 +1183,30 @@
 .password-waiting-badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 7px; border-radius: 999px; color: #a56507; background: #fff0d5; font-size: 9px; font-weight: 600; white-space: nowrap; }
 
 .employee-row-actions { display: flex; justify-content: center; gap: 7px; }
+
+.account-form-note,
+.reset-password-notice,
+.reset-password-locked {
+    display: flex;
+    gap: 9px;
+    margin: 16px 0 0;
+    padding: 12px 14px;
+    border: 1px solid #eadcb5;
+    border-radius: 10px;
+    color: #594b2b;
+    background: #fffaf0;
+    font-size: 13px;
+    line-height: 1.55;
+}
+
+.reset-password-summary { margin: 4px 0 16px; }
+.reset-password-summary div { display: grid; grid-template-columns: 125px 1fr; gap: 12px; padding: 9px 0; border-bottom: 1px solid #edf0f4; }
+.reset-password-summary dt { color: #667085; }
+.reset-password-summary dd { margin: 0; color: #172b4d; font-weight: 700; overflow-wrap: anywhere; }
+.reset-password-notice { margin-top: 0; }
+.reset-password-locked { border-color: #f1c4c0; color: #8f2720; background: #fff4f3; }
+.account-form-success { margin-top: 12px; color: #18734b; font-size: 13px; font-weight: 700; }
+.account-form-success:empty { display: none; }
 .employee-action-button { width: 34px; height: 34px; display: grid; place-items: center; padding: 0; border: 1px solid #dce3ea; border-radius: 8px; color: #526783; background: #fff; font-size: 12px; cursor: pointer; }
 .employee-action-button:hover { color: #9b722d; border-color: #dbc69f; background: #fbf7ef; }
 .employee-action-button:disabled { cursor: wait; opacity: .55; }

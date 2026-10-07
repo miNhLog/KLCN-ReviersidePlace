@@ -62,9 +62,13 @@ public sealed class AuditLogViewModel
     public DateTime Timestamp { get; set; }
     public int? ActorUserId { get; set; }
     public string Actor { get; set; } = "Hệ thống";
+    public string ActorName { get; set; } = "Hệ thống";
+    public string? ActorEmail { get; set; }
     public string Action { get; set; } = string.Empty;
     public long TargetUserId { get; set; }
     public string Target { get; set; } = string.Empty;
+    public string EntityName { get; set; } = string.Empty;
+    public long EntityId { get; set; }
     public string? OldData { get; set; }
     public string? NewData { get; set; }
     public string? Notes { get; set; }
@@ -111,13 +115,10 @@ public sealed class CreateEmployeeAccountRequest
     public string FullName { get; set; } = string.Empty;
     public string? PhoneNumber { get; set; }
     public string Email { get; set; } = string.Empty;
-    public string InitialPassword { get; set; } = string.Empty;
-    public string ConfirmPassword { get; set; } = string.Empty;
 }
 
 public sealed class UpdateEmployeeAccountRequest
 {
-    public int RoleId { get; set; }
     public string FullName { get; set; } = string.Empty;
     public string? PhoneNumber { get; set; }
     public string Email { get; set; } = string.Empty;

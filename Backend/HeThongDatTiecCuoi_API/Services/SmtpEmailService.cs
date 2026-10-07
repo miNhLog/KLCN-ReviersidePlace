@@ -17,6 +17,8 @@ public sealed class SmtpEmailService : IEmailService
     public async Task SendPasswordResetEmailAsync(
         string recipientEmail,
         string resetLink,
+        int lifetimeMinutes,
+        bool administratorRequested,
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(_options.Host) ||
@@ -29,14 +31,20 @@ public sealed class SmtpEmailService : IEmailService
         using var message = new MailMessage
         {
             From = new MailAddress(_options.SenderEmail, _options.SenderName),
-            Subject = "Đặt lại mật khẩu Riverside Palace",
+            Subject = "[Riverside Palace] Yêu cầu đặt lại mật khẩu",
             Body = $"""
-                Xin chào,
+                Xin chào nhân viên Riverside Palace,
 
-                Hãy mở liên kết sau để đặt lại mật khẩu. Liên kết chỉ dùng được một lần và sẽ sớm hết hạn:
+                {(administratorRequested ? "Quản trị viên hệ thống đã yêu cầu đặt lại mật khẩu cho tài khoản của bạn." : "Hệ thống đã nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn.")}
+
+                Đặt lại mật khẩu:
                 {resetLink}
 
-                Nếu bạn không yêu cầu đặt lại mật khẩu, hãy bỏ qua email này.
+                Liên kết chỉ sử dụng được một lần và hết hạn sau {lifetimeMinutes} phút.
+
+                Nếu bạn không nhận ra yêu cầu này, vui lòng liên hệ Quản trị viên hệ thống.
+
+                Riverside Palace
                 """,
             IsBodyHtml = false
         };

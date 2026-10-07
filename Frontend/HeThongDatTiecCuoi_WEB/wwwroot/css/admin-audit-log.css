@@ -212,7 +212,7 @@
 
 .audit-table {
     width: 100%;
-    min-width: 1050px;
+    min-width: 1180px;
     border-collapse: collapse;
     table-layout: fixed;
 }
@@ -228,8 +228,8 @@
 
 .audit-table th:nth-child(1) { width: 125px; }
 .audit-table th:nth-child(2) { width: 235px; }
-.audit-table th:nth-child(3) { width: 165px; }
-.audit-table th:nth-child(4) { width: 220px; }
+.audit-table th:nth-child(3) { width: 245px; }
+.audit-table th:nth-child(4) { width: 260px; }
 
 .audit-table td {
     padding: 14px 15px;
@@ -298,13 +298,17 @@
 .audit-action {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
+    max-width: 100%;
     min-height: 26px;
     padding: 4px 9px;
     border-radius: 999px;
     font-size: 11px;
     font-weight: 700;
     line-height: 1.2;
-    white-space: nowrap;
+    text-align: center;
+    white-space: normal;
+    overflow-wrap: anywhere;
 }
 
 .action-create_account,
@@ -313,6 +317,8 @@
 .action-lock_account { color: #b33a3a; background: #fdecec; }
 .action-change_role { color: #896016; background: #fbf1dd; }
 .action-reset_password { color: #a85d16; background: #fff0df; }
+.action-role_change_requested { color:#6941c6;background:#f4f3ff; }.action-role_change_approved { color:#18794e;background:#e8f7ef; }.action-role_change_rejected { color:#b33a3a;background:#fdecec; }.action-first_password_changed,.action-admin_password_changed { color:#a85d16;background:#fff0df; }
+.audit-actor strong,.audit-actor small{display:block}.audit-actor small{margin-top:2px;color:#8491a2;font-size:11px}.audit-meta{grid-column:1/-1}
 
 .audit-detail {
     overflow-wrap: anywhere;

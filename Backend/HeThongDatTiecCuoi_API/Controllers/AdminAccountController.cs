@@ -10,10 +10,11 @@ using HeThongDatTiecCuoi_API.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
 using HeThongDatTiecCuoi_API.Services;
 using System.Text.Json;
+using HeThongDatTiecCuoi_API.Options;
+using Microsoft.Extensions.Options;
 
 namespace HeThongDatTiecCuoi_API.Controllers;
 
@@ -26,19 +27,25 @@ public sealed class AdminAccountController : ControllerBase
     private readonly IPasswordHasher<User> _passwordHasher;
     private readonly IStatusService _statusService;
     private readonly IPasswordResetService _passwordResetService;
+    private readonly IEmployeeCodeGenerator _employeeCodeGenerator;
     private readonly ILogger<AdminAccountController> _logger;
+    private readonly string _defaultStaffPassword;
 
     public AdminAccountController(
         ApplicationDbContext context,
         IPasswordHasher<User> passwordHasher,
         IStatusService statusService,
         IPasswordResetService passwordResetService,
+        IEmployeeCodeGenerator employeeCodeGenerator,
+        IOptions<AccountProvisioningOptions> accountProvisioningOptions,
         ILogger<AdminAccountController> logger)
     {
         _context = context;
         _passwordHasher = passwordHasher;
         _statusService = statusService;
         _passwordResetService = passwordResetService;
+        _employeeCodeGenerator = employeeCodeGenerator;
+        _defaultStaffPassword = accountProvisioningOptions.Value.DefaultStaffPassword;
         _logger = logger;
     }
 
@@ -323,6 +330,7 @@ public sealed class AdminAccountController : ControllerBase
 
         var user = await _context.Users
             .Include(account => account.Status)
+            .Include(account => account.Employee)
             .FirstOrDefaultAsync(
                 account => account.UserId == userId,
                 cancellationToken);
@@ -377,7 +385,7 @@ public sealed class AdminAccountController : ControllerBase
                 user.UserId,
                 new { status = oldStatusCode },
                 new { status = statusCode },
-                $"{(statusCode == AccountStatusCodes.Locked ? "Khóa" : "Mở khóa")} tài khoản {user.Email}");
+                $"Admin đã {(statusCode == AccountStatusCodes.Locked ? "khóa" : "mở khóa")} tài khoản {(user.Employee is null ? user.Email : $"{user.Employee.EmployeeCode} - {user.Employee.FullName}")}.");
         }
 
         await _context.SaveChangesAsync(cancellationToken);
@@ -428,18 +436,12 @@ public sealed class AdminAccountController : ControllerBase
 
         if (string.IsNullOrWhiteSpace(email) ||
             string.IsNullOrWhiteSpace(fullName) ||
-            string.IsNullOrWhiteSpace(phoneNumber) ||
-            !Regex.IsMatch(request.InitialPassword, @"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,100}$"))
+            string.IsNullOrWhiteSpace(phoneNumber))
         {
             return BadRequest(new
             {
-                message = "Vui lòng nhập đầy đủ thông tin và mật khẩu ban đầu phải có chữ hoa, chữ thường, số, ký tự đặc biệt, tối thiểu 8 ký tự."
+                message = "Vui lòng nhập đầy đủ thông tin bắt buộc."
             });
-        }
-
-        if (request.InitialPassword != request.ConfirmPassword)
-        {
-            return BadRequest(new { message = "Mật khẩu ban đầu và xác nhận mật khẩu không khớp." });
         }
 
         if (email.Length > 255 || fullName.Length > 150 || phoneNumber.Length > 20)
@@ -494,7 +496,7 @@ public sealed class AdminAccountController : ControllerBase
             });
         }
 
-        var employeeCode = await GenerateEmployeeCodeAsync(role.RoleName, cancellationToken);
+        var employeeCode = await _employeeCodeGenerator.GenerateAsync(role.RoleName, cancellationToken);
 
         await using var transaction =
             await _context.Database.BeginTransactionAsync(cancellationToken);
@@ -518,7 +520,7 @@ public sealed class AdminAccountController : ControllerBase
 
             user.PasswordHash = _passwordHasher.HashPassword(
                 user,
-                request.InitialPassword);
+                _defaultStaffPassword);
             user.MustChangePassword = true;
 
             _context.Users.Add(user);
@@ -534,18 +536,19 @@ public sealed class AdminAccountController : ControllerBase
             };
 
             _context.Employees.Add(employee);
+            await _context.SaveChangesAsync(cancellationToken);
             AddAuditLog(
                 AuditActions.CreateAccount,
                 user.UserId,
                 null,
-                new { email = user.Email, employeeCode, fullName, role = role.RoleName, status = AccountStatusCodes.Active },
-                $"Tạo tài khoản nhân viên {employeeCode} với vai trò {role.RoleName}");
+                new { userId = user.UserId, employeeId = employee.EmployeeId, employeeCode, fullName, email = user.Email, roleName = role.RoleName, status = AccountStatusCodes.Active },
+                $"Cấp tài khoản cho {employeeCode} - {fullName} với vai trò {role.RoleName}.");
             await _context.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
 
             return StatusCode(StatusCodes.Status201Created, new
             {
-                message = "Đã tạo tài khoản. Admin hãy bàn giao email, mật khẩu ban đầu và yêu cầu nhân viên đổi mật khẩu ngay lần đăng nhập đầu tiên.",
+                message = "Cấp tài khoản thành công. Nhân viên sẽ được yêu cầu đổi mật khẩu trong lần đăng nhập đầu tiên.",
                 userId = user.UserId,
                 email = user.Email,
                 employeeCode = employee.EmployeeCode,
@@ -675,30 +678,6 @@ public sealed class AdminAccountController : ControllerBase
             });
         }
 
-        var role = await _context.Roles
-            .AsNoTracking()
-            .FirstOrDefaultAsync(
-                existingRole => existingRole.RoleId == request.RoleId,
-                cancellationToken);
-
-        if (role is null)
-        {
-            return NotFound(new
-            {
-                message = "Vai trò không tồn tại."
-            });
-        }
-
-        if (role.RoleName != RoleNames.Manager &&
-            role.RoleName != RoleNames.HallManager &&
-            role.RoleName != RoleNames.Coordinator)
-        {
-            return BadRequest(new
-            {
-                message = "Nhân viên chỉ có thể thuộc vai trò Quản lý, Quản lý sảnh hoặc Nhân viên điều phối."
-            });
-        }
-
         var emailExists = await _context.Users.AnyAsync(
             otherUser =>
                 otherUser.Email == email &&
@@ -723,7 +702,6 @@ public sealed class AdminAccountController : ControllerBase
         var oldDataStatus = employee.DataStatus.DataStatusCode;
 
         user.Email = email;
-        user.RoleId = request.RoleId;
         user.UpdatedAt = DateTime.Now;
         employee.FullName = fullName;
         employee.PhoneNumber = phoneNumber;
@@ -745,26 +723,21 @@ public sealed class AdminAccountController : ControllerBase
         var newDataStatus = (updatedEmployeeDataStatus ?? employee.DataStatus).DataStatusCode;
         var profileChanged = oldEmail != email || oldFullName != fullName ||
             oldPhoneNumber != phoneNumber || oldDataStatus != newDataStatus;
-        var roleChanged = !string.Equals(currentRoleName, role.RoleName, StringComparison.Ordinal);
 
         if (profileChanged)
         {
+            var oldData = new Dictionary<string, object?>();
+            var newData = new Dictionary<string, object?>();
+            if (!string.Equals(oldEmail, email, StringComparison.OrdinalIgnoreCase)) { oldData["Email"] = oldEmail; newData["Email"] = email; }
+            if (oldFullName != fullName) { oldData["FullName"] = oldFullName; newData["FullName"] = fullName; }
+            if (oldPhoneNumber != phoneNumber) { oldData["PhoneNumber"] = oldPhoneNumber; newData["PhoneNumber"] = phoneNumber; }
+            if (oldDataStatus != newDataStatus) { oldData["DataStatus"] = oldDataStatus; newData["DataStatus"] = newDataStatus; }
             AddAuditLog(
                 AuditActions.UpdateAccount,
                 user.UserId,
-                new { email = oldEmail, fullName = oldFullName, phoneNumber = oldPhoneNumber, dataStatus = oldDataStatus },
-                new { email, fullName, phoneNumber, dataStatus = newDataStatus },
-                $"Cập nhật thông tin tài khoản {employee.EmployeeCode}");
-        }
-
-        if (roleChanged)
-        {
-            AddAuditLog(
-                AuditActions.ChangeRole,
-                user.UserId,
-                new { role = currentRoleName },
-                new { role = role.RoleName },
-                $"Đổi vai trò tài khoản {employee.EmployeeCode} từ {currentRoleName} sang {role.RoleName}");
+                oldData,
+                newData,
+                $"Cập nhật thông tin tài khoản {employee.EmployeeCode} - {employee.FullName}.");
         }
 
         await _context.SaveChangesAsync(cancellationToken);
@@ -777,7 +750,7 @@ public sealed class AdminAccountController : ControllerBase
             employeeCode = employee.EmployeeCode,
             fullName = employee.FullName,
             phoneNumber = employee.PhoneNumber,
-            roleName = role.RoleName,
+            roleName = currentRoleName,
             accountStatus = user.Status.StatusCode,
             accountStatusName = user.Status.StatusName,
             employeeDataStatus = (updatedEmployeeDataStatus ?? employee.DataStatus).DataStatusCode,
@@ -848,10 +821,10 @@ public sealed class AdminAccountController : ControllerBase
         int userId,
         CancellationToken cancellationToken)
     {
-        bool userExists;
+        ServiceResult<object> result;
         try
         {
-            userExists = await _passwordResetService.SendResetLinkForUserAsync(
+            result = await _passwordResetService.SendResetLinkForUserAsync(
                 userId, cancellationToken);
         }
 
@@ -863,23 +836,23 @@ public sealed class AdminAccountController : ControllerBase
             });
         }
 
-        if (!userExists)
+        if (!result.Succeeded)
         {
-            return NotFound(new { message = "Không tìm thấy tài khoản." });
+            return StatusCode(result.StatusCode, new { message = result.Error });
         }
 
         try
         {
             var target = await _context.Employees.AsNoTracking()
                 .Where(employee => employee.UserId == userId)
-                .Select(employee => employee.EmployeeCode)
+                .Select(employee => new { employee.EmployeeId, employee.EmployeeCode, employee.FullName, employee.User.Email })
                 .FirstOrDefaultAsync(cancellationToken);
             AddAuditLog(
                 AuditActions.ResetPassword,
                 userId,
                 null,
-                null,
-                $"Reset mật khẩu tài khoản {target ?? $"#{userId}"}");
+                new { UserId = userId, EmployeeId = target == null ? (int?)null : target.EmployeeId, Email = target == null ? null : target.Email, ResetMethod = "EMAIL" },
+                $"Quản trị viên đã gửi yêu cầu đặt lại mật khẩu cho {(target == null ? $"tài khoản #{userId}" : $"{target.EmployeeCode} - {target.FullName}")}.");
             await _context.SaveChangesAsync(cancellationToken);
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
@@ -889,49 +862,9 @@ public sealed class AdminAccountController : ControllerBase
 
         return Ok(new
         {
-            message = "Đã gửi liên kết đặt lại mật khẩu đến email của người dùng.",
+            message = "Đã gửi liên kết đặt lại mật khẩu đến email của nhân viên.",
             userId
         });
-    }
-
-    private async Task<string> GenerateEmployeeCodeAsync(
-        string roleName,
-        CancellationToken cancellationToken)
-    {
-        var prefix = roleName switch
-        {
-            RoleNames.Manager => "QL",
-            RoleNames.HallManager => "QLS",
-            RoleNames.Coordinator => "DP",
-            _ => "NV"
-        };
-
-        var employeeCodes = await _context.Employees
-            .AsNoTracking()
-            .Where(employee => employee.EmployeeCode.StartsWith(prefix))
-            .Select(employee => employee.EmployeeCode)
-            .ToListAsync(cancellationToken);
-
-        var highestNumber = 0;
-
-        foreach (var employeeCode in employeeCodes)
-        {
-            if (!employeeCode.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) ||
-                employeeCode.Length <= prefix.Length)
-            {
-                continue;
-            }
-
-            var numericPart = employeeCode[prefix.Length..];
-
-            if (int.TryParse(numericPart, out var number) &&
-                number > highestNumber)
-            {
-                highestNumber = number;
-            }
-        }
-
-        return $"{prefix}{highestNumber + 1:D3}";
     }
 
     private void AddAuditLog(string action, int targetUserId, object? oldData, object? newData, string notes)

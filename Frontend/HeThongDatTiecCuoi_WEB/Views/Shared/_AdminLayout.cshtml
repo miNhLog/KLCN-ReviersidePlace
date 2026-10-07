@@ -55,6 +55,7 @@
     <link rel="stylesheet"
           href="~/css/admin-common.css"
           asp-append-version="true" />
+    @if (isAdmin || isManager) { <link rel="stylesheet" href="~/css/notifications.css" asp-append-version="true" /> }
 
     @await RenderSectionAsync("Styles", required: false)
 </head>
@@ -129,6 +130,9 @@
                             <span class="sidebar-icon" aria-hidden="true"><i class="fa-solid fa-clock-rotate-left"></i></span>
                             <span class="sidebar-label">Nhật ký hệ thống</span>
                         </a>
+                        <a asp-controller="AdminRoleChangeRequest" asp-action="Index" class="sidebar-item @(IsActive("AdminRoleChangeRequest") ? "active" : string.Empty)" aria-current="@(IsActive("AdminRoleChangeRequest") ? "page" : null)" data-sidebar-tooltip="Yêu cầu thay đổi vai trò">
+                            <span class="sidebar-icon" aria-hidden="true"><i class="fa-solid fa-user-check"></i></span><span class="sidebar-label">Yêu cầu thay đổi vai trò</span>
+                        </a>
                     </nav>
                 </section>
                 <section class="sidebar-section" aria-labelledby="adminProfileMenuTitle">
@@ -196,6 +200,18 @@
                            data-sidebar-tooltip="Bảng giá &amp; Chính sách">
                             <span class="sidebar-icon" aria-hidden="true"><i class="fa-solid fa-tags"></i></span>
                             <span class="sidebar-label">Bảng giá &amp; Chính sách</span>
+                        </a>
+                    </nav>
+                </section>
+                <section class="sidebar-section" aria-labelledby="managerHrMenuTitle">
+                    <h2 class="sidebar-section-title" id="managerHrMenuTitle">Quản lý nhân sự</h2>
+                    <nav class="sidebar-menu" aria-label="Quản lý nhân sự">
+                        <a asp-controller="ManagerRoleChangeRequest" asp-action="Index"
+                           class="sidebar-item @(IsActive("ManagerRoleChangeRequest") ? "active" : string.Empty)"
+                           aria-current="@(IsActive("ManagerRoleChangeRequest") ? "page" : null)"
+                           data-sidebar-tooltip="Yêu cầu thay đổi vai trò">
+                            <span class="sidebar-icon" aria-hidden="true"><i class="fa-solid fa-user-gear"></i></span>
+                            <span class="sidebar-label">Yêu cầu thay đổi vai trò</span>
                         </a>
                     </nav>
                 </section>
@@ -360,7 +376,9 @@
                         <span>@currentDateText</span>
                     </div>
                     <span class="topbar-divider" aria-hidden="true"></span>
-                    <div class="topbar-notifications">
+                    @if (isAdmin || isManager)
+                    {
+                    <div class="topbar-notifications" data-notification-root>
                         <button type="button"
                                 class="topbar-notification"
                                 id="notificationButton"
@@ -368,21 +386,19 @@
                                 aria-controls="notificationPanel"
                                 aria-expanded="false">
                             <i class="fa-regular fa-bell" aria-hidden="true"></i>
+                            <span class="notification-badge" id="notificationBadge" hidden></span>
                         </button>
                         <section class="notification-panel"
                                  id="notificationPanel"
                                  aria-label="Thông báo"
                                  hidden>
-                            <header class="notification-panel-header">
-                                <i class="fa-regular fa-bell" aria-hidden="true"></i>
-                                <h2>Thông báo</h2>
-                            </header>
-                            <div class="notification-empty-state">
-                                <i class="fa-regular fa-bell-slash" aria-hidden="true"></i>
-                                <p>Không có thông báo</p>
-                            </div>
+                            <header class="notification-panel-header"><h2>Thông báo</h2><button type="button" id="markAllNotificationsRead">Đánh dấu tất cả đã đọc</button></header>
+                            <div id="notificationRecentList" class="notification-recent-list"><div class="notification-empty-state"><i class="fa-regular fa-bell-slash"></i><p>Chưa có thông báo</p><span>Các cập nhật quan trọng sẽ xuất hiện tại đây.</span></div></div>
+                            <footer class="notification-panel-footer"><a asp-controller="Notification" asp-action="Index">Xem tất cả thông báo</a></footer>
                         </section>
+                        <form id="notificationCsrfForm" hidden>@Html.AntiForgeryToken()</form>
                     </div>
+                    }
                     <span class="topbar-divider" aria-hidden="true"></span>
                     <details class="topbar-account">
                         <summary class="topbar-user" aria-label="Mở menu tài khoản">
@@ -414,6 +430,7 @@
     </div>
 
     <script src="~/js/admin-sidebar.js" asp-append-version="true"></script>
+    @if (isAdmin || isManager) { <script src="~/js/notifications.js" asp-append-version="true"></script> }
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

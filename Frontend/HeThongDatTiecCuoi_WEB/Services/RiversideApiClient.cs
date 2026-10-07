@@ -12,6 +12,8 @@ using HeThongDatTiecCuoi_WEB.Models.AdminMenu;
 using HeThongDatTiecCuoi_WEB.Models.AdminReport;
 using HeThongDatTiecCuoi_WEB.Models.AdminBooking;
 using HeThongDatTiecCuoi_WEB.Models.Recommendation;
+using HeThongDatTiecCuoi_WEB.Models.RoleChangeRequest;
+using HeThongDatTiecCuoi_WEB.Models.Notification;
 using Microsoft.AspNetCore.Mvc;
 
 public sealed class RiversideApiClient : IRiversideApiClient
@@ -401,6 +403,55 @@ public sealed class RiversideApiClient : IRiversideApiClient
             accessToken,
             cancellationToken);
     }
+
+    public Task<ApiCallResult<List<NotificationViewModel>>> GetRecentNotificationsAsync(string accessToken, int limit, CancellationToken cancellationToken) =>
+        SendAsync<List<NotificationViewModel>>(HttpMethod.Get, $"api/notifications/recent?limit={Math.Clamp(limit, 1, 5)}", null, accessToken, cancellationToken);
+    public Task<ApiCallResult<NotificationCountViewModel>> GetUnreadNotificationCountAsync(string accessToken, CancellationToken cancellationToken) =>
+        SendAsync<NotificationCountViewModel>(HttpMethod.Get, "api/notifications/unread-count", null, accessToken, cancellationToken);
+    public Task<ApiCallResult<NotificationPageViewModel>> GetNotificationsAsync(string accessToken, int page, int pageSize, string? readStatus, CancellationToken cancellationToken)
+    {
+        var uri = $"api/notifications?page={Math.Max(1, page)}&pageSize={Math.Clamp(pageSize, 1, 100)}";
+        if (!string.IsNullOrWhiteSpace(readStatus)) uri += $"&readStatus={Uri.EscapeDataString(readStatus)}";
+        return SendAsync<NotificationPageViewModel>(HttpMethod.Get, uri, null, accessToken, cancellationToken);
+    }
+    public Task<ApiCallResult<NotificationUpdateViewModel>> MarkNotificationReadAsync(string accessToken, int id, CancellationToken cancellationToken) =>
+        SendAsync<NotificationUpdateViewModel>(HttpMethod.Post, $"api/notifications/{id}/read", null, accessToken, cancellationToken);
+    public Task<ApiCallResult<NotificationUpdateViewModel>> MarkAllNotificationsReadAsync(string accessToken, CancellationToken cancellationToken) =>
+        SendAsync<NotificationUpdateViewModel>(HttpMethod.Post, "api/notifications/read-all", null, accessToken, cancellationToken);
+
+    public Task<ApiCallResult<List<RoleChangeCandidateViewModel>>> GetRoleChangeCandidatesAsync(
+        string accessToken, CancellationToken cancellationToken) =>
+        SendAsync<List<RoleChangeCandidateViewModel>>(HttpMethod.Get,
+            "api/manager/role-change-requests/candidates", null, accessToken, cancellationToken);
+
+    public Task<ApiCallResult<List<RoleChangeRequestViewModel>>> GetManagerRoleChangeRequestsAsync(
+        string accessToken, CancellationToken cancellationToken) =>
+        SendAsync<List<RoleChangeRequestViewModel>>(HttpMethod.Get,
+            "api/manager/role-change-requests", null, accessToken, cancellationToken);
+
+    public Task<ApiCallResult<RoleChangeRequestViewModel>> CreateRoleChangeRequestAsync(
+        CreateRoleChangeRequestViewModel model, string accessToken, CancellationToken cancellationToken) =>
+        SendAsync<RoleChangeRequestViewModel>(HttpMethod.Post,
+            "api/manager/role-change-requests", model, accessToken, cancellationToken);
+
+    public Task<ApiCallResult<List<AdminRoleChangeRequestViewModel>>> GetAdminRoleChangeRequestsAsync(
+        string? status, string? keyword, string accessToken, CancellationToken cancellationToken)
+    {
+        var query = new List<string>();
+        AddQueryParameter(query, "status", status);
+        AddQueryParameter(query, "keyword", keyword);
+        var suffix = query.Count == 0 ? string.Empty : $"?{string.Join('&', query)}";
+        return SendAsync<List<AdminRoleChangeRequestViewModel>>(HttpMethod.Get,
+            $"api/admin/role-change-requests{suffix}", null, accessToken, cancellationToken);
+    }
+
+    public Task<ApiCallResult<ActionResponseDto>> ApproveRoleChangeRequestAsync(
+        int id, string accessToken, CancellationToken cancellationToken) =>
+        SendAsync<ActionResponseDto>(HttpMethod.Post, $"api/admin/role-change-requests/{id}/approve", null, accessToken, cancellationToken);
+
+    public Task<ApiCallResult<ActionResponseDto>> RejectRoleChangeRequestAsync(
+        int id, RejectRoleChangeRequestViewModel model, string accessToken, CancellationToken cancellationToken) =>
+        SendAsync<ActionResponseDto>(HttpMethod.Post, $"api/admin/role-change-requests/{id}/reject", model, accessToken, cancellationToken);
 
     public Task<ApiCallResult<SystemDashboardViewModel>> GetSystemDashboardAsync(
         string accessToken,

@@ -4,12 +4,17 @@
     ViewData["Title"] = "Nhật ký hệ thống";
     var actions = new Dictionary<string, string>
     {
-        ["CREATE_ACCOUNT"] = "Tạo tài khoản",
+        ["CREATE_ACCOUNT"] = "Cấp tài khoản",
         ["UPDATE_ACCOUNT"] = "Cập nhật tài khoản",
         ["LOCK_ACCOUNT"] = "Khóa tài khoản",
         ["UNLOCK_ACCOUNT"] = "Mở khóa tài khoản",
-        ["CHANGE_ROLE"] = "Đổi vai trò",
-        ["RESET_PASSWORD"] = "Đặt lại mật khẩu"
+        ["CHANGE_ROLE"] = "Thay đổi vai trò",
+        ["RESET_PASSWORD"] = "Đặt lại mật khẩu",
+        ["ROLE_CHANGE_REQUESTED"] = "Gửi yêu cầu thay đổi vai trò",
+        ["ROLE_CHANGE_APPROVED"] = "Duyệt thay đổi vai trò",
+        ["ROLE_CHANGE_REJECTED"] = "Từ chối thay đổi vai trò",
+        ["FIRST_PASSWORD_CHANGED"] = "Hoàn tất đổi mật khẩu lần đầu",
+        ["ADMIN_PASSWORD_CHANGED"] = "Đổi mật khẩu quản trị viên"
     };
     string Label(string action) => actions.GetValueOrDefault(action, action);
     var hasFilters = !string.IsNullOrWhiteSpace(Model.Keyword)
@@ -26,7 +31,7 @@
     <header class="audit-page-header">
         <div class="breadcrumb">Quản trị hệ thống <span>›</span> <strong>Nhật ký hệ thống</strong></div>
         <h1>Nhật ký hệ thống</h1>
-        <p>Theo dõi lịch sử tạo, cập nhật và thay đổi trạng thái tài khoản.</p>
+        <p>Theo dõi các thao tác quản trị tài khoản, phân quyền và bảo mật hệ thống.</p>
     </header>
 
     <form method="get" class="audit-toolbar" id="auditFilterForm">
@@ -97,8 +102,8 @@
         {
             <div class="audit-empty">
                 <span class="audit-empty-icon"><i class="fa-regular fa-clock" aria-hidden="true"></i></span>
-                <strong>Chưa có nhật ký phù hợp</strong>
-                <span>@(hasFilters ? "Hãy thay đổi điều kiện lọc để xem kết quả khác." : "Các thao tác quản trị tài khoản sẽ xuất hiện tại đây.")</span>
+                <strong>@(hasFilters ? "Không tìm thấy nhật ký phù hợp" : "Chưa có nhật ký hệ thống")</strong>
+                <span>@(hasFilters ? "Hãy thay đổi điều kiện lọc để xem kết quả khác." : "Các thao tác quản trị tài khoản và phân quyền sẽ được hiển thị tại đây.")</span>
             </div>
         }
         else
@@ -111,14 +116,14 @@
                     {
                         <tr>
                             <td class="audit-time"><strong>@log.Timestamp.ToString("dd/MM/yyyy")</strong><small>@log.Timestamp.ToString("HH:mm:ss")</small></td>
-                            <td class="audit-actor"><i class="fa-regular fa-user" aria-hidden="true"></i><span>@log.Actor</span></td>
+                            <td class="audit-actor"><i class="fa-regular fa-user" aria-hidden="true"></i><span><strong>@log.ActorName</strong>@if (!string.IsNullOrWhiteSpace(log.ActorEmail)){<small>@log.ActorEmail</small>}</span></td>
                             <td><span class="audit-action action-@log.Action.ToLowerInvariant()">@Label(log.Action)</span></td>
                             <td class="audit-target"><strong>@log.Target</strong></td>
                             <td class="audit-detail">
                                 <span>@(log.Notes ?? "Không có ghi chú")</span>
                                 @if (!string.IsNullOrWhiteSpace(log.OldData) || !string.IsNullOrWhiteSpace(log.NewData))
                                 {
-                                    <button type="button" class="audit-detail-button" data-old="@log.OldData" data-new="@log.NewData" data-title="@Label(log.Action) – @log.Target">Xem thay đổi<i class="fa-solid fa-chevron-right" aria-hidden="true"></i></button>
+                                    <button type="button" class="audit-detail-button" data-old="@log.OldData" data-new="@log.NewData" data-title="@Label(log.Action) – @log.Target" data-time="@log.Timestamp.ToString("dd/MM/yyyy HH:mm:ss")" data-actor="@log.Actor" data-target="@log.Target" data-entity="@log.EntityName #@log.EntityId" data-notes="@log.Notes">Xem chi tiết<i class="fa-solid fa-chevron-right" aria-hidden="true"></i></button>
                                 }
                             </td>
                         </tr>
@@ -148,6 +153,7 @@
         <button type="button" data-close aria-label="Đóng"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
     </div>
     <div class="audit-change-grid">
+        <section class="audit-meta"><h3><i class="fa-solid fa-circle-info"></i>Thông tin</h3><dl id="auditMeta"></dl></section>
         <section><h3><i class="fa-solid fa-arrow-rotate-left" aria-hidden="true"></i>Dữ liệu trước</h3><dl id="auditOldData"></dl></section>
         <section><h3><i class="fa-solid fa-arrow-right" aria-hidden="true"></i>Dữ liệu sau</h3><dl id="auditNewData"></dl></section>
     </div>
@@ -162,8 +168,10 @@
     const oldData = document.getElementById('auditOldData');
     const newData = document.getElementById('auditNewData');
     const dialogTitle = document.getElementById('auditDialogTitle');
-    const labels = { email: 'Email', employeeCode: 'Mã nhân viên', fullName: 'Họ tên', phoneNumber: 'Số điện thoại', dataStatus: 'Trạng thái dữ liệu', role: 'Vai trò', status: 'Trạng thái tài khoản' };
-    const values = { ACTIVE: 'Hoạt động', LOCKED: 'Bị khóa', EXISTING: 'Đang sử dụng', DELETED: 'Đã xóa', true: 'Có', false: 'Không' };
+    const meta = document.getElementById('auditMeta');
+    const labels = { email:'Email', employeeCode:'Mã nhân viên', employeeCodeBefore:'Mã nhân viên trước', employeeCodeAfter:'Mã nhân viên sau', fullName:'Họ tên', phoneNumber:'Số điện thoại', dataStatus:'Trạng thái dữ liệu', role:'Vai trò', roleName:'Vai trò', currentRoleName:'Vai trò hiện tại', requestedRoleName:'Vai trò đề xuất', status:'Trạng thái', mustChangePassword:'Yêu cầu đổi mật khẩu', rejectionReason:'Lý do từ chối', reason:'Lý do', passwordChanged:'Đã đổi mật khẩu', userId:'Mã tài khoản', employeeId:'Mã định danh nhân viên' };
+    const values = { ACTIVE:'Hoạt động', LOCKED:'Bị khóa', EXISTING:'Đang sử dụng', DELETED:'Đã xóa', PENDING:'Chờ duyệt', APPROVED:'Đã duyệt', REJECTED:'Từ chối', Manager:'Quản lý', HallManager:'Quản lý sảnh', Coordinator:'Nhân viên điều phối', Admin:'Quản trị viên', true:'Có', false:'Không' };
+    const sensitive = ['password','matkhau','token','otp','securitycode','authorization','salt'];
 
     form?.addEventListener('submit', event => {
         const fromDate = form.elements.fromDate.value;
@@ -191,14 +199,15 @@
     const fill = (element, value) => {
         element.replaceChildren();
         let data = {};
-        try { data = value ? JSON.parse(value) : {}; } catch { renderEmpty(element); return; }
+        try { data = value ? JSON.parse(value) : {}; } catch { const dd=document.createElement('dd');dd.textContent=value||'Không có dữ liệu';element.append(dd);return; }
         const entries = Object.entries(data);
         if (!entries.length) { renderEmpty(element); return; }
         entries.forEach(([key, value]) => {
             const dt = document.createElement('dt');
             const dd = document.createElement('dd');
-            dt.textContent = labels[key] || key;
-            dd.textContent = formatValue(value);
+            const normalized=key.replace(/[^a-z0-9]/gi,'').toLowerCase();
+            dt.textContent = labels[key] || labels[key.charAt(0).toLowerCase()+key.slice(1)] || key;
+            dd.textContent = sensitive.some(item=>normalized.includes(item)) ? '[Đã ẩn]' : formatValue(value);
             element.append(dt, dd);
         });
     };
@@ -206,6 +215,8 @@
     document.querySelectorAll('.audit-detail-button').forEach(button => {
         button.addEventListener('click', () => {
             dialogTitle.textContent = button.dataset.title || 'Chi tiết thay đổi';
+            meta.replaceChildren();
+            [['Thời gian',button.dataset.time],['Người thực hiện',button.dataset.actor],['Đối tượng',button.dataset.target],['Entity',button.dataset.entity],['Nội dung',button.dataset.notes]].forEach(([key,value])=>{const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=key;dd.textContent=value||'—';meta.append(dt,dd);});
             fill(oldData, button.dataset.old);
             fill(newData, button.dataset.new);
             dialog.showModal();
