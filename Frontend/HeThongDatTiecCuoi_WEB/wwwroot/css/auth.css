@@ -90,6 +90,9 @@
 .google-logo { width: 19px; height: 19px; margin-right: 10px; flex: none; }
 .google-button:hover { border-color: #b8bec8; background: #f8f9fb; box-shadow: 0 3px 10px rgba(31,41,55,.08); }
 .switch-page { text-align: center; margin: 26px 0; color: #7c8797; font: 13px Arial, sans-serif; }
+.switch-page a { display: inline-flex; align-items: center; gap: 6px; }
+.switch-page a .material-symbols-outlined { font-size: 17px; transition: transform .2s ease; }
+.switch-page a:hover .material-symbols-outlined { transform: translateX(-3px); }
 .auth-card footer { border-top: 1px solid #e4e0d8; padding-top: 28px; text-align: center; color: #8b94a1; font: 11px Arial, sans-serif; }
 .auth-card footer strong { color: #555e69; }
 .auth-card footer span { margin: 0 8px; color: #d8d3ca; }
