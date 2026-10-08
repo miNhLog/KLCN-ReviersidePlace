@@ -181,7 +181,7 @@
             @Html.AntiForgeryToken()
             <div class="account-form-grid">
                 <div class="account-form-group"><label>Họ tên <span>*</span></label><input type="text" name="FullName" maxlength="150" required /></div>
-                <div class="account-form-group"><label>Email <span>*</span></label><input type="email" name="Email" maxlength="255" required /></div>
+                <div class="account-form-group"><label>Email <span>*</span></label><input type="email" name="Email" maxlength="255" data-validated-email required /></div>
                 <div class="account-form-group"><label>Số điện thoại <span>*</span></label><input type="tel" name="PhoneNumber" maxlength="20" required /></div>
                 <div class="account-form-group"><label>Vai trò <span>*</span></label><select name="RoleId" required><option value="">Chọn vai trò</option>@foreach (var role in internalRoles) { <option value="@role.RoleId">@role.RoleName</option> }</select></div>
             </div>
@@ -224,7 +224,7 @@
             <div class="account-form-grid">
                 <div class="account-form-group"><label>Mã tài khoản</label><input type="text" id="editAccountCode" readonly /></div>
                 <div class="account-form-group"><label>Họ tên <span>*</span></label><input type="text" id="editFullName" name="FullName" maxlength="150" required /></div>
-                <div class="account-form-group"><label>Email <span>*</span></label><input type="email" id="editEmail" name="Email" maxlength="255" required /></div>
+                <div class="account-form-group"><label>Email <span>*</span></label><input type="email" id="editEmail" name="Email" maxlength="255" data-validated-email required /></div>
                 <div class="account-form-group"><label>Số điện thoại <span>*</span></label><input type="tel" id="editPhoneNumber" name="PhoneNumber" maxlength="20" required /></div>
                 <div class="account-form-group"><label>Vai trò hiện tại</label><input type="text" id="editRoleName" readonly /></div>
             </div>
@@ -241,7 +241,7 @@
             @Html.AntiForgeryToken()
             <input type="hidden" id="editAdministratorUserId" />
             <div class="status-account-user"><div class="status-account-icon"><i class="fa-solid fa-user-shield" aria-hidden="true"></i></div><div><strong>Quản trị viên hệ thống</strong><span>Thông tin tài khoản quản trị</span></div></div>
-            <div class="account-form-group"><label>Email <span>*</span></label><input type="email" id="editAdministratorEmail" name="Email" maxlength="255" required /></div>
+            <div class="account-form-group"><label>Email <span>*</span></label><input type="email" id="editAdministratorEmail" name="Email" maxlength="255" data-validated-email required /></div>
             <section class="administrator-password-section" aria-labelledby="administratorPasswordTitle">
                 <div class="administrator-password-heading">
                     <span><i class="fa-solid fa-key" aria-hidden="true"></i></span>
@@ -262,6 +262,17 @@
 @section Scripts {
 <script>
 (() => {
+    const commonEmailDomainTypos = { 'gmaiil.com':'gmail.com', 'gmaill.com':'gmail.com', 'gmial.com':'gmail.com', 'gmal.com':'gmail.com', 'gmail.co':'gmail.com', 'gmail.con':'gmail.com', 'gmail.cm':'gmail.com', 'hotmaiil.com':'hotmail.com', 'hotmal.com':'hotmail.com', 'outlok.com':'outlook.com', 'yahooo.com':'yahoo.com' };
+    const validateEmail = input => {
+        const domain = input.value.trim().toLowerCase().split('@@')[1] || '';
+        const suggestion = commonEmailDomainTypos[domain];
+        input.setCustomValidity(suggestion ? `Tên miền "${domain}" có thể đã nhập sai. Bạn có muốn dùng "${suggestion}"?` : '');
+    };
+    document.querySelectorAll('[data-validated-email]').forEach(input => {
+        input.addEventListener('input', () => validateEmail(input));
+        input.addEventListener('change', () => validateEmail(input));
+    });
+
     const openModal = modal => { modal.classList.add('show'); modal.setAttribute('aria-hidden', 'false'); };
     const closeModal = modal => { modal.classList.remove('show'); modal.setAttribute('aria-hidden', 'true'); };
     document.querySelectorAll('.account-modal-overlay').forEach(modal => {
