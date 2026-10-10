@@ -27,6 +27,7 @@ public sealed class AuthController : Controller
     [AllowAnonymous]
     public async Task<IActionResult> Login(string? returnUrl = null)
     {
+        returnUrl = GetSafeReturnUrl(returnUrl);
         var hasApiToken = !string.IsNullOrWhiteSpace(Request.Cookies[ApiTokenCookie]);
 
         // CHỈ chuyển hướng vào trong khi CẢ HAI cookie rp_auth VÀ rp_api_token đều còn hợp lệ
@@ -79,9 +80,10 @@ public sealed class AuthController : Controller
 
         await SignInAsync(result.Value, model.RememberMe);
         if (result.Value.User.MustChangePassword) return RedirectToAction(nameof(ChangePassword));
-        if (!string.IsNullOrWhiteSpace(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl))
+        var safeReturnUrl = GetSafeReturnUrl(model.ReturnUrl);
+        if (safeReturnUrl is not null)
         {
-            return LocalRedirect(model.ReturnUrl);
+            return LocalRedirect(safeReturnUrl);
         }
 
         return RedirectForRole(result.Value.User.RoleName);
@@ -222,6 +224,10 @@ public sealed class AuthController : Controller
             return View(model);
         }
 
+        // The password belongs to the account identified by the reset token,
+        // which may not be the account currently authenticated in this browser.
+        // Always require a fresh login with the newly set password.
+        await ClearLocalSessionAsync();
         TempData["Success"] = result.Value?.Message ?? "Đặt lại mật khẩu thành công.";
         return RedirectToAction(nameof(Login));
     }
@@ -232,9 +238,45 @@ public sealed class AuthController : Controller
     public async Task<IActionResult> Logout()
     {
         TempData.Remove("PasswordChangeSuccess");
+        await ClearLocalSessionAsync();
+        return RedirectToAction(nameof(Login));
+    }
+
+    [HttpGet("dang-xuat")]
+    [AllowAnonymous]
+    public IActionResult LogoutPage()
+    {
+        // Logout deliberately remains POST-only. If an old ReturnUrl or browser
+        // history reaches this address with GET, recover to a useful page instead
+        // of returning HTTP 405.
+        return User.Identity?.IsAuthenticated == true
+            ? RedirectForRole(User.FindFirstValue(ClaimTypes.Role))
+            : RedirectToAction(nameof(Login));
+    }
+
+    private async Task ClearLocalSessionAsync()
+    {
         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         Response.Cookies.Delete(ApiTokenCookie);
-        return RedirectToAction(nameof(Login));
+    }
+
+    private string? GetSafeReturnUrl(string? returnUrl)
+    {
+        if (string.IsNullOrWhiteSpace(returnUrl) || !Url.IsLocalUrl(returnUrl))
+        {
+            return null;
+        }
+
+        var path = returnUrl.Split('?', '#')[0];
+        if (path.Equals("/login", StringComparison.OrdinalIgnoreCase) ||
+            path.Equals("/dang-xuat", StringComparison.OrdinalIgnoreCase) ||
+            path.StartsWith("/auth/reset-password", StringComparison.OrdinalIgnoreCase) ||
+            path.StartsWith("/auth/forgot-password", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        return returnUrl;
     }
 
     private IActionResult RedirectForRole(string? roleName)
