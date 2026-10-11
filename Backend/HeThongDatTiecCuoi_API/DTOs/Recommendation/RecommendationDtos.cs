@@ -1,10 +1,11 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace HeThongDatTiecCuoi_API.DTOs.Recommendation;
 
 public sealed class RecommendationRequestDto
 {
-    [Range(typeof(decimal), "0", "9999999999999999.99")]
+    [Range(typeof(decimal), "0", "1000000000000")]
     public decimal ExpectedBudget { get; set; }
 
     [Range(1, int.MaxValue)]
@@ -74,4 +75,26 @@ public sealed class RegisterPublicBookingDto
     public int? DecorationPackageId { get; set; }
     public int GuestCount { get; set; }
     public string? SpecialRequests { get; set; }
+}
+
+/// <summary>
+/// Contract chuẩn cho GET api/recommendations/hall-availability.
+/// Frontend deserialize thành object {queryDate, halls:[...]} (camelCase qua Web defaults).
+/// Bắt buộc có [JsonPropertyName] để khóa tên field, tránh lệch object-vs-array.
+/// </summary>
+public sealed class HallAvailabilityItemDto
+{
+    [JsonPropertyName("hallId")] public int HallId { get; set; }
+    [JsonPropertyName("hallName")] public string HallName { get; set; } = string.Empty;
+    [JsonPropertyName("hallCode")] public string HallCode { get; set; } = string.Empty;
+    [JsonPropertyName("capacity")] public int Capacity { get; set; }
+    [JsonPropertyName("rentalPrice")] public decimal RentalPrice { get; set; }
+    [JsonPropertyName("isNoonAvailable")] public bool IsNoonAvailable { get; set; }
+    [JsonPropertyName("isEveningAvailable")] public bool IsEveningAvailable { get; set; }
+}
+
+public sealed class HallAvailabilityResponseDto
+{
+    [JsonPropertyName("queryDate")] public string QueryDate { get; set; } = string.Empty;
+    [JsonPropertyName("halls")] public List<HallAvailabilityItemDto> Halls { get; set; } = new();
 }

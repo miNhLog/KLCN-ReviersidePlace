@@ -1,0 +1,67 @@
+{
+  "meta": {
+    "venue": "Riverside Palace",
+    "thesis": "CNTT-KLCN257",
+    "advisor": "GVHD ThS. Le Thi Thuy Lan",
+    "currency": "VND",
+    "version": "1.0.0"
+  },
+  "halls": [
+    {"hall_id": 1, "hall_name": "Grand Ballroom", "hall_code": "GRAND", "min_tables": 60, "max_tables": 120, "optimal_tables": 90, "base_price": 45000000, "max_capacity": 1200},
+    {"hall_id": 2, "hall_name": "Seine", "hall_code": "SEINE", "min_tables": 30, "max_tables": 65, "optimal_tables": 47, "base_price": 32000000, "max_capacity": 650},
+    {"hall_id": 3, "hall_name": "Danube", "hall_code": "DANUBE", "min_tables": 25, "max_tables": 54, "optimal_tables": 39, "base_price": 28000000, "max_capacity": 540},
+    {"hall_id": 4, "hall_name": "Amur", "hall_code": "AMUR", "min_tables": 25, "max_tables": 58, "optimal_tables": 41, "base_price": 30000000, "max_capacity": 580},
+    {"hall_id": 5, "hall_name": "Elbe", "hall_code": "ELBE", "min_tables": 15, "max_tables": 36, "optimal_tables": 25, "base_price": 20000000, "max_capacity": 360},
+    {"hall_id": 6, "hall_name": "Thames", "hall_code": "THAMES", "min_tables": 20, "max_tables": 45, "optimal_tables": 32, "base_price": 25000000, "max_capacity": 450},
+    {"hall_id": 7, "hall_name": "Volga", "hall_code": "VOLGA", "min_tables": 20, "max_tables": 50, "optimal_tables": 35, "base_price": 26000000, "max_capacity": 500},
+    {"hall_id": 8, "hall_name": "Nile", "hall_code": "NILE", "min_tables": 15, "max_tables": 40, "optimal_tables": 27, "base_price": 22000000, "max_capacity": 400},
+    {"hall_id": 9, "hall_name": "Ben Thuyen", "hall_code": "BENTHUYEN", "min_tables": 10, "max_tables": 25, "optimal_tables": 17, "base_price": 18000000, "max_capacity": 250}
+  ],
+  "menus": [
+    {"menu_id": 1, "menu_name": "Hoang Kim 1", "price_per_table": 3950000, "dishes": ["Sup cua hoang kim", "Goi ngo sen tom thit", "Ca chem hap Hong Kong", "Ga quay mat ong", "Bo ne sot tieu den", "Com chien hai san", "Che khuc bach"]},
+    {"menu_id": 2, "menu_name": "Hoang Kim 2", "price_per_table": 4150000, "dishes": ["Cha gio hoang kim", "Goi buoi tom kho", "Tom cang hap bia", "Vit quay Bac Kinh", "Suon non sot BBQ", "Lau hai san", "Banh flan"]},
+    {"menu_id": 3, "menu_name": "Hoang Kim 3", "price_per_table": 4350000, "dishes": ["Sup mang tay cua", "Goi ca trich", "Muc hap gung", "Heo sua quay", "Bo luc lac", "Mi xao hai san", "Trai cay thap cam"]},
+    {"menu_id": 4, "menu_name": "Hoang Kim 4", "price_per_table": 4550000, "dishes": ["Sup bi do", "Goi bo bop thau", "Ca mu hap tuong", "Ga dong goi la chanh", "Tom cang sot trung muoi", "Com ga Hoi An", "Rau cau dua"]},
+    {"menu_id": 5, "menu_name": "Hoang Kim 5", "price_per_table": 4750000, "dishes": ["Sup hai san", "Goi ngo sen", "Ca hoi ap chao", "Vit nau chao", "Bo bit tet", "Lau nam chay", "Kem y"]},
+    {"menu_id": 6, "menu_name": "Hoang Kim 6", "price_per_table": 4950000, "dishes": ["Cha muc Ha Long", "Goi ga xe phay", "Tom hum baby hap", "De tai chanh", "Suon bo nuong", "Bun bo Hue mini", "Che sen nhan"]},
+    {"menu_id": 7, "menu_name": "Hoang Kim 7", "price_per_table": 5150000, "dishes": ["Sup y vi ca", "Goi su hao", "Cua rang me", "Ga nuong muoi ot", "Bo Wagyu ap chao", "Pho ap chao", "Tau hu ky"]},
+    {"menu_id": 8, "menu_name": "Hoang Kim 8", "price_per_table": 5350000, "dishes": ["Vi ca tiem", "Goi hai san Thai", "Tom cang nuong pho mai", "Bo ne tieu xanh", "Ca tuyet hap", "Lau cua dong", "Banh su kem"]},
+    {"menu_id": 9, "menu_name": "Ngoc Luc 1", "price_per_table": 4250000, "dishes": ["Sup rau cu", "Goi cu hu dua", "Ca dieu hong hap", "Ga hap la sen", "Heo toc hap", "Com sen", "Sam bo luong"]},
+    {"menu_id": 10, "menu_name": "Ngoc Luc 2", "price_per_table": 4450000, "dishes": ["Sup nam tuyet", "Goi rau ma", "Tom su hap dua", "Vit om sau", "Bo xao thien ly", "Hu tieu Nam Vang", "Nuoc rau ma"]},
+    {"menu_id": 11, "menu_name": "Ngoc Luc 3", "price_per_table": 4650000, "dishes": ["Sup la dua", "Goi bong sung", "Muc ong hap", "Ga tre hap mo", "Ca loc nuong trui", "Chao ca", "Che dau xanh"]},
+    {"menu_id": 12, "menu_name": "Ngoc Luc 4", "price_per_table": 4850000, "dishes": ["Sup bi xanh", "Goi diep ca", "Tom dat rang muoi", "Ech xao xa ot", "Bo la lot", "Banh xeo mien Tay", "Sua dau nanh"]},
+    {"menu_id": 13, "menu_name": "Ngoc Luc 5", "price_per_table": 5050000, "dishes": ["Sup atiso", "Goi la giang", "Ca lang hap", "Ga rung nuong", "Heo moi xao lan", "Lau la giang", "Che khoai mon"]},
+    {"menu_id": 14, "menu_name": "Ngoc Luc 6", "price_per_table": 5250000, "dishes": ["Sup tan o", "Goi bong dien dien", "Luon um chuoi", "Vit troi hap", "Bo gung", "Banh canh ghe", "Che bap"]},
+    {"menu_id": 15, "menu_name": "Ngoc Luc 7", "price_per_table": 5450000, "dishes": ["Sup sam", "Goi rau nhut", "Ech chien nuoc mam", "Ga Hmong hap", "Nai ne", "Mi Quang", "Nuoc mat ong chanh"]},
+    {"menu_id": 16, "menu_name": "Ngoc Luc 8", "price_per_table": 5650000, "dishes": ["Sup dong trung", "Goi sam vuon", "Ca suon hap", "Chim bo cau quay", "Bo cuon la cai", "Lau ga ot hiem", "Yen chung duong phen"]},
+    {"menu_id": 17, "menu_name": "Cung Dinh 1", "price_per_table": 5850000, "dishes": ["Nem cong cha phuong", "Goi cung dinh", "Ca tien vua hap", "Ga tien vua quay", "Bo tien vua", "Yen sao ham", "Che yen"]},
+    {"menu_id": 18, "menu_name": "Cung Dinh 2", "price_per_table": 6050000, "dishes": ["Sup yen sao", "Chao bao ngu", "Tom cang tien vua", "Vit bac kinh", "De vuon nuong", "Vi ca thuong hang", "Banh cung dinh"]},
+    {"menu_id": 19, "menu_name": "Cung Dinh 3", "price_per_table": 6150000, "dishes": ["Hai sam bien", "Goi bao ngu", "Cua hoang de hap", "Bo Kobe ap chao", "Ga dong tien vua", "Lau bao ngu", "Sam Ngoc Linh"]},
+    {"menu_id": 20, "menu_name": "Cung Dinh 4", "price_per_table": 6250000, "dishes": ["Sup bao ngu", "Nem hai san", "Tom hum Alaska", "Bo Wagyu A5", "Vit quay tieu", "Lau nam hoang de", "Yen huyet"]},
+    {"menu_id": 21, "menu_name": "Cung Dinh 5", "price_per_table": 6450000, "dishes": ["Vi ca dac biet", "Goi tom hum", "Cua king crab", "Bo Han Quoc", "Ga ac tiem", "Lau hai sam", "Che hoang gia"]},
+    {"menu_id": 22, "menu_name": "Cung Dinh 6", "price_per_table": 6550000, "dishes": ["Bao ngu thuong hang", "Goi yen sao", "Tom hum dao", "Bo Wagyu nuong da", "Bo cau ham", "Lau hoang de", "Banh vang"]},
+    {"menu_id": 23, "menu_name": "Cung Dinh 7", "price_per_table": 6650000, "dishes": ["Yen sao khanh hoa", "Goi hoang gia", "Cua cang xanh", "Bo My Prime", "Ga phi ham sam", "Lau tien vua", "Nuoc yen"]},
+    {"menu_id": 24, "menu_name": "Cung Dinh 8", "price_per_table": 6850000, "dishes": ["Dai tiec cung dinh", "Goi dai duong", "Tom hum Canada", "Bo Kobe Nhat", "Bao ngu dai duong", "Lau dai duong", "Trang mieng hoang gia"]}
+  ],
+  "decors": [
+    {"decor_id": 1, "decor_name": "Hoang Kim Mong Diep Royal", "style": "Royal Luxury", "price": 68000000},
+    {"decor_id": 2, "decor_name": "Ngoc Luc Thanh Khiet Minimalist", "style": "Minimalist Green", "price": 45000000},
+    {"decor_id": 3, "decor_name": "Vuon Hong Paris Vintage", "style": "Vintage Romance", "price": 55000000},
+    {"decor_id": 4, "decor_name": "Pha Le Tuyet Crystal", "style": "Crystal Blue", "price": 60000000},
+    {"decor_id": 5, "decor_name": "Anh Duong Mua Thu Warm", "style": "Warm Autumn", "price": 48000000},
+    {"decor_id": 6, "decor_name": "Dem Ngan Sao Starry", "style": "Starry Night", "price": 72000000},
+    {"decor_id": 7, "decor_name": "Moc Mac Tinh Te Rustic", "style": "Rustic Garden", "price": 40000000}
+  ],
+  "services": [
+    {"service_id": "SVC_LINE_ARRAY", "service_name": "Am thanh Line Array", "price": 14500000},
+    {"service_id": "SVC_BEAM_LED", "service_name": "Den Beam/Led", "price": 12000000},
+    {"service_id": "SVC_MC", "service_name": "MC song ngu", "price": 6500000},
+    {"service_id": "SVC_QUARTET", "service_name": "Tu tau acoustic", "price": 5500000},
+    {"service_id": "SVC_LED_P25", "service_name": "Man hinh LED P2.5", "price": 18000000}
+  ],
+  "style_groups": {
+    "luxury": ["Royal Luxury", "Crystal Blue", "Starry Night"],
+    "nature": ["Minimalist Green", "Rustic Garden"],
+    "warm": ["Vintage Romance", "Warm Autumn"]
+  }
+}

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace HeThongDatTiecCuoi_WEB.Models.Recommendation;
 
@@ -118,18 +119,38 @@ public class RecommendationResponseViewModel
 
 public class HallAvailabilityResponseViewModel
 {
+    [JsonPropertyName("queryDate")]
     public string QueryDate { get; set; } = string.Empty;
+
+    [JsonPropertyName("halls")]
     public List<HallSlotItemViewModel> Halls { get; set; } = new();
+
+    // Alias để tương thích nếu Backend cũ trả { data: [...] } bọc ngoài.
+    [JsonPropertyName("availabilities")]
+    public List<HallSlotItemViewModel>? AvailabilitiesLegacy { get; set; }
 }
 
 public class HallSlotItemViewModel
 {
+    [JsonPropertyName("hallId")]
     public int HallId { get; set; }
+
+    [JsonPropertyName("hallName")]
     public string HallName { get; set; } = string.Empty;
+
+    [JsonPropertyName("hallCode")]
     public string HallCode { get; set; } = string.Empty;
+
+    [JsonPropertyName("capacity")]
     public int Capacity { get; set; }
+
+    [JsonPropertyName("rentalPrice")]
     public decimal RentalPrice { get; set; }
+
+    [JsonPropertyName("isNoonAvailable")]
     public bool IsNoonAvailable { get; set; }
+
+    [JsonPropertyName("isEveningAvailable")]
     public bool IsEveningAvailable { get; set; }
 }
 

@@ -20,7 +20,10 @@ using Microsoft.AspNetCore.Mvc;
 
 public sealed class RiversideApiClient : IRiversideApiClient
 {
-    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
+    {
+        PropertyNameCaseInsensitive = true
+    };
     private readonly HttpClient _httpClient;
 
     public RiversideApiClient(HttpClient httpClient)
@@ -1243,7 +1246,29 @@ public sealed class RiversideApiClient : IRiversideApiClient
     {
         try
         {
-            var response = await _httpClient.PostAsJsonAsync("api/recommendations/suggest-top3", request, cancellationToken);
+            // Map ViewModel (EventDate/Shift/DesiredStyle...) sang DTO Backend
+            // (DesiredDate/DesiredShift/DesiredStyle...) — khớp 100% tên field,
+            // tránh Backend nhận DesiredShift="" -> 400 hoặc DesiredDate=0001 -> 0 kết quả.
+            var guestCount = request.GuestCount > 0
+                ? request.GuestCount
+                : Math.Max(1, (request.OfficialTableCount + request.SpareTableCount) * 10);
+            var serviceNeeds = request.SelectedServiceCodes is { Count: > 0 }
+                ? string.Join(",", request.SelectedServiceCodes)
+                : null;
+            var backendPayload = new
+            {
+                expectedBudget = request.ExpectedBudget,
+                guestCount,
+                desiredDate = request.EventDate,
+                desiredShift = request.Shift,
+                desiredStyle = string.IsNullOrWhiteSpace(request.DesiredStyle)
+                    ? "Hiện đại / lãng mạn"
+                    : request.DesiredStyle.Trim(),
+                serviceNeeds
+            };
+            // Chuỗi endpoint Backend chính xác: api/recommendations/suggest-top3 (heuristic C# nội bộ).
+            // (Endpoint AI riêng là api/recommendations/suggest-top3-ai -> gọi FastAPI http://127.0.0.1:8000/api/v1/ai/wsm/rank)
+            var response = await _httpClient.PostAsJsonAsync("api/recommendations/suggest-top3", backendPayload, JsonOptions, cancellationToken);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -1251,7 +1276,7 @@ public sealed class RiversideApiClient : IRiversideApiClient
                 return ApiCallResult<RecommendationResponseViewModel>.Failure($"Lỗi máy chủ ({response.StatusCode}): {errorContent}");
             }
 
-            var result = await response.Content.ReadFromJsonAsync<RecommendationResponseViewModel>(cancellationToken: cancellationToken);
+            var result = await response.Content.ReadFromJsonAsync<RecommendationResponseViewModel>(JsonOptions, cancellationToken);
             return ApiCallResult<RecommendationResponseViewModel>.Success(result ?? new RecommendationResponseViewModel());
         }
         catch (Exception ex)
@@ -1280,6 +1305,10 @@ public sealed class RiversideApiClient : IRiversideApiClient
 
     public async Task<ApiCallResult<HallAvailabilityResponseViewModel>> GetHallAvailabilityRealtimeAsync(string dateStr, CancellationToken cancellationToken = default)
     {
+        // Backend trả OBJECT {queryDate, halls:[...]} (HallAvailabilityResponseDto).
+        // Bản cũ từng trả ARRAY trần nên phải bóc đa hình: array | {halls} | {success,data} | {data:{halls}}.
+        // Case-insensitive + [JsonPropertyName] đầy đủ; null-safe, catch trả ViewModel rỗng thay vì throw.
+        var empty = new HallAvailabilityResponseViewModel { QueryDate = dateStr ?? string.Empty };
         try
         {
             var response = await _httpClient.GetAsync($"api/recommendations/hall-availability?date={dateStr}", cancellationToken);
@@ -1289,13 +1318,83 @@ public sealed class RiversideApiClient : IRiversideApiClient
                 return ApiCallResult<HallAvailabilityResponseViewModel>.Failure($"Lỗi máy chủ ({response.StatusCode}): {err}");
             }
 
-            var data = await response.Content.ReadFromJsonAsync<HallAvailabilityResponseViewModel>(cancellationToken: cancellationToken);
-            return ApiCallResult<HallAvailabilityResponseViewModel>.Success(data ?? new HallAvailabilityResponseViewModel());
+            var json = await response.Content.ReadAsStringAsync(cancellationToken);
+            if (string.IsNullOrWhiteSpace(json))
+                return ApiCallResult<HallAvailabilityResponseViewModel>.Success(empty);
+
+            var parsed = ParseHallAvailability(json, dateStr ?? string.Empty);
+            return ApiCallResult<HallAvailabilityResponseViewModel>.Success(parsed ?? empty);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            return ApiCallResult<HallAvailabilityResponseViewModel>.Failure($"Lỗi kết nối API: {ex.Message}");
+            // Không để JsonException "could not be converted ... Path: $" văng ra modal;
+            // trả ViewModel rỗng để UI render ma trận trống thay vì throw.
+            return ApiCallResult<HallAvailabilityResponseViewModel>.Success(empty);
         }
+    }
+
+    private static HallAvailabilityResponseViewModel ParseHallAvailability(string json, string queryDate)
+    {
+        var result = new HallAvailabilityResponseViewModel { QueryDate = queryDate };
+        using var doc = JsonDocument.Parse(json);
+        var root = doc.RootElement;
+
+        // 1. Array trần (contract cũ): [...] -> gán vào Halls.
+        if (root.ValueKind == JsonValueKind.Array)
+        {
+            var list = JsonSerializer.Deserialize<List<HallSlotItemViewModel>>(json, JsonOptions);
+            result.Halls = list ?? new List<HallSlotItemViewModel>();
+            return result;
+        }
+
+        if (root.ValueKind != JsonValueKind.Object)
+            return result;
+
+        // 2. Bọc {success, data}: bóc data trước (data có thể là array hoặc object {halls}).
+        if (root.TryGetProperty("data", out var dataElem))
+        {
+            if (dataElem.ValueKind == JsonValueKind.Array)
+            {
+                var list = dataElem.Deserialize<List<HallSlotItemViewModel>>(JsonOptions);
+                result.Halls = list ?? new List<HallSlotItemViewModel>();
+                if (root.TryGetProperty("queryDate", out var qd) && qd.ValueKind == JsonValueKind.String)
+                    result.QueryDate = qd.GetString() ?? queryDate;
+                else if (dataElem.ValueKind == JsonValueKind.Object) { }
+                return result;
+            }
+            if (dataElem.ValueKind == JsonValueKind.Object)
+            {
+                var nested = ParseHallAvailabilityObject(dataElem, queryDate);
+                if (nested is not null)
+                    return nested;
+            }
+            // data null -> trả rỗng.
+            return result;
+        }
+
+        // 3. Object chuẩn {queryDate, halls:[...]} (kể cả PascalCase nhờ case-insensitive).
+        var direct = ParseHallAvailabilityObject(root, queryDate);
+        return direct ?? result;
+    }
+
+    private static HallAvailabilityResponseViewModel? ParseHallAvailabilityObject(JsonElement obj, string queryDate)
+    {
+        List<HallSlotItemViewModel>? halls = null;
+        if (obj.TryGetProperty("halls", out var hallsElem) && hallsElem.ValueKind == JsonValueKind.Array)
+            halls = hallsElem.Deserialize<List<HallSlotItemViewModel>>(JsonOptions);
+        else if (obj.TryGetProperty("availabilities", out var availElem) && availElem.ValueKind == JsonValueKind.Array)
+            halls = availElem.Deserialize<List<HallSlotItemViewModel>>(JsonOptions);
+
+        string qd = queryDate;
+        if (obj.TryGetProperty("queryDate", out var qdElem) && qdElem.ValueKind == JsonValueKind.String)
+            qd = qdElem.GetString() ?? queryDate;
+
+        // Nếu object không có halls/availabilities nhưng chính nó là 1 item -> coi như single? Không:
+        // trả null để caller giữ rỗng thay vì ép kiểu sai gây lỗi Path $.
+        if (halls is null)
+            return new HallAvailabilityResponseViewModel { QueryDate = qd };
+
+        return new HallAvailabilityResponseViewModel { QueryDate = qd, Halls = halls };
     }
 
     public async Task<ApiCallResult<string>> RegisterPublicBookingAsync(

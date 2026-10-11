@@ -12,10 +12,12 @@ namespace HeThongDatTiecCuoi_WEB.Controllers;
 public class RecommendationController : Controller
 {
     private readonly IRiversideApiClient _apiClient;
+    private readonly ILogger<RecommendationController> _logger;
 
-    public RecommendationController(IRiversideApiClient apiClient)
+    public RecommendationController(IRiversideApiClient apiClient, ILogger<RecommendationController> logger)
     {
         _apiClient = apiClient;
+        _logger = logger;
     }
 
     [HttpGet]
@@ -62,8 +64,18 @@ public class RecommendationController : Controller
     [HttpPost]
     public async Task<IActionResult> AnalyzeTop3([FromBody] RecommendationRequestViewModel request, CancellationToken cancellationToken = default)
     {
+        // Try-catch bao bọc TOÀN BỘ action Frontend: log full ex.ToString(),
+        // không để exception văng 500; trả JSON thân thiện cho JS alert.
+        try
+        {
+        if (request is null)
+        {
+            ViewBag.RecommendationError = "Thiếu dữ liệu khảo sát.";
+            return Json(new { success = false, message = "Thiếu dữ liệu khảo sát, vui lòng nhập lại." });
+        }
         if (!ModelState.IsValid)
         {
+            ViewBag.RecommendationError = "Dữ liệu khảo sát chưa hợp lệ.";
             return Json(new { success = false, message = "Dữ liệu khảo sát chưa hợp lệ, vui lòng kiểm tra lại." });
         }
 
@@ -71,25 +83,55 @@ public class RecommendationController : Controller
 
         if (!result.Succeeded || result.Value == null)
         {
-            return Json(new { success = false, message = result.Error ?? "Không thể phân tích gói tiệc lúc này." });
+            _logger.LogWarning("AnalyzeTop3: Backend trả lỗi: {Error}", result.Error);
+            ViewBag.RecommendationError = result.Error;
+            return Json(new { success = false, message = result.Error ?? "Không thể phân tích gói tiệc lúc này, vui lòng thử lại sau." });
         }
 
         return Json(new { success = true, data = result.Value });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "AnalyzeTop3 thất bại. traceId={TraceId}. Chi tiết: {Detail}",
+                HttpContext.TraceIdentifier, ex.ToString());
+            ViewBag.RecommendationError = "Hệ thống gợi ý đang bận, vui lòng thử lại sau.";
+            return Json(new { success = false, message = "Hệ thống gợi ý đang bận, vui lòng thử lại sau.", traceId = HttpContext.TraceIdentifier });
+        }
     }
 
     // Lấy ma trận lịch sảnh trống
     [HttpGet]
     public async Task<IActionResult> GetHallAvailability(string? date, CancellationToken cancellationToken)
     {
-        var queryDate = string.IsNullOrWhiteSpace(date) ? DateTime.Today.AddMonths(2).ToString("yyyy-MM-dd") : date;
-        var result = await _apiClient.GetHallAvailabilityRealtimeAsync(queryDate, cancellationToken);
-
-        if (result.Succeeded && result.Value != null)
+        try
         {
-            return Json(new { success = true, data = result.Value });
-        }
+            var queryDate = string.IsNullOrWhiteSpace(date) ? DateTime.Today.AddMonths(2).ToString("yyyy-MM-dd") : date;
+            var result = await _apiClient.GetHallAvailabilityRealtimeAsync(queryDate, cancellationToken);
 
-        return Json(new { success = false, message = result.Error ?? "Không thể tải dữ liệu lịch sảnh từ cơ sở dữ liệu." });
+            if (result.Succeeded && result.Value != null)
+            {
+                result.Value.QueryDate ??= queryDate;
+                result.Value.Halls ??= new List<HeThongDatTiecCuoi_WEB.Models.Recommendation.HallSlotItemViewModel>();
+                return Json(new { success = true, data = result.Value });
+            }
+
+            return Json(new { success = false, message = result.Error ?? "Không thể tải dữ liệu lịch sảnh từ cơ sở dữ liệu." });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "GetHallAvailability thất bại. traceId={TraceId}. Chi tiết: {Detail}",
+                HttpContext.TraceIdentifier, ex.ToString());
+            // Null-safe: trả ViewModel rỗng thay vì throw để modal không vỡ với lỗi convert Path $.
+            return Json(new
+            {
+                success = true,
+                data = new HallAvailabilityResponseViewModel
+                {
+                    QueryDate = date ?? string.Empty,
+                    Halls = new List<HallSlotItemViewModel>()
+                }
+            });
+        }
     }
 
     [HttpPost]

@@ -361,3 +361,11 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Python cache & venv
+__pycache__/
+*.py[cod]
+.venv/
+env/
+venv/
+*.log
