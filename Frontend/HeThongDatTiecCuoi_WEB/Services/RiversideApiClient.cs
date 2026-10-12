@@ -1681,6 +1681,68 @@ public sealed class RiversideApiClient : IRiversideApiClient
         }
     }
 
+    // UC10: POST /api/v1/ai-chat/send (AllowAnonymous) — proxy FE -> BE -> AI_Service RAG.
+    public async Task<ApiCallResult<HeThongDatTiecCuoi_WEB.Models.AiChat.AiChatReplyViewModel>> SendAiChatAsync(
+        HeThongDatTiecCuoi_WEB.Models.AiChat.AiChatSendViewModel request,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var response = await _httpClient.PostAsJsonAsync(
+                "api/v1/ai-chat/send",
+                new { message = request.Message ?? string.Empty, history = request.History ?? new List<HeThongDatTiecCuoi_WEB.Models.AiChat.AiChatMessageViewModel>() },
+                JsonOptions,
+                cancellationToken);
+            var json = await response.Content.ReadAsStringAsync(cancellationToken);
+            if (!response.IsSuccessStatusCode)
+                return ApiCallResult<HeThongDatTiecCuoi_WEB.Models.AiChat.AiChatReplyViewModel>.Failure(
+                    ExtractApiMessage(json, response.StatusCode), (int)response.StatusCode);
+            var dto = System.Text.Json.JsonSerializer.Deserialize<HeThongDatTiecCuoi_WEB.Models.AiChat.AiChatReplyViewModel>(json, JsonOptions);
+            return dto is null
+                ? ApiCallResult<HeThongDatTiecCuoi_WEB.Models.AiChat.AiChatReplyViewModel>.Failure("Trợ lý AI trả về dữ liệu rỗng.")
+                : ApiCallResult<HeThongDatTiecCuoi_WEB.Models.AiChat.AiChatReplyViewModel>.Success(dto);
+        }
+        catch (HttpRequestException)
+        {
+            return ApiCallResult<HeThongDatTiecCuoi_WEB.Models.AiChat.AiChatReplyViewModel>.Failure("Không thể kết nối Backend API. Hãy kiểm tra API đã chạy hay chưa.");
+        }
+        catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return ApiCallResult<HeThongDatTiecCuoi_WEB.Models.AiChat.AiChatReplyViewModel>.Failure("Backend API phản hồi quá lâu.");
+        }
+    }
+
+    // UC10: POST /api/v1/ai-chat/extract (AllowAnonymous) — trích xuất thực thể hội thoại.
+    public async Task<ApiCallResult<HeThongDatTiecCuoi_WEB.Models.AiChat.AiChatExtractResultViewModel>> ExtractAiEntitiesAsync(
+        List<HeThongDatTiecCuoi_WEB.Models.AiChat.AiChatMessageViewModel> history,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var response = await _httpClient.PostAsJsonAsync(
+                "api/v1/ai-chat/extract",
+                new { history = history ?? new List<HeThongDatTiecCuoi_WEB.Models.AiChat.AiChatMessageViewModel>() },
+                JsonOptions,
+                cancellationToken);
+            var json = await response.Content.ReadAsStringAsync(cancellationToken);
+            if (!response.IsSuccessStatusCode)
+                return ApiCallResult<HeThongDatTiecCuoi_WEB.Models.AiChat.AiChatExtractResultViewModel>.Failure(
+                    ExtractApiMessage(json, response.StatusCode), (int)response.StatusCode);
+            var dto = System.Text.Json.JsonSerializer.Deserialize<HeThongDatTiecCuoi_WEB.Models.AiChat.AiChatExtractResultViewModel>(json, JsonOptions);
+            return dto is null
+                ? ApiCallResult<HeThongDatTiecCuoi_WEB.Models.AiChat.AiChatExtractResultViewModel>.Failure("Trợ lý AI trả về dữ liệu rỗng.")
+                : ApiCallResult<HeThongDatTiecCuoi_WEB.Models.AiChat.AiChatExtractResultViewModel>.Success(dto);
+        }
+        catch (HttpRequestException)
+        {
+            return ApiCallResult<HeThongDatTiecCuoi_WEB.Models.AiChat.AiChatExtractResultViewModel>.Failure("Không thể kết nối Backend API. Hãy kiểm tra API đã chạy hay chưa.");
+        }
+        catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return ApiCallResult<HeThongDatTiecCuoi_WEB.Models.AiChat.AiChatExtractResultViewModel>.Failure("Backend API phản hồi quá lâu.");
+        }
+    }
+
     /// <summary>
     /// Chuẩn hóa ca tổ chức về "Ca trưa" / "Ca tối" trước khi gửi Backend,
     /// tránh gửi chuỗi dài "Ca Tối (17:30 – 21:30)" khiến Backend không resolve được LichSanh.

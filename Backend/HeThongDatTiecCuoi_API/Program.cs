@@ -98,6 +98,7 @@ builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
 builder.Services.AddScoped<IFirstPasswordOtpService, FirstPasswordOtpService>();
 builder.Services.AddScoped<DevelopmentAuthSeeder>();
+builder.Services.AddScoped<IAiChatService, AiChatService>();
 builder.Services.AddHttpClient();
 builder.Services
     .AddOptions<AiServiceOptions>()

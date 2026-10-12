@@ -8,6 +8,13 @@ from .schemas.recommendation import RecommendationRequest, RecommendationRespons
 
 app = FastAPI(title=SERVICE_TITLE, version=SERVICE_VERSION)
 
+# UC10 RAG router (import lazy để main vẫn chạy khi thiếu dep option).
+try:
+    from .api.v1 import api_router as _rag_api_router
+    app.include_router(_rag_api_router)
+except Exception:  # pragma: no cover - fallback khi thiếu package option
+    pass
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,

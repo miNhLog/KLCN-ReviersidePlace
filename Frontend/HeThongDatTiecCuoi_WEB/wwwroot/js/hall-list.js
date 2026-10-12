@@ -37,7 +37,7 @@
 
     const toast = page.querySelector('.home-toast');
     let toastTimer;
-    page.querySelectorAll('[data-coming-soon], [data-open-ai], [data-toast-message]').forEach(element => {
+    page.querySelectorAll('[data-coming-soon], [data-toast-message]').forEach(element => {
         element.addEventListener('click', event => {
             event.preventDefault();
             clearTimeout(toastTimer);

@@ -374,3 +374,12 @@ venv/
 *.doc
 ~$*.docx
 *_Backup.docx
+
+# AI & Vector DB Cache
+**/__pycache__/
+AI_Service/data/chroma_db/
+*.pyc
+.venv/
+# Word & Temp
+*.docx
+~$*.docx

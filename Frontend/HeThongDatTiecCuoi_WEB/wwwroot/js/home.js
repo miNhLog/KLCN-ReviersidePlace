@@ -62,80 +62,15 @@
     window.matchMedia('(max-width: 1023px)').addEventListener('change', event => {
         if (!event.matches) closeMobileMenu();
     });
-
-    const modal = page.querySelector('#aiAssistantModal');
-    const dialog = modal.querySelector('.ai-dialog');
-    const input = modal.querySelector('#aiChatInput');
-    const messages = modal.querySelector('#aiMessages');
-    let previousFocus = null;
-
-    function openAi() {
-        previousFocus = document.activeElement;
-        modal.classList.add('open');
-        modal.setAttribute('aria-hidden', 'false');
-        document.body.classList.add('home-modal-open');
-        closeMobileMenu();
-        input.focus();
-    }
-    function closeAi() {
-        modal.classList.remove('open');
-        modal.setAttribute('aria-hidden', 'true');
-        document.body.classList.remove('home-modal-open');
-        if (previousFocus && previousFocus.isConnected) previousFocus.focus();
-    }
-    page.querySelectorAll('[data-open-ai]').forEach(button => button.addEventListener('click', openAi));
-    modal.querySelectorAll('[data-close-ai]').forEach(button => button.addEventListener('click', closeAi));
     document.addEventListener('keydown', event => {
-        if (event.key === 'Escape') {
-            if (modal.classList.contains('open')) closeAi();
-            else closeMobileMenu();
-        }
-        if (event.key === 'Tab' && modal.classList.contains('open')) {
-            const focusable = [...dialog.querySelectorAll('button, input')].filter(item => !item.disabled);
-            if (event.shiftKey && document.activeElement === focusable[0]) {
-                event.preventDefault();
-                focusable.at(-1).focus();
-            } else if (!event.shiftKey && document.activeElement === focusable.at(-1)) {
-                event.preventDefault();
-                focusable[0].focus();
-            }
-        }
+        if (event.key === 'Escape') closeMobileMenu();
     });
 
-    function addMessage(message, sender) {
-        const row = document.createElement('div');
-        row.className = `chat-row ${sender}`;
-        if (sender === 'assistant') {
-            const avatar = document.createElement('span');
-            avatar.className = 'chat-avatar';
-            avatar.setAttribute('aria-hidden', 'true');
-            avatar.textContent = 'AI';
-            row.appendChild(avatar);
-        }
-        const text = document.createElement('p');
-        text.textContent = message;
-        row.appendChild(text);
-        messages.appendChild(row);
-        messages.scrollTop = messages.scrollHeight;
-    }
-    function sendMessage() {
-        const message = input.value.trim();
-        if (!message) return;
-        addMessage(message, 'user');
-        input.value = '';
-        addMessage('Tính năng tư vấn AI đang được phát triển.', 'assistant');
-        input.focus();
-    }
-    modal.querySelector('#aiChatForm').addEventListener('submit', event => {
-        event.preventDefault();
-        sendMessage();
-    });
-    modal.querySelectorAll('[data-quick-prompt]').forEach(button => {
-        button.addEventListener('click', () => {
-            input.value = button.dataset.quickPrompt;
-            sendMessage();
-        });
-    });
+    // Mở widget Tư vấn 24/7 mới (window.AiChatWidget từ ai-chat.js).
+    page.querySelectorAll('[data-open-ai-new]').forEach(button => button.addEventListener('click', () => {
+        if (window.AiChatWidget && typeof window.AiChatWidget.open === 'function') window.AiChatWidget.open();
+        closeMobileMenu();
+    }));
 
     const hallGrid = page.querySelector('#featuredHallGrid');
     if (hallGrid) {

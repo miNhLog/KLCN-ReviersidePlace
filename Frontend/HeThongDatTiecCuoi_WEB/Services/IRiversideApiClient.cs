@@ -338,4 +338,13 @@ public interface IRiversideApiClient
         string bookingCode, string phoneNumber, CancellationToken cancellationToken = default);
     Task<ApiCallResult<string>> CancelPublicBookingHoldAsync(
         int bookingId, string bookingCode, string phoneNumber, string? reason, CancellationToken cancellationToken = default);
+
+    // UC10: Trợ lý ảo AI (proxy FE -> BE -> AI_Service RAG).
+    Task<ApiCallResult<HeThongDatTiecCuoi_WEB.Models.AiChat.AiChatReplyViewModel>> SendAiChatAsync(
+        HeThongDatTiecCuoi_WEB.Models.AiChat.AiChatSendViewModel request,
+        CancellationToken cancellationToken = default);
+
+    Task<ApiCallResult<HeThongDatTiecCuoi_WEB.Models.AiChat.AiChatExtractResultViewModel>> ExtractAiEntitiesAsync(
+        List<HeThongDatTiecCuoi_WEB.Models.AiChat.AiChatMessageViewModel> history,
+        CancellationToken cancellationToken = default);
 }
