@@ -29,6 +29,6 @@ def rank_packages(payload: RecommendationRequest):
               f"va tra ve toi da 3 ket qua.")
     if total == 0:
         notice = ("Khong co phuong an nao thoa Hard Filtering "
-                  "(sanh trong, suc chua, tran ngan sach 110%).")
+                  "(sanh trong, suc chua, tran ngan sach toi da 10 trieu VND).")
     return RecommendationResponse(success=True, total_candidates_evaluated=total,
                                   top_3=items, algorithm_notice=notice)

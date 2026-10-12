@@ -369,3 +369,8 @@ __pycache__/
 env/
 venv/
 *.log
+# Word documents & temp files
+*.docx
+*.doc
+~$*.docx
+*_Backup.docx
