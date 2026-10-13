@@ -198,6 +198,13 @@ public interface IRiversideApiClient
         string accessToken,
         CancellationToken cancellationToken);
 
+    Task<ApiCallResult<Models.ManagerMenu.ManagerMenuPageViewModel>> GetManagerMenusAsync(
+        string? keyword, string? status, int page, int pageSize,
+        string accessToken, CancellationToken cancellationToken);
+
+    Task<ApiActionResult> BatchAddMenuDishesAsync(
+        int menuId, List<int> dishIds, string accessToken, CancellationToken cancellationToken);
+
     Task<ApiCallResult<MenuViewModel>> CreateMenuAsync(
         CreateMenuForm model,
         string accessToken,
@@ -222,6 +229,13 @@ public interface IRiversideApiClient
         string? status,
         string accessToken,
         CancellationToken cancellationToken);
+
+    Task<ApiCallResult<Models.ManagerDish.ManagerDishPageViewModel>> GetManagerDishesAsync(
+        string? keyword, string? category, string? status, int page, int pageSize,
+        string accessToken, CancellationToken cancellationToken);
+
+    Task<ApiCallResult<Models.ManagerDish.ManagerDishDetailViewModel>> GetManagerDishDetailAsync(
+        int dishId, string accessToken, CancellationToken cancellationToken);
 
     Task<ApiCallResult<DishViewModel>> CreateDishAsync(
         CreateDishForm model,

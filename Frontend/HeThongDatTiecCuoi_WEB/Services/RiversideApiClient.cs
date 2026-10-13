@@ -732,6 +732,17 @@ public sealed class RiversideApiClient : IRiversideApiClient
             cancellationToken);
     }
 
+    public Task<ApiCallResult<Models.ManagerMenu.ManagerMenuPageViewModel>> GetManagerMenusAsync(
+        string? keyword, string? status, int page, int pageSize,
+        string accessToken, CancellationToken cancellationToken)
+    {
+        var query = new List<string> { $"page={Math.Max(1, page)}", $"pageSize={pageSize}" };
+        if (!string.IsNullOrWhiteSpace(keyword)) query.Add($"keyword={Uri.EscapeDataString(keyword.Trim())}");
+        if (!string.IsNullOrWhiteSpace(status)) query.Add($"status={Uri.EscapeDataString(status.Trim())}");
+        return SendJsonAsync<Models.ManagerMenu.ManagerMenuPageViewModel>(
+            HttpMethod.Get, "api/menus/management?" + string.Join("&", query), null, accessToken, cancellationToken);
+    }
+
     public Task<ApiCallResult<MenuViewModel>> CreateMenuAsync(
         CreateMenuForm model,
         string accessToken,
@@ -824,6 +835,23 @@ public sealed class RiversideApiClient : IRiversideApiClient
             cancellationToken);
     }
 
+    public Task<ApiCallResult<Models.ManagerDish.ManagerDishPageViewModel>> GetManagerDishesAsync(
+        string? keyword, string? category, string? status, int page, int pageSize,
+        string accessToken, CancellationToken cancellationToken)
+    {
+        var query = new List<string> { $"page={Math.Max(1, page)}", $"pageSize={pageSize}" };
+        if (!string.IsNullOrWhiteSpace(keyword)) query.Add($"keyword={Uri.EscapeDataString(keyword.Trim())}");
+        if (!string.IsNullOrWhiteSpace(category)) query.Add($"category={Uri.EscapeDataString(category.Trim())}");
+        if (!string.IsNullOrWhiteSpace(status)) query.Add($"status={Uri.EscapeDataString(status.Trim())}");
+        return SendJsonAsync<Models.ManagerDish.ManagerDishPageViewModel>(HttpMethod.Get,
+            "api/dishes/management?" + string.Join("&", query), null, accessToken, cancellationToken);
+    }
+
+    public Task<ApiCallResult<Models.ManagerDish.ManagerDishDetailViewModel>> GetManagerDishDetailAsync(
+        int dishId, string accessToken, CancellationToken cancellationToken) =>
+        SendJsonAsync<Models.ManagerDish.ManagerDishDetailViewModel>(HttpMethod.Get,
+            $"api/dishes/{dishId}/management-detail", null, accessToken, cancellationToken);
+
     public Task<ApiCallResult<DishViewModel>> CreateDishAsync(
         CreateDishForm model,
         string accessToken,
@@ -834,7 +862,8 @@ public sealed class RiversideApiClient : IRiversideApiClient
             new
             {
                 model.DishName,
-                model.Category
+                model.Category,
+                model.Price
             },
             accessToken,
             cancellationToken);
@@ -850,7 +879,8 @@ public sealed class RiversideApiClient : IRiversideApiClient
             new
             {
                 model.DishName,
-                model.Category
+                model.Category,
+                model.Price
             },
             accessToken,
             cancellationToken);
@@ -957,6 +987,11 @@ public sealed class RiversideApiClient : IRiversideApiClient
             new { DishId = dishId },
             accessToken,
             cancellationToken);
+
+    public Task<ApiActionResult> BatchAddMenuDishesAsync(
+        int menuId, List<int> dishIds, string accessToken, CancellationToken cancellationToken) =>
+        SendActionJsonAsync(HttpMethod.Post, $"api/menus/{menuId}/dishes/batch",
+            new { DishIds = dishIds }, accessToken, cancellationToken);
 
     public Task<ApiActionResult> RemoveDishFromMenuAsync(
         int menuId,

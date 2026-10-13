@@ -161,12 +161,19 @@
                             <span class="sidebar-icon" aria-hidden="true"><i class="fa-solid fa-building"></i></span>
                             <span class="sidebar-label">Sảnh &amp; Lịch</span>
                         </a>
-                        <a asp-controller="AdminMenu" asp-action="Index"
-                           class="sidebar-item @(IsActive("AdminMenu") ? "active" : string.Empty)"
-                           aria-current="@(IsActive("AdminMenu") ? "page" : null)"
-                           data-sidebar-tooltip="Thực đơn &amp; Món ăn">
+                        <a asp-controller="ManagerMenu" asp-action="Index"
+                           class="sidebar-item @(IsActive("ManagerMenu") ? "active" : string.Empty)"
+                           aria-current="@(IsActive("ManagerMenu") ? "page" : null)"
+                           data-sidebar-tooltip="Thực đơn">
                             <span class="sidebar-icon" aria-hidden="true"><i class="fa-solid fa-utensils"></i></span>
-                            <span class="sidebar-label">Thực đơn &amp; Món ăn</span>
+                            <span class="sidebar-label">Thực đơn</span>
+                        </a>
+                        <a asp-controller="ManagerDish" asp-action="Index"
+                           class="sidebar-item @(IsActive("ManagerDish") ? "active" : string.Empty)"
+                           aria-current="@(IsActive("ManagerDish") ? "page" : null)"
+                           data-sidebar-tooltip="Món ăn">
+                            <span class="sidebar-icon" aria-hidden="true"><i class="fa-solid fa-bowl-food"></i></span>
+                            <span class="sidebar-label">Món ăn</span>
                         </a>
                         <a asp-controller="AdminDecorService" asp-action="Index"
                            class="sidebar-item @(IsActive("AdminDecorService") ? "active" : string.Empty)"
