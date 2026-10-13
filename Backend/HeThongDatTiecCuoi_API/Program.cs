@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using System.Threading.RateLimiting;
 using HeThongDatTiecCuoi_API.Data;
@@ -5,8 +6,7 @@ using HeThongDatTiecCuoi_API.Helpers;
 using HeThongDatTiecCuoi_API.DTOs.Auth;
 using HeThongDatTiecCuoi_API.Models;
 using HeThongDatTiecCuoi_API.Options;
-using HeThongDatTiecCuoi_API.Services;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+using HeThongDatTiecCuoi_API.Services;using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -15,7 +15,14 @@ using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Cố định InvariantCulture cho toàn bộ thread để RangeAttribute(typeof(decimal), ...)
+// và decimal parsing không phụ thuộc culture Windows (vi-VN dùng dấu phẩy thập phân).
+var invariantCulture = CultureInfo.InvariantCulture;
+CultureInfo.DefaultThreadCurrentCulture = invariantCulture;
+CultureInfo.DefaultThreadCurrentUICulture = invariantCulture;
+
 builder.Services.AddControllers();
+builder.Services.AddMemoryCache();
 builder.Services.AddProblemDetails();
 builder.Services.Configure<ApiBehaviorOptions>(options =>
 {
@@ -47,6 +54,8 @@ builder.Services.Configure<DevelopmentAccountsOptions>(
     builder.Configuration.GetSection(DevelopmentAccountsOptions.SectionName));
 builder.Services.Configure<SmtpOptions>(
     builder.Configuration.GetSection(SmtpOptions.SectionName));
+builder.Services.Configure<MailSettings>(
+    builder.Configuration.GetSection(MailSettings.SectionName));
 builder.Services.Configure<PasswordResetOptions>(
     builder.Configuration.GetSection(PasswordResetOptions.SectionName));
 builder.Services
@@ -85,11 +94,23 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IStatusService, StatusService>();
 builder.Services.AddScoped<IEmployeeCodeGenerator, EmployeeCodeGenerator>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
-builder.Services.AddScoped<IEmailService, SmtpEmailService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
 builder.Services.AddScoped<IFirstPasswordOtpService, FirstPasswordOtpService>();
 builder.Services.AddScoped<DevelopmentAuthSeeder>();
+builder.Services.AddScoped<IAiChatService, AiChatService>();
 builder.Services.AddHttpClient();
+builder.Services
+    .AddOptions<AiServiceOptions>()
+    .Bind(builder.Configuration.GetSection(AiServiceOptions.SectionName))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+builder.Services.AddHttpClient("AiService", (provider, client) =>
+{
+    var options = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<AiServiceOptions>>().Value;
+    client.BaseAddress = new Uri(options.BaseUrl);
+    client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
+});
 
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
 builder.Services.AddCors(options =>

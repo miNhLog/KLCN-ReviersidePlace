@@ -20,7 +20,10 @@ using Microsoft.AspNetCore.Mvc;
 
 public sealed class RiversideApiClient : IRiversideApiClient
 {
-    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
+    {
+        PropertyNameCaseInsensitive = true
+    };
     private readonly HttpClient _httpClient;
 
     public RiversideApiClient(HttpClient httpClient)
@@ -242,6 +245,39 @@ public sealed class RiversideApiClient : IRiversideApiClient
         {
             return ApiCallResult<PublicMenuDetailDto>.Failure(
                 "API trả về dữ liệu chi tiết thực đơn không hợp lệ.");
+        }
+    }
+
+    public async Task<ApiCallResult<List<PublicDishDto>>> GetPublicDishesAsync(
+        string? keyword,
+        string? category,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var query = new List<string>();
+            AddQueryParameter(query, "keyword", keyword);
+            AddQueryParameter(query, "category", category);
+            var uri = "api/dishes/public" + (query.Count == 0 ? string.Empty : "?" + string.Join("&", query));
+            var result = await SendAsync<List<PublicDishDto>>(
+                HttpMethod.Get,
+                uri,
+                null,
+                null,
+                cancellationToken);
+
+            if (result.Value is not null && _httpClient.BaseAddress is not null)
+            {
+                foreach (var dish in result.Value)
+                    dish.ImageUrl = ResolvePublicImageUrl(dish.ImageUrl);
+            }
+
+            return result;
+        }
+        catch (JsonException)
+        {
+            return ApiCallResult<List<PublicDishDto>>.Failure(
+                "API trả về dữ liệu món ăn không hợp lệ.");
         }
     }
 
@@ -1278,15 +1314,49 @@ public sealed class RiversideApiClient : IRiversideApiClient
     {
         try
         {
-            var response = await _httpClient.PostAsJsonAsync("api/recommendations/suggest-top3", request, cancellationToken);
+            // Map ViewModel (EventDate/Shift/DesiredStyle...) sang DTO Backend
+            // (DesiredDate/DesiredShift/DesiredStyle...) — khớp 100% tên field,
+            // tránh Backend nhận DesiredShift="" -> 400 hoặc DesiredDate=0001 -> 0 kết quả.
+            var guestCount = request.GuestCount > 0
+                ? request.GuestCount
+                : Math.Max(1, (request.OfficialTableCount + request.SpareTableCount) * 10);
+            // Quy đổi chuẩn 10 khách/bàn khi GuestCount thay đổi từ form mới.
+            var officialTables = request.OfficialTableCount > 0
+                ? request.OfficialTableCount
+                : (int)Math.Ceiling(guestCount / 10m);
+            var spareTables = Math.Max(0, request.SpareTableCount);
+            var tableCount = request.TableCount > 0
+                ? request.TableCount
+                : officialTables + spareTables;
+            var serviceNeeds = request.SelectedServiceCodes is { Count: > 0 }
+                ? string.Join(",", request.SelectedServiceCodes)
+                : null;
+            var backendPayload = new
+            {
+                expectedBudget = request.ExpectedBudget,
+                guestCount,
+                officialTableCount = officialTables,
+                spareTableCount = spareTables,
+                tableCount,
+                desiredDate = request.EventDate,
+                desiredShift = NormalizeHallShift(request.Shift),
+                desiredStyle = string.IsNullOrWhiteSpace(request.DesiredStyle)
+                    ? "Hiện đại / lãng mạn"
+                    : request.DesiredStyle.Trim(),
+                serviceNeeds
+            };
+            // Chuỗi endpoint Backend chính xác: api/recommendations/suggest-top3 (heuristic C# nội bộ).
+            // (Endpoint AI riêng là api/recommendations/suggest-top3-ai -> gọi FastAPI http://127.0.0.1:8000/api/v1/ai/wsm/rank)
+            var response = await _httpClient.PostAsJsonAsync("api/recommendations/suggest-top3", backendPayload, JsonOptions, cancellationToken);
 
             if (!response.IsSuccessStatusCode)
             {
                 var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
-                return ApiCallResult<RecommendationResponseViewModel>.Failure($"Lỗi máy chủ ({response.StatusCode}): {errorContent}");
+                // Bóc {message} tiếng Việt từ Backend thay vì dump raw JSON/HTML cho user.
+                return ApiCallResult<RecommendationResponseViewModel>.Failure(ExtractApiMessage(errorContent, response.StatusCode));
             }
 
-            var result = await response.Content.ReadFromJsonAsync<RecommendationResponseViewModel>(cancellationToken: cancellationToken);
+            var result = await response.Content.ReadFromJsonAsync<RecommendationResponseViewModel>(JsonOptions, cancellationToken);
             return ApiCallResult<RecommendationResponseViewModel>.Success(result ?? new RecommendationResponseViewModel());
         }
         catch (Exception ex)
@@ -1315,6 +1385,10 @@ public sealed class RiversideApiClient : IRiversideApiClient
 
     public async Task<ApiCallResult<HallAvailabilityResponseViewModel>> GetHallAvailabilityRealtimeAsync(string dateStr, CancellationToken cancellationToken = default)
     {
+        // Backend trả OBJECT {queryDate, halls:[...]} (HallAvailabilityResponseDto).
+        // Bản cũ từng trả ARRAY trần nên phải bóc đa hình: array | {halls} | {success,data} | {data:{halls}}.
+        // Case-insensitive + [JsonPropertyName] đầy đủ; null-safe, catch trả ViewModel rỗng thay vì throw.
+        var empty = new HallAvailabilityResponseViewModel { QueryDate = dateStr ?? string.Empty };
         try
         {
             var response = await _httpClient.GetAsync($"api/recommendations/hall-availability?date={dateStr}", cancellationToken);
@@ -1324,12 +1398,118 @@ public sealed class RiversideApiClient : IRiversideApiClient
                 return ApiCallResult<HallAvailabilityResponseViewModel>.Failure($"Lỗi máy chủ ({response.StatusCode}): {err}");
             }
 
-            var data = await response.Content.ReadFromJsonAsync<HallAvailabilityResponseViewModel>(cancellationToken: cancellationToken);
-            return ApiCallResult<HallAvailabilityResponseViewModel>.Success(data ?? new HallAvailabilityResponseViewModel());
+            var json = await response.Content.ReadAsStringAsync(cancellationToken);
+            if (string.IsNullOrWhiteSpace(json))
+                return ApiCallResult<HallAvailabilityResponseViewModel>.Success(empty);
+
+            var parsed = ParseHallAvailability(json, dateStr ?? string.Empty);
+            return ApiCallResult<HallAvailabilityResponseViewModel>.Success(parsed ?? empty);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            return ApiCallResult<HallAvailabilityResponseViewModel>.Failure($"Lỗi kết nối API: {ex.Message}");
+            // Không để JsonException "could not be converted ... Path: $" văng ra modal;
+            // trả ViewModel rỗng để UI render ma trận trống thay vì throw.
+            return ApiCallResult<HallAvailabilityResponseViewModel>.Success(empty);
+        }
+    }
+
+    private static HallAvailabilityResponseViewModel ParseHallAvailability(string json, string queryDate)
+    {
+        var result = new HallAvailabilityResponseViewModel { QueryDate = queryDate };
+        using var doc = JsonDocument.Parse(json);
+        var root = doc.RootElement;
+
+        // 1. Array trần (contract cũ): [...] -> gán vào Halls.
+        if (root.ValueKind == JsonValueKind.Array)
+        {
+            var list = JsonSerializer.Deserialize<List<HallSlotItemViewModel>>(json, JsonOptions);
+            result.Halls = list ?? new List<HallSlotItemViewModel>();
+            return result;
+        }
+
+        if (root.ValueKind != JsonValueKind.Object)
+            return result;
+
+        // 2. Bọc {success, data}: bóc data trước (data có thể là array hoặc object {halls}).
+        if (root.TryGetProperty("data", out var dataElem))
+        {
+            if (dataElem.ValueKind == JsonValueKind.Array)
+            {
+                var list = dataElem.Deserialize<List<HallSlotItemViewModel>>(JsonOptions);
+                result.Halls = list ?? new List<HallSlotItemViewModel>();
+                if (root.TryGetProperty("queryDate", out var qd) && qd.ValueKind == JsonValueKind.String)
+                    result.QueryDate = qd.GetString() ?? queryDate;
+                else if (dataElem.ValueKind == JsonValueKind.Object) { }
+                return result;
+            }
+            if (dataElem.ValueKind == JsonValueKind.Object)
+            {
+                var nested = ParseHallAvailabilityObject(dataElem, queryDate);
+                if (nested is not null)
+                    return nested;
+            }
+            // data null -> trả rỗng.
+            return result;
+        }
+
+        // 3. Object chuẩn {queryDate, halls:[...]} (kể cả PascalCase nhờ case-insensitive).
+        var direct = ParseHallAvailabilityObject(root, queryDate);
+        return direct ?? result;
+    }
+
+    private static HallAvailabilityResponseViewModel? ParseHallAvailabilityObject(JsonElement obj, string queryDate)
+    {
+        List<HallSlotItemViewModel>? halls = null;
+        if (obj.TryGetProperty("halls", out var hallsElem) && hallsElem.ValueKind == JsonValueKind.Array)
+            halls = hallsElem.Deserialize<List<HallSlotItemViewModel>>(JsonOptions);
+        else if (obj.TryGetProperty("availabilities", out var availElem) && availElem.ValueKind == JsonValueKind.Array)
+            halls = availElem.Deserialize<List<HallSlotItemViewModel>>(JsonOptions);
+
+        string qd = queryDate;
+        if (obj.TryGetProperty("queryDate", out var qdElem) && qdElem.ValueKind == JsonValueKind.String)
+            qd = qdElem.GetString() ?? queryDate;
+
+        // Nếu object không có halls/availabilities nhưng chính nó là 1 item -> coi như single? Không:
+        // trả null để caller giữ rỗng thay vì ép kiểu sai gây lỗi Path $.
+        if (halls is null)
+            return new HallAvailabilityResponseViewModel { QueryDate = qd };
+
+        return new HallAvailabilityResponseViewModel { QueryDate = qd, Halls = halls };
+    }
+
+    public async Task<ApiCallResult<List<AvailableDateItemViewModel>>> GetAvailableDatesAsync(
+        string? from,
+        string? to,
+        string? shift,
+        CancellationToken cancellationToken = default)
+    {
+        // Gọi endpoint mới api/recommendations/available-dates, JsonOptions case-insensitive,
+        // try-catch trả list rỗng để modal hiện hướng dẫn thay vì vỡ.
+        try
+        {
+            var query = new List<string>();
+            if (!string.IsNullOrWhiteSpace(from))
+                query.Add($"from={Uri.EscapeDataString(from.Trim())}");
+            if (!string.IsNullOrWhiteSpace(to))
+                query.Add($"to={Uri.EscapeDataString(to.Trim())}");
+            if (!string.IsNullOrWhiteSpace(shift))
+                query.Add($"shift={Uri.EscapeDataString(shift.Trim())}");
+            var uri = "api/recommendations/available-dates" + (query.Count == 0 ? string.Empty : "?" + string.Join("&", query));
+
+            using var response = await _httpClient.GetAsync(uri, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+                return ApiCallResult<List<AvailableDateItemViewModel>>.Success(new List<AvailableDateItemViewModel>());
+
+            var json = await response.Content.ReadAsStringAsync(cancellationToken);
+            if (string.IsNullOrWhiteSpace(json))
+                return ApiCallResult<List<AvailableDateItemViewModel>>.Success(new List<AvailableDateItemViewModel>());
+
+            var list = JsonSerializer.Deserialize<List<AvailableDateItemViewModel>>(json, JsonOptions);
+            return ApiCallResult<List<AvailableDateItemViewModel>>.Success(list ?? new List<AvailableDateItemViewModel>());
+        }
+        catch (Exception)
+        {
+            return ApiCallResult<List<AvailableDateItemViewModel>>.Success(new List<AvailableDateItemViewModel>());
         }
     }
 
@@ -1339,7 +1519,56 @@ public sealed class RiversideApiClient : IRiversideApiClient
     {
         try
         {
-            var response = await _httpClient.PostAsJsonAsync("api/recommendations/register-booking", request, cancellationToken);
+            // Đảm bảo GuestCount không bao giờ 0: fallback từ TableCount*10 trước khi gửi Backend
+            // để hết lỗi 400 "Số lượng khách phải lớn hơn 0".
+            if (request.GuestCount <= 0 && request.TableCount > 0)
+                request.GuestCount = request.TableCount * 10;
+            if (request.GuestCount <= 0 && request.HallId > 0)
+                request.GuestCount = 10;
+            // LỖI A: gửi hallScheduleId = 0 khi chưa có lịch để Backend auto-init
+            // theo (HallId, EventDate yyyy-MM-dd, Shift). Tuyệt đối không fallback sang hallId.
+            // Forward expectedBudget/desiredStyle; nếu Backend cũ thiếu field thì nhúng vào specialRequests.
+            var enrichedSpecial = (request.SpecialRequests ?? string.Empty).Trim();
+            if (request.ExpectedBudget.HasValue && request.ExpectedBudget.Value > 0
+                && !enrichedSpecial.Contains("Ngân sách", StringComparison.OrdinalIgnoreCase))
+            {
+                var budgetPart = $"Ngân sách dự kiến {request.ExpectedBudget.Value:N0} đ";
+                enrichedSpecial = string.IsNullOrEmpty(enrichedSpecial) ? budgetPart : $"{enrichedSpecial}; {budgetPart}";
+            }
+            if (!string.IsNullOrWhiteSpace(request.DesiredStyle)
+                && !enrichedSpecial.Contains(request.DesiredStyle.Trim(), StringComparison.OrdinalIgnoreCase))
+            {
+                var stylePart = $"Phong cách mong muốn: {request.DesiredStyle.Trim()}";
+                enrichedSpecial = string.IsNullOrEmpty(enrichedSpecial) ? stylePart : $"{enrichedSpecial}; {stylePart}";
+            }
+            if (string.IsNullOrWhiteSpace(enrichedSpecial) && request.ExpectedBudget.HasValue)
+                enrichedSpecial = $"Đăng ký từ AI Recommendation: Ngân sách dự kiến {request.ExpectedBudget.Value:N0} đ";
+            var backendPayload = new
+            {
+                userId = request.UserId,
+                customerName = request.CustomerName,
+                phoneNumber = request.PhoneNumber,
+                email = request.Email,
+                // Giữ hallScheduleId = 0 khi chưa có lịch để Backend auto-init theo
+                // (HallId, EventDate yyyy-MM-dd, Shift); không fallback hallId sang đây.
+                hallScheduleId = request.HallScheduleId,
+                hallId = request.HallId,
+                eventDate = request.EventDate,
+                shift = NormalizeHallShift(request.Shift),
+                menuId = request.MenuId,
+                decorationPackageId = request.DecorationPackageId,
+                guestCount = request.GuestCount,
+                tableCount = request.TableCount,
+                spareTableCount = request.SpareTableCount,
+                expectedBudget = request.ExpectedBudget,
+                desiredStyle = request.DesiredStyle,
+                specialRequests = enrichedSpecial,
+                customMenuName = request.CustomMenuName,
+                customMenuPricePerTable = request.CustomMenuPricePerTable,
+                customMenuItems = request.CustomMenuItems,
+                serviceCodes = request.ServiceCodes
+            };
+            var response = await _httpClient.PostAsJsonAsync("api/recommendations/register-booking", backendPayload, cancellationToken);
             if (!response.IsSuccessStatusCode)
             {
                 var err = await response.Content.ReadAsStringAsync(cancellationToken);
@@ -1419,5 +1648,172 @@ public sealed class RiversideApiClient : IRiversideApiClient
         {
             return ApiCallResult<bool>.Failure($"Lỗi: {ex.Message}");
         }
+    }
+
+    // UC14: POST /api/v1/public/bookings/lookup (AllowAnonymous, không cần token).
+    public async Task<ApiCallResult<HeThongDatTiecCuoi_WEB.Models.MyBookings.PublicBookingDetailViewModel>> LookupPublicBookingAsync(
+        string bookingCode, string phoneNumber, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var response = await _httpClient.PostAsJsonAsync(
+                "api/v1/public/bookings/lookup",
+                new { bookingCode = (bookingCode ?? string.Empty).Trim().ToUpperInvariant(), phoneNumber = (phoneNumber ?? string.Empty).Trim() },
+                cancellationToken);
+            var json = await response.Content.ReadAsStringAsync(cancellationToken);
+            if (!response.IsSuccessStatusCode)
+                return ApiCallResult<HeThongDatTiecCuoi_WEB.Models.MyBookings.PublicBookingDetailViewModel>.Failure(
+                    ExtractApiMessage(json, response.StatusCode),
+                    (int)response.StatusCode);
+            try
+            {
+                using var doc = System.Text.Json.JsonDocument.Parse(json);
+                if (doc.RootElement.TryGetProperty("data", out var dataElem))
+                {
+                    var detail = System.Text.Json.JsonSerializer.Deserialize<HeThongDatTiecCuoi_WEB.Models.MyBookings.PublicBookingDetailViewModel>(
+                        dataElem.GetRawText(), JsonOptions);
+                    return detail is null
+                        ? ApiCallResult<HeThongDatTiecCuoi_WEB.Models.MyBookings.PublicBookingDetailViewModel>.Failure("API trả về dữ liệu rỗng.")
+                        : ApiCallResult<HeThongDatTiecCuoi_WEB.Models.MyBookings.PublicBookingDetailViewModel>.Success(detail);
+                }
+            }
+            catch (System.Text.Json.JsonException) { }
+            return ApiCallResult<HeThongDatTiecCuoi_WEB.Models.MyBookings.PublicBookingDetailViewModel>.Failure("API trả về dữ liệu tra cứu không hợp lệ.");
+        }
+        catch (HttpRequestException)
+        {
+            return ApiCallResult<HeThongDatTiecCuoi_WEB.Models.MyBookings.PublicBookingDetailViewModel>.Failure("Không thể kết nối Backend API. Hãy kiểm tra API đã chạy hay chưa.");
+        }
+        catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return ApiCallResult<HeThongDatTiecCuoi_WEB.Models.MyBookings.PublicBookingDetailViewModel>.Failure("Backend API phản hồi quá lâu.");
+        }
+    }
+
+    // UC15: POST /api/v1/public/bookings/{id}/cancel-hold (AllowAnonymous).
+    public async Task<ApiCallResult<string>> CancelPublicBookingHoldAsync(
+        int bookingId, string bookingCode, string phoneNumber, string? reason, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var response = await _httpClient.PostAsJsonAsync(
+                $"api/v1/public/bookings/{bookingId}/cancel-hold",
+                new { bookingCode = (bookingCode ?? string.Empty).Trim().ToUpperInvariant(), phoneNumber = (phoneNumber ?? string.Empty).Trim(), reason },
+                cancellationToken);
+            var json = await response.Content.ReadAsStringAsync(cancellationToken);
+            var message = ExtractApiMessage(json, response.StatusCode);
+            return response.IsSuccessStatusCode
+                ? ApiCallResult<string>.Success(message)
+                : ApiCallResult<string>.Failure(message, (int)response.StatusCode);
+        }
+        catch (HttpRequestException)
+        {
+            return ApiCallResult<string>.Failure("Không thể kết nối Backend API. Hãy kiểm tra API đã chạy hay chưa.");
+        }
+        catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return ApiCallResult<string>.Failure("Backend API phản hồi quá lâu.");
+        }
+    }
+
+    // UC10: POST /api/v1/ai-chat/send (AllowAnonymous) — proxy FE -> BE -> AI_Service RAG.
+    public async Task<ApiCallResult<HeThongDatTiecCuoi_WEB.Models.AiChat.AiChatReplyViewModel>> SendAiChatAsync(
+        HeThongDatTiecCuoi_WEB.Models.AiChat.AiChatSendViewModel request,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var response = await _httpClient.PostAsJsonAsync(
+                "api/v1/ai-chat/send",
+                new { message = request.Message ?? string.Empty, history = request.History ?? new List<HeThongDatTiecCuoi_WEB.Models.AiChat.AiChatMessageViewModel>() },
+                JsonOptions,
+                cancellationToken);
+            var json = await response.Content.ReadAsStringAsync(cancellationToken);
+            if (!response.IsSuccessStatusCode)
+                return ApiCallResult<HeThongDatTiecCuoi_WEB.Models.AiChat.AiChatReplyViewModel>.Failure(
+                    ExtractApiMessage(json, response.StatusCode), (int)response.StatusCode);
+            var dto = System.Text.Json.JsonSerializer.Deserialize<HeThongDatTiecCuoi_WEB.Models.AiChat.AiChatReplyViewModel>(json, JsonOptions);
+            return dto is null
+                ? ApiCallResult<HeThongDatTiecCuoi_WEB.Models.AiChat.AiChatReplyViewModel>.Failure("Trợ lý AI trả về dữ liệu rỗng.")
+                : ApiCallResult<HeThongDatTiecCuoi_WEB.Models.AiChat.AiChatReplyViewModel>.Success(dto);
+        }
+        catch (HttpRequestException)
+        {
+            return ApiCallResult<HeThongDatTiecCuoi_WEB.Models.AiChat.AiChatReplyViewModel>.Failure("Không thể kết nối Backend API. Hãy kiểm tra API đã chạy hay chưa.");
+        }
+        catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return ApiCallResult<HeThongDatTiecCuoi_WEB.Models.AiChat.AiChatReplyViewModel>.Failure("Backend API phản hồi quá lâu.");
+        }
+    }
+
+    // UC10: POST /api/v1/ai-chat/extract (AllowAnonymous) — trích xuất thực thể hội thoại.
+    public async Task<ApiCallResult<HeThongDatTiecCuoi_WEB.Models.AiChat.AiChatExtractResultViewModel>> ExtractAiEntitiesAsync(
+        List<HeThongDatTiecCuoi_WEB.Models.AiChat.AiChatMessageViewModel> history,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var response = await _httpClient.PostAsJsonAsync(
+                "api/v1/ai-chat/extract",
+                new { history = history ?? new List<HeThongDatTiecCuoi_WEB.Models.AiChat.AiChatMessageViewModel>() },
+                JsonOptions,
+                cancellationToken);
+            var json = await response.Content.ReadAsStringAsync(cancellationToken);
+            if (!response.IsSuccessStatusCode)
+                return ApiCallResult<HeThongDatTiecCuoi_WEB.Models.AiChat.AiChatExtractResultViewModel>.Failure(
+                    ExtractApiMessage(json, response.StatusCode), (int)response.StatusCode);
+            var dto = System.Text.Json.JsonSerializer.Deserialize<HeThongDatTiecCuoi_WEB.Models.AiChat.AiChatExtractResultViewModel>(json, JsonOptions);
+            return dto is null
+                ? ApiCallResult<HeThongDatTiecCuoi_WEB.Models.AiChat.AiChatExtractResultViewModel>.Failure("Trợ lý AI trả về dữ liệu rỗng.")
+                : ApiCallResult<HeThongDatTiecCuoi_WEB.Models.AiChat.AiChatExtractResultViewModel>.Success(dto);
+        }
+        catch (HttpRequestException)
+        {
+            return ApiCallResult<HeThongDatTiecCuoi_WEB.Models.AiChat.AiChatExtractResultViewModel>.Failure("Không thể kết nối Backend API. Hãy kiểm tra API đã chạy hay chưa.");
+        }
+        catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return ApiCallResult<HeThongDatTiecCuoi_WEB.Models.AiChat.AiChatExtractResultViewModel>.Failure("Backend API phản hồi quá lâu.");
+        }
+    }
+
+    /// <summary>
+    /// Chuẩn hóa ca tổ chức về "Ca trưa" / "Ca tối" trước khi gửi Backend,
+    /// tránh gửi chuỗi dài "Ca Tối (17:30 – 21:30)" khiến Backend không resolve được LichSanh.
+    /// </summary>
+    private static string NormalizeHallShift(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+            return "Ca tối";
+        var s = raw.Trim();
+        if (s.Contains("trưa", StringComparison.OrdinalIgnoreCase) || s.Contains("trua", StringComparison.OrdinalIgnoreCase))
+            return "Ca trưa";
+        if (s.Contains("tối", StringComparison.OrdinalIgnoreCase) || s.Contains("toi", StringComparison.OrdinalIgnoreCase))
+            return "Ca tối";
+        return s;
+    }
+
+    private static string ExtractApiMessage(string json, System.Net.HttpStatusCode status)
+    {
+        if (!string.IsNullOrWhiteSpace(json))
+        {
+            try
+            {
+                using var doc = System.Text.Json.JsonDocument.Parse(json);
+                if (doc.RootElement.ValueKind == System.Text.Json.JsonValueKind.Object)
+                {
+                    if (doc.RootElement.TryGetProperty("message", out var msg) && msg.ValueKind == System.Text.Json.JsonValueKind.String)
+                        return msg.GetString() ?? $"Yêu cầu không thành công ({(int)status}).";
+                    if (doc.RootElement.TryGetProperty("title", out var title) && title.ValueKind == System.Text.Json.JsonValueKind.String)
+                        return title.GetString() ?? $"Yêu cầu không thành công ({(int)status}).";
+                }
+            }
+            catch { }
+            var trimmed = json.Trim();
+            if (trimmed.Length <= 300 && !trimmed.StartsWith("{") && !trimmed.StartsWith("<"))
+                return trimmed;
+        }
+        return $"Yêu cầu không thành công ({(int)status}).";
     }
 }

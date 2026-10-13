@@ -5,11 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>@ViewData["Title"] - Riverside Palace</title>
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/ai-chat.css" asp-append-version="true" />
     @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
     @RenderBody()
+    <partial name="_AiChatWidget" />
     <script src="~/js/auth.js" asp-append-version="true"></script>
+    <script src="~/js/ai-chat.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

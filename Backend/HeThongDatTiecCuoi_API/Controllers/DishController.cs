@@ -44,6 +44,53 @@ public sealed class DishController : ControllerBase
         _statusService = statusService;
     }
 
+    [HttpGet("public")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetPublicDishes(
+        [FromQuery] string? keyword,
+        [FromQuery] string? category,
+        CancellationToken cancellationToken)
+    {
+        var query = _context.Dishes.AsNoTracking()
+            .Where(dish =>
+                dish.DataStatus.DataStatusCode == DataStatusCodes.Existing &&
+                dish.Status.StatusGroup == StatusGroups.Dish &&
+                dish.Status.StatusCode == DishStatusCodes.Active)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(keyword))
+        {
+            var normalizedKeyword = keyword.Trim();
+            query = query.Where(dish =>
+                dish.DishCode.Contains(normalizedKeyword) ||
+                dish.DishName.Contains(normalizedKeyword));
+        }
+
+        if (!string.IsNullOrWhiteSpace(category))
+        {
+            var normalizedCategory = category.Trim();
+            query = query.Where(dish => dish.Category == normalizedCategory);
+        }
+
+        var dishes = await query
+            .OrderBy(dish => dish.Category)
+            .ThenBy(dish => dish.DishCode)
+            .Select(dish => new DishDto
+            {
+                DishId = dish.DishId,
+                DishCode = dish.DishCode,
+                DishName = dish.DishName,
+                Category = dish.Category,
+                Price = dish.Price,
+                ImageUrl = dish.ImageUrl,
+                Status = dish.Status.StatusCode,
+                StatusName = dish.Status.StatusName
+            })
+            .ToListAsync(cancellationToken);
+
+        return Ok(dishes);
+    }
+
     [HttpGet]
     public async Task<IActionResult> GetDishes(
         [FromQuery] string? keyword,
