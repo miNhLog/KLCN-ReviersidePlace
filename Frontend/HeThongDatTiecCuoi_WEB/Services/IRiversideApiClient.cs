@@ -86,6 +86,11 @@ public interface IRiversideApiClient
         int menuId,
         CancellationToken cancellationToken);
 
+    Task<ApiCallResult<List<PublicDishDto>>> GetPublicDishesAsync(
+        string? keyword,
+        string? category,
+        CancellationToken cancellationToken);
+
     Task<ApiCallResult<List<HallDto>>> GetHallsAsync(
         string accessToken,
         CancellationToken cancellationToken);
@@ -319,10 +324,27 @@ public interface IRiversideApiClient
     
     Task<ApiCallResult<HallAvailabilityResponseViewModel>> GetHallAvailabilityRealtimeAsync(string dateStr, CancellationToken cancellationToken = default);
 
+    Task<ApiCallResult<List<AvailableDateItemViewModel>>> GetAvailableDatesAsync(string? from, string? to, string? shift, CancellationToken cancellationToken = default);
+
     Task<ApiCallResult<string>> RegisterPublicBookingAsync(
     PublicBookingRequestViewModel request,
     CancellationToken cancellationToken = default);
 
     Task<ApiCallResult<List<HeThongDatTiecCuoi_WEB.Models.MyBookings.MyBookingViewModel>>> GetMyBookingsAsync(string? phone, int? userId = null, CancellationToken cancellationToken = default);
     Task<ApiCallResult<bool>> CancelBookingAsync(int bookingId, CancellationToken cancellationToken = default);
+
+    // UC14 & UC15: tra cứu + hủy giữ chỗ public bằng mã + SĐT
+    Task<ApiCallResult<HeThongDatTiecCuoi_WEB.Models.MyBookings.PublicBookingDetailViewModel>> LookupPublicBookingAsync(
+        string bookingCode, string phoneNumber, CancellationToken cancellationToken = default);
+    Task<ApiCallResult<string>> CancelPublicBookingHoldAsync(
+        int bookingId, string bookingCode, string phoneNumber, string? reason, CancellationToken cancellationToken = default);
+
+    // UC10: Trợ lý ảo AI (proxy FE -> BE -> AI_Service RAG).
+    Task<ApiCallResult<HeThongDatTiecCuoi_WEB.Models.AiChat.AiChatReplyViewModel>> SendAiChatAsync(
+        HeThongDatTiecCuoi_WEB.Models.AiChat.AiChatSendViewModel request,
+        CancellationToken cancellationToken = default);
+
+    Task<ApiCallResult<HeThongDatTiecCuoi_WEB.Models.AiChat.AiChatExtractResultViewModel>> ExtractAiEntitiesAsync(
+        List<HeThongDatTiecCuoi_WEB.Models.AiChat.AiChatMessageViewModel> history,
+        CancellationToken cancellationToken = default);
 }

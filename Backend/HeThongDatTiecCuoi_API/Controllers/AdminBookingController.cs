@@ -213,6 +213,9 @@ public sealed class AdminBookingController : ControllerBase
         if (!BookingStatusCodes.All.Contains(code))
             return BadRequest(new { message = "Mã trạng thái booking không hợp lệ." });
 
+        await using var transaction = await _context.Database.BeginTransactionAsync();
+        try
+        {
         var booking = await _context.WeddingBookings.Include(b => b.HallSchedule)
             .SingleOrDefaultAsync(b => b.BookingId == id);
         if (booking == null) return NotFound(new { message = "Không tìm thấy đơn tiệc." });
@@ -222,19 +225,31 @@ public sealed class AdminBookingController : ControllerBase
             ? NormalizeOptional(request.CancellationReason) ?? "Hủy theo yêu cầu khách hàng"
             : null;
 
+        // BR03 trong cùng transaction: hủy -> giải phóng LichSanh về AVAILABLE (bỏ qua nếu schedule null);
+        // chuyển sang trạng thái chiếm giữ -> LichSanh BOOKED.
         if (code == BookingStatusCodes.Cancelled)
             await ReleaseScheduleIfUnusedAsync(booking);
-        else if (BookingStatusCodes.OccupyingSchedule.Contains(code))
+        else if (booking.HallSchedule is not null && BookingStatusCodes.OccupyingSchedule.Contains(code))
             booking.HallSchedule.StatusId = await _statusService.GetStatusIdAsync(StatusGroups.HallSchedule, HallScheduleStatusCodes.Booked);
 
         await _context.SaveChangesAsync();
+        await transaction.CommitAsync();
         return Ok(new { success = true, statusCode = code });
+        }
+        catch
+        {
+            try { await transaction.RollbackAsync(); } catch { }
+            throw;
+        }
     }
 
     private async Task ReleaseScheduleIfUnusedAsync(WeddingBooking booking)
     {
+        if (booking.HallSchedule is null) return; // default-available: không có dòng vẫn coi trống.
         var hasOtherActiveBooking = await _context.WeddingBookings.AnyAsync(item =>
             item.BookingId != booking.BookingId && item.HallScheduleId == booking.HallScheduleId &&
+            item.Status != null &&
+            item.Status.StatusGroup == StatusGroups.Booking &&
             BookingStatusCodes.OccupyingSchedule.Contains(item.Status.StatusCode));
         if (!hasOtherActiveBooking)
             booking.HallSchedule.StatusId = await _statusService.GetStatusIdAsync(StatusGroups.HallSchedule, HallScheduleStatusCodes.Available);
