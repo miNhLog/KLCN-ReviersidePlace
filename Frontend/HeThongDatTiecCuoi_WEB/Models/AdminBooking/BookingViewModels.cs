@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace HeThongDatTiecCuoi_WEB.Models.AdminBooking;
 
@@ -23,8 +24,10 @@ public class BookingListResponseViewModel
     public int PageSize { get; set; }
     public int TotalPages => (int)Math.Ceiling((double)TotalCount / (PageSize > 0 ? PageSize : 10));
 
+    [JsonPropertyName("pendingCount")]
     public int PendingConfirmationCount { get; set; }
     public int ConfirmedCount { get; set; }
+    [JsonPropertyName("preparingCount")]
     public int DepositedCount { get; set; }
     public int CompletedCount { get; set; }
     public int CancelledCount { get; set; }
@@ -41,8 +44,14 @@ public class BookingSummaryViewModel
     public string Shift { get; set; } = string.Empty;
     public int TableCount { get; set; }
     public decimal EstimatedTotal { get; set; }
+    [JsonPropertyName("statusName")]
     public string Status { get; set; } = string.Empty;
+    public string StatusCode { get; set; } = string.Empty;
     public DateTime? BookedAt { get; set; }
+    public bool HasContract { get; set; }
+    public int? ContractId { get; set; }
+    public string? ContractCode { get; set; }
+    public string? ContractStatusCode { get; set; }
 }
 
 public class BookingDetailViewModel
@@ -77,10 +86,16 @@ public class BookingDetailViewModel
     public decimal FinalHallPrice { get; set; }
     public decimal EstimatedTotal { get; set; }
 
+    [JsonPropertyName("statusName")]
     public string Status { get; set; } = string.Empty;
+    public string StatusCode { get; set; } = string.Empty;
     public string? CancellationReason { get; set; }
     public DateTime? BookedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
+    public bool HasContract { get; set; }
+    public int? ContractId { get; set; }
+    public string? ContractCode { get; set; }
+    public string? ContractStatusCode { get; set; }
 }
 
 public class CreateBookingRequestViewModel
@@ -114,6 +129,7 @@ public class CreateBookingRequestViewModel
 public class UpdateBookingStatusRequestViewModel
 {
     [Required]
+    [JsonPropertyName("statusCode")]
     public string NewStatus { get; set; } = string.Empty;
     public string? CancellationReason { get; set; }
     public decimal? DepositAmount { get; set; }

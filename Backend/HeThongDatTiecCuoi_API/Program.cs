@@ -12,8 +12,10 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using QuestPDF.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
+QuestPDF.Settings.License = LicenseType.Community;
 
 // Cố định InvariantCulture cho toàn bộ thread để RangeAttribute(typeof(decimal), ...)
 // và decimal parsing không phụ thuộc culture Windows (vi-VN dùng dấu phẩy thập phân).
@@ -92,6 +94,10 @@ builder.Services.AddScoped<IPasswordHasher<FirstPasswordOtp>, PasswordHasher<Fir
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IStatusService, StatusService>();
+builder.Services.AddSingleton<IPaymentPolicyProvider, PaymentPolicyProvider>();
+builder.Services.AddScoped<IContractTemplateProvider, ContractTemplateProvider>();
+builder.Services.AddScoped<IContractCodeGenerator, ContractCodeGenerator>();
+builder.Services.AddScoped<IContractPdfGenerator, ContractPdfGenerator>();
 builder.Services.AddScoped<IEmployeeCodeGenerator, EmployeeCodeGenerator>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IEmailService, EmailService>();

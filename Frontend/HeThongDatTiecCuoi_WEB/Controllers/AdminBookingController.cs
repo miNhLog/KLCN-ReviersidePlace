@@ -105,6 +105,6 @@ public class AdminBookingController : Controller
             return Json(new { success = false, message = result.Error ?? "Không thể cập nhật trạng thái đơn tiệc." });
         }
 
-        return Json(new { success = true, message = $"Cập nhật trạng thái sang '{request.NewStatus}' thành công!" });
+        return Json(new { success = true, message = "Cập nhật trạng thái booking thành công!" });
     }
 }

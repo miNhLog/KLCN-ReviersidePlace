@@ -235,7 +235,7 @@
             <div id="loadingState" class="recom-loading" role="status" aria-live="polite">
                 <div class="recom-spinner" aria-hidden="true"></div>
                 <p class="recom-loading-title">Scoring Engine đang chấm điểm ma trận phương án...</p>
-                <p class="recom-loading-sub">Đang đối soát lịch trống tại 9 sảnh, so khớp 24 set thực đơn và điểm tín nhiệm 5 sao từ CSDL.</p>
+                <p class="recom-loading-sub">Đang đối soát lịch trống tại 9 sảnh, so khớp 24 set thực đơn và các đánh giá mới nhất.</p>
             </div>
 
             <div id="resultsSection" class="recom-results">
@@ -297,7 +297,7 @@
             </div>
             <div class="recom-note-box">
                 <span class="material-symbols-outlined" aria-hidden="true">check_circle</span>
-                <span id="modalNote">Dữ liệu được đồng bộ trực tiếp từ cơ sở dữ liệu Riverside Palace.</span>
+                <span id="modalNote">Thông tin được cập nhật từ hệ thống Riverside Palace.</span>
             </div>
         </div>
         <button id="modalMenuCustomBtn" type="button" onclick="openMenuCustomizerFromDetail()" class="recom-btn-gold recom-btn-block" hidden>
@@ -1446,7 +1446,7 @@
                 container.innerHTML = '<div class="recom-empty-note">Hệ thống chỉ nhận đăng ký giữ chỗ trước tối đa 365 ngày (1 năm). Vui lòng chọn ngày gần hơn.</div>';
                 return;
             }
-            container.innerHTML = '<div class="recom-results-sub" style="padding:24px;text-align:center;">Đang kiểm tra bảng LichSanh trong CSDL...</div>';
+            container.innerHTML = '<div class="recom-results-sub" style="padding:24px;text-align:center;">Đang kiểm tra lịch sảnh...</div>';
 
             try {
                 const res = await fetch(`/Recommendation/GetHallAvailability?date=${encodeURIComponent(dateStr)}`);

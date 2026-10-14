@@ -73,7 +73,11 @@ public sealed class AdminBookingController : ControllerBase
                 EstimatedTotal = b.EstimatedTotal,
                 StatusCode = b.Status.StatusCode,
                 StatusName = b.Status.StatusName,
-                BookedAt = b.BookedAt
+                BookedAt = b.BookedAt,
+                HasContract = b.Contract != null,
+                ContractId = b.Contract != null ? b.Contract.ContractId : null,
+                ContractCode = b.Contract != null ? b.Contract.ContractCode : null,
+                ContractStatusCode = b.Contract != null ? b.Contract.Status.StatusCode : null
             }).ToListAsync();
 
         int Count(string code) => statusCounts.GetValueOrDefault(code);
@@ -125,6 +129,10 @@ public sealed class AdminBookingController : ControllerBase
                 StatusName = b.Status.StatusName,
                 CancellationReason = b.CancellationReason,
                 BookedAt = b.BookedAt,
+                HasContract = b.Contract != null,
+                ContractId = b.Contract != null ? b.Contract.ContractId : null,
+                ContractCode = b.Contract != null ? b.Contract.ContractCode : null,
+                ContractStatusCode = b.Contract != null ? b.Contract.Status.StatusCode : null,
                 Services = b.BookingServices
                     .Where(item => item.DataStatusId == existingDataStatusId)
                     .Select(item => new BookingServiceDto

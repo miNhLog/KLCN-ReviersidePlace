@@ -24,7 +24,9 @@ public sealed class JwtTokenService : IJwtTokenService
             ? now.AddDays(_options.RememberMeDays)
             : now.AddMinutes(_options.AccessTokenMinutes);
 
-        var displayName = user.Customer?.FullName ?? user.Employee?.FullName ?? user.Email;
+        // Tài khoản nội bộ có thể từng phát sinh hồ sơ khách hàng khi thử đặt tiệc.
+        // Luôn ưu tiên hồ sơ nhân viên để claim tên không bị đổi thành tên người đặt tiệc.
+        var displayName = user.Employee?.FullName ?? user.Customer?.FullName ?? user.Email;
         var claims = new List<Claim>
         {
             new(JwtRegisteredClaimNames.Sub, user.UserId.ToString()),

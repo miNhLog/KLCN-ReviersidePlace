@@ -3,6 +3,7 @@ using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using HeThongDatTiecCuoi_WEB.Constants;
 using HeThongDatTiecCuoi_WEB.Models.Recommendation;
 using HeThongDatTiecCuoi_WEB.Models.AdminBooking;
 using HeThongDatTiecCuoi_WEB.Services;
@@ -239,8 +240,9 @@ public class RecommendationController : Controller
         // được LichSanh (tránh gửi "Ca Tối (17:30 – 21:30)" gây lỗi "Lịch sảnh không tồn tại").
         request.Shift = NormalizeHallShift(request.Shift);
         request.EventDate = request.EventDate.Date;
-        // 1. Tự động lấy UserId của tài khoản đang đăng nhập
-        if (User.Identity?.IsAuthenticated == true)
+        // Chỉ liên kết hồ sơ đặt tiệc với tài khoản khách hàng. Tài khoản nội bộ
+        // (quản lý/nhân viên) thử chức năng không được biến thành hồ sơ khách hàng.
+        if (User.Identity?.IsAuthenticated == true && User.IsInRole(RoleNames.Customer))
         {
             var idClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (int.TryParse(idClaim, out var uid))

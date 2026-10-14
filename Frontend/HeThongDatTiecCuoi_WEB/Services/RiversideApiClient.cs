@@ -16,6 +16,7 @@ using HeThongDatTiecCuoi_WEB.Models.RoleChangeRequest;
 using HeThongDatTiecCuoi_WEB.Models.Notification;
 using HeThongDatTiecCuoi_WEB.Models.Home;
 using HeThongDatTiecCuoi_WEB.Models.ManagerHr;
+using HeThongDatTiecCuoi_WEB.Models.ManagerContractPayment;
 using Microsoft.AspNetCore.Mvc;
 
 public sealed class RiversideApiClient : IRiversideApiClient
@@ -29,6 +30,92 @@ public sealed class RiversideApiClient : IRiversideApiClient
     public RiversideApiClient(HttpClient httpClient)
     {
         _httpClient = httpClient;
+    }
+
+    public Task<ApiCallResult<ManagerContractListResponseViewModel>> GetManagerContractsAsync(
+        string accessToken, string? keyword, string? status, DateTime? fromDate, DateTime? toDate,
+        int page, CancellationToken cancellationToken)
+    {
+        var query = new List<string> { $"page={Math.Max(1, page)}" };
+        AddQueryParameter(query, "keyword", keyword);
+        AddQueryParameter(query, "status", status);
+        if (fromDate.HasValue) query.Add($"fromDate={fromDate.Value:yyyy-MM-dd}");
+        if (toDate.HasValue) query.Add($"toDate={toDate.Value:yyyy-MM-dd}");
+        return SendAsync<ManagerContractListResponseViewModel>(HttpMethod.Get,
+            $"api/manager/contracts?{string.Join('&', query)}", null, accessToken, cancellationToken);
+    }
+
+    public Task<ApiCallResult<ManagerContractDetailViewModel>> GetManagerContractAsync(
+        string accessToken, int id, CancellationToken cancellationToken) =>
+        SendAsync<ManagerContractDetailViewModel>(HttpMethod.Get, $"api/manager/contracts/{id}", null, accessToken, cancellationToken);
+
+    public Task<ApiCallResult<List<EligibleBookingViewModel>>> GetEligibleContractBookingsAsync(
+        string accessToken, string? keyword, CancellationToken cancellationToken)
+    {
+        var uri = "api/manager/contracts/eligible-bookings";
+        if (!string.IsNullOrWhiteSpace(keyword)) uri += $"?keyword={Uri.EscapeDataString(keyword.Trim())}";
+        return SendAsync<List<EligibleBookingViewModel>>(HttpMethod.Get, uri, null, accessToken, cancellationToken);
+    }
+
+    public Task<ApiCallResult<ContractActionResponseViewModel>> CreateManagerContractAsync(
+        string accessToken, CreateContractViewModel model, CancellationToken cancellationToken) =>
+        SendAsync<ContractActionResponseViewModel>(HttpMethod.Post, "api/manager/contracts", model, accessToken, cancellationToken);
+
+    public Task<ApiCallResult<ContractActionResponseViewModel>> UpdateManagerContractAsync(
+        string accessToken, int id, UpdateDraftContractViewModel model, CancellationToken cancellationToken) =>
+        SendAsync<ContractActionResponseViewModel>(HttpMethod.Put, $"api/manager/contracts/{id}", model, accessToken, cancellationToken);
+
+    public Task<ApiCallResult<ContractActionResponseViewModel>> ActivateManagerContractAsync(
+        string accessToken, int id, CancellationToken cancellationToken) =>
+        SendAsync<ContractActionResponseViewModel>(HttpMethod.Post, $"api/manager/contracts/{id}/activate", null, accessToken, cancellationToken);
+
+    public Task<ApiCallResult<ContractActionResponseViewModel>> CompleteManagerContractAsync(
+        string accessToken, int id, CancellationToken cancellationToken) =>
+        SendAsync<ContractActionResponseViewModel>(HttpMethod.Post, $"api/manager/contracts/{id}/complete", null, accessToken, cancellationToken);
+
+    public Task<ApiCallResult<ContractActionResponseViewModel>> CancelManagerContractAsync(
+        string accessToken, int id, CancellationToken cancellationToken) =>
+        SendAsync<ContractActionResponseViewModel>(HttpMethod.Post, $"api/manager/contracts/{id}/cancel", null, accessToken, cancellationToken);
+
+    public Task<ApiCallResult<ManagerPaymentListResponseViewModel>> GetManagerPaymentsAsync(
+        string accessToken, string? keyword, string? type, string? status, DateTime? fromDate, DateTime? toDate,
+        int page, CancellationToken cancellationToken)
+    {
+        var query = new List<string> { $"page={Math.Max(1, page)}" };
+        AddQueryParameter(query, "keyword", keyword);
+        AddQueryParameter(query, "type", type);
+        AddQueryParameter(query, "status", status);
+        if (fromDate.HasValue) query.Add($"fromDate={fromDate.Value:yyyy-MM-dd}");
+        if (toDate.HasValue) query.Add($"toDate={toDate.Value:yyyy-MM-dd}");
+        return SendAsync<ManagerPaymentListResponseViewModel>(HttpMethod.Get,
+            $"api/manager/payments?{string.Join('&', query)}", null, accessToken, cancellationToken);
+    }
+
+    public async Task<ApiCallResult<PdfDownloadViewModel>> DownloadManagerContractPdfAsync(
+        string accessToken, int id, CancellationToken cancellationToken)
+    {
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, $"api/manager/contracts/{id}/pdf");
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+            using var response = await _httpClient.SendAsync(request, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+                return ApiCallResult<PdfDownloadViewModel>.Failure(await ReadErrorAsync(response, cancellationToken), (int)response.StatusCode);
+            var bytes = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+            var fileName = response.Content.Headers.ContentDisposition?.FileNameStar
+                ?? response.Content.Headers.ContentDisposition?.FileName?.Trim('"')
+                ?? $"HopDong_{id}.pdf";
+            return ApiCallResult<PdfDownloadViewModel>.Success(new PdfDownloadViewModel(
+                bytes, fileName, response.Content.Headers.ContentType?.MediaType ?? "application/pdf"));
+        }
+        catch (HttpRequestException)
+        {
+            return ApiCallResult<PdfDownloadViewModel>.Failure("Không thể kết nối Backend API. Hãy kiểm tra API đã chạy hay chưa.");
+        }
+        catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return ApiCallResult<PdfDownloadViewModel>.Failure("Backend API phản hồi quá lâu.");
+        }
     }
 
     public Task<ApiCallResult<AuthResponseDto>> LoginAsync(
@@ -1243,7 +1330,7 @@ public sealed class RiversideApiClient : IRiversideApiClient
             queryParams.Add($"keyword={Uri.EscapeDataString(filter.Keyword.Trim())}");
 
         if (!string.IsNullOrWhiteSpace(filter.Status) && filter.Status != "ALL")
-            queryParams.Add($"status={Uri.EscapeDataString(filter.Status)}");
+            queryParams.Add($"statusCode={Uri.EscapeDataString(filter.Status)}");
 
         if (filter.HallId.HasValue && filter.HallId.Value > 0)
             queryParams.Add($"hallId={filter.HallId.Value}");

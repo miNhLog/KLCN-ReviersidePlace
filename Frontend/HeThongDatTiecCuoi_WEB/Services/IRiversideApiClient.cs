@@ -12,10 +12,21 @@ using HeThongDatTiecCuoi_WEB.Models.RoleChangeRequest;
 using HeThongDatTiecCuoi_WEB.Models.Notification;
 using HeThongDatTiecCuoi_WEB.Models.Home;
 using HeThongDatTiecCuoi_WEB.Models.ManagerHr;
+using HeThongDatTiecCuoi_WEB.Models.ManagerContractPayment;
 using Microsoft.AspNetCore.Mvc;
 
 public interface IRiversideApiClient
 {
+    Task<ApiCallResult<ManagerContractListResponseViewModel>> GetManagerContractsAsync(string accessToken, string? keyword, string? status, DateTime? fromDate, DateTime? toDate, int page, CancellationToken cancellationToken);
+    Task<ApiCallResult<ManagerContractDetailViewModel>> GetManagerContractAsync(string accessToken, int id, CancellationToken cancellationToken);
+    Task<ApiCallResult<List<EligibleBookingViewModel>>> GetEligibleContractBookingsAsync(string accessToken, string? keyword, CancellationToken cancellationToken);
+    Task<ApiCallResult<ContractActionResponseViewModel>> CreateManagerContractAsync(string accessToken, CreateContractViewModel model, CancellationToken cancellationToken);
+    Task<ApiCallResult<ContractActionResponseViewModel>> UpdateManagerContractAsync(string accessToken, int id, UpdateDraftContractViewModel model, CancellationToken cancellationToken);
+    Task<ApiCallResult<ContractActionResponseViewModel>> ActivateManagerContractAsync(string accessToken, int id, CancellationToken cancellationToken);
+    Task<ApiCallResult<ContractActionResponseViewModel>> CompleteManagerContractAsync(string accessToken, int id, CancellationToken cancellationToken);
+    Task<ApiCallResult<ContractActionResponseViewModel>> CancelManagerContractAsync(string accessToken, int id, CancellationToken cancellationToken);
+    Task<ApiCallResult<ManagerPaymentListResponseViewModel>> GetManagerPaymentsAsync(string accessToken, string? keyword, string? type, string? status, DateTime? fromDate, DateTime? toDate, int page, CancellationToken cancellationToken);
+    Task<ApiCallResult<PdfDownloadViewModel>> DownloadManagerContractPdfAsync(string accessToken, int id, CancellationToken cancellationToken);
     Task<ApiCallResult<ManagerHrPageViewModel>> GetManagerHrAsync(string accessToken,string? search,string? role,string? status,string? assignmentStatus,int page,int pageSize,CancellationToken cancellationToken);
     Task<ApiCallResult<ManagerHrActionViewModel>> AssignManagerHallsAsync(int employeeId,AssignHallsViewModel model,string accessToken,CancellationToken cancellationToken);
     Task<ApiCallResult<ManagerHrActionViewModel>> EndManagerHallAssignmentAsync(int assignmentId,string accessToken,CancellationToken cancellationToken);

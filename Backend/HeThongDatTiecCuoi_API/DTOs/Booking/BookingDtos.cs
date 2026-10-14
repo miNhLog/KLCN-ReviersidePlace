@@ -41,6 +41,10 @@ public sealed class BookingSummaryDto
     public string StatusCode { get; set; } = string.Empty;
     public string StatusName { get; set; } = string.Empty;
     public DateTime BookedAt { get; set; }
+    public bool HasContract { get; set; }
+    public int? ContractId { get; set; }
+    public string? ContractCode { get; set; }
+    public string? ContractStatusCode { get; set; }
 }
 
 public sealed class BookingDetailDto
@@ -72,6 +76,10 @@ public sealed class BookingDetailDto
     public string? CancellationReason { get; set; }
     public DateTime BookedAt { get; set; }
     public List<BookingServiceDto> Services { get; set; } = [];
+    public bool HasContract { get; set; }
+    public int? ContractId { get; set; }
+    public string? ContractCode { get; set; }
+    public string? ContractStatusCode { get; set; }
 }
 
 public sealed class BookingServiceDto
