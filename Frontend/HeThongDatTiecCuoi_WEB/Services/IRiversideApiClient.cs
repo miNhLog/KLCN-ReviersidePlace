@@ -11,12 +11,19 @@ using HeThongDatTiecCuoi_WEB.Models.Recommendation;
 using HeThongDatTiecCuoi_WEB.Models.RoleChangeRequest;
 using HeThongDatTiecCuoi_WEB.Models.Notification;
 using HeThongDatTiecCuoi_WEB.Models.Home;
+using HeThongDatTiecCuoi_WEB.Models.Profile;
 using HeThongDatTiecCuoi_WEB.Models.ManagerHr;
 using HeThongDatTiecCuoi_WEB.Models.ManagerContractPayment;
+using HeThongDatTiecCuoi_WEB.Models.ManagerEventCoordination;
 using Microsoft.AspNetCore.Mvc;
 
 public interface IRiversideApiClient
 {
+    Task<ApiCallResult<EventCoordinationListResponseViewModel>> GetManagerEventCoordinationAsync(string accessToken, string? search, string? bookingStatus, string? coordinationStatus, DateTime? fromDate, DateTime? toDate, int page, int pageSize, CancellationToken cancellationToken);
+    Task<ApiCallResult<EventCoordinationDetailViewModel>> GetManagerEventCoordinationDetailAsync(string accessToken, int bookingId, CancellationToken cancellationToken);
+    Task<ApiCallResult<EventCoordinationCalendarViewModel>> GetManagerEventCoordinationCalendarAsync(string accessToken, DateTime fromDate, DateTime toDate, int? hallId, int? coordinatorEmployeeId, bool conflictsOnly, CancellationToken cancellationToken);
+    Task<ApiCallResult<ProfileDto>> GetProfileAsync(string accessToken, CancellationToken cancellationToken);
+    Task<ApiCallResult<ProfileUpdateResponse>> UpdateProfileAsync(ProfilePageViewModel model, string accessToken, CancellationToken cancellationToken);
     Task<ApiCallResult<ManagerContractListResponseViewModel>> GetManagerContractsAsync(string accessToken, string? keyword, string? status, DateTime? fromDate, DateTime? toDate, int page, CancellationToken cancellationToken);
     Task<ApiCallResult<ManagerContractDetailViewModel>> GetManagerContractAsync(string accessToken, int id, CancellationToken cancellationToken);
     Task<ApiCallResult<List<EligibleBookingViewModel>>> GetEligibleContractBookingsAsync(string accessToken, string? keyword, CancellationToken cancellationToken);
@@ -54,6 +61,18 @@ public interface IRiversideApiClient
         CancellationToken cancellationToken);
     Task<ApiCallResult<MessageResponseDto>> ChangePasswordAsync(ChangePasswordViewModel model, string accessToken, CancellationToken cancellationToken);
     Task<ApiCallResult<FirstPasswordOtpResponseDto>> SendFirstPasswordOtpAsync(string accessToken, CancellationToken cancellationToken);
+
+    Task<ApiCallResult<PasswordResetOtpResponseDto>> SendPasswordResetOtpAsync(
+        SendPasswordResetOtpViewModel model,
+        CancellationToken cancellationToken);
+
+    Task<ApiCallResult<PasswordResetOtpVerificationDto>> VerifyPasswordResetOtpAsync(
+        VerifyPasswordResetOtpViewModel model,
+        CancellationToken cancellationToken);
+
+    Task<ApiCallResult<MessageResponseDto>> CompletePasswordResetAsync(
+        CompletePasswordResetViewModel model,
+        CancellationToken cancellationToken);
 
     Task<ApiCallResult<MessageResponseDto>> ForgotPasswordAsync(
         ForgotPasswordViewModel model,
@@ -327,7 +346,10 @@ public interface IRiversideApiClient
         string? accessToken,
         CancellationToken cancellationToken = default);
 
-    Task<ApiCallResult<dynamic>> CreateBookingAsync(
+    Task<ApiCallResult<BookingCreateOptionsViewModel>> GetBookingCreateOptionsAsync(
+        DateTime eventDate, string? accessToken, CancellationToken cancellationToken = default);
+
+    Task<ApiCallResult<CreateBookingResponseViewModel>> CreateBookingAsync(
         CreateBookingRequestViewModel request,
         string? accessToken,
         CancellationToken cancellationToken = default);

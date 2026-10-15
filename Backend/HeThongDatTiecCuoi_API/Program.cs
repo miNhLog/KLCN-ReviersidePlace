@@ -6,7 +6,8 @@ using HeThongDatTiecCuoi_API.Helpers;
 using HeThongDatTiecCuoi_API.DTOs.Auth;
 using HeThongDatTiecCuoi_API.Models;
 using HeThongDatTiecCuoi_API.Options;
-using HeThongDatTiecCuoi_API.Services;using Microsoft.AspNetCore.Authentication.JwtBearer;
+using HeThongDatTiecCuoi_API.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -85,6 +86,31 @@ builder.Services
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.Key)),
             ValidateLifetime = true,
             ClockSkew = TimeSpan.FromSeconds(30)
+        };
+        options.Events = new JwtBearerEvents
+        {
+            OnTokenValidated = async context =>
+            {
+                var userIdValue = context.Principal?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                var versionValue = context.Principal?.FindFirst("session_version")?.Value;
+                if (!int.TryParse(userIdValue, out var userId) ||
+                    !long.TryParse(versionValue, out var tokenVersion))
+                {
+                    context.Fail("Phiên đăng nhập không hợp lệ.");
+                    return;
+                }
+
+                var db = context.HttpContext.RequestServices.GetRequiredService<ApplicationDbContext>();
+                var updatedAt = await db.Users.AsNoTracking()
+                    .Where(user => user.UserId == userId)
+                    .Select(user => user.UpdatedAt)
+                    .SingleOrDefaultAsync(context.HttpContext.RequestAborted);
+                var currentVersion = updatedAt?.ToUniversalTime().Ticks ?? 0L;
+                if (currentVersion != tokenVersion)
+                {
+                    context.Fail("Phiên đăng nhập đã bị thu hồi.");
+                }
+            }
         };
     });
 
@@ -191,3 +217,5 @@ app.UseStaticFiles();
 app.MapControllers();
 
 app.Run();
+
+public partial class Program;

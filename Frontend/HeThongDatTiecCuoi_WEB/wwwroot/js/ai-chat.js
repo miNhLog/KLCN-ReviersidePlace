@@ -138,7 +138,9 @@
         var filled = 0;
         var budget = $('expectedBudget');
         if (budget && e.ngan_sach_tran && e.ngan_sach_tran >= 100000000 && e.ngan_sach_tran <= 3000000000) {
-            budget.value = e.ngan_sach_tran; filled++;
+            budget.value = e.ngan_sach_tran;
+            budget.dispatchEvent(new Event('input', { bubbles: true }));
+            filled++;
         }
         var guests = e.so_khach_du_kien || (e.so_ban_du_kien ? e.so_ban_du_kien * 10 : 0);
         var gInput = $('guestCount');

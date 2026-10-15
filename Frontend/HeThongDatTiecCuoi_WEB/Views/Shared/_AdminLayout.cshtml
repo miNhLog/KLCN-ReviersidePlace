@@ -58,6 +58,7 @@
           asp-append-version="true" />
     @if (isAdmin || isManager) { <link rel="stylesheet" href="~/css/notifications.css" asp-append-version="true" /> }
 
+    <link rel="stylesheet" href="~/css/ui-format.css" asp-append-version="true" />
     @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
@@ -219,7 +220,10 @@
                 <section class="sidebar-section" aria-labelledby="managerEventOperationsMenuTitle">
                     <h2 class="sidebar-section-title" id="managerEventOperationsMenuTitle">Điều hành sự kiện</h2>
                     <nav class="sidebar-menu" aria-label="Điều hành sự kiện">
-                        <button type="button" class="sidebar-item developing" data-sidebar-tooltip="Tiệc &amp; Điều phối"><span class="sidebar-icon" aria-hidden="true"><i class="fa-solid fa-people-arrows"></i></span><span class="sidebar-label">Tiệc &amp; Điều phối</span></button>
+                        <a asp-controller="ManagerEventCoordination" asp-action="Index"
+                           class="sidebar-item @(IsActive("ManagerEventCoordination") ? "active" : string.Empty)"
+                           aria-current="@(IsActive("ManagerEventCoordination") ? "page" : null)"
+                           data-sidebar-tooltip="Tiệc &amp; Điều phối"><span class="sidebar-icon" aria-hidden="true"><i class="fa-solid fa-people-arrows"></i></span><span class="sidebar-label">Tiệc &amp; Điều phối</span></a>
                         <button type="button" class="sidebar-item developing" data-sidebar-tooltip="Sự cố"><span class="sidebar-icon" aria-hidden="true"><i class="fa-solid fa-triangle-exclamation"></i></span><span class="sidebar-label">Sự cố</span></button>
                         <button type="button" class="sidebar-item developing" data-sidebar-tooltip="Thay đổi lịch"><span class="sidebar-icon" aria-hidden="true"><i class="fa-solid fa-calendar-days"></i></span><span class="sidebar-label">Thay đổi lịch</span></button>
                     </nav>
@@ -407,7 +411,7 @@
                             <i class="fa-solid fa-chevron-down topbar-chevron" aria-hidden="true"></i>
                         </summary>
                         <div class="user-dropdown">
-                            <a asp-controller="Auth" asp-action="ChangePassword"><i class="fa-solid fa-key" aria-hidden="true"></i>Đổi mật khẩu</a>
+                            <a asp-controller="Profile" asp-action="Index"><i class="fa-solid fa-user" aria-hidden="true"></i>Hồ sơ cá nhân</a>
                             <div class="user-dropdown-divider" aria-hidden="true"></div>
                             <form asp-controller="Auth" asp-action="Logout" method="post">
                                 @Html.AntiForgeryToken()
@@ -435,6 +439,7 @@
     }
 
     <script src="~/js/admin-sidebar.js" asp-append-version="true"></script>
+    <script src="~/js/ui-format.js" asp-append-version="true"></script>
     @if (isAdmin || isManager) { <script src="~/js/notifications.js" asp-append-version="true"></script> }
     @await RenderSectionAsync("Scripts", required: false)
 </body>

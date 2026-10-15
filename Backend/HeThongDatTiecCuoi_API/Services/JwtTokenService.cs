@@ -35,7 +35,8 @@ public sealed class JwtTokenService : IJwtTokenService
             new(ClaimTypes.NameIdentifier, user.UserId.ToString()),
             new(ClaimTypes.Name, displayName),
             new(ClaimTypes.Email, user.Email),
-            new(ClaimTypes.Role, user.Role.RoleName)
+            new(ClaimTypes.Role, user.Role.RoleName),
+            new("session_version", (user.UpdatedAt?.ToUniversalTime().Ticks ?? 0).ToString())
         };
 
         var credentials = new SigningCredentials(

@@ -52,6 +52,28 @@ public class SmtpEmailService : IEmailService
             """,
             cancellationToken);
 
+    public Task SendPasswordResetOtpEmailAsync(
+        string recipientEmail,
+        string otpCode,
+        int lifetimeMinutes,
+        CancellationToken cancellationToken = default) =>
+        SendAsync(
+            recipientEmail,
+            "[Riverside Palace] Mã OTP đặt lại mật khẩu",
+            $"""
+            Xin chào nhân viên Riverside Palace,
+
+            Mã OTP đặt lại mật khẩu của bạn là: {otpCode}
+
+            Mã có hiệu lực trong {lifetimeMinutes} phút và chỉ sử dụng được một lần.
+            Không chia sẻ mã này với bất kỳ ai.
+
+            Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email và liên hệ Quản trị viên hệ thống.
+
+            Riverside Palace
+            """,
+            cancellationToken);
+
     public async Task SendPasswordResetEmailAsync(
         string recipientEmail,
         string resetLink,

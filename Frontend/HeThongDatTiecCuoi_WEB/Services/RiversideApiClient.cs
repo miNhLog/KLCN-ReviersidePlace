@@ -17,6 +17,7 @@ using HeThongDatTiecCuoi_WEB.Models.Notification;
 using HeThongDatTiecCuoi_WEB.Models.Home;
 using HeThongDatTiecCuoi_WEB.Models.ManagerHr;
 using HeThongDatTiecCuoi_WEB.Models.ManagerContractPayment;
+using HeThongDatTiecCuoi_WEB.Models.ManagerEventCoordination;
 using Microsoft.AspNetCore.Mvc;
 
 public sealed class RiversideApiClient : IRiversideApiClient
@@ -30,6 +31,35 @@ public sealed class RiversideApiClient : IRiversideApiClient
     public RiversideApiClient(HttpClient httpClient)
     {
         _httpClient = httpClient;
+    }
+
+    public Task<ApiCallResult<EventCoordinationListResponseViewModel>> GetManagerEventCoordinationAsync(
+        string accessToken, string? search, string? bookingStatus, string? coordinationStatus,
+        DateTime? fromDate, DateTime? toDate, int page, int pageSize, CancellationToken cancellationToken)
+    {
+        var query = new List<string> { $"page={Math.Max(1, page)}", $"pageSize={Math.Clamp(pageSize, 1, 50)}" };
+        AddQueryParameter(query, "search", search);
+        AddQueryParameter(query, "bookingStatus", bookingStatus);
+        AddQueryParameter(query, "coordinationStatus", coordinationStatus);
+        if (fromDate.HasValue) query.Add($"fromDate={fromDate.Value:yyyy-MM-dd}");
+        if (toDate.HasValue) query.Add($"toDate={toDate.Value:yyyy-MM-dd}");
+        return SendAsync<EventCoordinationListResponseViewModel>(HttpMethod.Get,
+            $"api/manager/event-coordination?{string.Join('&', query)}", null, accessToken, cancellationToken);
+    }
+
+    public Task<ApiCallResult<EventCoordinationDetailViewModel>> GetManagerEventCoordinationDetailAsync(
+        string accessToken, int bookingId, CancellationToken cancellationToken) =>
+        SendAsync<EventCoordinationDetailViewModel>(HttpMethod.Get, $"api/manager/event-coordination/{bookingId}", null, accessToken, cancellationToken);
+
+    public Task<ApiCallResult<EventCoordinationCalendarViewModel>> GetManagerEventCoordinationCalendarAsync(
+        string accessToken, DateTime fromDate, DateTime toDate, int? hallId, int? coordinatorEmployeeId,
+        bool conflictsOnly, CancellationToken cancellationToken)
+    {
+        var query = new List<string> { $"fromDate={fromDate:yyyy-MM-dd}", $"toDate={toDate:yyyy-MM-dd}", $"conflictsOnly={conflictsOnly.ToString().ToLowerInvariant()}" };
+        if (hallId.HasValue) query.Add($"hallId={hallId.Value}");
+        if (coordinatorEmployeeId.HasValue) query.Add($"coordinatorEmployeeId={coordinatorEmployeeId.Value}");
+        return SendAsync<EventCoordinationCalendarViewModel>(HttpMethod.Get,
+            $"api/manager/event-coordination/calendar?{string.Join('&', query)}", null, accessToken, cancellationToken);
     }
 
     public Task<ApiCallResult<ManagerContractListResponseViewModel>> GetManagerContractsAsync(
@@ -143,6 +173,33 @@ public sealed class RiversideApiClient : IRiversideApiClient
 
     public Task<ApiCallResult<FirstPasswordOtpResponseDto>> SendFirstPasswordOtpAsync(string accessToken, CancellationToken cancellationToken) =>
         SendAsync<FirstPasswordOtpResponseDto>(HttpMethod.Post, "api/auth/first-password-otp", new { }, accessToken, cancellationToken);
+
+    public Task<ApiCallResult<PasswordResetOtpResponseDto>> SendPasswordResetOtpAsync(
+        SendPasswordResetOtpViewModel model,
+        CancellationToken cancellationToken) =>
+        SendAsync<PasswordResetOtpResponseDto>(HttpMethod.Post, "api/auth/forgot-password", new
+        {
+            model.Email
+        }, null, cancellationToken);
+
+    public Task<ApiCallResult<PasswordResetOtpVerificationDto>> VerifyPasswordResetOtpAsync(
+        VerifyPasswordResetOtpViewModel model,
+        CancellationToken cancellationToken) =>
+        SendAsync<PasswordResetOtpVerificationDto>(HttpMethod.Post, "api/auth/verify-reset-otp", new
+        {
+            model.Email,
+            model.OtpCode
+        }, null, cancellationToken);
+
+    public Task<ApiCallResult<MessageResponseDto>> CompletePasswordResetAsync(
+        CompletePasswordResetViewModel model,
+        CancellationToken cancellationToken) =>
+        SendAsync<MessageResponseDto>(HttpMethod.Post, "api/auth/reset-password", new
+        {
+            Token = model.ResetToken,
+            model.NewPassword,
+            model.ConfirmPassword
+        }, null, cancellationToken);
 
     public Task<ApiCallResult<MessageResponseDto>> ForgotPasswordAsync(
         ForgotPasswordViewModel model,
@@ -1373,13 +1430,20 @@ public sealed class RiversideApiClient : IRiversideApiClient
             cancellationToken);
     }
 
-    public async Task<ApiCallResult<dynamic>> CreateBookingAsync(
+    public async Task<ApiCallResult<BookingCreateOptionsViewModel>> GetBookingCreateOptionsAsync(
+        DateTime eventDate, string? accessToken, CancellationToken cancellationToken = default)
+    {
+        return await SendJsonAsync<BookingCreateOptionsViewModel>(HttpMethod.Get,
+            $"api/admin/bookings/create-options?eventDate={eventDate:yyyy-MM-dd}", null, accessToken, cancellationToken);
+    }
+
+    public async Task<ApiCallResult<CreateBookingResponseViewModel>> CreateBookingAsync(
         CreateBookingRequestViewModel request,
         string? accessToken,
         CancellationToken cancellationToken = default)
     {
         var uri = "api/admin/bookings";
-        return await SendJsonAsync<dynamic>(
+        return await SendJsonAsync<CreateBookingResponseViewModel>(
             HttpMethod.Post,
             uri,
             request,
@@ -1911,4 +1975,21 @@ public sealed class RiversideApiClient : IRiversideApiClient
         }
         return $"Yêu cầu không thành công ({(int)status}).";
     }
+
+    public Task<ApiCallResult<HeThongDatTiecCuoi_WEB.Models.Profile.ProfileDto>> GetProfileAsync(
+        string accessToken,
+        CancellationToken cancellationToken) =>
+        SendAsync<HeThongDatTiecCuoi_WEB.Models.Profile.ProfileDto>(HttpMethod.Get, "api/profile", null, accessToken, cancellationToken);
+
+    public Task<ApiCallResult<HeThongDatTiecCuoi_WEB.Models.Profile.ProfileUpdateResponse>> UpdateProfileAsync(
+        HeThongDatTiecCuoi_WEB.Models.Profile.ProfilePageViewModel model,
+        string accessToken,
+        CancellationToken cancellationToken) =>
+        SendAsync<HeThongDatTiecCuoi_WEB.Models.Profile.ProfileUpdateResponse>(HttpMethod.Put, "api/profile", new
+        {
+            model.Email,
+            model.FullName,
+            model.PhoneNumber
+        }, accessToken, cancellationToken);
+
 }
