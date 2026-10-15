@@ -8,6 +8,18 @@
     var placeholderImage = Url.Content("~/images/home/hall-placeholder.jpg");
     var publicHeroImage = Url.Content("~/images/home/hero-wedding.jpg");
     var image = string.IsNullOrWhiteSpace(Model.ImageUrl) ? placeholderImage : Model.ImageUrl;
+    var galleryImages = Model.ImageUrls
+        .Where(url => !string.IsNullOrWhiteSpace(url))
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .ToList();
+    if (!string.IsNullOrWhiteSpace(Model.ImageUrl) && !galleryImages.Contains(Model.ImageUrl, StringComparer.OrdinalIgnoreCase))
+    {
+        galleryImages.Insert(0, Model.ImageUrl);
+    }
+    if (galleryImages.Count == 0)
+    {
+        galleryImages.Add(placeholderImage);
+    }
     var description = string.IsNullOrWhiteSpace(Model.Description)
         ? "Không gian tiệc cưới sang trọng tại Riverside Palace."
         : Model.Description;
@@ -68,7 +80,32 @@
             <section class="hall-detail-main" aria-label="Thông tin sảnh @Model.HallName">
                 <div class="home-container">
                     <div class="hall-detail-overview">
-                        <figure class="hall-detail-photo"><img src="@image" alt="@Model.HallName" data-fallback="@placeholderImage" /></figure>
+                        <div class="hall-gallery" data-hall-gallery data-hall-name="@Model.HallName">
+                            <figure class="hall-detail-photo">
+                                <button class="hall-gallery-main" type="button" data-gallery-open aria-label="Mở ảnh @Model.HallName ở chế độ toàn màn hình">
+                                    <img src="@galleryImages[0]" alt="@Model.HallName - ảnh 1" data-gallery-main-image data-fallback="@placeholderImage" />
+                                    <span class="hall-gallery-expand"><span class="material-symbols-outlined" aria-hidden="true">zoom_out_map</span> Xem ảnh</span>
+                                    <span class="hall-gallery-count"><span class="material-symbols-outlined" aria-hidden="true">photo_library</span> <b data-gallery-position>1</b>/@galleryImages.Count</span>
+                                </button>
+                                @if (galleryImages.Count > 1)
+                                {
+                                    <button class="hall-gallery-arrow hall-gallery-arrow--previous" type="button" data-gallery-previous aria-label="Ảnh trước"><span class="material-symbols-outlined" aria-hidden="true">chevron_left</span></button>
+                                    <button class="hall-gallery-arrow hall-gallery-arrow--next" type="button" data-gallery-next aria-label="Ảnh tiếp theo"><span class="material-symbols-outlined" aria-hidden="true">chevron_right</span></button>
+                                }
+                            </figure>
+                            @if (galleryImages.Count > 1)
+                            {
+                                <div class="hall-gallery-thumbnails" role="list" aria-label="Các ảnh của @Model.HallName">
+                                    @for (var imageIndex = 0; imageIndex < galleryImages.Count; imageIndex++)
+                                    {
+                                        <button type="button" role="listitem" class="hall-gallery-thumbnail @(imageIndex == 0 ? "active" : null)" data-gallery-thumbnail data-index="@imageIndex" aria-label="Xem ảnh @(imageIndex + 1)" aria-current="@(imageIndex == 0 ? "true" : null)">
+                                            <img src="@galleryImages[imageIndex]" alt="" loading="lazy" data-fallback="@placeholderImage" />
+                                        </button>
+                                    }
+                                </div>
+                            }
+                            <script type="application/json" data-gallery-images>@Html.Raw(System.Text.Json.JsonSerializer.Serialize(galleryImages))</script>
+                        </div>
                         <div class="hall-detail-summary">
                             <span class="hall-detail-label">KHÔNG GIAN TIỆC CƯỚI</span>
                             <h2>@Model.HallName</h2>
@@ -125,8 +162,18 @@
     </main>
     <partial name="_PublicFooter" />
     <div class="home-toast" role="status" aria-live="polite" hidden></div>
+    @if (hasHall)
+    {
+        <div class="hall-gallery-lightbox" data-gallery-lightbox hidden aria-hidden="true" role="dialog" aria-modal="true" aria-label="Bộ ảnh @Model.HallName">
+            <button class="hall-gallery-lightbox-close" type="button" data-gallery-close aria-label="Đóng bộ ảnh"><span class="material-symbols-outlined" aria-hidden="true">close</span></button>
+            <button class="hall-gallery-lightbox-arrow hall-gallery-lightbox-arrow--previous" type="button" data-gallery-lightbox-previous aria-label="Ảnh trước"><span class="material-symbols-outlined" aria-hidden="true">chevron_left</span></button>
+            <figure><img src="@image" alt="@Model.HallName" data-gallery-lightbox-image data-fallback="@placeholderImage" /><figcaption><span data-gallery-lightbox-caption>1 / @galleryImages.Count</span> · @Model.HallName</figcaption></figure>
+            <button class="hall-gallery-lightbox-arrow hall-gallery-lightbox-arrow--next" type="button" data-gallery-lightbox-next aria-label="Ảnh tiếp theo"><span class="material-symbols-outlined" aria-hidden="true">chevron_right</span></button>
+        </div>
+    }
 </div>
 
 @section Scripts {
     <script src="~/js/hall-list.js" asp-append-version="true"></script>
+    <script src="~/js/hall-gallery.js" asp-append-version="true"></script>
 }

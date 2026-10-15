@@ -41,6 +41,7 @@ public sealed class PublicHallDetailDto
     public decimal RentalPrice { get; set; }
     public string? Description { get; set; }
     public string? ImageUrl { get; set; }
+    public IReadOnlyList<string> ImageUrls { get; set; } = [];
     public string Status { get; set; } = string.Empty;
     public string StatusName { get; set; } = string.Empty;
 }

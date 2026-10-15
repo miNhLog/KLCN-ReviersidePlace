@@ -157,6 +157,13 @@ public sealed class HallController : ControllerBase
                         image.DataStatus.DataStatusCode == DataStatusCodes.Existing)
                     .Select(image => image.ImagePath)
                     .FirstOrDefault(),
+                ImageUrls = item.Images
+                    .Where(image => image.DataStatus.DataStatusCode == DataStatusCodes.Existing)
+                    .OrderByDescending(image => image.IsPrimary)
+                    .ThenBy(image => image.SortOrder)
+                    .ThenBy(image => image.ImageId)
+                    .Select(image => image.ImagePath)
+                    .ToList(),
                 Status = item.Status.StatusCode,
                 StatusName = item.Status.StatusName
             })

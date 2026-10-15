@@ -260,7 +260,15 @@ public sealed class RiversideApiClient : IRiversideApiClient
                 HttpMethod.Get, $"api/halls/public/{hallId}", null, null, cancellationToken);
 
             if (result.Value is not null)
+            {
                 result.Value.ImageUrl = ResolvePublicImageUrl(result.Value.ImageUrl);
+                result.Value.ImageUrls = result.Value.ImageUrls
+                    .Select(ResolvePublicImageUrl)
+                    .Where(url => !string.IsNullOrWhiteSpace(url))
+                    .Select(url => url!)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+            }
 
             return result;
         }

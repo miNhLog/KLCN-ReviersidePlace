@@ -1,0 +1,41 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v8.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v8.0": {
+      "HeThongDatTiecCuoi_WEB/1.0.0": {
+        "dependencies": {
+          "Microsoft.AspNetCore.Authentication.Google": "8.0.12"
+        },
+        "runtime": {
+          "HeThongDatTiecCuoi_WEB.dll": {}
+        }
+      },
+      "Microsoft.AspNetCore.Authentication.Google/8.0.12": {
+        "runtime": {
+          "lib/net8.0/Microsoft.AspNetCore.Authentication.Google.dll": {
+            "assemblyVersion": "8.0.12.0",
+            "fileVersion": "8.0.1224.60312"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "HeThongDatTiecCuoi_WEB/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Microsoft.AspNetCore.Authentication.Google/8.0.12": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-+ytq0YfuQ5K8YnvfglBvYxxchsPpedeYlg7gYZY6oFvPIWqA9BjIabexLKAYfL6MewKrOJbRIgWvfx0pONnmPQ==",
+      "path": "microsoft.aspnetcore.authentication.google/8.0.12",
+      "hashPath": "microsoft.aspnetcore.authentication.google.8.0.12.nupkg.sha512"
+    }
+  }
+}

@@ -14,17 +14,29 @@
     };
 }
 
-@section Styles { <link rel="stylesheet" href="~/css/manager-contract-payment.css" asp-append-version="true" /> }
+@section Styles {
+    <link rel="stylesheet" href="~/css/manager-contract-payment.css" asp-append-version="true" />
+    <style>
+        .cp-breadcrumb { display: flex; align-items: center; gap: 8px; margin: 0 0 5px; color: #64748b; font-size: 12px; font-weight: 500; }
+        .cp-breadcrumb i { color: #94a3b8; font-size: 9px; }
+        .cp-breadcrumb strong { color: #b89758; font-weight: 600; }
+    </style>
+}
 
 <div class="contract-payment-page" data-page-root data-initial-booking-id="@Context.Request.Query["bookingId"]" data-initial-contract-id="@Context.Request.Query["contractId"]" data-open-create="@Context.Request.Query["openCreate"]">
     <form id="cpAntiforgery" hidden>@Html.AntiForgeryToken()</form>
 
-    <header class="cp-page-head">
+    <header class="cp-page-head manager-section-header">
         <div>
+            <nav class="cp-breadcrumb" aria-label="Breadcrumb">
+                <span>Quản trị hệ thống</span>
+                <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+                <strong>Hợp đồng &amp; Thanh toán</strong>
+            </nav>
             <h1>HỢP ĐỒNG &amp; THANH TOÁN</h1>
             <p>Quản lý hợp đồng và theo dõi các khoản thanh toán của khách hàng.</p>
         </div>
-        <button type="button" class="cp-primary" id="openCreateContract"><i class="fa-solid fa-plus"></i>Tạo hợp đồng</button>
+        <button type="button" class="cp-primary admin-create-button" id="openCreateContract"><i class="fa-solid fa-plus"></i>Tạo hợp đồng</button>
     </header>
 
     @if (!string.IsNullOrWhiteSpace(ViewBag.ErrorMessage as string))

@@ -125,7 +125,7 @@
 <div class="booking-page-wrapper p-6 lg:p-8 space-y-6 w-full max-w-[1600px] mx-auto" data-can-manage-contracts="@isManager.ToString().ToLowerInvariant()">
 
     <!-- ================= 1. HEADER TRANG ================= -->
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div class="manager-section-header flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
             <nav aria-label="Breadcrumb" class="flex items-center gap-2 text-xs text-slate-500 mb-1">
                 <span>Quản trị hệ thống</span>
@@ -135,6 +135,7 @@
             <h2 class="font-serif text-2xl font-bold text-slate-900 tracking-tight">
                 Quản Lý Đặt Tiệc Cưới
             </h2>
+            <p>Theo dõi và quản lý toàn bộ đơn đặt tiệc cưới.</p>
         </div>
 
         <div class="flex flex-wrap items-center gap-2.5">
@@ -143,7 +144,7 @@
                 <span>Xuất Excel</span>
             </button>
 
-            <button type="button" onclick="openCreateBookingModal()" class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#B89758] to-[#9E7E3F] hover:from-[#A8884A] hover:to-[#8E7035] text-white rounded-lg text-xs font-bold transition-all shadow-sm min-h-[40px] cursor-pointer">
+            <button type="button" onclick="openCreateBookingModal()" class="admin-create-button flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#B89758] to-[#9E7E3F] hover:from-[#A8884A] hover:to-[#8E7035] text-white rounded-lg text-xs font-bold transition-all shadow-sm min-h-[40px] cursor-pointer">
                 <i class="fa-solid fa-plus text-xs"></i>
                 <span>Tạo Đơn Đặt Tiệc Mới</span>
             </button>
@@ -999,7 +1000,7 @@
                 const res = await fetch(`/AdminBooking/UpdateStatus/${id}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ newStatus: newStatus })
+                    body: JSON.stringify({ statusCode: newStatus })
                 });
                 const result = await res.json();
                 if (result.success) {
@@ -1021,7 +1022,7 @@
             fetch(`/AdminBooking/UpdateStatus/${id}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ newStatus: 'CANCELLED', cancellationReason: reason })
+                body: JSON.stringify({ statusCode: 'CANCELLED', cancellationReason: reason })
             })
             .then(res => res.json())
             .then(result => {

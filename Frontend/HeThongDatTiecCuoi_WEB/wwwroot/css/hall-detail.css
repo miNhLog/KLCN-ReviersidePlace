@@ -15,8 +15,36 @@
 .hall-detail-breadcrumb span[aria-current] { overflow: hidden; color: #3d3934; text-overflow: ellipsis; }
 .hall-detail-main { padding: 42px 0 72px; background: #fdfbf7; }
 .hall-detail-overview { display: grid; grid-template-columns: minmax(0, 1.32fr) minmax(330px, .9fr); gap: 38px; align-items: stretch; }
-.hall-detail-photo { min-height: 510px; overflow: hidden; border-radius: 9px; background: #eee7da; box-shadow: 0 7px 22px rgba(35,29,20,.09); }
+.hall-gallery { display: grid; min-width: 0; grid-template-rows: minmax(0, 1fr) auto; gap: 12px; }
+.hall-detail-photo { position: relative; min-height: 510px; overflow: hidden; border-radius: 9px; background: #eee7da; box-shadow: 0 7px 22px rgba(35,29,20,.09); }
 .hall-detail-photo img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.hall-gallery-main { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; padding: 0; background: transparent; cursor: zoom-in; }
+.hall-gallery-main::after { position: absolute; inset: 0; background: linear-gradient(180deg, transparent 65%, rgba(10,17,22,.42)); content: ""; pointer-events: none; }
+.hall-gallery-expand, .hall-gallery-count { position: absolute; z-index: 1; display: inline-flex; align-items: center; gap: 6px; border: 1px solid rgba(255,255,255,.44); border-radius: 100px; background: rgba(13,25,35,.72); color: #fff; font-size: 11px; font-weight: 600; backdrop-filter: blur(7px); }
+.hall-gallery-expand { right: 16px; bottom: 16px; padding: 8px 12px; }
+.hall-gallery-count { left: 16px; bottom: 16px; padding: 8px 11px; }
+.hall-gallery-expand .material-symbols-outlined, .hall-gallery-count .material-symbols-outlined { font-size: 17px; }
+.hall-gallery-arrow { position: absolute; z-index: 2; top: 50%; display: grid; width: 42px; height: 42px; place-items: center; border: 1px solid rgba(255,255,255,.55); border-radius: 50%; background: rgba(13,25,35,.62); color: #fff; transform: translateY(-50%); transition: background .2s, transform .2s; }
+.hall-gallery-arrow:hover { background: rgba(169,134,45,.92); transform: translateY(-50%) scale(1.04); }
+.hall-gallery-arrow--previous { left: 15px; }
+.hall-gallery-arrow--next { right: 15px; }
+.hall-gallery-arrow .material-symbols-outlined { font-size: 26px; }
+.hall-gallery-thumbnails { display: grid; grid-auto-columns: minmax(82px, 1fr); grid-auto-flow: column; gap: 9px; overflow-x: auto; padding: 2px 2px 5px; scrollbar-width: thin; }
+.hall-gallery-thumbnail { height: 72px; overflow: hidden; border: 2px solid transparent; border-radius: 7px; padding: 0; background: #eee7da; opacity: .7; transition: border-color .2s, opacity .2s, transform .2s; }
+.hall-gallery-thumbnail:hover { opacity: 1; transform: translateY(-1px); }
+.hall-gallery-thumbnail.active { border-color: #b48c2a; opacity: 1; box-shadow: 0 0 0 2px rgba(180,140,42,.13); }
+.hall-gallery-thumbnail img { width: 100%; height: 100%; object-fit: cover; }
+.hall-gallery-lightbox[hidden] { display: none; }
+.hall-gallery-lightbox { position: fixed; z-index: 1000; inset: 0; display: grid; grid-template-columns: 72px minmax(0, 1fr) 72px; align-items: center; background: rgba(4,9,13,.94); color: #fff; }
+.hall-gallery-lightbox figure { display: grid; min-width: 0; max-height: 92vh; justify-items: center; gap: 12px; margin: 0; }
+.hall-gallery-lightbox figure img { display: block; max-width: 100%; max-height: calc(92vh - 38px); border-radius: 5px; object-fit: contain; }
+.hall-gallery-lightbox figcaption { color: rgba(255,255,255,.78); font-size: 12px; }
+.hall-gallery-lightbox-close, .hall-gallery-lightbox-arrow { display: grid; place-items: center; border: 1px solid rgba(255,255,255,.28); border-radius: 50%; background: rgba(255,255,255,.09); color: #fff; transition: background .2s; }
+.hall-gallery-lightbox-close:hover, .hall-gallery-lightbox-arrow:hover { background: rgba(180,140,42,.75); }
+.hall-gallery-lightbox-close { position: absolute; z-index: 1; top: 20px; right: 22px; width: 44px; height: 44px; }
+.hall-gallery-lightbox-arrow { width: 48px; height: 48px; justify-self: center; }
+.hall-gallery-lightbox-arrow .material-symbols-outlined { font-size: 31px; }
+body.hall-gallery-open { overflow: hidden; }
 .hall-detail-summary { display: flex; min-width: 0; flex-direction: column; align-items: flex-start; padding: 12px 0 4px; }
 .hall-detail-summary h2 { margin-top: 5px; color: #26221e; font: 600 38px/1.2 "Playfair Display", Georgia, serif; }
 .hall-detail-highlight { display: flex; align-items: center; gap: 11px; margin-top: 15px; color: #352f29; }
@@ -81,6 +109,9 @@
     .hall-detail-main { padding-top: 26px; }
     .hall-detail-overview { gap: 25px; }
     .hall-detail-photo { min-height: 0; aspect-ratio: 4 / 3; }
+    .hall-gallery-thumbnail { height: 62px; }
+    .hall-gallery-lightbox { grid-template-columns: 52px minmax(0, 1fr) 52px; }
+    .hall-gallery-lightbox-arrow { width: 40px; height: 40px; }
     .hall-detail-summary { padding-top: 0; }
     .hall-detail-summary h2 { font-size: 33px; }
     .hall-detail-actions button { width: 100%; }
