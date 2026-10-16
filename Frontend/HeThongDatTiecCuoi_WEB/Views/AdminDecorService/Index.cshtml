@@ -93,18 +93,18 @@
 <div class="decor-page-wrapper min-h-screen flex flex-col w-full relative">
 
     <!-- ================= KHỐI ĐIỀU HƯỚNG CỐ ĐỊNH (HEADER + TABS DÍNH CHUNG) ================= -->
-    <div class="sticky top-0 z-30 bg-white border-b border-slate-200 shadow-xs w-full">
+    <div class="backoffice-function-header-shell sticky top-0 z-30 bg-white border-b border-slate-200 shadow-xs w-full">
 
         <!-- Top Title & Controls Header -->
         <header class="manager-section-header px-4 sm:px-6 lg:px-8 py-3 sm:py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3 sm:gap-4 border-b border-slate-100">
             <div class="min-w-0">
                 <nav aria-label="Breadcrumb" class="flex items-center gap-2 text-xs text-slate-500 mb-1 flex-wrap">
-                    <span>Quản trị hệ thống</span>
+                    <span class="breadcrumb-root">Quản trị hệ thống</span>
                     <i class="fa-solid fa-chevron-right text-[9px] text-slate-400"></i>
-                    <span id="breadcrumb-current-tab" class="text-[#B89758] font-semibold">Gói Decor Tiệc Cưới</span>
+                    <span id="breadcrumb-current-tab" class="breadcrumb-current text-[#B89758] font-semibold">Gói decor tiệc cưới</span>
                 </nav>
                 <h2 id="header-page-title" class="font-serif text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-                    Quản Trị Danh Mục Gói Decor Tiệc Cưới
+                    Quản lý gói decor tiệc cưới
                 </h2>
                 <p>Quản lý các gói trang trí và dịch vụ đi kèm cho tiệc cưới.</p>
             </div>
@@ -761,8 +761,8 @@
                 containerDecor.classList.remove('hidden');
                 containerService.classList.add('hidden');
 
-                breadcrumbTab.innerText = 'Gói Decor Tiệc Cưới';
-                headerTitle.innerText = 'Quản Trị Danh Mục Gói Decor Tiệc Cưới';
+                breadcrumbTab.innerText = 'Gói decor tiệc cưới';
+                headerTitle.innerText = 'Quản lý gói decor tiệc cưới';
                 btnCreateLabel.innerText = 'Thêm gói Decor';
                 inputSearch.placeholder = 'Tìm mã gói, tên chủ đề decor...';
                 labelCat.innerText = 'Phong cách:';
@@ -779,7 +779,7 @@
                 containerDecor.classList.add('hidden');
 
                 breadcrumbTab.innerText = 'Dịch vụ đi kèm';
-                headerTitle.innerText = 'Quản Trị Danh Mục Dịch Vụ Đi Kèm';
+                headerTitle.innerText = 'Quản lý dịch vụ đi kèm';
                 btnCreateLabel.innerText = 'Thêm dịch vụ mới';
                 inputSearch.placeholder = 'Tìm mã DV, tên dịch vụ, nhân sự...';
                 labelCat.innerText = 'Loại dịch vụ:';

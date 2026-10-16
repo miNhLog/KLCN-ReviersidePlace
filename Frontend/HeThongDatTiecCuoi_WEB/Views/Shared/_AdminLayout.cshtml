@@ -47,6 +47,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap"
           rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;subset=vietnamese&amp;display=swap"
+          rel="stylesheet" />
     <link rel="stylesheet"
           href="~/css/admin-hall.css"
           asp-append-version="true" />
@@ -56,13 +58,16 @@
     <link rel="stylesheet"
           href="~/css/admin-common.css"
           asp-append-version="true" />
+    @if (isManager) { <link rel="stylesheet" href="~/css/manager-theme.css" asp-append-version="true" /> }
     @if (isAdmin || isManager) { <link rel="stylesheet" href="~/css/notifications.css" asp-append-version="true" /> }
 
     <link rel="stylesheet" href="~/css/ui-format.css" asp-append-version="true" />
     @await RenderSectionAsync("Styles", required: false)
+    <link rel="stylesheet" href="~/css/backoffice-theme.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/backoffice-page-header.css" asp-append-version="true" />
 </head>
-<body>
-    <div class="admin-layout">
+<body class="backoffice-app @(isManager ? "manager-theme" : string.Empty)">
+    <div class="admin-layout backoffice-shell @(isManager ? "manager-theme-shell" : string.Empty)">
         <button type="button"
                 class="mobile-sidebar-toggle"
                 id="mobileSidebarToggle"

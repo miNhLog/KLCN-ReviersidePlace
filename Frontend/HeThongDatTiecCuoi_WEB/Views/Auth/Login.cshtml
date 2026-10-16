@@ -49,13 +49,13 @@
                 }
 
                 <div class="field">
-                    <label asp-for="Identifier">EMAIL HOẶC SỐ ĐIỆN THOẠI <i>*</i></label>
+                    <label asp-for="Identifier">Email hoặc số điện thoại <i>*</i></label>
                     <div class="input-wrap"><span class="material-symbols-outlined" aria-hidden="true">person</span><input asp-for="Identifier" autocomplete="username" /></div>
                     <span asp-validation-for="Identifier" class="field-error"></span>
                 </div>
 
                 <div class="field">
-                    <label asp-for="Password">MẬT KHẨU <i>*</i></label>
+                    <label asp-for="Password">Mật khẩu <i>*</i></label>
                     <div class="input-wrap"><span class="material-symbols-outlined" aria-hidden="true">lock</span><input asp-for="Password" autocomplete="current-password" /><button class="toggle-password" type="button" aria-label="Hiện mật khẩu"><span class="material-symbols-outlined" aria-hidden="true">visibility</span></button></div>
                     <span asp-validation-for="Password" class="field-error"></span>
                 </div>
@@ -78,7 +78,7 @@
                     <h3>Quên mật khẩu</h3>
                     <p class="password-reset-description">Nhập email của tài khoản để nhận mã OTP gồm 6 chữ số.</p>
                     <div class="field">
-                        <label for="resetEmail">ĐỊA CHỈ EMAIL <i>*</i></label>
+                        <label for="resetEmail">Địa chỉ email <i>*</i></label>
                         <div class="input-wrap"><span class="material-symbols-outlined" aria-hidden="true">mail</span><input id="resetEmail" name="Email" type="email" autocomplete="email" required placeholder="example@email.com" /></div>
                     </div>
                     <button class="primary-button" id="sendResetOtpButton" type="submit">Gửi mã OTP</button>
@@ -90,7 +90,7 @@
                     <p class="password-reset-description">Mã đã được gửi tới <strong id="resetEmailDisplay"></strong> và có hiệu lực trong 5 phút.</p>
                     <input id="verifyResetEmail" name="Email" type="hidden" />
                     <div class="field">
-                        <label for="resetOtpCode">MÃ OTP <i>*</i></label>
+                        <label for="resetOtpCode">Mã OTP <i>*</i></label>
                         <div class="input-wrap otp-code-input"><span class="material-symbols-outlined" aria-hidden="true">pin</span><input id="resetOtpCode" name="OtpCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" required placeholder="000000" /></div>
                     </div>
                     <button class="primary-button" type="submit">Xác minh mã</button>
@@ -102,8 +102,8 @@
                     <input id="resetGrant" name="ResetToken" type="hidden" />
                     <h3>Tạo mật khẩu mới</h3>
                     <p class="password-reset-description">Mật khẩu phải có chữ hoa, chữ thường, số và ký tự đặc biệt.</p>
-                    <div class="field"><label for="resetNewPassword">MẬT KHẨU MỚI <i>*</i></label><div class="input-wrap"><span class="material-symbols-outlined" aria-hidden="true">password</span><input id="resetNewPassword" name="NewPassword" type="password" autocomplete="new-password" minlength="8" required /><button class="toggle-password" type="button" aria-label="Hiện mật khẩu"><span class="material-symbols-outlined" aria-hidden="true">visibility</span></button></div></div>
-                    <div class="field"><label for="resetConfirmPassword">XÁC NHẬN MẬT KHẨU <i>*</i></label><div class="input-wrap"><span class="material-symbols-outlined" aria-hidden="true">verified_user</span><input id="resetConfirmPassword" name="ConfirmPassword" type="password" autocomplete="new-password" minlength="8" required /><button class="toggle-password" type="button" aria-label="Hiện mật khẩu"><span class="material-symbols-outlined" aria-hidden="true">visibility</span></button></div></div>
+                    <div class="field"><label for="resetNewPassword">Mật khẩu mới <i>*</i></label><div class="input-wrap"><span class="material-symbols-outlined" aria-hidden="true">password</span><input id="resetNewPassword" name="NewPassword" type="password" autocomplete="new-password" minlength="8" required /><button class="toggle-password" type="button" aria-label="Hiện mật khẩu"><span class="material-symbols-outlined" aria-hidden="true">visibility</span></button></div></div>
+                    <div class="field"><label for="resetConfirmPassword">Xác nhận mật khẩu <i>*</i></label><div class="input-wrap"><span class="material-symbols-outlined" aria-hidden="true">verified_user</span><input id="resetConfirmPassword" name="ConfirmPassword" type="password" autocomplete="new-password" minlength="8" required /><button class="toggle-password" type="button" aria-label="Hiện mật khẩu"><span class="material-symbols-outlined" aria-hidden="true">visibility</span></button></div></div>
                     <button class="primary-button" type="submit">Cập nhật mật khẩu</button>
                 </form>
 
