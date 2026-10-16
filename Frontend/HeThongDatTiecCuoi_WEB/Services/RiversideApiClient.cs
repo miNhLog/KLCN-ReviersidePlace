@@ -28,10 +28,12 @@ public sealed class RiversideApiClient : IRiversideApiClient
         PropertyNameCaseInsensitive = true
     };
     private readonly HttpClient _httpClient;
+    private readonly ProjectImageCatalog _projectImages;
 
-    public RiversideApiClient(HttpClient httpClient)
+    public RiversideApiClient(HttpClient httpClient, ProjectImageCatalog projectImages)
     {
         _httpClient = httpClient;
+        _projectImages = projectImages;
     }
 
     public Task<ApiCallResult<EventCoordinationListResponseViewModel>> GetManagerEventCoordinationAsync(
@@ -237,27 +239,8 @@ public sealed class RiversideApiClient : IRiversideApiClient
             {
                 foreach (var hall in result.Value)
                 {
-                    if (string.IsNullOrWhiteSpace(hall.ImageUrl))
-                    {
-                        continue;
-                    }
-
-                    if (Uri.TryCreate(hall.ImageUrl, UriKind.Absolute, out var absoluteImageUrl))
-                    {
-                        if (absoluteImageUrl.Scheme is not ("http" or "https"))
-                        {
-                            hall.ImageUrl = null;
-                        }
-                    }
-                    else
-                    {
-                        hall.ImageUrl = Uri.TryCreate(
-                            _httpClient.BaseAddress,
-                            hall.ImageUrl.TrimStart('/'),
-                            out var resolvedImageUrl)
-                            ? resolvedImageUrl.ToString()
-                            : null;
-                    }
+                    hall.ImageUrl = _projectImages.GetImage("HallCovers", hall.HallName)
+                        ?? ResolvePublicImageUrl(hall.ImageUrl);
                 }
             }
 
@@ -297,7 +280,7 @@ public sealed class RiversideApiClient : IRiversideApiClient
             if (result.Value is not null)
             {
                 foreach (var hall in result.Value.Items)
-                    hall.ImageUrl = ResolvePublicImageUrl(hall.ImageUrl);
+                    hall.ImageUrl = _projectImages.GetImage("HallCovers", hall.HallName) ?? ResolvePublicImageUrl(hall.ImageUrl);
             }
 
             return result;
@@ -319,7 +302,7 @@ public sealed class RiversideApiClient : IRiversideApiClient
 
             if (result.Value is not null)
             {
-                result.Value.ImageUrl = ResolvePublicImageUrl(result.Value.ImageUrl);
+                result.Value.ImageUrl = _projectImages.GetImage("HallCovers", result.Value.HallName) ?? ResolvePublicImageUrl(result.Value.ImageUrl);
                 result.Value.ImageUrls = result.Value.ImageUrls
                     .Select(ResolvePublicImageUrl)
                     .Where(url => !string.IsNullOrWhiteSpace(url))
@@ -388,7 +371,7 @@ public sealed class RiversideApiClient : IRiversideApiClient
             {
                 foreach (var dish in result.Value.Dishes)
                 {
-                    dish.ImageUrl = ResolvePublicImageUrl(dish.ImageUrl);
+                    dish.ImageUrl = _projectImages.GetImage("Dishes", dish.DishCode) ?? ResolvePublicImageUrl(dish.ImageUrl);
                 }
             }
 
@@ -422,7 +405,7 @@ public sealed class RiversideApiClient : IRiversideApiClient
             if (result.Value is not null && _httpClient.BaseAddress is not null)
             {
                 foreach (var dish in result.Value)
-                    dish.ImageUrl = ResolvePublicImageUrl(dish.ImageUrl);
+                    dish.ImageUrl = _projectImages.GetImage("Dishes", dish.DishCode) ?? ResolvePublicImageUrl(dish.ImageUrl);
             }
 
             return result;
@@ -464,7 +447,7 @@ public sealed class RiversideApiClient : IRiversideApiClient
             if (result.Value is not null)
             {
                 foreach (var package in result.Value.Items)
-                    package.ImageUrl = ResolvePublicImageUrl(package.ImageUrl);
+                    package.ImageUrl = _projectImages.GetImage("DecorPackages", package.PackageName) ?? ResolvePublicImageUrl(package.ImageUrl);
             }
 
             return result;
@@ -491,7 +474,7 @@ public sealed class RiversideApiClient : IRiversideApiClient
                 cancellationToken);
 
             if (result.Value is not null)
-                result.Value.ImageUrl = ResolvePublicImageUrl(result.Value.ImageUrl);
+                result.Value.ImageUrl = _projectImages.GetImage("DecorPackages", result.Value.PackageName) ?? ResolvePublicImageUrl(result.Value.ImageUrl);
 
             return result;
         }
@@ -1091,7 +1074,7 @@ public sealed class RiversideApiClient : IRiversideApiClient
             cancellationToken);
     }
 
-    public Task<ApiCallResult<Models.ManagerDish.ManagerDishPageViewModel>> GetManagerDishesAsync(
+    public async Task<ApiCallResult<Models.ManagerDish.ManagerDishPageViewModel>> GetManagerDishesAsync(
         string? keyword, string? category, string? status, int page, int pageSize,
         string accessToken, CancellationToken cancellationToken)
     {
@@ -1099,8 +1082,14 @@ public sealed class RiversideApiClient : IRiversideApiClient
         if (!string.IsNullOrWhiteSpace(keyword)) query.Add($"keyword={Uri.EscapeDataString(keyword.Trim())}");
         if (!string.IsNullOrWhiteSpace(category)) query.Add($"category={Uri.EscapeDataString(category.Trim())}");
         if (!string.IsNullOrWhiteSpace(status)) query.Add($"status={Uri.EscapeDataString(status.Trim())}");
-        return SendJsonAsync<Models.ManagerDish.ManagerDishPageViewModel>(HttpMethod.Get,
+        var result = await SendJsonAsync<Models.ManagerDish.ManagerDishPageViewModel>(HttpMethod.Get,
             "api/dishes/management?" + string.Join("&", query), null, accessToken, cancellationToken);
+        if (result.Value is not null)
+        {
+            foreach (var dish in result.Value.Items)
+                dish.ImageUrl = _projectImages.GetImage("Dishes", dish.DishCode) ?? ResolvePublicImageUrl(dish.ImageUrl);
+        }
+        return result;
     }
 
     public Task<ApiCallResult<Models.ManagerDish.ManagerDishDetailViewModel>> GetManagerDishDetailAsync(

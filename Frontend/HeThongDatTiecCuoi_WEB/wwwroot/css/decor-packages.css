@@ -382,6 +382,8 @@
     background: #fdfbf7;
 }
 
+.decor-detail-overview .hall-detail-photo { margin: 0; }
+
 .decor-detail-overview {
     display: grid;
     grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr);
