@@ -17,7 +17,12 @@
             <a class="@(activePage == "home" ? "active" : null)" asp-controller="Home" asp-action="Index" asp-route-publicSite="@(isInternalUser ? "true" : null)" aria-current="@(activePage == "home" ? "page" : null)">Trang chủ</a>
             <a class="@(activePage == "halls" ? "active" : null)" asp-controller="Halls" asp-action="Index" aria-current="@(activePage == "halls" ? "page" : null)">Sảnh tiệc</a>
             <a class="@(activePage == "menus" ? "active" : null)" asp-controller="Menus" asp-action="Index" aria-current="@(activePage == "menus" ? "page" : null)">Thực đơn</a>
-            <a href="#" data-coming-soon>Gói trang trí</a>
+            <a class="@(activePage == "decor-packages" ? "active" : null)"
+               asp-controller="DecorPackages"
+               asp-action="Index"
+               aria-current="@(activePage == "decor-packages" ? "page" : null)">
+                Gói trang trí
+            </a>
             <a class="@(activePage == "recommendation" ? "active" : null)" asp-controller="Recommendation" asp-action="Index" aria-current="@(activePage == "recommendation" ? "page" : null)">Gợi ý gói tiệc</a>
             <a asp-controller="MyBooking" asp-action="Index" class="@(activePage == "my-bookings" ? "active" : null)" aria-current="@(activePage == "my-bookings" ? "page" : null)">
                 Tiệc của tôi
@@ -67,7 +72,12 @@
         <a asp-controller="Home" asp-action="Index" asp-route-publicSite="@(isInternalUser ? "true" : null)" aria-current="@(activePage == "home" ? "page" : null)">Trang chủ</a>
         <a asp-controller="Halls" asp-action="Index" aria-current="@(activePage == "halls" ? "page" : null)">Sảnh tiệc</a>
         <a class="@(activePage == "menus" ? "active" : null)" asp-controller="Menus" asp-action="Index" aria-current="@(activePage == "menus" ? "page" : null)">Thực đơn</a>
-        <a href="#" data-coming-soon>Gói trang trí</a>
+        <a class="@(activePage == "decor-packages" ? "active" : null)"
+           asp-controller="DecorPackages"
+           asp-action="Index"
+           aria-current="@(activePage == "decor-packages" ? "page" : null)">
+            Gói trang trí
+        </a>
         <a class="@(activePage == "recommendation" ? "active" : null)" asp-controller="Recommendation" asp-action="Index" aria-current="@(activePage == "recommendation" ? "page" : null)">Gợi ý gói tiệc</a>
         <a asp-controller="MyBooking" asp-action="Index">Tiệc của tôi</a>
     </nav>

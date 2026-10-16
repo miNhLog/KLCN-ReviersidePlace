@@ -16,6 +16,7 @@ using HeThongDatTiecCuoi_WEB.Models.ManagerHr;
 using HeThongDatTiecCuoi_WEB.Models.ManagerContractPayment;
 using HeThongDatTiecCuoi_WEB.Models.ManagerEventCoordination;
 using Microsoft.AspNetCore.Mvc;
+using HeThongDatTiecCuoi_WEB.Models.DecorPackages;
 
 public interface IRiversideApiClient
 {
@@ -119,6 +120,17 @@ public interface IRiversideApiClient
     Task<ApiCallResult<List<PublicDishDto>>> GetPublicDishesAsync(
         string? keyword,
         string? category,
+        CancellationToken cancellationToken);
+
+    Task<ApiCallResult<PublicDecorPackageListResponse>> GetPublicDecorPackagesAsync(
+    string? keyword,
+    string? sort,
+    int page,
+    int pageSize,
+    CancellationToken cancellationToken);
+
+    Task<ApiCallResult<PublicDecorPackageDto>> GetPublicDecorPackageAsync(
+        int decorationPackageId,
         CancellationToken cancellationToken);
 
     Task<ApiCallResult<List<HallDto>>> GetHallsAsync(
