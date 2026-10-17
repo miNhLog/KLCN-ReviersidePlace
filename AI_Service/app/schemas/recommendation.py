@@ -72,3 +72,5 @@ class RecommendationResponse(BaseModel):
     total_candidates_evaluated: int = 0
     top_3: List[RecommendationItem] = Field(default_factory=list)
     algorithm_notice: Optional[str] = None
+    # TODO-6: nguon trong so hybrid (learned:hybrid_weights.json ... / default-unlearned).
+    weights_source: Optional[str] = None

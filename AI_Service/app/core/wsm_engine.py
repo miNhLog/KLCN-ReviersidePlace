@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 from typing import Dict, List, Tuple
 
-from .config import DEFAULT_WEIGHTS, OVER_BUDGET_TOLERANCE_VND
+from .config import DEFAULT_WEIGHTS, OVER_BUDGET_TOLERANCE_VND, budget_tolerance
 
 _catalog_cache: Dict = {}
 _weights_cache: Dict = {}
@@ -77,17 +77,19 @@ def score_candidate(budget: float, table_count: int, desired_style: str,
     menu_total = float(menu_price) * int(table_count)
     services_price = float(sum(svc_price_map.get(s, 0) for s in included))
     total = float(menu_total + hall["base_price"] + decor["price"] + services_price)
-    # Điểm ngân sách r1: ưu tiên trong ngân sách, vượt nhẹ ≤ 10tr điểm trung bình,
-    # vượt nhiều phạt nặng để không lọt Top 3.
+    # Diem ngan sach r1: uu tien trong ngan sach, vuot nhe <= Δ diem trung binh,
+    # vuot nhieu phat nang de khong lot Top 3. Δ = min(10tr, 5% budget) theo prompt.txt.
     over = total - float(budget)
+    tol = float(budget_tolerance(budget))
+    soft = tol / 2.0
     if over <= 0:
         r1 = max(0.0, 1.0 - abs(total - budget) / max(1.0, float(budget)))
-    elif over <= 5_000_000:
-        r1 = 0.70 - (over / 5_000_000) * 0.05
-    elif over <= 10_000_000:
-        r1 = 0.65 - ((over - 5_000_000) / 5_000_000) * 0.10
+    elif over <= soft:
+        r1 = 0.70 - (over / soft) * 0.05
+    elif over <= tol:
+        r1 = 0.65 - ((over - soft) / soft) * 0.10
     else:
-        extra_tens = (over - 10_000_000) / 10_000_000
+        extra_tens = (over - tol) / tol
         r1 = max(0.0, 0.45 - extra_tens * 0.08)
     r2 = max(0.0, 1.0 - abs(int(table_count) - hall["optimal_tables"]) / max(1.0, float(hall["max_tables"])))
     r3 = style_score(desired_style, decor["style"], groups)
@@ -105,7 +107,7 @@ def _fmt_vnd(value: float) -> str:
         s = f"{value:,.0f}"
     except (ValueError, TypeError):
         s = "0"
-    return s.replace(",", ".") + " \u0111"
+    return s.replace(",", ".") + " đ"
 
 
 def build_explanation(hall: Dict, decor: Dict, desired_style: str, budget: float,
@@ -116,24 +118,24 @@ def build_explanation(hall: Dict, decor: Dict, desired_style: str, budget: float
     pct = (abs(diff) / float(budget) * 100) if float(budget) > 0 else 0.0
     saved_tr = abs(diff) / 1_000_000
     if diff >= 0:
-        args.append(f"Chi ph\u00ed: Ti\u1ebft ki\u1ec7m {_fmt_vnd(diff)} ({saved_tr:.1f} tri\u1ec7u, {pct:.1f}%) so v\u1edbi ng\u00e2n s\u00e1ch.")
+        args.append(f"Chi phí: Tiết kiệm {_fmt_vnd(diff)} ({saved_tr:.1f} triệu, {pct:.1f}%) so với ngân sách.")
     else:
-        args.append(f"Chi ph\u00ed: V\u01b0\u1ee3t {_fmt_vnd(abs(diff))} ({saved_tr:.1f} tri\u1ec7u, {pct:.1f}%) so v\u1edbi ng\u00e2n s\u00e1ch, c\u00e2n nh\u1eafc \u0111i\u1ec1u ch\u1ec9nh.")
+        args.append(f"Chi phí: Vượt {_fmt_vnd(abs(diff))} ({saved_tr:.1f} triệu, {pct:.1f}%) so với ngân sách, cân nhắc điều chỉnh.")
     span = hall["max_tables"] - hall["min_tables"]
     use_ratio = (table_count - hall["min_tables"]) / span if span > 0 else 1.0
     use_ratio = max(0.0, min(1.0, use_ratio))
-    args.append(f"S\u1ee9c ch\u1ee9a: {table_count} b\u00e0n \u0111\u1ea1t l\u1ea5p \u0111\u1ea7y {use_ratio*100:.1f}% s\u1ea3nh {hall['hall_name']} ({hall['min_tables']}-{hall['max_tables']} b\u00e0n, t\u1ed1i \u01b0u {hall['optimal_tables']} b\u00e0n).")
+    args.append(f"Sức chứa: {table_count} bàn đạt lấp đầy {use_ratio*100:.1f}% sảnh {hall['hall_name']} ({hall['min_tables']}-{hall['max_tables']} bàn, tối ưu {hall['optimal_tables']} bàn).")
     if r_parts["r3"] >= 1.0:
-        args.append(f"Phong c\u00e1ch: '{decor['style']}' kh\u1edbp 100% v\u1edbi mong mu\u1ed1n '{desired_style}'.")
+        args.append(f"Phong cách: '{decor['style']}' khớp 100% với mong muốn '{desired_style}'.")
     elif r_parts["r3"] >= 0.5:
-        args.append(f"Phong c\u00e1ch: '{decor['decor_name']}' ({decor['style']}) c\u00f9ng nh\u00f3m t\u01b0\u01a1ng \u0111\u1ed3ng v\u1edbi '{desired_style}' (kh\u1edbp 50%).")
+        args.append(f"Phong cách: '{decor['decor_name']}' ({decor['style']}) cùng nhóm tương đồng với '{desired_style}' (khớp 50%).")
     else:
-        args.append(f"Phong c\u00e1ch: '{decor['decor_name']}' ({decor['style']}) kh\u00e1c v\u1edbi '{desired_style}' (kh\u1edbp 0%), b\u00f9 l\u1ea1i b\u1eb1ng chi ph\u00ed v\u00e0 s\u1ee9c ch\u1ee9a.")
+        args.append(f"Phong cách: '{decor['decor_name']}' ({decor['style']}) khác với '{desired_style}' (khớp 0%), bù lại bằng chi phí và sức chứa.")
     if len(priority) == 0:
-        args.append("D\u1ecbch v\u1ee5: kh\u00e1ch kh\u00f4ng ch\u1ecdn DV \u01b0u ti\u00ean, g\u00f3i \u0111\u00e1p \u1ee9ng linh ho\u1ea1t 100% d\u1ecbch v\u1ee5 \u0111i k\u00e8m.")
+        args.append("Dịch vụ: khách không chọn DV ưu tiên, gói đáp ứng linh hoạt 100% dịch vụ đi kèm.")
     else:
         hit = len(set(priority) & set(included))
-        args.append(f"D\u1ecbch v\u1ee5: \u0111\u00e1p \u1ee9ng {hit}/{len(priority)} DV \u01b0u ti\u00ean ({hit/len(priority)*100:.0f}%).")
+        args.append(f"Dịch vụ: đáp ứng {hit}/{len(priority)} DV ưu tiên ({hit/len(priority)*100:.0f}%).")
     return args
 
 
@@ -165,7 +167,7 @@ def rank_top3(request) -> Tuple[List[Dict], int]:
                 svc_map = {s["service_id"]: s["price"] for s in catalog["services"]}
                 est_services = sum(svc_map.get(s, 0) for s in priority)
                 est_total = menu["price_per_table"] * table_count + hall["base_price"] + decor["price"] + est_services
-                if est_total > budget + OVER_BUDGET_TOLERANCE_VND:
+                if est_total > budget + budget_tolerance(budget):
                     continue
                 included = list(priority)
                 s, parts, total = score_candidate(budget, table_count, request.desired_style,

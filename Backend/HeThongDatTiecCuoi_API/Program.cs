@@ -137,6 +137,11 @@ builder.Services
     .Bind(builder.Configuration.GetSection(AiServiceOptions.SectionName))
     .ValidateDataAnnotations()
     .ValidateOnStart();
+builder.Services
+    .AddOptions<PricingPolicyOptions>()
+    .Bind(builder.Configuration.GetSection(PricingPolicyOptions.SectionName))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
 builder.Services.AddHttpClient("AiService", (provider, client) =>
 {
     var options = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<AiServiceOptions>>().Value;

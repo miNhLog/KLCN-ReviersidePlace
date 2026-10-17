@@ -1,0 +1,51 @@
+{
+  "alpha": 0.65,
+  "beta": 0.05,
+  "gamma": 0.30000000000000004,
+  "method": "SLSQP-init + grid-search simplex step 0.025 tren val (seed 257), chon MSE-val thap nhat",
+  "seed": 257,
+  "bounds": {
+    "alpha": [
+      0.0,
+      1.0
+    ],
+    "beta": [
+      0.05,
+      1.0
+    ],
+    "gamma": [
+      0.0,
+      1.0
+    ]
+  },
+  "l2_lambda": 0.001,
+  "grid_step": 0.025,
+  "mse_train": 0.037431254468785057,
+  "mse_val": 0.018775493403637503,
+  "ablation_zero": {
+    "alpha=0": {
+      "alpha": 0.0,
+      "beta": 0.14285714285714285,
+      "gamma": 0.8571428571428572,
+      "mse_train": 0.13055311802722175,
+      "mse_val": 0.1330649465778573
+    },
+    "beta=0": {
+      "alpha": 0.6842105263157895,
+      "beta": 0.0,
+      "gamma": 0.31578947368421056,
+      "mse_train": 0.028700419031791945,
+      "mse_val": 0.01791956975310762
+    },
+    "gamma=0": {
+      "alpha": 0.9285714285714285,
+      "beta": 0.07142857142857142,
+      "gamma": 0.0,
+      "mse_train": 0.0324995735653287,
+      "mse_val": 0.03230677105740247
+    }
+  },
+  "data_source": "SYNTHETIC wedding_dataset_5k.csv",
+  "data_sha256": "c8b833cc1f4d92ad75566c7a9f919055d846161e0b5e7479c79283d58fee8705",
+  "data_note": "Uu tien wedding_reviews_real.csv (>=20 dong), fallback synthetic (xem export_reviews.py)"
+}

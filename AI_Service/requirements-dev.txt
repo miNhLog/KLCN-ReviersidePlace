@@ -1,0 +1,6 @@
+# TODO-7: requirements dev (notebooks/plots/test) — keo theo runtime.
+-r requirements.txt
+matplotlib==3.8.3
+seaborn==0.13.2
+httpx>=0.27
+pytest>=8.0

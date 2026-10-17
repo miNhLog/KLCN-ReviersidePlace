@@ -1,0 +1,12 @@
+# TODO-7: giam context, tranh copy du lieu nang/pycache vao image.
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+data/chroma_db/
+notebooks/output_plots/
+.cache/
+hf-cache/
+.env
+.git/

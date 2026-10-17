@@ -16,6 +16,8 @@ var googleClientSecret = builder.Configuration["Google:ClientSecret"];
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddHttpContextAccessor();
+builder.Services.Configure<HeThongDatTiecCuoi_WEB.Options.RecommendationOptions>(
+    builder.Configuration.GetSection(HeThongDatTiecCuoi_WEB.Options.RecommendationOptions.SectionName));
 builder.Services
     .AddHttpClient<IRiversideApiClient, RiversideApiClient>(client =>
     {
