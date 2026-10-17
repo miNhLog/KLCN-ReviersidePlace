@@ -16,7 +16,7 @@
 .menu-detail-main { padding: 30px 0 72px; background: #fdfbf7; }
 .menu-detail-overview { display: grid; grid-template-columns: minmax(0,1.03fr) minmax(390px,.97fr); overflow: hidden; border: 1px solid #e8dfd1; border-radius: 9px; background: #fff; box-shadow: 0 7px 22px rgba(35,29,20,.055); }
 .menu-detail-photo { min-height: 365px; overflow: hidden; background: #eee7da; }
-.menu-detail-photo img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 68% center; }
+.menu-detail-photo img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center; }
 .menu-detail-summary { display: flex; min-width: 0; flex-direction: column; padding: 27px 30px 25px; }
 .menu-detail-summary h2 { margin-top: 4px; color: #172a3b; font: 600 32px/1.2 "Playfair Display", Georgia, serif; }
 .menu-detail-intro { margin-top: 10px !important; color: #6a645d; font-size: 12px; line-height: 1.65; }
@@ -47,7 +47,7 @@
 .menu-dish-list { padding: 0 13px; }
 .menu-dish-item { display: grid; grid-template-columns: 74px minmax(0,1fr); gap: 10px; align-items: center; min-height: 92px; border-bottom: 1px solid #eee7dc; padding: 9px 0; }
 .menu-dish-item:last-child { border-bottom: 0; }
-.menu-dish-item img { display: block; width: 74px; height: 68px; border-radius: 6px; object-fit: cover; object-position: 68% center; background: #eee7da; }
+.menu-dish-item img { display: block; width: 74px; height: 68px; border-radius: 6px; object-fit: cover; object-position: center; background: #eee7da; }
 .menu-dish-item div { min-width: 0; }
 .menu-dish-item strong { color: #283642; font-size: 11px; line-height: 1.4; overflow-wrap: anywhere; }
 .menu-dishes-empty { display: flex; min-height: 190px; flex-direction: column; align-items: center; justify-content: center; gap: 10px; margin-top: 12px; border: 1px dashed #d9cdbb; border-radius: 8px; background: #fff; color: #686159; text-align: center; }

@@ -62,7 +62,7 @@
                 <div class="home-container">
                     <div class="menu-detail-overview">
                         <figure class="menu-detail-photo">
-                            <img src="@placeholderImage" alt="@Model.MenuName" />
+                            <img src="@(ProjectImages.GetImage("Menus", Model.MenuName) ?? placeholderImage)" alt="@Model.MenuName" data-fallback="@placeholderImage" />
                         </figure>
                         <div class="menu-detail-summary">
                             <span class="menu-detail-label">@Model.MenuCode</span>
