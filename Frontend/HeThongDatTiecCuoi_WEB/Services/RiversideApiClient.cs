@@ -41,6 +41,12 @@ public sealed class RiversideApiClient : IRiversideApiClient
         _httpClient = httpClient;
         _recOptions = recommendationOptions?.Value ?? new RecommendationOptions();
         _recLogger = logger;
+    private readonly ProjectImageCatalog _projectImages;
+
+    public RiversideApiClient(HttpClient httpClient, ProjectImageCatalog projectImages)
+    {
+        _httpClient = httpClient;
+        _projectImages = projectImages;
     }
 
     public Task<ApiCallResult<EventCoordinationListResponseViewModel>> GetManagerEventCoordinationAsync(
@@ -246,27 +252,8 @@ public sealed class RiversideApiClient : IRiversideApiClient
             {
                 foreach (var hall in result.Value)
                 {
-                    if (string.IsNullOrWhiteSpace(hall.ImageUrl))
-                    {
-                        continue;
-                    }
-
-                    if (Uri.TryCreate(hall.ImageUrl, UriKind.Absolute, out var absoluteImageUrl))
-                    {
-                        if (absoluteImageUrl.Scheme is not ("http" or "https"))
-                        {
-                            hall.ImageUrl = null;
-                        }
-                    }
-                    else
-                    {
-                        hall.ImageUrl = Uri.TryCreate(
-                            _httpClient.BaseAddress,
-                            hall.ImageUrl.TrimStart('/'),
-                            out var resolvedImageUrl)
-                            ? resolvedImageUrl.ToString()
-                            : null;
-                    }
+                    hall.ImageUrl = ResolvePublicImageUrl(hall.ImageUrl)
+                        ?? _projectImages.GetImage("HallCovers", hall.HallName);
                 }
             }
 
@@ -306,7 +293,7 @@ public sealed class RiversideApiClient : IRiversideApiClient
             if (result.Value is not null)
             {
                 foreach (var hall in result.Value.Items)
-                    hall.ImageUrl = ResolvePublicImageUrl(hall.ImageUrl);
+                    hall.ImageUrl = ResolvePublicImageUrl(hall.ImageUrl) ?? _projectImages.GetImage("HallCovers", hall.HallName);
             }
 
             return result;
@@ -328,7 +315,7 @@ public sealed class RiversideApiClient : IRiversideApiClient
 
             if (result.Value is not null)
             {
-                result.Value.ImageUrl = ResolvePublicImageUrl(result.Value.ImageUrl);
+                result.Value.ImageUrl = ResolvePublicImageUrl(result.Value.ImageUrl) ?? _projectImages.GetImage("HallCovers", result.Value.HallName);
                 result.Value.ImageUrls = result.Value.ImageUrls
                     .Select(ResolvePublicImageUrl)
                     .Where(url => !string.IsNullOrWhiteSpace(url))
@@ -366,12 +353,19 @@ public sealed class RiversideApiClient : IRiversideApiClient
 
         try
         {
-            return await SendAsync<PublicMenuListResponse>(
+            var result = await SendAsync<PublicMenuListResponse>(
                 HttpMethod.Get,
                 $"api/menus/public?{string.Join('&', query)}",
                 null,
                 null,
                 cancellationToken);
+            if (result.Value is not null)
+            {
+                foreach (var menu in result.Value.Items)
+                    menu.ImageUrl = ResolvePublicImageUrl(menu.ImageUrl)
+                        ?? _projectImages.GetImage("Menus", menu.MenuName);
+            }
+            return result;
         }
         catch (JsonException)
         {
@@ -395,9 +389,13 @@ public sealed class RiversideApiClient : IRiversideApiClient
 
             if (result.Value is not null)
             {
+                result.Value.ImageUrl = ResolvePublicImageUrl(result.Value.ImageUrl)
+                    ?? _projectImages.GetImage("Menus", result.Value.MenuName);
                 foreach (var dish in result.Value.Dishes)
                 {
-                    dish.ImageUrl = ResolvePublicImageUrl(dish.ImageUrl);
+                    dish.ImageUrl = ResolveUploadedImageUrl(dish.ImageUrl)
+                        ?? _projectImages.GetImage("Dishes", dish.DishCode)
+                        ?? ResolvePublicImageUrl(dish.ImageUrl);
                 }
             }
 
@@ -431,7 +429,9 @@ public sealed class RiversideApiClient : IRiversideApiClient
             if (result.Value is not null && _httpClient.BaseAddress is not null)
             {
                 foreach (var dish in result.Value)
-                    dish.ImageUrl = ResolvePublicImageUrl(dish.ImageUrl);
+                    dish.ImageUrl = ResolveUploadedImageUrl(dish.ImageUrl)
+                        ?? _projectImages.GetImage("Dishes", dish.DishCode)
+                        ?? ResolvePublicImageUrl(dish.ImageUrl);
             }
 
             return result;
@@ -473,7 +473,9 @@ public sealed class RiversideApiClient : IRiversideApiClient
             if (result.Value is not null)
             {
                 foreach (var package in result.Value.Items)
-                    package.ImageUrl = ResolvePublicImageUrl(package.ImageUrl);
+                    package.ImageUrl = ResolveUploadedImageUrl(package.ImageUrl)
+                        ?? _projectImages.GetImage("DecorPackages", package.PackageName)
+                        ?? ResolvePublicImageUrl(package.ImageUrl);
             }
 
             return result;
@@ -500,7 +502,9 @@ public sealed class RiversideApiClient : IRiversideApiClient
                 cancellationToken);
 
             if (result.Value is not null)
-                result.Value.ImageUrl = ResolvePublicImageUrl(result.Value.ImageUrl);
+                result.Value.ImageUrl = ResolveUploadedImageUrl(result.Value.ImageUrl)
+                    ?? _projectImages.GetImage("DecorPackages", result.Value.PackageName)
+                    ?? ResolvePublicImageUrl(result.Value.ImageUrl);
 
             return result;
         }
@@ -510,26 +514,41 @@ public sealed class RiversideApiClient : IRiversideApiClient
                 "API trả về dữ liệu chi tiết gói trang trí không hợp lệ.");
         }
     }
-    public Task<ApiCallResult<List<HallDto>>> GetHallsAsync(
+    public async Task<ApiCallResult<List<HallDto>>> GetHallsAsync(
         string accessToken,
-        CancellationToken cancellationToken) =>
-        SendAsync<List<HallDto>>(
+        CancellationToken cancellationToken)
+    {
+        var result = await SendAsync<List<HallDto>>(
             HttpMethod.Get,
             "api/halls",
             null,
             accessToken,
             cancellationToken);
+        if (result.Value is not null)
+        {
+            foreach (var hall in result.Value)
+                hall.ImageUrl = ResolvePublicImageUrl(hall.ImageUrl)
+                    ?? _projectImages.GetImage("HallCovers", hall.HallName);
+        }
+        return result;
+    }
 
-    public Task<ApiCallResult<HallDto>> GetHallByIdAsync(
+    public async Task<ApiCallResult<HallDto>> GetHallByIdAsync(
         int hallId,
         string accessToken,
-        CancellationToken cancellationToken) =>
-        SendAsync<HallDto>(
+        CancellationToken cancellationToken)
+    {
+        var result = await SendAsync<HallDto>(
             HttpMethod.Get,
             $"api/halls/{hallId}",
             null,
             accessToken,
             cancellationToken);
+        if (result.Value is not null)
+            result.Value.ImageUrl = ResolvePublicImageUrl(result.Value.ImageUrl)
+                ?? _projectImages.GetImage("HallCovers", result.Value.HallName);
+        return result;
+    }
 
     public Task<ApiCallResult<HallDto>> CreateHallAsync(
         HallDto model,
@@ -553,6 +572,12 @@ public sealed class RiversideApiClient : IRiversideApiClient
             model,
             accessToken,
             cancellationToken);
+
+    public Task<ApiActionResult> UploadHallImageAsync(
+        int hallId, Stream fileStream, string fileName, string? contentType,
+        string accessToken, CancellationToken cancellationToken) =>
+        UploadImageAsync($"api/halls/{hallId}/image", fileStream, fileName, contentType,
+            accessToken, cancellationToken);
 
     public Task<ApiCallResult<ActionResponseDto>> UpdateHallStatusAsync(
         int hallId,
@@ -937,6 +962,47 @@ public sealed class RiversideApiClient : IRiversideApiClient
             ? resolvedImageUrl.ToString()
             : null;
     }
+
+    private string? ResolveUploadedImageUrl(string? imageUrl)
+    {
+        if (string.IsNullOrWhiteSpace(imageUrl)) return null;
+        if (imageUrl.StartsWith("/uploads/", StringComparison.OrdinalIgnoreCase))
+            return ResolvePublicImageUrl(imageUrl);
+        if (Uri.TryCreate(imageUrl, UriKind.Absolute, out var absolute) &&
+            absolute.AbsolutePath.StartsWith("/uploads/", StringComparison.OrdinalIgnoreCase))
+            return ResolvePublicImageUrl(imageUrl);
+        return null;
+    }
+
+    private async Task<ApiActionResult> UploadImageAsync(
+        string path,
+        Stream fileStream,
+        string fileName,
+        string? contentType,
+        string accessToken,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Post, path);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+            using var multipart = new MultipartFormDataContent();
+            using var fileContent = new StreamContent(fileStream);
+            if (!string.IsNullOrWhiteSpace(contentType))
+                fileContent.Headers.ContentType = MediaTypeHeaderValue.Parse(contentType);
+            multipart.Add(fileContent, "file", fileName);
+            request.Content = multipart;
+
+            using var response = await _httpClient.SendAsync(request, cancellationToken);
+            if (response.IsSuccessStatusCode) return ApiActionResult.Success();
+            var error = await ReadErrorAsync(response, cancellationToken);
+            return ApiActionResult.Failure(error ?? "Không thể tải ảnh lên.");
+        }
+        catch (HttpRequestException)
+        {
+            return ApiActionResult.Failure("Không thể kết nối Backend API.");
+        }
+    }
     public async Task<ApiCallResult<AccountActionResponse>>
     UpdateEmployeeStatusAsync(
         int userId,
@@ -962,7 +1028,7 @@ public sealed class RiversideApiClient : IRiversideApiClient
     // THỰC ĐƠN
     // =========================================================
 
-    public Task<ApiCallResult<List<MenuViewModel>>> GetMenusAsync(
+    public async Task<ApiCallResult<List<MenuViewModel>>> GetMenusAsync(
         string? keyword,
         string? status,
         string accessToken,
@@ -989,23 +1055,37 @@ public sealed class RiversideApiClient : IRiversideApiClient
             uri += "?" + string.Join("&", query);
         }
 
-        return SendJsonAsync<List<MenuViewModel>>(
+        var result = await SendJsonAsync<List<MenuViewModel>>(
             HttpMethod.Get,
             uri,
             null,
             accessToken,
             cancellationToken);
+        if (result.Value is not null)
+        {
+            foreach (var menu in result.Value)
+                menu.ImageUrl = ResolvePublicImageUrl(menu.ImageUrl)
+                    ?? _projectImages.GetImage("Menus", menu.MenuName);
+        }
+        return result;
     }
 
-    public Task<ApiCallResult<Models.ManagerMenu.ManagerMenuPageViewModel>> GetManagerMenusAsync(
+    public async Task<ApiCallResult<Models.ManagerMenu.ManagerMenuPageViewModel>> GetManagerMenusAsync(
         string? keyword, string? status, int page, int pageSize,
         string accessToken, CancellationToken cancellationToken)
     {
         var query = new List<string> { $"page={Math.Max(1, page)}", $"pageSize={pageSize}" };
         if (!string.IsNullOrWhiteSpace(keyword)) query.Add($"keyword={Uri.EscapeDataString(keyword.Trim())}");
         if (!string.IsNullOrWhiteSpace(status)) query.Add($"status={Uri.EscapeDataString(status.Trim())}");
-        return SendJsonAsync<Models.ManagerMenu.ManagerMenuPageViewModel>(
+        var result = await SendJsonAsync<Models.ManagerMenu.ManagerMenuPageViewModel>(
             HttpMethod.Get, "api/menus/management?" + string.Join("&", query), null, accessToken, cancellationToken);
+        if (result.Value is not null)
+        {
+            foreach (var menu in result.Value.Items)
+                menu.ImageUrl = ResolvePublicImageUrl(menu.ImageUrl)
+                    ?? _projectImages.GetImage("Menus", menu.MenuName);
+        }
+        return result;
     }
 
     public Task<ApiCallResult<MenuViewModel>> CreateMenuAsync(
@@ -1041,6 +1121,12 @@ public sealed class RiversideApiClient : IRiversideApiClient
             accessToken,
             cancellationToken);
 
+    public Task<ApiActionResult> UploadMenuImageAsync(
+        int menuId, Stream fileStream, string fileName, string? contentType,
+        string accessToken, CancellationToken cancellationToken) =>
+        UploadImageAsync($"api/menus/{menuId}/image", fileStream, fileName, contentType,
+            accessToken, cancellationToken);
+
     public Task<ApiActionResult> UpdateMenuStatusAsync(
         int menuId,
         string status,
@@ -1058,7 +1144,7 @@ public sealed class RiversideApiClient : IRiversideApiClient
     // MÓN ĂN
     // =========================================================
 
-    public Task<ApiCallResult<List<DishViewModel>>> GetDishesAsync(
+    public async Task<ApiCallResult<List<DishViewModel>>> GetDishesAsync(
         string? keyword,
         string? category,
         string? status,
@@ -1092,15 +1178,23 @@ public sealed class RiversideApiClient : IRiversideApiClient
             uri += "?" + string.Join("&", query);
         }
 
-        return SendJsonAsync<List<DishViewModel>>(
+        var result = await SendJsonAsync<List<DishViewModel>>(
             HttpMethod.Get,
             uri,
             null,
             accessToken,
             cancellationToken);
+        if (result.Value is not null)
+        {
+            foreach (var dish in result.Value)
+                dish.ImageUrl = ResolveUploadedImageUrl(dish.ImageUrl)
+                    ?? _projectImages.GetImage("Dishes", dish.DishCode)
+                    ?? ResolvePublicImageUrl(dish.ImageUrl);
+        }
+        return result;
     }
 
-    public Task<ApiCallResult<Models.ManagerDish.ManagerDishPageViewModel>> GetManagerDishesAsync(
+    public async Task<ApiCallResult<Models.ManagerDish.ManagerDishPageViewModel>> GetManagerDishesAsync(
         string? keyword, string? category, string? status, int page, int pageSize,
         string accessToken, CancellationToken cancellationToken)
     {
@@ -1108,8 +1202,16 @@ public sealed class RiversideApiClient : IRiversideApiClient
         if (!string.IsNullOrWhiteSpace(keyword)) query.Add($"keyword={Uri.EscapeDataString(keyword.Trim())}");
         if (!string.IsNullOrWhiteSpace(category)) query.Add($"category={Uri.EscapeDataString(category.Trim())}");
         if (!string.IsNullOrWhiteSpace(status)) query.Add($"status={Uri.EscapeDataString(status.Trim())}");
-        return SendJsonAsync<Models.ManagerDish.ManagerDishPageViewModel>(HttpMethod.Get,
+        var result = await SendJsonAsync<Models.ManagerDish.ManagerDishPageViewModel>(HttpMethod.Get,
             "api/dishes/management?" + string.Join("&", query), null, accessToken, cancellationToken);
+        if (result.Value is not null)
+        {
+            foreach (var dish in result.Value.Items)
+                dish.ImageUrl = ResolveUploadedImageUrl(dish.ImageUrl)
+                    ?? _projectImages.GetImage("Dishes", dish.DishCode)
+                    ?? ResolvePublicImageUrl(dish.ImageUrl);
+        }
+        return result;
     }
 
     public Task<ApiCallResult<Models.ManagerDish.ManagerDishDetailViewModel>> GetManagerDishDetailAsync(

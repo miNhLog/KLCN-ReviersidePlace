@@ -50,7 +50,19 @@ public sealed class ManagerMenuController : Controller
         var token = Token(); if (token is null) return Unauthorized();
         if (!ModelState.IsValid) { TempData["Error"] = "Vui lòng kiểm tra thông tin thực đơn."; return RedirectToAction(nameof(Index)); }
         var result = await _api.CreateMenuAsync(model, token, cancellationToken);
-        TempData[result.Succeeded ? "Success" : "Error"] = result.Succeeded ? "Thêm thực đơn thành công." : result.Error;
+        if (result.Succeeded && result.Value is not null && model.Image is { Length: > 0 })
+        {
+            await using var stream = model.Image.OpenReadStream();
+            var upload = await _api.UploadMenuImageAsync(result.Value.MenuId, stream,
+                model.Image.FileName, model.Image.ContentType, token, cancellationToken);
+            TempData[upload.Succeeded ? "Success" : "Error"] = upload.Succeeded
+                ? "Thêm thực đơn và ảnh đại diện thành công."
+                : "Đã thêm thực đơn nhưng tải ảnh thất bại: " + upload.Error;
+        }
+        else
+        {
+            TempData[result.Succeeded ? "Success" : "Error"] = result.Succeeded ? "Thêm thực đơn thành công." : result.Error;
+        }
         return RedirectToAction(nameof(Index));
     }
 
@@ -59,7 +71,19 @@ public sealed class ManagerMenuController : Controller
     {
         var token = Token(); if (token is null) return Unauthorized();
         var result = await _api.UpdateMenuAsync(model.MenuId, model, token, cancellationToken);
-        TempData[result.Succeeded ? "Success" : "Error"] = result.Succeeded ? "Cập nhật thực đơn thành công." : result.Error;
+        if (result.Succeeded && model.NewImage is { Length: > 0 })
+        {
+            await using var stream = model.NewImage.OpenReadStream();
+            var upload = await _api.UploadMenuImageAsync(model.MenuId, stream,
+                model.NewImage.FileName, model.NewImage.ContentType, token, cancellationToken);
+            TempData[upload.Succeeded ? "Success" : "Error"] = upload.Succeeded
+                ? "Cập nhật thực đơn và ảnh đại diện thành công."
+                : "Đã cập nhật thực đơn nhưng tải ảnh thất bại: " + upload.Error;
+        }
+        else
+        {
+            TempData[result.Succeeded ? "Success" : "Error"] = result.Succeeded ? "Cập nhật thực đơn thành công." : result.Error;
+        }
         return RedirectToAction(nameof(Index));
     }
 

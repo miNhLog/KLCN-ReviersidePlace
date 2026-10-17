@@ -10,10 +10,12 @@ public sealed class HallsController : Controller
 {
     private const int PageSize = 6;
     private readonly IRiversideApiClient _apiClient;
+    private readonly IWebHostEnvironment _environment;
 
-    public HallsController(IRiversideApiClient apiClient)
+    public HallsController(IRiversideApiClient apiClient, IWebHostEnvironment environment)
     {
         _apiClient = apiClient;
+        _environment = environment;
     }
 
     [HttpGet("")]
@@ -94,7 +96,11 @@ public sealed class HallsController : Controller
             RentalPrice = hall.RentalPrice,
             Description = hall.Description,
             ImageUrl = hall.ImageUrl,
-            ImageUrls = hall.ImageUrls,
+            ImageUrls = hall.ImageUrls
+                .Concat(HallGalleryCatalog.GetImages(hall.HallName, _environment.WebRootPath))
+                .Where(url => !string.IsNullOrWhiteSpace(url))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray(),
             Status = hall.Status,
             StatusName = hall.StatusName
         });

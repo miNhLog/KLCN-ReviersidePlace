@@ -4,6 +4,7 @@ using HeThongDatTiecCuoi_API.Data;
 using HeThongDatTiecCuoi_API.DTOs.DecorService;
 using HeThongDatTiecCuoi_API.Models;
 using HeThongDatTiecCuoi_API.Services;
+using HeThongDatTiecCuoi_API.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -17,11 +18,16 @@ public sealed class AdminDecorServiceController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
     private readonly IStatusService _statusService;
+    private readonly IWebHostEnvironment _environment;
 
-    public AdminDecorServiceController(ApplicationDbContext context, IStatusService statusService)
+    public AdminDecorServiceController(
+        ApplicationDbContext context,
+        IStatusService statusService,
+        IWebHostEnvironment environment)
     {
         _context = context;
         _statusService = statusService;
+        _environment = environment;
     }
 
     [HttpGet("decor")]
@@ -48,6 +54,9 @@ public sealed class AdminDecorServiceController : ControllerBase
                     .FirstOrDefault()
             })
             .ToListAsync();
+
+        foreach (var item in list)
+            item.ImageUrl = ToAbsoluteImageUrl(item.ImageUrl);
 
         return Ok(new { success = true, data = list });
     }
@@ -76,7 +85,7 @@ public sealed class AdminDecorServiceController : ControllerBase
 
         _context.DecorPackages.Add(decor);
         await _context.SaveChangesAsync();
-        return Ok(new { success = true, message = "Thêm gói decor thành công!" });
+        return Ok(new { success = true, id = decor.GoiTrangTriID, message = "Thêm gói decor thành công!" });
     }
 
     [HttpPut("decor/{id:int}")]
@@ -103,7 +112,7 @@ public sealed class AdminDecorServiceController : ControllerBase
         decor.Gia = request.Price;
         decor.StatusId = statusId.Value;
         await _context.SaveChangesAsync();
-        return Ok(new { success = true, message = "Cập nhật gói decor thành công!" });
+        return Ok(new { success = true, id = decor.GoiTrangTriID, message = "Cập nhật gói decor thành công!" });
     }
 
     [HttpGet("service")]
@@ -126,6 +135,10 @@ public sealed class AdminDecorServiceController : ControllerBase
                 StatusName = item.Status.StatusName
             })
             .ToListAsync();
+
+        foreach (var item in list)
+            item.ImageUrl = ToAbsoluteImageUrl(ImageUploadHelper.FindManagedUrl(
+                _environment.WebRootPath, "dich-vu", item.ServiceId.ToString()));
 
         return Ok(new { success = true, data = list });
     }
@@ -154,7 +167,7 @@ public sealed class AdminDecorServiceController : ControllerBase
 
         _context.ServiceItems.Add(service);
         await _context.SaveChangesAsync();
-        return Ok(new { success = true, message = "Thêm dịch vụ thành công!" });
+        return Ok(new { success = true, id = service.DichVuID, message = "Thêm dịch vụ thành công!" });
     }
 
     [HttpPut("service/{id:int}")]
@@ -181,7 +194,59 @@ public sealed class AdminDecorServiceController : ControllerBase
         service.Gia = request.Price;
         service.StatusId = statusId.Value;
         await _context.SaveChangesAsync();
-        return Ok(new { success = true, message = "Cập nhật dịch vụ thành công!" });
+        return Ok(new { success = true, id = service.DichVuID, message = "Cập nhật dịch vụ thành công!" });
+    }
+
+    [HttpPost("decor/{id:int}/image")]
+    [RequestSizeLimit(ImageUploadHelper.MaxRequestSize)]
+    public async Task<IActionResult> UploadDecorImage(int id, [FromForm] IFormFile file)
+    {
+        var existingId = await GetDataStatusIdAsync(DataStatusCodes.Existing);
+        var decor = await _context.DecorPackages
+            .Include(item => item.Images.Where(image => image.DataStatusId == existingId))
+            .SingleOrDefaultAsync(item => item.GoiTrangTriID == id && item.DataStatusId == existingId);
+        if (decor is null) return NotFound(new { success = false, message = "Không tìm thấy gói decor." });
+
+        var validationError = ImageUploadHelper.Validate(file);
+        if (validationError is not null)
+            return BadRequest(new { success = false, message = validationError });
+
+        var oldUrl = decor.Images.FirstOrDefault(image => image.IsPrimary)?.ImagePath;
+        var imageUrl = await ImageUploadHelper.SaveAsync(
+            file, _environment.WebRootPath, "goi-decor", id.ToString(), HttpContext.RequestAborted);
+        var primary = decor.Images.FirstOrDefault(image => image.IsPrimary);
+        if (primary is null)
+        {
+            primary = new ImageAsset
+            {
+                DecorationPackageId = id,
+                IsPrimary = true,
+                SortOrder = 1,
+                DataStatusId = existingId
+            };
+            _context.ImageAssets.Add(primary);
+        }
+        primary.ImagePath = imageUrl;
+        await _context.SaveChangesAsync();
+        ImageUploadHelper.DeleteManagedUrl(oldUrl, _environment.WebRootPath);
+        return Ok(new { success = true, imageUrl = ToAbsoluteImageUrl(imageUrl), message = "Tải ảnh gói decor thành công." });
+    }
+
+    [HttpPost("service/{id:int}/image")]
+    [RequestSizeLimit(ImageUploadHelper.MaxRequestSize)]
+    public async Task<IActionResult> UploadServiceImage(int id, [FromForm] IFormFile file)
+    {
+        var existingId = await GetDataStatusIdAsync(DataStatusCodes.Existing);
+        if (!await _context.ServiceItems.AnyAsync(item => item.DichVuID == id && item.DataStatusId == existingId))
+            return NotFound(new { success = false, message = "Không tìm thấy dịch vụ." });
+
+        var validationError = ImageUploadHelper.Validate(file);
+        if (validationError is not null)
+            return BadRequest(new { success = false, message = validationError });
+
+        var imageUrl = await ImageUploadHelper.SaveAsync(
+            file, _environment.WebRootPath, "dich-vu", id.ToString(), HttpContext.RequestAborted);
+        return Ok(new { success = true, imageUrl = ToAbsoluteImageUrl(imageUrl), message = "Tải ảnh dịch vụ thành công." });
     }
 
     private async Task<int?> ResolveEditableStatusIdAsync(string group, string? requestedCode)
@@ -202,4 +267,11 @@ public sealed class AdminDecorServiceController : ControllerBase
 
     private static string? NormalizeOptional(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    private string? ToAbsoluteImageUrl(string? imageUrl)
+    {
+        if (string.IsNullOrWhiteSpace(imageUrl)) return null;
+        if (Uri.TryCreate(imageUrl, UriKind.Absolute, out var absolute)) return absolute.ToString();
+        return $"{Request.Scheme}://{Request.Host}/{imageUrl.TrimStart('/')}";
+    }
 }

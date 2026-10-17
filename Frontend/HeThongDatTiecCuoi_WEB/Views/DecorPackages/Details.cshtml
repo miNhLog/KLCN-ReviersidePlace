@@ -1,5 +1,6 @@
 ﻿@using System.Globalization
 @model HeThongDatTiecCuoi_WEB.Models.DecorPackages.DecorPackageDetailViewModel
+@using HeThongDatTiecCuoi_WEB.Models
 @{
     var hasPackage =
         !Model.IsNotFound &&
@@ -18,15 +19,12 @@
     var placeholderImage =
         Url.Content("~/images/decor-packages/decor-placeholder.svg");
 
-    var image =
-        string.IsNullOrWhiteSpace(Model.ImageUrl)
-            ? placeholderImage
-            : Model.ImageUrl;
-
     var description =
         string.IsNullOrWhiteSpace(Model.Description)
             ? "Thông tin mô tả gói trang trí chưa được cung cấp."
             : Model.Description;
+    var galleryImages = ProjectImages.GetGallery("DecorGalleryFolders", Model.PackageName).ToList();
+    if (!string.IsNullOrWhiteSpace(Model.ImageUrl)) galleryImages.Insert(0, Model.ImageUrl);
 }
 
 @section Styles {
@@ -38,6 +36,10 @@
 
     <link rel="stylesheet"
           href="~/css/home.css"
+          asp-append-version="true" />
+
+    <link rel="stylesheet"
+          href="~/css/hall-detail.css"
           asp-append-version="true" />
 
     <link rel="stylesheet"
@@ -157,13 +159,7 @@
 
                     <div class="decor-detail-overview">
 
-                        <figure class="decor-detail-photo">
-
-                            <img src="@image"
-                                 alt="@(string.IsNullOrWhiteSpace(Model.ImageUrl) ? "Chưa có hình ảnh gói trang trí" : Model.PackageName)"
-                                 data-fallback="@placeholderImage" />
-
-                        </figure>
+                        <partial name="_ImageGallery" model="new ImageGalleryViewModel { Name = Model.PackageName, Images = galleryImages, Placeholder = placeholderImage }" />
 
                         <div class="decor-detail-summary">
 
@@ -228,4 +224,5 @@
 @section Scripts {
     <script src="~/js/public-site.js"
             asp-append-version="true"></script>
+    <script src="~/js/hall-gallery.js" asp-append-version="true"></script>
 }

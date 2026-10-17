@@ -9,6 +9,8 @@ using System.Globalization;
 const string externalCookieScheme = "External";
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Configuration.AddJsonFile("image-catalog.json", optional: false, reloadOnChange: true);
+builder.Services.AddSingleton<ProjectImageCatalog>();
 var googleClientId = builder.Configuration["Google:ClientId"];
 var googleClientSecret = builder.Configuration["Google:ClientSecret"];
 

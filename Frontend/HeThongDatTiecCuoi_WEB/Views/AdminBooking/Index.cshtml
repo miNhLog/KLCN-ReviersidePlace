@@ -108,6 +108,81 @@
         font-size: 12px;
         flex-shrink: 0;
     }
+
+    .booking-action-trigger {
+        width: 36px;
+        height: 34px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #dce3ea;
+        border-radius: 10px;
+        color: #475569;
+        background: #fff;
+        cursor: pointer;
+        transition: border-color .18s ease, color .18s ease, background .18s ease;
+    }
+
+    .booking-action-trigger:hover,
+    .booking-action-trigger[aria-expanded="true"] {
+        border-color: #c6a15b;
+        color: #8c6d32;
+        background: #fffaf0;
+    }
+
+    .booking-action-popover {
+        position: fixed;
+        inset: auto;
+        width: 210px;
+        margin: 0;
+        padding: 6px;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        background: #fff;
+        box-shadow: 0 16px 38px rgba(15, 23, 42, .16);
+        z-index: 100000;
+    }
+
+    .booking-action-popover::backdrop {
+        background: transparent;
+    }
+
+    .booking-action-item {
+        width: 100%;
+        min-height: 38px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 10px;
+        border: 0;
+        border-radius: 8px;
+        color: #334155;
+        background: transparent;
+        font: inherit;
+        font-size: 12px;
+        font-weight: 650;
+        text-align: left;
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+    .booking-action-item:hover {
+        background: #f8fafc;
+    }
+
+    .booking-action-item i {
+        width: 18px;
+        color: #9a7127;
+        text-align: center;
+    }
+
+    .booking-action-item.danger {
+        color: #dc3355;
+    }
+
+    .booking-action-item.danger i {
+        color: inherit;
+    }
 </style>
 
 <!-- TOAST THÔNG BÁO TỰ ĐỘNG -->
@@ -197,7 +272,7 @@
             </div>
 
             <!-- Lọc theo sảnh -->
-            <div class="flex items-center bg-slate-50 border border-slate-200 rounded-lg px-3 py-1 min-h-[42px] min-w-[200px]">
+            <div class="backoffice-filter-control flex items-center bg-slate-50 border border-slate-200 rounded-lg px-3 py-1 min-h-[42px] min-w-[200px]">
                 <i class="fa-solid fa-building-columns text-slate-500 mr-2 text-xs"></i>
                 <label for="filterHallId" class="text-xs text-slate-500 mr-1.5 whitespace-nowrap font-medium">Sảnh:</label>
                 <select id="filterHallId" onchange="executeFilter(1)" class="w-full bg-transparent text-xs font-semibold text-slate-800 focus:outline-none cursor-pointer pr-1">
@@ -215,7 +290,7 @@
             </div>
 
             <!-- Lọc theo khoảng ngày -->
-            <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 min-h-[42px] text-xs">
+            <div class="backoffice-filter-control flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 min-h-[42px] text-xs">
                 <i class="fa-regular fa-calendar text-slate-500 text-xs"></i>
                 <span class="text-slate-500 font-medium">Từ:</span>
                 <input type="date" id="filterFromDate" class="bg-transparent text-xs text-slate-800 focus:outline-none cursor-pointer">
@@ -333,30 +408,29 @@
                                     }
                                 </td>
                                 <td class="py-3.5 px-4 text-center">
-                                    <div class="inline-flex items-center gap-1.5">
-                                        <button type="button" onclick="viewBookingDetail(@b.BookingId)" class="h-[32px] w-[32px] rounded-lg bg-slate-100 hover:bg-[#B89758]/15 text-[#8C6D32] hover:text-[#B89758] transition-colors flex items-center justify-center" title="Xem chi tiết booking">
-                                            <i class="fa-regular fa-eye text-sm"></i>
+                                    <div class="inline-flex">
+                                        <button type="button" class="booking-action-trigger" onclick="toggleBookingActions(event, 'bookingActions-@b.BookingId')" aria-controls="bookingActions-@b.BookingId" aria-expanded="false" aria-label="Mở thao tác cho booking @b.BookingCode" title="Thao tác">
+                                            <i class="fa-solid fa-ellipsis-vertical"></i>
                                         </button>
+                                        <div id="bookingActions-@b.BookingId" class="booking-action-popover" popover="auto" role="menu">
+                                            <button type="button" class="booking-action-item" onclick="closeBookingActions(); viewBookingDetail(@b.BookingId)" role="menuitem"><i class="fa-regular fa-eye"></i><span>Xem chi tiết</span></button>
                                         @if (isManager && b.HasContract)
                                         {
-                                            <a href="/quan-ly/hop-dong-thanh-toan?contractId=@b.ContractId" class="h-[32px] px-2.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 transition-colors flex items-center justify-center gap-1 text-[10px] font-bold" title="Xem hợp đồng @b.ContractCode"><i class="fa-solid fa-file-contract"></i>@b.ContractCode</a>
+                                            <a href="/quan-ly/hop-dong-thanh-toan?contractId=@b.ContractId" class="booking-action-item" role="menuitem"><i class="fa-solid fa-file-contract"></i><span>Xem hợp đồng @b.ContractCode</span></a>
                                         }
                                         else if (isManager && b.StatusCode == "CONFIRMED")
                                         {
-                                            <a href="/quan-ly/hop-dong-thanh-toan?bookingId=@b.BookingId&amp;openCreate=true" class="h-[32px] px-2.5 rounded-lg bg-[#B89758]/15 hover:bg-[#B89758]/25 text-[#8C6D32] transition-colors flex items-center justify-center gap-1 text-[10px] font-bold" title="Tạo hợp đồng"><i class="fa-solid fa-file-circle-plus"></i>Tạo HĐ</a>
+                                            <a href="/quan-ly/hop-dong-thanh-toan?bookingId=@b.BookingId&amp;openCreate=true" class="booking-action-item" role="menuitem"><i class="fa-solid fa-file-circle-plus"></i><span>Tạo hợp đồng</span></a>
                                         }
                                         @if (b.StatusCode == "PENDING")
                                         {
-                                            <button type="button" onclick="quickUpdateStatus(@b.BookingId, 'CONFIRMED')" class="h-[32px] w-[32px] rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-600 transition-colors flex items-center justify-center" title="Xác nhận đơn tiệc">
-                                                <i class="fa-solid fa-check text-sm"></i>
-                                            </button>
+                                            <button type="button" class="booking-action-item" onclick="closeBookingActions(); quickUpdateStatus(@b.BookingId, 'CONFIRMED')" role="menuitem"><i class="fa-solid fa-check"></i><span>Xác nhận đơn tiệc</span></button>
                                         }
                                         @if (b.StatusCode != "CANCELLED" && b.StatusCode != "COMPLETED")
                                         {
-                                            <button type="button" onclick="cancelBookingPrompt(@b.BookingId)" class="h-[32px] w-[32px] rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-500 transition-colors flex items-center justify-center" title="Hủy đơn tiệc">
-                                                <i class="fa-solid fa-ban text-sm"></i>
-                                            </button>
+                                            <button type="button" class="booking-action-item danger" onclick="closeBookingActions(); cancelBookingPrompt(@b.BookingId)" role="menuitem"><i class="fa-solid fa-ban"></i><span>Hủy đơn tiệc</span></button>
                                         }
+                                        </div>
                                     </div>
                                 </td>
                             </tr>
@@ -679,6 +753,49 @@
             renderPagination(@Model.TotalCount, 1, 10);
         });
 
+        document.addEventListener('toggle', event => {
+            if (!event.target.classList?.contains('booking-action-popover')) return;
+            const trigger = document.querySelector(`[aria-controls="${event.target.id}"]`);
+            if (trigger) trigger.setAttribute('aria-expanded', event.newState === 'open' ? 'true' : 'false');
+        }, true);
+
+        window.addEventListener('resize', closeBookingActions);
+        window.addEventListener('scroll', closeBookingActions, true);
+
+        function closeBookingActions(exceptMenu = null) {
+            document.querySelectorAll('.booking-action-popover:popover-open').forEach(menu => {
+                if (menu !== exceptMenu) menu.hidePopover();
+            });
+        }
+
+        function toggleBookingActions(event, menuId) {
+            event.preventDefault();
+            event.stopPropagation();
+
+            const trigger = event.currentTarget;
+            const menu = document.getElementById(menuId);
+            if (!menu) return;
+
+            const isOpen = menu.matches(':popover-open');
+            closeBookingActions(menu);
+            if (isOpen) {
+                menu.hidePopover();
+                return;
+            }
+
+            menu.showPopover();
+            const triggerRect = trigger.getBoundingClientRect();
+            const menuRect = menu.getBoundingClientRect();
+            const edgeGap = 12;
+            const left = Math.max(edgeGap, Math.min(window.innerWidth - menuRect.width - edgeGap, triggerRect.right - menuRect.width));
+            const top = triggerRect.bottom + menuRect.height + 6 <= window.innerHeight - edgeGap
+                ? triggerRect.bottom + 6
+                : Math.max(edgeGap, triggerRect.top - menuRect.height - 6);
+
+            menu.style.left = `${left}px`;
+            menu.style.top = `${top}px`;
+        }
+
         function showToast(title, msg, isSuccess = true) {
             const toast = document.getElementById('bookingToast');
             const icon = document.getElementById('toastIcon');
@@ -847,27 +964,23 @@
                     : '<i class="fa-regular fa-sun text-amber-500 mr-1"></i>';
 
                 let actionBtns = `
-                    <button type="button" onclick="viewBookingDetail(${id})" class="h-[32px] w-[32px] rounded-lg bg-slate-100 hover:bg-[#B89758]/15 text-[#8C6D32] hover:text-[#B89758] transition-colors flex items-center justify-center" title="Xem chi tiết booking">
-                        <i class="fa-regular fa-eye text-sm"></i>
+                    <button type="button" class="booking-action-item" onclick="closeBookingActions(); viewBookingDetail(${id})" role="menuitem">
+                        <i class="fa-regular fa-eye"></i><span>Xem chi tiết</span>
                     </button>
                 `;
                 if (canManageContracts && hasContract) {
-                    actionBtns += `<a href="/quan-ly/hop-dong-thanh-toan?contractId=${Number(contractId)}" class="h-[32px] px-2.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 transition-colors flex items-center justify-center gap-1 text-[10px] font-bold" title="Xem hợp đồng"><i class="fa-solid fa-file-contract"></i>${safeContractCode}</a>`;
+                    actionBtns += `<a href="/quan-ly/hop-dong-thanh-toan?contractId=${Number(contractId)}" class="booking-action-item" role="menuitem"><i class="fa-solid fa-file-contract"></i><span>Xem hợp đồng ${safeContractCode}</span></a>`;
                 } else if (canManageContracts && statusCode === 'CONFIRMED') {
-                    actionBtns += `<a href="/quan-ly/hop-dong-thanh-toan?bookingId=${id}&openCreate=true" class="h-[32px] px-2.5 rounded-lg bg-[#B89758]/15 hover:bg-[#B89758]/25 text-[#8C6D32] transition-colors flex items-center justify-center gap-1 text-[10px] font-bold" title="Tạo hợp đồng"><i class="fa-solid fa-file-circle-plus"></i>Tạo HĐ</a>`;
+                    actionBtns += `<a href="/quan-ly/hop-dong-thanh-toan?bookingId=${id}&openCreate=true" class="booking-action-item" role="menuitem"><i class="fa-solid fa-file-circle-plus"></i><span>Tạo hợp đồng</span></a>`;
                 }
                 if (statusCode === 'PENDING') {
                     actionBtns += `
-                        <button type="button" onclick="quickUpdateStatus(${id}, 'CONFIRMED')" class="h-[32px] w-[32px] rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-600 transition-colors flex items-center justify-center" title="Xác nhận đơn tiệc">
-                            <i class="fa-solid fa-check text-sm"></i>
-                        </button>
+                        <button type="button" class="booking-action-item" onclick="closeBookingActions(); quickUpdateStatus(${id}, 'CONFIRMED')" role="menuitem"><i class="fa-solid fa-check"></i><span>Xác nhận đơn tiệc</span></button>
                     `;
                 }
                 if (statusCode !== 'CANCELLED' && statusCode !== 'COMPLETED') {
                     actionBtns += `
-                        <button type="button" onclick="cancelBookingPrompt(${id})" class="h-[32px] w-[32px] rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-500 transition-colors flex items-center justify-center" title="Hủy đơn tiệc">
-                            <i class="fa-solid fa-ban text-sm"></i>
-                        </button>
+                        <button type="button" class="booking-action-item danger" onclick="closeBookingActions(); cancelBookingPrompt(${id})" role="menuitem"><i class="fa-solid fa-ban"></i><span>Hủy đơn tiệc</span></button>
                     `;
                 }
 
@@ -909,7 +1022,12 @@
                             ${total} <span class="text-[10px] font-sans text-slate-500 font-normal">đ</span>
                         </td>
                         <td class="py-3.5 px-3 text-center">${badge}</td>
-                        <td class="py-3.5 px-4 text-center"><div class="inline-flex items-center gap-1.5">${actionBtns}</div></td>
+                        <td class="py-3.5 px-4 text-center">
+                            <div class="inline-flex">
+                                <button type="button" class="booking-action-trigger" onclick="toggleBookingActions(event, 'bookingActions-${id}')" aria-controls="bookingActions-${id}" aria-expanded="false" aria-label="Mở thao tác cho booking ${safeCode}" title="Thao tác"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+                                <div id="bookingActions-${id}" class="booking-action-popover" popover="auto" role="menu">${actionBtns}</div>
+                            </div>
+                        </td>
                     </tr>
                 `;
             });

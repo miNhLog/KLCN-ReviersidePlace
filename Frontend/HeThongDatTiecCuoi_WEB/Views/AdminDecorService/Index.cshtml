@@ -155,7 +155,7 @@
                 </div>
 
                 <!-- Category / Style Filter Dropdown -->
-                <div class="flex items-center bg-slate-50 border border-slate-200 rounded-lg px-3 py-1 min-h-[42px] w-full sm:w-auto">
+                <div class="backoffice-filter-control flex items-center bg-slate-50 border border-slate-200 rounded-lg px-3 py-1 min-h-[42px] w-full sm:w-auto">
                     <i id="icon-filter-cat" class="fa-solid fa-palette text-slate-500 mr-2 text-xs flex-shrink-0"></i>
                     <label for="filter-category" id="label-filter-category" class="text-xs text-slate-500 mr-1.5 whitespace-nowrap">Phong cách:</label>
                     <select id="filter-category" onchange="applyFilters()" class="w-full bg-transparent text-xs font-semibold text-slate-800 focus:outline-none cursor-pointer pr-1 min-w-0">
@@ -164,7 +164,7 @@
                 </div>
 
                 <!-- Status Filter Dropdown -->
-                <div class="flex items-center bg-slate-50 border border-slate-200 rounded-lg px-3 py-1 min-h-[42px] w-full sm:w-auto">
+                <div class="backoffice-filter-control flex items-center bg-slate-50 border border-slate-200 rounded-lg px-3 py-1 min-h-[42px] w-full sm:w-auto">
                     <i class="fa-solid fa-toggle-on text-slate-500 mr-2 text-xs flex-shrink-0"></i>
                     <label for="filter-status" class="text-xs text-slate-500 mr-1.5 whitespace-nowrap">Trạng thái:</label>
                     <select id="filter-status" onchange="applyFilters()" class="w-full bg-transparent text-xs font-semibold text-slate-800 focus:outline-none cursor-pointer pr-1 min-w-0">
@@ -532,6 +532,12 @@
     <script>
         // 1. DỮ LIỆU ĐỒNG BỘ 100% CSDL SQL VÀ MẪU
         let currentTab = 'decor';
+        const decorProjectImages = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ProjectImages.GetImages("DecorPackages")));
+        const isUploadedImage = value => {
+            if (!value) return false;
+            try { return new URL(value, window.location.origin).pathname.toLowerCase().startsWith('/uploads/'); }
+            catch { return false; }
+        };
 
         let decorData = [
             {
@@ -711,7 +717,9 @@
                     moTa: item.description || '',
                     spec1: 'Theo cấu hình gói',
                     spec2: 'Theo kế hoạch vận hành',
-                    hinhAnh: item.imageUrl || '',
+                    hinhAnh: isUploadedImage(item.imageUrl)
+                        ? item.imageUrl
+                        : (decorProjectImages[item.packageName] || item.imageUrl || ''),
                     trangThai: item.statusCode === 'ACTIVE' ? 'Áp dụng' : 'Ngừng áp dụng'
                 }));
                 serviceData = (servicePayload.data || []).map(item => ({
@@ -723,7 +731,7 @@
                     moTa: item.description || '',
                     spec1: 'Theo cấu hình dịch vụ',
                     spec2: 'Theo kế hoạch vận hành',
-                    hinhAnh: '',
+                    hinhAnh: item.imageUrl || '',
                     trangThai: item.statusCode === 'ACTIVE' ? 'Áp dụng' : 'Ngừng áp dụng'
                 }));
             } catch (error) {
@@ -1095,6 +1103,7 @@
         // 11. MODAL THÊM MỚI / CHỈNH SỬA
         function openCreateModal() {
             document.getElementById('decorForm').reset();
+            document.getElementById('decor-file-input').value = '';
             document.getElementById('decor-form-id').value = '0';
             document.getElementById('decor-modal-title').innerText = currentTab === 'decor' ? 'Thêm gói Decor mới' : 'Thêm Dịch Vụ Mới';
 
@@ -1113,7 +1122,7 @@
             }
 
             document.getElementById('radio-decor-active').checked = true;
-            document.getElementById('decor-image-preview-card').classList.remove('hidden');
+            document.getElementById('decor-image-preview-card').classList.add('hidden');
             document.getElementById('decorModal').classList.remove('hidden');
         }
 
@@ -1141,6 +1150,8 @@
                 document.getElementById('decor-preview-img').src = item.hinhAnh;
                 document.getElementById('decor-preview-filename').innerText = item.ma + '-cover-image.jpg';
                 document.getElementById('decor-image-preview-card').classList.remove('hidden');
+            } else {
+                document.getElementById('decor-image-preview-card').classList.add('hidden');
             }
 
             document.getElementById('decorModal').classList.remove('hidden');
@@ -1207,6 +1218,22 @@
             if (!response.ok || !result.success) {
                 alert(result.message || 'Không thể lưu danh mục.');
                 return;
+            }
+
+            const imageFile = document.getElementById('decor-file-input').files[0];
+            const savedId = id === 0 ? parseInt(result.id || 0) : id;
+            if (imageFile && savedId > 0) {
+                const imageData = new FormData();
+                imageData.append('file', imageFile);
+                const imageResponse = await fetch(`${endpoint}/${savedId}/image`, {
+                    method: 'POST',
+                    body: imageData
+                });
+                const imageResult = await imageResponse.json();
+                if (!imageResponse.ok || !imageResult.success) {
+                    alert('Đã lưu thông tin nhưng tải ảnh thất bại: ' + (imageResult.message || 'Lỗi không xác định.'));
+                    return;
+                }
             }
 
             closeDecorModal();
