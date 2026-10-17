@@ -1,8 +1,22 @@
 """RAG Engine UC10: ChromaDB (optional) + TF-IDF/hash fallback, chat + entity extraction.
 
+Kien truc Retrieval-Augmented Generation (RAG) theo:
+- Lewis, P., et al. (2020). Retrieval-Augmented Generation for Knowledge-Intensive
+  NLP Tasks. *NeurIPS 33*. Retriever (o day: ChromaDB / TF-IDF fallback) lay Top-K
+  context tu knowledge_base, Generator sinh cau tra loi TIENG VIET co dieu kien
+  tren context + lich su hoi thoai.
+
+Che do sinh (Generator):
+- OFFLINE (mac dinh, khong can key): rule-based ``_rule_based_reply`` trich cau
+  lien quan tu Top chunks + bao gia/chinh sach chuan + cau ket theo slot thieu.
+- ONLINE LLM (khi co OPENAI_API_KEY hoac GEMINI_API_KEY): ``_call_external_llm``
+  goi OpenAI (gpt-4o-mini) hoac Gemini (gemini-1.5-flash) voi prompt dong
+  (Context + lich su + cau hoi), fallback ve rule-based khi loi/timeout.
+
 Persist: AI_Service/data/chroma_db/ (collection riverside_catalog).
 Source : AI_Service/data/knowledge_base/riverside_knowledge.md
 """
+import contextlib
 import hashlib
 import json
 import math
@@ -450,6 +464,36 @@ def search_context(query: str, top_k: int = 3) -> List[Tuple[str, float, Dict]]:
 
 
 # ---------------------------------------------------------------- chat
+def _force_ipv4_enabled() -> bool:
+    return os.getenv("LLM_FORCE_IPV4", "true").strip().lower() in ("1", "true", "yes", "on")
+
+
+@contextlib.contextmanager
+def _force_ipv4():
+    """Ép phân giải/ kết nối ra ngoài dùng IPv4.
+
+    Một số máy Windows có bản ghi AAAA (IPv6) của Google nhưng IPv6 không ra được:
+    ``urlopen`` thử IPv6 trước -> treo/timeout rất lâu hoặc bị chặn trả
+    ``WinError 10013`` (WSAEACCES). IPv4 vẫn OK -> tạm thay ``getaddrinfo`` chỉ
+    trả AF_INET trong lúc gọi LLM. Tắt bằng ``LLM_FORCE_IPV4=false``.
+    """
+    if not _force_ipv4_enabled():
+        yield
+        return
+    import socket as _socket
+
+    original = _socket.getaddrinfo
+
+    def _ipv4_only(host, port, family=0, type=0, proto=0, flags=0):
+        return original(host, port, _socket.AF_INET, type, proto, flags)
+
+    _socket.getaddrinfo = _ipv4_only
+    try:
+        yield
+    finally:
+        _socket.getaddrinfo = original
+
+
 def _call_external_llm(prompt: str) -> Optional[str]:
     # OpenAI (ưu tiên nếu có key)
     openai_key = os.getenv("OPENAI_API_KEY", "").strip()
@@ -465,18 +509,20 @@ def _call_external_llm(prompt: str) -> Optional[str]:
                 "https://api.openai.com/v1/chat/completions", data=payload,
                 headers={"Authorization": f"Bearer {openai_key}",
                          "Content-Type": "application/json"}, method="POST")
-            with urllib.request.urlopen(req, timeout=12) as resp:
-                data = json.loads(resp.read().decode("utf-8"))
-                txt = data["choices"][0]["message"]["content"].strip()
-                if txt:
-                    return txt
+            with _force_ipv4():
+                with urllib.request.urlopen(req, timeout=12) as resp:
+                    data = json.loads(resp.read().decode("utf-8"))
+                    txt = data["choices"][0]["message"]["content"].strip()
+                    if txt:
+                        return txt
         except Exception:
             pass
     gemini_key = os.getenv("GEMINI_API_KEY", "").strip()
     if gemini_key:
         try:
             import urllib.request
-            model = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
+            # gemini-1.5-flash da bi Google shutdown (2026); dung model con phuc vu.
+            model = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
             payload = json.dumps({
                 "contents": [{"parts": [{"text": prompt}]}],
                 "generationConfig": {"maxOutputTokens": 600, "temperature": 0.3},
@@ -486,11 +532,12 @@ def _call_external_llm(prompt: str) -> Optional[str]:
             req = urllib.request.Request(url, data=payload,
                                          headers={"Content-Type": "application/json"},
                                          method="POST")
-            with urllib.request.urlopen(req, timeout=12) as resp:
-                data = json.loads(resp.read().decode("utf-8"))
-                txt = data["candidates"][0]["content"]["parts"][0]["text"].strip()
-                if txt:
-                    return txt
+            with _force_ipv4():
+                with urllib.request.urlopen(req, timeout=12) as resp:
+                    data = json.loads(resp.read().decode("utf-8"))
+                    txt = data["candidates"][0]["content"]["parts"][0]["text"].strip()
+                    if txt:
+                        return txt
         except Exception:
             pass
     return None

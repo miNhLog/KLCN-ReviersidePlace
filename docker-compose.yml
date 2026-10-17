@@ -1,0 +1,80 @@
+name: riverside-palace
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "Riverside@12345"
+      MSSQL_PID: "Express"
+    ports:
+      - "1433:1433"
+    volumes:
+      - riverside-sql:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P Riverside@12345 -C -Q 'SELECT 1'"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+  ai:
+    build:
+      context: ./AI_Service
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    env_file:
+      # UC10: key LLM (OPENAI_API_KEY/GEMINI_API_KEY...) + RAG_EMBEDDINGS.
+      # required:false de compose van chay khi chua tao .env (chatbot fallback offline).
+      - path: ./AI_Service/.env
+        required: false
+    environment:
+      CATALOG_PATH: "/app/data/raw_catalog.json"
+      # UC10: cache model embedding (all-MiniLM-L6-v2 da bake san trong image).
+      HF_HOME: "/app/.cache/hf"
+      # TODO-4: dong bo dung sai ngan sach voi BE PricingPolicy (I" = min(10tr, 5%)).
+      OVER_BUDGET_TOLERANCE_VND: "10000000"
+      OVER_BUDGET_TOLERANCE_PERCENT: "0.05"
+      USE_MIN_TOLERANCE: "true"
+    volumes:
+      # UC10: giu chroma store giua cac lan chay (ingest lai khi rong).
+      - chroma-data:/app/data/chroma_db
+    healthcheck:
+      # TODO-7: healthy that su khi /health ok + catalog nap duoc + co weights_source.
+      test: ["CMD-SHELL", "python -c \"import json,urllib.request; h=json.load(urllib.request.urlopen('http://localhost:8000/health', timeout=5)); assert h.get('status')=='ok' and h.get('catalog_loaded') and h.get('weights_source'), h\""]
+      interval: 20s
+      timeout: 6s
+      retries: 5
+
+  api:
+    build:
+      context: ./Backend/HeThongDatTiecCuoi_API
+      dockerfile: Dockerfile
+    ports:
+      - "5101:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Production"
+      ConnectionStrings__DefaultConnection: "Server=sqlserver;Database=IRiversidePalaceDB;User Id=sa;Password=Riverside@12345;TrustServerCertificate=True;"
+      AiService__BaseUrl: "http://ai:8000/"
+      AiService__TimeoutSeconds: "5"
+      Cors__AllowedOrigins__0: "http://localhost:5102"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      ai:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ./Frontend/HeThongDatTiecCuoi_WEB
+      dockerfile: Dockerfile
+    ports:
+      - "5102:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Production"
+      RiversideApi__BaseUrl: "http://api:8080/"
+    depends_on:
+      - api
+
+volumes:
+  riverside-sql:
+  chroma-data:

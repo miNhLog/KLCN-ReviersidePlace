@@ -60,6 +60,9 @@ public class RecommendationRequestViewModel
     public List<string> SelectedServiceCodes { get; set; } = new();
 
     public string? SpecialRequests { get; set; }
+
+    /// <summary>VĐ2: CustomerId nullable (anonymous=null) → FE gửi userId sang BE suggest-top3-hybrid → AI hybrid/rank.</summary>
+    public int? CustomerId { get; set; }
 }
 
 public class ComboSuggestionViewModel
@@ -144,6 +147,14 @@ public class RecommendationResponseViewModel
     public int Count { get; set; }
     public List<ComboSuggestionViewModel>? Data { get; set; }
     public SuggestedNextViewModel? SuggestedNext { get; set; }
+
+    /// <summary>VĐ2: nguồn gợi ý từ BE envelope (ai-service-hybrid / ai-service-wsm-fallback / fallback-internal / heuristic). Null-safe.</summary>
+    [JsonPropertyName("source")]
+    public string? Source { get; set; }
+
+    /// <summary>VĐ2: nguồn trọng số hybrid từ AI (learned:... / default-unlearned). Null-safe, thiếu field không vỡ.</summary>
+    [JsonPropertyName("weights_source")]
+    public string? WeightsSource { get; set; }
 }
 
 public class SuggestedDateViewModel

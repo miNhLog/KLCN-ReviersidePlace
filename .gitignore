@@ -380,6 +380,21 @@ venv/
 AI_Service/data/chroma_db/
 *.pyc
 .venv/
+
+# Secrets: bien moi truong LLM (OpenAI/Gemini). Giu lai file mau .env.example.
+.env
+*.env
+!.env.example
+AI_Service/.env
+HF_HOME/
+.cache/
+hf-cache/
 # Word & Temp
 *.docx
 ~$*.docx
+
+# File tam & tai lieu ca nhan
+prompt.txt
+*.pdf
+tmp/
+/data/

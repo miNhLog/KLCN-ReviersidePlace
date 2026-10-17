@@ -959,7 +959,14 @@
         }
 
         function renderCombosResult(data, req) {
-            document.getElementById('resNotice').innerText = data.algorithmNotice || data.AlgorithmNotice;
+            data = data || {};
+            // VĐ2: hiển thị nguồn gợi ý + weights_source null-safe (thiếu field không vỡ, không trắng trang).
+            var srcTag = data.source || data.Source || '';
+            var wSrc = data.weights_source || data.weightsSource || data.WeightsSource || '';
+            var baseNotice = data.algorithmNotice || data.AlgorithmNotice || '';
+            var noticeSuffix = (srcTag ? ' [nguồn: ' + srcTag + ']' : '') + (wSrc ? ' • ' + wSrc : '');
+            var noticeEl = document.getElementById('resNotice');
+            if (noticeEl) noticeEl.innerText = baseNotice + noticeSuffix;
             const combos = data.topCombos || data.TopCombos || data.top_3 || data.data || data.Data || [];
             const count = data.count ?? data.Count ?? (Array.isArray(combos) ? combos.length : 0);
             const suggestedNext = data.suggestedNext || data.SuggestedNext || null;
@@ -970,7 +977,8 @@
                 if (cardsBox) cardsBox.innerHTML = '';
                 renderSmartSuggestBox(suggestedNext, req);
                 if (box) box.style.display = 'block';
-                document.getElementById('resNotice').innerText = (data.algorithmNotice || data.AlgorithmNotice || 'Không có combo phù hợp trong ngân sách +10tr hoặc ngày đã kín sảnh.');
+                var emptyEl = document.getElementById('resNotice');
+                if (emptyEl) emptyEl.innerText = (baseNotice || 'Không có combo phù hợp trong ngân sách +10tr hoặc ngày đã kín sảnh.') + noticeSuffix;
                 return;
             }
             if (box) box.style.display = 'none';

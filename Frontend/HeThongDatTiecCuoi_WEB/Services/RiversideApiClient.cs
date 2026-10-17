@@ -20,6 +20,8 @@ using HeThongDatTiecCuoi_WEB.Models.ManagerContractPayment;
 using HeThongDatTiecCuoi_WEB.Models.ManagerEventCoordination;
 using Microsoft.AspNetCore.Mvc;
 using HeThongDatTiecCuoi_WEB.Models.DecorPackages;
+using HeThongDatTiecCuoi_WEB.Options;
+using Microsoft.Extensions.Options;
 
 public sealed class RiversideApiClient : IRiversideApiClient
 {
@@ -28,10 +30,17 @@ public sealed class RiversideApiClient : IRiversideApiClient
         PropertyNameCaseInsensitive = true
     };
     private readonly HttpClient _httpClient;
+    private readonly RecommendationOptions _recOptions;
+    private readonly ILogger<RiversideApiClient>? _recLogger;
 
-    public RiversideApiClient(HttpClient httpClient)
+    public RiversideApiClient(
+        HttpClient httpClient,
+        IOptions<RecommendationOptions>? recommendationOptions = null,
+        ILogger<RiversideApiClient>? logger = null)
     {
         _httpClient = httpClient;
+        _recOptions = recommendationOptions?.Value ?? new RecommendationOptions();
+        _recLogger = logger;
     }
 
     public Task<ApiCallResult<EventCoordinationListResponseViewModel>> GetManagerEventCoordinationAsync(
@@ -1534,7 +1543,9 @@ public sealed class RiversideApiClient : IRiversideApiClient
             cancellationToken);
     }
 
-    // Hệ thống khuyến nghị
+    // VĐ2: mặc định gọi suggest-top3-hybrid (AI hybrid s_final=alpha*s_cf+beta*s_cbf+gamma*S_wsm),
+    // giữ fallback về suggest-top3 (heuristic C#) khi AI timeout (HybridTimeoutSeconds, mặc định 5s).
+    // Tắt khẩn: Recommendation:UseHybridDefault=false → quay về heuristic cũ (<5 phút). Truyền userId (CustomerId nullable, anonymous=null).
     public async Task<ApiCallResult<RecommendationResponseViewModel>> GetTop3RecommendationsAsync(
     RecommendationRequestViewModel request,
     CancellationToken cancellationToken = default)
@@ -1570,10 +1581,39 @@ public sealed class RiversideApiClient : IRiversideApiClient
                 desiredStyle = string.IsNullOrWhiteSpace(request.DesiredStyle)
                     ? "Hiện đại / lãng mạn"
                     : request.DesiredStyle.Trim(),
-                serviceNeeds
+                serviceNeeds,
+                userId = request.CustomerId
             };
-            // Chuỗi endpoint Backend chính xác: api/recommendations/suggest-top3 (heuristic C# nội bộ).
-            // (Endpoint AI riêng là api/recommendations/suggest-top3-ai -> gọi FastAPI http://127.0.0.1:8000/api/v1/ai/wsm/rank)
+
+            var useHybrid = _recOptions.UseHybridDefault;
+            var allowFallback = _recOptions.FallbackToHeuristic;
+            var hybridTimeoutSec = Math.Clamp(_recOptions.HybridTimeoutSeconds <= 0 ? 5 : _recOptions.HybridTimeoutSeconds, 2, 20);
+
+            // Nhánh mặc định VĐ2: thử hybrid trước với timeout riêng (5s), độc lập với HttpClient.Timeout 20s.
+            if (useHybrid)
+            {
+                try
+                {
+                    using var hybridCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                    hybridCts.CancelAfter(TimeSpan.FromSeconds(hybridTimeoutSec));
+                    var hybridResult = await PostRecommendationEnvelopeAsync(
+                        "api/recommendations/suggest-top3-hybrid", backendPayload, tableCount, hybridCts.Token);
+                    if (hybridResult is not null)
+                        return ApiCallResult<RecommendationResponseViewModel>.Success(hybridResult);
+                    _recLogger?.LogWarning("GetTop3Recommendations: hybrid trả rỗng, fallback heuristic={Allow}.", allowFallback);
+                }
+                catch (Exception ex) when (ex is TaskCanceledException || ex is HttpRequestException || ex is JsonException)
+                {
+                    _recLogger?.LogWarning(ex, "GetTop3Recommendations: hybrid lỗi/timeout ({Sec}s), fallback heuristic={Allow}.",
+                        hybridTimeoutSec, allowFallback);
+                }
+                if (!allowFallback)
+                    return ApiCallResult<RecommendationResponseViewModel>.Failure("Hệ thống gợi ý AI đang bận, vui lòng thử lại sau.");
+                // Rơi xuống nhánh heuristic bên dưới (giữ fallback).
+            }
+
+            // Chuỗi endpoint Backend heuristic cũ: api/recommendations/suggest-top3.
+            // (VĐ2 giữ làm fallback + đường tắt khẩn khi UseHybridDefault=false.)
             var response = await _httpClient.PostAsJsonAsync("api/recommendations/suggest-top3", backendPayload, JsonOptions, cancellationToken);
 
             if (!response.IsSuccessStatusCode)
@@ -1584,12 +1624,247 @@ public sealed class RiversideApiClient : IRiversideApiClient
             }
 
             var result = await response.Content.ReadFromJsonAsync<RecommendationResponseViewModel>(JsonOptions, cancellationToken);
-            return ApiCallResult<RecommendationResponseViewModel>.Success(result ?? new RecommendationResponseViewModel());
+            var vm = result ?? new RecommendationResponseViewModel();
+            vm.Source ??= "heuristic";
+            vm.TopCombos ??= new List<ComboSuggestionViewModel>();
+            foreach (var c in vm.TopCombos)
+            {
+                c.Explanations ??= new List<string>();
+                c.RecommendationReasons ??= new List<string>();
+            }
+            if (vm.Data is null) vm.Data = vm.TopCombos;
+            if (vm.Count <= 0) vm.Count = vm.TopCombos.Count;
+            return ApiCallResult<RecommendationResponseViewModel>.Success(vm);
         }
         catch (Exception ex)
         {
             return ApiCallResult<RecommendationResponseViewModel>.Failure($"Không thể kết nối thuật toán khuyến nghị: {ex.Message}");
         }
+    }
+
+    /// <summary>VĐ2: POST envelope {success, source, data} của BE hybrid (data là AI snake_case top_3
+    /// hoặc fallback-internal PascalCase topCombos). Map null-safe sang ViewModel, không ném JsonException.</summary>
+    private async Task<RecommendationResponseViewModel?> PostRecommendationEnvelopeAsync(
+        string requestUri, object backendPayload, int tableCount, CancellationToken cancellationToken)
+    {
+        using var response = await _httpClient.PostAsJsonAsync(requestUri, backendPayload, JsonOptions, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+            return null;
+        var json = await response.Content.ReadAsStringAsync(cancellationToken);
+        if (string.IsNullOrWhiteSpace(json))
+            return null;
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+            var source = GetJsonString(root, "source", "Source");
+            JsonElement dataEl = root;
+            if (root.ValueKind == JsonValueKind.Object && root.TryGetProperty("data", out var d1))
+                dataEl = d1;
+            else if (root.ValueKind == JsonValueKind.Object && root.TryGetProperty("Data", out var d2))
+                dataEl = d2;
+            if (dataEl.ValueKind == JsonValueKind.Null || dataEl.ValueKind == JsonValueKind.Undefined)
+                return null;
+
+            // data là AI hybrid snake_case (top_3) → map thủ công từng item.
+            if (dataEl.ValueKind == JsonValueKind.Object
+                && (HasProperty(dataEl, "top_3") || HasProperty(dataEl, "top3") || HasProperty(dataEl, "Top3")))
+            {
+                var items = GetJsonArray(dataEl, "top_3", "top3", "Top3", "top_3_recommendations");
+                var combos = new List<ComboSuggestionViewModel>();
+                var rank = 0;
+                foreach (var it in items)
+                {
+                    rank++;
+                    combos.Add(MapAiItemToCombo(it, rank, tableCount));
+                }
+                var aiVm = new RecommendationResponseViewModel
+                {
+                    Source = string.IsNullOrWhiteSpace(source) ? "ai-service-hybrid" : source,
+                    WeightsSource = GetJsonString(dataEl, "weights_source", "weightsSource", "WeightsSource"),
+                    AlgorithmNotice = GetJsonString(dataEl, "algorithm_notice", "algorithmNotice", "AlgorithmNotice") ?? string.Empty,
+                    TotalCandidatesEvaluated = GetJsonInt(dataEl, "total_candidates_evaluated", "totalCandidatesEvaluated", "TotalCandidatesEvaluated"),
+                    TopCombos = combos,
+                    AnalyzedAt = DateTime.Now,
+                };
+                aiVm.Data = combos;
+                aiVm.Count = combos.Count;
+                return combos.Count > 0 || aiVm.TotalCandidatesEvaluated >= 0 ? aiVm : null;
+            }
+
+            // data là fallback-internal / heuristic PascalCase → deserialize trực tiếp, null-safe.
+            var raw = dataEl.GetRawText();
+            var heuristic = JsonSerializer.Deserialize<RecommendationResponseViewModel>(raw, JsonOptions)
+                ?? new RecommendationResponseViewModel();
+            heuristic.Source = string.IsNullOrWhiteSpace(heuristic.Source)
+                ? (string.IsNullOrWhiteSpace(source) ? "fallback-internal" : source)
+                : heuristic.Source;
+            heuristic.TopCombos ??= new List<ComboSuggestionViewModel>();
+            foreach (var c in heuristic.TopCombos)
+            {
+                c.Explanations ??= new List<string>();
+                c.RecommendationReasons ??= new List<string>();
+            }
+            if (heuristic.Data is null) heuristic.Data = heuristic.TopCombos;
+            if (heuristic.Count <= 0) heuristic.Count = heuristic.TopCombos.Count;
+            return heuristic;
+        }
+        catch (JsonException ex)
+        {
+            _recLogger?.LogWarning(ex, "PostRecommendationEnvelope: JSON hybrid không đúng contract.");
+            return null;
+        }
+    }
+
+    private static ComboSuggestionViewModel MapAiItemToCombo(JsonElement it, int rank, int tableCount)
+    {
+        var explanations = new List<string>();
+        foreach (var name in new[] { "explanation_arguments", "explanationArguments", "Explanations", "explanations" })
+        {
+            if (it.ValueKind != JsonValueKind.Object) break;
+            if (TryGetPropertyIgnoreCase(it, name, out var arr) && arr.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var e in arr.EnumerateArray())
+                    if (e.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(e.GetString()))
+                        explanations.Add(e.GetString()!);
+                break;
+            }
+        }
+        var services = new List<SuggestedServiceItemViewModel>();
+        if (TryGetPropertyIgnoreCase(it, "included_services", out var svcArr) && svcArr.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var s in svcArr.EnumerateArray())
+            {
+                if (s.ValueKind == JsonValueKind.String)
+                {
+                    var name = s.GetString() ?? string.Empty;
+                    if (!string.IsNullOrWhiteSpace(name))
+                        services.Add(new SuggestedServiceItemViewModel { ServiceCode = name.Trim(), ServiceName = name.Trim() });
+                }
+                else if (s.ValueKind == JsonValueKind.Object)
+                {
+                    services.Add(new SuggestedServiceItemViewModel
+                    {
+                        ServiceCode = GetJsonString(s, "serviceCode", "service_code", "ServiceCode") ?? string.Empty,
+                        ServiceName = GetJsonString(s, "serviceName", "service_name", "ServiceName") ?? "Dịch vụ",
+                        Price = GetJsonDecimal(s, "price", "Price"),
+                        Note = GetJsonString(s, "note", "Note") ?? string.Empty,
+                    });
+                }
+            }
+        }
+        var hallMaxGuests = GetJsonInt(it, "hall_max_guests", "capacity_max_guests", "CapacityMaxGuests", "hallCapacity", "HallCapacity");
+        var combo = new ComboSuggestionViewModel
+        {
+            Rank = GetJsonInt(it, "rank", "Rank") is var r && r > 0 ? r : rank,
+            ComboType = GetJsonString(it, "combo_type", "comboType", "ComboType") ?? "BALANCED",
+            ComboTitle = GetJsonString(it, "combo_title", "comboTitle", "ComboTitle", "combo_name", "comboName") ?? string.Empty,
+            ComboBadge = GetJsonString(it, "combo_badge", "comboBadge", "ComboBadge") ?? string.Empty,
+            OverallMatchScore = GetJsonDouble(it, "matching_score", "matchingScore", "overallMatchScore", "OverallMatchScore"),
+            HallId = GetJsonInt(it, "hall_id", "HallId"),
+            HallName = GetJsonString(it, "hall_name", "HallName") ?? "Sảnh Riverside",
+            HallRentalPrice = GetJsonDecimal(it, "hall_price", "HallPrice", "hallPrice", "hall_rental_price"),
+            HallCapacity = hallMaxGuests,
+            CapacityMinGuests = GetJsonInt(it, "hall_min_guests", "capacity_min_guests", "CapacityMinGuests"),
+            CapacityMaxGuests = hallMaxGuests,
+            CapacityMinTables = GetJsonInt(it, "hall_min_tables", "capacity_min_tables", "CapacityMinTables"),
+            CapacityMaxTables = GetJsonInt(it, "hall_max_tables", "capacity_max_tables", "CapacityMaxTables"),
+            MenuId = GetJsonInt(it, "menu_id", "MenuId"),
+            MenuName = GetJsonString(it, "menu_name", "MenuName") ?? "Thực đơn Riverside",
+            MenuPricePerTable = GetJsonDecimal(it, "price_per_table", "PricePerTable", "menuPricePerTable", "MenuPricePerTable"),
+            MenuTotalPrice = GetJsonDecimal(it, "total_menu_price", "TotalMenuPrice", "menuTotalPrice"),
+            DecorationPackageId = GetJsonInt(it, "decor_id", "DecorationPackageId", "decorationPackageId"),
+            DecorationPackageName = GetJsonString(it, "decor_name", "DecorationPackageName", "decorationPackageName") ?? "Decor Riverside",
+            DecorationStyle = GetJsonString(it, "decor_style", "DecorationStyle", "decorationStyle") ?? string.Empty,
+            DecorationPrice = GetJsonDecimal(it, "decor_price", "DecorationPrice", "decorationPrice"),
+            IncludedServices = services,
+            TotalEstimatedCost = GetJsonDecimal(it, "total_estimated_cost", "TotalEstimatedCost", "totalEstimatedCost"),
+            RecommendationReasons = new List<string>(explanations),
+            Explanations = explanations,
+            ExplanationArguments = new List<string>(explanations),
+        };
+        combo.ComboName = combo.ComboTitle;
+        combo.PackageName = combo.ComboTitle;
+        // VĐ2: MenuTotalPrice = price_per_table * tableCount khi AI thiếu/sai (không gán bằng đơn giá).
+        var expectedMenuTotal = combo.MenuPricePerTable > 0 && tableCount > 0
+            ? combo.MenuPricePerTable * tableCount
+            : 0m;
+        if (combo.MenuTotalPrice <= 0 && expectedMenuTotal > 0)
+            combo.MenuTotalPrice = expectedMenuTotal;
+        else if (expectedMenuTotal > 0 && Math.Abs(combo.MenuTotalPrice - expectedMenuTotal) > 1m)
+            combo.MenuTotalPrice = expectedMenuTotal;
+        return combo;
+    }
+
+    private static bool HasProperty(JsonElement el, string name)
+        => el.ValueKind == JsonValueKind.Object && TryGetPropertyIgnoreCase(el, name, out _);
+
+    private static bool TryGetPropertyIgnoreCase(JsonElement el, string name, out JsonElement value)
+    {
+        value = default;
+        if (el.ValueKind != JsonValueKind.Object) return false;
+        if (el.TryGetProperty(name, out value)) return true;
+        foreach (var p in el.EnumerateObject())
+            if (string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase))
+            {
+                value = p.Value;
+                return true;
+            }
+        return false;
+    }
+
+    private static string? GetJsonString(JsonElement el, params string[] names)
+    {
+        foreach (var n in names)
+            if (TryGetPropertyIgnoreCase(el, n, out var v))
+            {
+                if (v.ValueKind == JsonValueKind.String) return v.GetString();
+                if (v.ValueKind == JsonValueKind.Number) return v.GetRawText();
+            }
+        return null;
+    }
+
+    private static int GetJsonInt(JsonElement el, params string[] names)
+    {
+        foreach (var n in names)
+            if (TryGetPropertyIgnoreCase(el, n, out var v))
+            {
+                if (v.ValueKind == JsonValueKind.Number && v.TryGetInt32(out var i)) return i;
+                if (v.ValueKind == JsonValueKind.Number && v.TryGetDouble(out var dd)) return (int)dd;
+                if (v.ValueKind == JsonValueKind.String && int.TryParse(v.GetString(), out var s)) return s;
+            }
+        return 0;
+    }
+
+    private static decimal GetJsonDecimal(JsonElement el, params string[] names)
+    {
+        foreach (var n in names)
+            if (TryGetPropertyIgnoreCase(el, n, out var v))
+            {
+                if (v.ValueKind == JsonValueKind.Number && v.TryGetDecimal(out var m)) return m;
+                if (v.ValueKind == JsonValueKind.Number && v.TryGetDouble(out var dd)) return (decimal)dd;
+                if (v.ValueKind == JsonValueKind.String && decimal.TryParse(v.GetString(), out var s)) return s;
+            }
+        return 0m;
+    }
+
+    private static double GetJsonDouble(JsonElement el, params string[] names)
+    {
+        foreach (var n in names)
+            if (TryGetPropertyIgnoreCase(el, n, out var v))
+            {
+                if (v.ValueKind == JsonValueKind.Number && v.TryGetDouble(out var dd)) return dd;
+                if (v.ValueKind == JsonValueKind.String && double.TryParse(v.GetString(), out var s)) return s;
+            }
+        return 0;
+    }
+
+    private static List<JsonElement> GetJsonArray(JsonElement el, params string[] names)
+    {
+        foreach (var n in names)
+            if (TryGetPropertyIgnoreCase(el, n, out var v) && v.ValueKind == JsonValueKind.Array)
+                return v.EnumerateArray().ToList();
+        return new List<JsonElement>();
     }
 
     public async Task<ApiCallResult<dynamic>> GetHallAvailabilityRealtimeAsync(DateTime date, CancellationToken cancellationToken = default)

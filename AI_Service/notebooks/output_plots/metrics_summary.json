@@ -1,0 +1,114 @@
+{
+  "meta": {
+    "seed": 257,
+    "n_samples": 5000,
+    "n_train": 4000,
+    "n_test_frame": 1000,
+    "n_eval": 1000,
+    "n_candidates": 20,
+    "top_k": 3,
+    "relevant": "grade>=2",
+    "dataset": "wedding_dataset_5k.csv",
+    "generated_at": "2026-10-17T09:45:29.682238+00:00"
+  },
+  "data_source": "SYNTHETIC wedding_dataset_5k.csv — MÔ PHỎNG, không phải dữ liệu thật",
+  "deployed_weights": {
+    "w1_budget": 0.30037164182373643,
+    "w2_capacity": 0.3198268244472375,
+    "w3_style": 0.1798856009758396,
+    "w4_service": 0.1999159327531865,
+    "note": "Trọng số WSM đang dùng bởi wsm_engine (deployed); bảng so sánh 4 mô hình dùng bộ này."
+  },
+  "recommender_comparison": {
+    "WSM": {
+      "p3": 0.185,
+      "r3": 0.2523521683424934,
+      "ndcg3": 0.9191946567117473,
+      "hit3": 0.328
+    },
+    "CBF": {
+      "p3": 0.11966666666666666,
+      "r3": 0.19337950875234158,
+      "ndcg3": 0.7449204354406087,
+      "hit3": 0.271
+    },
+    "CF": {
+      "p3": 0.07533333333333334,
+      "r3": 0.05831495669792883,
+      "ndcg3": 0.6286213989390215,
+      "hit3": 0.135
+    },
+    "Hybrid": {
+      "p3": 0.135,
+      "r3": 0.17060437267410952,
+      "ndcg3": 0.7619519030703812,
+      "hit3": 0.257
+    }
+  },
+  "hybrid_weights": {
+    "alpha": 0.65,
+    "beta": 0.05,
+    "gamma": 0.30000000000000004,
+    "mse_train": 0.037431254468785057,
+    "mse_val": 0.018775493403637503,
+    "ablation": {
+      "alpha=0": {
+        "alpha": 0.0,
+        "beta": 0.14285714285714285,
+        "gamma": 0.8571428571428572,
+        "mse_train": 0.13055311802722175,
+        "mse_val": 0.1330649465778573
+      },
+      "beta=0": {
+        "alpha": 0.6842105263157895,
+        "beta": 0.0,
+        "gamma": 0.31578947368421056,
+        "mse_train": 0.028700419031791945,
+        "mse_val": 0.01791956975310762
+      },
+      "gamma=0": {
+        "alpha": 0.9285714285714285,
+        "beta": 0.07142857142857142,
+        "gamma": 0.0,
+        "mse_train": 0.0324995735653287,
+        "mse_val": 0.03230677105740247
+      }
+    }
+  },
+  "wsm_tuning": {
+    "baseline": {
+      "p3": 0.19566666666666666,
+      "r3": 0.26307422342879,
+      "ndcg3": 0.9433356043308272,
+      "hit3": 0.334
+    },
+    "optimized": {
+      "p3": 0.196,
+      "r3": 0.2637075567621233,
+      "ndcg3": 0.9401649559902331,
+      "hit3": 0.334
+    },
+    "weights": {
+      "w1_budget": 0.40095253597175445,
+      "w2_capacity": 0.16954827274132,
+      "w3_style": 0.0,
+      "w4_service": 0.4294991912869256
+    },
+    "mse_train": {
+      "baseline": 0.07918437370102749,
+      "optimized": 0.020423120835932163
+    },
+    "mse_test": {
+      "baseline": 0.0816205616688717,
+      "optimized": 0.0206831036506034
+    },
+    "n_train": 4000,
+    "n_test": 1000
+  },
+  "plots": {
+    "hybrid_comparison": "output_plots/hybrid_comparison.png",
+    "metrics_comparison": "output_plots/metrics_comparison.png",
+    "weight_distribution": "output_plots/weight_distribution.png",
+    "score_distribution": "output_plots/score_distribution.png"
+  }
+}
