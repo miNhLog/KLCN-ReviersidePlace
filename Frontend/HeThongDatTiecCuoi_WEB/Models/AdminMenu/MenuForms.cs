@@ -12,6 +12,8 @@ public sealed class CreateMenuForm
 
     [Range(0, double.MaxValue)]
     public decimal PricePerTable { get; set; }
+
+    public IFormFile? Image { get; set; }
 }
 
 public sealed class UpdateMenuForm
@@ -25,6 +27,8 @@ public sealed class UpdateMenuForm
 
     [Range(0, double.MaxValue)]
     public decimal PricePerTable { get; set; }
+
+    public IFormFile? NewImage { get; set; }
 }
 
 public sealed class CreateDishForm

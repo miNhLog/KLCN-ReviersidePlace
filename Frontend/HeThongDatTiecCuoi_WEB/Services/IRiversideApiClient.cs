@@ -153,6 +153,10 @@ public interface IRiversideApiClient
         string accessToken,
         CancellationToken cancellationToken);
 
+    Task<ApiActionResult> UploadHallImageAsync(
+        int hallId, Stream fileStream, string fileName, string? contentType,
+        string accessToken, CancellationToken cancellationToken);
+
     Task<ApiCallResult<ActionResponseDto>> UpdateHallStatusAsync(
         int hallId,
         string status,
@@ -262,6 +266,10 @@ public interface IRiversideApiClient
         UpdateMenuForm model,
         string accessToken,
         CancellationToken cancellationToken);
+
+    Task<ApiActionResult> UploadMenuImageAsync(
+        int menuId, Stream fileStream, string fileName, string? contentType,
+        string accessToken, CancellationToken cancellationToken);
 
     Task<ApiActionResult> UpdateMenuStatusAsync(
         int menuId,

@@ -5,6 +5,7 @@ using HeThongDatTiecCuoi_API.DTOs.Common;
 using HeThongDatTiecCuoi_API.DTOs.Menu;
 using HeThongDatTiecCuoi_API.Models;
 using HeThongDatTiecCuoi_API.Services;
+using HeThongDatTiecCuoi_API.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -24,11 +25,16 @@ public sealed class MenuController : ControllerBase
 
     private readonly ApplicationDbContext _context;
     private readonly IStatusService _statusService;
+    private readonly IWebHostEnvironment _environment;
 
-    public MenuController(ApplicationDbContext context, IStatusService statusService)
+    public MenuController(
+        ApplicationDbContext context,
+        IStatusService statusService,
+        IWebHostEnvironment environment)
     {
         _context = context;
         _statusService = statusService;
+        _environment = environment;
     }
 
     [HttpGet("public")]
@@ -84,6 +90,7 @@ public sealed class MenuController : ControllerBase
         var projectedQuery = query.Select(menu => new PublicMenuDto
         {
             MenuId = menu.MenuId,
+            MenuCode = menu.MenuCode,
             MenuName = menu.MenuName,
             Description = menu.Description,
             PricePerTable = menu.PricePerTable,
@@ -115,6 +122,9 @@ public sealed class MenuController : ControllerBase
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(cancellationToken);
+
+        foreach (var item in items)
+            item.ImageUrl = GetMenuImageUrl(item.MenuId);
 
         return Ok(new PublicMenuListResponse
         {
@@ -154,6 +164,8 @@ public sealed class MenuController : ControllerBase
         {
             return NotFound(new { message = "Không tìm thấy thực đơn." });
         }
+
+        menu.ImageUrl = GetMenuImageUrl(menu.MenuId);
 
         var dishes = await _context.MenuDishes
             .AsNoTracking()
@@ -223,6 +235,9 @@ public sealed class MenuController : ControllerBase
             })
             .ToListAsync(cancellationToken);
 
+        foreach (var menu in menus)
+            menu.ImageUrl = GetMenuImageUrl(menu.MenuId);
+
         return Ok(menus);
     }
 
@@ -280,6 +295,9 @@ public sealed class MenuController : ControllerBase
                 DishCount = menu.MenuDishes.Count(menuDish => menuDish.DataStatus.DataStatusCode == DataStatusCodes.Existing),
                 IsInUse = _context.WeddingBookings.Any(booking => booking.MenuId == menu.MenuId)
             }).ToListAsync(cancellationToken);
+
+        foreach (var item in items)
+            item.ImageUrl = GetMenuImageUrl(item.MenuId);
 
         return Ok(new ManagerMenuListResponseDto
         {
@@ -438,6 +456,25 @@ public sealed class MenuController : ControllerBase
         await _context.SaveChangesAsync(cancellationToken);
 
         return Ok(ToDto(menu, status));
+    }
+
+    [HttpPost("{menuId:int}/image")]
+    [RequestSizeLimit(ImageUploadHelper.MaxRequestSize)]
+    public async Task<IActionResult> UploadMenuImage(
+        int menuId,
+        [FromForm] IFormFile file,
+        CancellationToken cancellationToken)
+    {
+        if (!await MenuExistsAsync(menuId, cancellationToken))
+            return NotFound(new { message = "Không tìm thấy thực đơn." });
+
+        var validationError = ImageUploadHelper.Validate(file);
+        if (validationError is not null)
+            return BadRequest(new { message = validationError });
+
+        var imageUrl = await ImageUploadHelper.SaveAsync(
+            file, _environment.WebRootPath, "thuc-don", menuId.ToString(), cancellationToken);
+        return Ok(new { message = "Tải ảnh thực đơn thành công.", imageUrl });
     }
 
     [HttpGet("{menuId:int}/dishes")]
@@ -819,6 +856,9 @@ public sealed class MenuController : ControllerBase
         Status = (status ?? menu.Status).StatusCode,
         StatusName = (status ?? menu.Status).StatusName
     };
+
+    private string? GetMenuImageUrl(int menuId) =>
+        ImageUploadHelper.FindManagedUrl(_environment.WebRootPath, "thuc-don", menuId.ToString());
 
     private async Task<DataStatus> GetDataStatusAsync(
         string code,

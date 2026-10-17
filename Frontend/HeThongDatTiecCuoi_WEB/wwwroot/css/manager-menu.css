@@ -4,3 +4,13 @@
 
 /* Typography aligned with the Hall Management screen. */
 .mm-page{font-size:12px}.mm-header h1{font-size:23px}.mm-header p{font-size:11px}.mm-breadcrumb{font-size:11px}.mm-btn{font-size:11px}.mm-alert{font-size:12px}.mm-kpis small{font-size:11px}.mm-kpis strong{font-size:19px}.mm-filters input,.mm-filters select{font-size:12px}.mm-card h2{font-size:15px}.mm-code{font-size:10px}.mm-meta{font-size:11px}.mm-badge{font-size:9px}.mm-detail-btn{font-size:11px}.mm-card details button{font-size:11px}.mm-detail-header h2{font-size:17px}.mm-detail-header p{font-size:11px}.mm-warning{font-size:11px}.mm-table th{font-size:10px}.mm-table td{font-size:11px}.mm-remove{font-size:10px}.mm-pagination{font-size:11px}.mm-modal-box header h2{font-size:17px}.mm-modal-box header p{font-size:10px}.mm-modal-box>label{font-size:11px}.mm-modal-box>label input,.mm-modal-box>label textarea,.mm-dish-filters input,.mm-dish-filters select{font-size:12px}.mm-dish-item{font-size:11px}.mm-dish-item small{font-size:9px}.mm-modal-box footer{font-size:11px}.mm-toast{font-size:11px}
+.mm-card-icon.image {
+    overflow: hidden;
+    padding: 0;
+}
+
+.mm-card-icon.image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}

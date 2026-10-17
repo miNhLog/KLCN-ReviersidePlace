@@ -151,6 +151,45 @@
 }
 .backoffice-app #adminMainContent .employee-filter > span { border-right:1px solid var(--rp-border);background:#fbfcfd; }
 
+/* Filter groups keep a single rounded outline on the group itself. */
+.backoffice-app #adminMainContent .backoffice-filter-control {
+    overflow:hidden;
+    transition:border-color var(--rp-transition),box-shadow var(--rp-transition),background var(--rp-transition);
+}
+.backoffice-app #adminMainContent .backoffice-filter-control:focus-within {
+    border-color:var(--rp-gold-500) !important;
+    box-shadow:0 0 0 4px rgba(198,161,91,.13);
+}
+.backoffice-app #adminMainContent .backoffice-filter-control > :is(input:not([type=checkbox]):not([type=radio]),select) {
+    height:100% !important;
+    min-height:0 !important;
+    border:0 !important;
+    border-radius:0 !important;
+    outline:0 !important;
+    background:transparent !important;
+    box-shadow:none !important;
+}
+.backoffice-app #adminMainContent .backoffice-filter-control > :is(input:not([type=checkbox]):not([type=radio]),select):focus,
+.backoffice-app #adminMainContent .backoffice-filter-control > :is(input:not([type=checkbox]):not([type=radio]),select):focus-visible {
+    border:0 !important;
+    border-radius:0 !important;
+    outline:0 !important;
+    box-shadow:none !important;
+}
+
+/* Booking is rendered by a long-running Razor process in development. Keep the
+   inner controls flat even before the updated wrapper classes are recompiled. */
+.backoffice-app #adminMainContent .booking-page-wrapper :is(#filterHallId,#filterFromDate,#filterToDate),
+.backoffice-app #adminMainContent .booking-page-wrapper :is(#filterHallId,#filterFromDate,#filterToDate):focus,
+.backoffice-app #adminMainContent .booking-page-wrapper :is(#filterHallId,#filterFromDate,#filterToDate):focus-visible {
+    min-height:0 !important;
+    border:0 !important;
+    border-radius:0 !important;
+    outline:0 !important;
+    background:transparent !important;
+    box-shadow:none !important;
+}
+
 /* Explicit legacy resets for composite search/filter controls. */
 .backoffice-app #adminMainContent .topbar-search > input,
 .backoffice-app #adminMainContent .employee-search > input,

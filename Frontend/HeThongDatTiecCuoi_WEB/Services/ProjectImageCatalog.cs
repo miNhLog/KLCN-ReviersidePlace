@@ -3,6 +3,12 @@ namespace HeThongDatTiecCuoi_WEB.Services;
 // Shared, versioned images shipped with WEB; API uploads remain separate.
 public sealed class ProjectImageCatalog(IConfiguration configuration, IWebHostEnvironment environment)
 {
+    public IReadOnlyDictionary<string, string> GetImages(string category) =>
+        configuration.GetSection("ProjectImages").GetSection(category).GetChildren()
+            .Select(item => new { item.Key, Url = GetImage(category, item.Key) })
+            .Where(item => item.Url is not null)
+            .ToDictionary(item => item.Key, item => item.Url!, StringComparer.OrdinalIgnoreCase);
+
     public IReadOnlyList<string> GetGallery(string category, string key)
     {
         var url = configuration.GetSection("ProjectImages").GetSection(category)[key]?.TrimEnd('/');
