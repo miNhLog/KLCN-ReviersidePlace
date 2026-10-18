@@ -42,8 +42,9 @@ public class BookingSummaryViewModel
     public string HallName { get; set; } = string.Empty;
     public DateTime EventDate { get; set; }
     public string Shift { get; set; } = string.Empty;
-    public int TableCount { get; set; }
-    public decimal EstimatedTotal { get; set; }
+    public int GuestCount { get; set; }
+    public int TableCount => (int)Math.Ceiling(GuestCount / 10m);
+    public decimal? EstimatedTotal { get; set; }
     [JsonPropertyName("statusName")]
     public string Status { get; set; } = string.Empty;
     public string StatusCode { get; set; } = string.Empty;
@@ -76,15 +77,15 @@ public class BookingDetailViewModel
     public string DecorationPackageName { get; set; } = string.Empty;
 
     public int GuestCount { get; set; }
-    public int TableCount { get; set; }
+    public int TableCount => (int)Math.Ceiling(GuestCount / 10m);
     public decimal ExpectedBudget { get; set; }
     public string DesiredStyle { get; set; } = string.Empty;
     public string SpecialRequests { get; set; } = string.Empty;
 
-    public decimal FinalMenuPrice { get; set; }
-    public decimal FinalDecorationPrice { get; set; }
-    public decimal FinalHallPrice { get; set; }
-    public decimal EstimatedTotal { get; set; }
+    public decimal? FinalMenuPrice { get; set; }
+    public decimal? FinalDecorationPrice { get; set; }
+    public decimal? FinalHallPrice { get; set; }
+    public decimal? EstimatedTotal { get; set; }
 
     [JsonPropertyName("statusName")]
     public string Status { get; set; } = string.Empty;

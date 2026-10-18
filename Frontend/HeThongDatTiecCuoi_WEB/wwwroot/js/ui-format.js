@@ -29,6 +29,7 @@
         display.tabIndex = -1;
         display.setAttribute('aria-hidden', 'true');
         display.className = `${input.className || ''} vi-date-display`.trim();
+        display.style.cssText = input.style.cssText;
 
         input.parentNode.insertBefore(wrapper, input);
         wrapper.append(display, input);

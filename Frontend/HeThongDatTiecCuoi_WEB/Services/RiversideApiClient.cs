@@ -1424,6 +1424,11 @@ public sealed class RiversideApiClient : IRiversideApiClient
                     response,
                     cancellationToken));
         }
+        catch (JsonException)
+        {
+            return ApiCallResult<T>.Failure(
+                "Dữ liệu Backend API không tương thích với giao diện.");
+        }
         catch (HttpRequestException)
         {
             return ApiCallResult<T>.Failure(

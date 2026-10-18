@@ -293,10 +293,16 @@
             <div class="backoffice-filter-control flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 min-h-[42px] text-xs">
                 <i class="fa-regular fa-calendar text-slate-500 text-xs"></i>
                 <span class="text-slate-500 font-medium">Từ:</span>
-                <input type="date" id="filterFromDate" class="bg-transparent text-xs text-slate-800 focus:outline-none cursor-pointer">
+                <input type="date"
+                       id="filterFromDate"
+                       class="bg-transparent text-xs text-slate-800 focus:outline-none cursor-pointer"
+                       style="min-height:0 !important; border:0 !important; border-radius:0 !important; outline:0 !important; background:transparent !important; box-shadow:none !important; padding:0 !important;">
                 <span class="text-slate-300">|</span>
                 <span class="text-slate-500 font-medium">Đến:</span>
-                <input type="date" id="filterToDate" class="bg-transparent text-xs text-slate-800 focus:outline-none cursor-pointer">
+                <input type="date"
+                       id="filterToDate"
+                       class="bg-transparent text-xs text-slate-800 focus:outline-none cursor-pointer"
+                       style="min-height:0 !important; border:0 !important; border-radius:0 !important; outline:0 !important; background:transparent !important; box-shadow:none !important; padding:0 !important;">
             </div>
 
             <button type="button" onclick="executeFilter(1)" class="px-4 py-2 bg-[#1E293B] hover:bg-[#0F172A] text-white rounded-lg text-xs font-bold transition-colors cursor-pointer min-h-[42px] flex items-center gap-1.5">
@@ -373,7 +379,7 @@
                                     <span class="text-[10px] text-slate-500 ml-0.5">bàn</span>
                                 </td>
                                 <td class="py-3.5 px-4 text-right font-serif font-bold text-slate-900">
-                                    @b.EstimatedTotal.ToString("N0") <span class="text-[10px] font-sans text-slate-500 font-normal">đ</span>
+                                    @((b.EstimatedTotal ?? 0m).ToString("N0")) <span class="text-[10px] font-sans text-slate-500 font-normal">đ</span>
                                 </td>
                                 <td class="py-3.5 px-3 text-center">
                                     @if (b.Status == "Hoàn tất")
@@ -939,7 +945,7 @@
                 const monthYear = String(eventDate.getMonth() + 1).padStart(2, '0') + '/' + eventDate.getFullYear();
                 const tables = b.tableCount ?? b.TableCount ?? 0;
                 const total = Number(b.estimatedTotal ?? b.EstimatedTotal ?? 0).toLocaleString('vi-VN');
-                const status = b.status || b.Status;
+                const status = b.statusName || b.StatusName || b.status || b.Status || 'Chưa xác định';
                 const statusCode = b.statusCode || b.StatusCode || '';
                 const hasContract = b.hasContract ?? b.HasContract ?? false;
                 const contractId = b.contractId ?? b.ContractId;
@@ -1090,18 +1096,32 @@
         async function viewBookingDetail(id) {
             selectedBookingId = id;
             try {
-                const res = await fetch(`/AdminBooking/GetDetail/${id}`);
+                const res = await fetch(`/AdminBooking/GetDetail/${id}`, {
+                    headers: { 'Accept': 'application/json' }
+                });
+                const contentType = res.headers.get('content-type') || '';
+
+                if (!contentType.includes('application/json')) {
+                    throw new Error(res.redirected
+                        ? 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.'
+                        : `Máy chủ trả về dữ liệu không hợp lệ (HTTP ${res.status}).`);
+                }
+
                 const result = await res.json();
 
-                if (result.success && result.data) {
-                    const b = result.data;
+                if (!res.ok || !result.success || !result.data) {
+                    throw new Error(result.message || 'Không thể lấy thông tin chi tiết đơn tiệc.');
+                }
+
+                const b = result.data;
                     document.getElementById('mdBookingCode').innerText = b.bookingCode || b.BookingCode;
                     document.getElementById('mdCustomerName').innerText = b.customerName || b.CustomerName;
                     document.getElementById('mdCustomerPhone').innerText = b.customerPhone || b.CustomerPhone || 'Chưa có SĐT';
                     document.getElementById('mdHallAndShift').innerText = `${b.hallName || b.HallName} • ${b.shift || b.Shift}`;
                     document.getElementById('mdEventDate').innerText = new Date(b.eventDate || b.EventDate).toLocaleDateString('vi-VN');
 
-                    const tables = b.tableCount ?? b.TableCount ?? 0;
+                    const guestCount = b.guestCount ?? b.GuestCount ?? 0;
+                    const tables = b.tableCount ?? b.TableCount ?? Math.ceil(Number(guestCount) / 10);
                     const menuUnit = b.finalMenuPrice ?? b.FinalMenuPrice ?? 0;
                     const hallPrice = b.finalHallPrice ?? b.FinalHallPrice ?? 0;
                     const decorPrice = b.finalDecorationPrice ?? b.FinalDecorationPrice ?? 0;
@@ -1116,12 +1136,14 @@
                     document.getElementById('mdDecorSubtotal').innerText = `${Number(decorPrice).toLocaleString('vi-VN')} đ`;
                     document.getElementById('mdTotalAmount').innerText = `${Number(total).toLocaleString('vi-VN')} VNĐ`;
 
-                    const status = b.status || b.Status;
+                    const status = b.statusName || b.StatusName || b.status || b.Status || 'Chưa xác định';
                     const statusCode = b.statusCode || b.StatusCode || '';
                     const hasContract = b.hasContract ?? b.HasContract ?? false;
                     const contractId = b.contractId ?? b.ContractId;
                     const contractCode = b.contractCode || b.ContractCode || '';
                     document.getElementById('mdStatusBadge').innerText = status;
+                    document.getElementById('mdMenuName').innerText = b.menuName || b.MenuName || 'Chưa chọn thực đơn';
+                    document.getElementById('mdDecorName').innerText = b.decorationPackageName || b.DecorationPackageName || 'Chưa chọn gói trang trí';
 
                     const btnGroup = document.getElementById('mdActionBtnGroup');
                     btnGroup.innerHTML = '';
@@ -1144,10 +1166,13 @@
                     const modal = document.getElementById('bookingDetailModal');
                     modal.classList.remove('hidden');
                     modal.classList.add('flex');
-                }
             } catch (e) {
                 console.error(e);
-                showToast('Lỗi', 'Không thể lấy chi tiết hợp đồng.', false);
+                showToast(
+                    'Lỗi',
+                    e instanceof Error ? e.message : 'Không thể lấy thông tin chi tiết đơn tiệc.',
+                    false
+                );
             }
         }
 
