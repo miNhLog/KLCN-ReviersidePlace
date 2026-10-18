@@ -33,6 +33,9 @@ public sealed class RecommendationRequestDto
 
     [MaxLength(500)]
     public string? ServiceNeeds { get; set; }
+
+    /// <summary>VĐ2: CustomerId nullable từ FE (anonymous=null) → BE forward user_id sang AI hybrid/rank để CF cá nhân hóa. DTO-only, không đụng DB.</summary>
+    public int? UserId { get; set; }
 }
 
 public sealed class ComboSuggestionDto

@@ -24,12 +24,14 @@ public sealed class RecommendationController : ControllerBase
     private const double SpaceWeight = 0.3198;
     private const double StyleWeight = 0.1799;
     private const double ServiceWeight = 0.1999;
-    private const decimal OverBudgetToleranceVnd = 10_000_000m;
+    // TODO-4: khong hardcode 10tr; dung PricingPolicyOptions.GetTolerance(budget)
+    // = min(10tr, 5% budget) theo prompt.txt.
 
     private readonly ApplicationDbContext _context;
     private readonly IStatusService _statusService;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly AiServiceOptions _aiOptions;
+    private readonly PricingPolicyOptions _pricing;
     private readonly ILogger<RecommendationController> _logger;
     private readonly IEmailService? _emailService;
 
@@ -46,6 +48,7 @@ public sealed class RecommendationController : ControllerBase
         IStatusService statusService,
         IHttpClientFactory httpClientFactory,
         IOptions<AiServiceOptions> aiOptions,
+        IOptions<PricingPolicyOptions> pricing,
         ILogger<RecommendationController> logger,
         IEmailService? emailService = null)
     {
@@ -53,6 +56,7 @@ public sealed class RecommendationController : ControllerBase
         _statusService = statusService;
         _httpClientFactory = httpClientFactory;
         _aiOptions = aiOptions.Value;
+        _pricing = pricing.Value;
         _logger = logger;
         _emailService = emailService;
     }
@@ -346,6 +350,141 @@ public sealed class RecommendationController : ControllerBase
     }
 
     /// <summary>
+    /// Hybrid Top-3 (CNTT-KLCN257): goi AI POST /api/v1/ai/hybrid/rank
+    /// (s_final = alpha*s_cf + beta*s_cbf + gamma*S_wsm, trong so hoc tu du lieu).
+    /// Fallback: /wsm/rank cu, cuoi cung fallback noi bo. Giu nguyen route cu.
+    /// </summary>
+    [HttpPost("suggest-top3-hybrid")]
+    public async Task<IActionResult> SuggestTop3Hybrid([FromBody] RecommendationRequestDto? request)
+    {
+        if (request is null)
+            return BadRequest(new { message = "Thiếu dữ liệu khảo sát trong body." });
+        var desiredShift = (request.DesiredShift ?? string.Empty).Trim();
+        var desiredStyle = (request.DesiredStyle ?? string.Empty).Trim();
+        if (desiredShift != HallShiftNames.Lunch && desiredShift != HallShiftNames.Dinner)
+            return BadRequest(new { message = "Ca tổ chức chỉ có thể là Ca trưa hoặc Ca tối." });
+        if (string.IsNullOrWhiteSpace(desiredStyle))
+            return BadRequest(new { message = "Phong cách mong muốn không được để trống." });
+        if (request.GuestCount <= 0 && (request.TableCount > 0 || request.OfficialTableCount > 0))
+            request.GuestCount = Math.Max(request.TableCount, request.OfficialTableCount + request.SpareTableCount) * 10;
+        if (request.GuestCount <= 0)
+            return BadRequest(new { message = "Số lượng khách phải lớn hơn 0." });
+        const decimal MinBudgetHybrid = 100_000_000m;
+        const decimal MaxBudgetHybrid = 3_000_000_000m;
+        if (request.ExpectedBudget < MinBudgetHybrid || request.ExpectedBudget > MaxBudgetHybrid)
+            return BadRequest(new { message = "Tổng ngân sách dự trù tối thiểu 100 triệu (chi phí tối thiểu ~103,3 triệu cho 150 khách) đến tối đa 3 tỷ VNĐ." });
+        DateTime targetDate;
+        try { targetDate = request.DesiredDate.Date; }
+        catch { return BadRequest(new { message = "Ngày tổ chức không hợp lệ." }); }
+        if (targetDate < DateTime.Today.AddDays(30) || targetDate > DateTime.Today.AddDays(365))
+            return BadRequest(new { message = "Ngày tổ chức phải cách hiện tại 30-365 ngày." });
+        var nextDay = targetDate.AddDays(1);
+        List<int> occupiedHallIds = new();
+        byte existingDataStatusId;
+        try
+        {
+            existingDataStatusId = await GetDataStatusIdAsync(DataStatusCodes.Existing);
+            var shiftNorm = NormalizeHallShift(desiredShift).ToLower();
+            occupiedHallIds = await _context.HallSchedules.AsNoTracking()
+                .Where(s => s.Date >= targetDate && s.Date < nextDay &&
+                    s.Shift.ToLower() == shiftNorm &&
+                    s.DataStatusId == existingDataStatusId &&
+                    s.Status != null && s.Status.StatusGroup == StatusGroups.HallSchedule &&
+                    s.Status.StatusCode != HallScheduleStatusCodes.Available)
+                .Select(s => s.HallId).Distinct().ToListAsync();
+            // VĐ2: đồng bộ với SuggestTop3ViaAi — cộng thêm sảnh bị DatTiec hoạt động chiếm giữ (chỉ SELECT).
+            var bookingOccupiedHybrid = await _context.WeddingBookings.AsNoTracking()
+                .Where(booking =>
+                    booking.HallSchedule.Date >= targetDate && booking.HallSchedule.Date < nextDay &&
+                    booking.HallSchedule.Shift.ToLower() == shiftNorm &&
+                    booking.HallSchedule.DataStatusId == existingDataStatusId &&
+                    booking.Status != null &&
+                    booking.Status.StatusGroup == StatusGroups.Booking &&
+                    BookingStatusCodes.OccupyingSchedule.Contains(booking.Status.StatusCode))
+                .Select(booking => booking.HallSchedule.HallId)
+                .Distinct()
+                .ToListAsync();
+            occupiedHallIds = occupiedHallIds.Union(bookingOccupiedHybrid).Distinct().ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "SuggestTop3Hybrid: loi DB occupied. traceId={TraceId}", HttpContext.TraceIdentifier);
+            return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Không thể tạo gợi ý lúc này, vui lòng thử lại.", traceId = HttpContext.TraceIdentifier });
+        }
+        var tableCount = request.TableCount > 0 ? request.TableCount
+            : (request.OfficialTableCount + request.SpareTableCount) > 0 ? request.OfficialTableCount + request.SpareTableCount
+            : (int)Math.Ceiling(request.GuestCount / 10m);
+        var aiShift = desiredShift == HallShiftNames.Lunch ? "Ca trua" : "Ca toi";
+        var priorityServices = (request.ServiceNeeds ?? string.Empty)
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+        var aiPayload = new
+        {
+            guest_count = request.GuestCount, table_count = tableCount,
+            expected_budget = request.ExpectedBudget, event_date = targetDate.ToString("yyyy-MM-dd"),
+            shift = aiShift, desired_style = desiredStyle,             priority_services = priorityServices,
+            occupied_hall_ids = occupiedHallIds, user_id = request.UserId
+        };
+        // 1) Thu Hybrid truoc (timeout 5s theo AiService:TimeoutSeconds, user_id nullable cho CF cold-start).
+        try
+        {
+            var client = _httpClientFactory.CreateClient("AiService");
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(_aiOptions.TimeoutSeconds));
+            using var response = await client.PostAsJsonAsync("api/v1/ai/hybrid/rank", aiPayload, cts.Token);
+            response.EnsureSuccessStatusCode();
+            var json = await response.Content.ReadAsStringAsync(cts.Token);
+            // VĐ2: bóc count/totalCandidatesEvaluated/weights_source null-safe lên envelope để smoke test
+            // kiểm tra trực tiếp (200 + source=ai-service-hybrid + count=3 + total>0) mà không cần parse data.
+            var (hybridCount, hybridTotal, hybridWeights) = TryParseAiEnvelope(json);
+            object? hybridSuggestedNext = null;
+            if (hybridCount == 0)
+            {
+                try
+                {
+                    var sg = await BuildSuggestedNextAsync(targetDate, desiredShift, tableCount, request.ExpectedBudget, existingDataStatusId);
+                    hybridSuggestedNext = new
+                    {
+                        minRequiredBudget = sg.MinRequiredBudget,
+                        suggestedDates = sg.SuggestedDates.Select(d => new { date = d.Date, shift = d.Shift, availableHalls = d.AvailableHalls }),
+                        reason = sg.Reason
+                    };
+                }
+                catch (Exception sgEx)
+                {
+                    _logger.LogWarning(sgEx, "SuggestTop3Hybrid: tính suggestedNext thất bại. traceId={TraceId}.", HttpContext.TraceIdentifier);
+                }
+            }
+            _logger.LogInformation("SuggestTop3Hybrid: source=ai-service-hybrid userId={UserId} count={Count} total={Total} weights={Weights} traceId={TraceId}",
+                request.UserId, hybridCount, hybridTotal, hybridWeights ?? "n/a", HttpContext.TraceIdentifier);
+            return Ok(new { success = true, source = "ai-service-hybrid", aiBaseUrl = _aiOptions.BaseUrl, occupiedHallIds, count = hybridCount, totalCandidatesEvaluated = hybridTotal, weights_source = hybridWeights, suggestedNext = hybridSuggestedNext, data = JsonSerializer.Deserialize<object>(json, AiJsonOptions) });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "SuggestTop3Hybrid: hybrid loi, fallback ve /wsm/rank cu. traceId={TraceId}", HttpContext.TraceIdentifier);
+        }
+        // 2) Fallback ve WSM cu.
+        try
+        {
+            var client = _httpClientFactory.CreateClient("AiService");
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(_aiOptions.TimeoutSeconds));
+            using var response = await client.PostAsJsonAsync("api/v1/ai/wsm/rank", aiPayload, cts.Token);
+            response.EnsureSuccessStatusCode();
+            var json = await response.Content.ReadAsStringAsync(cts.Token);
+            var (wsmCount, wsmTotal, wsmWeights) = TryParseAiEnvelope(json);
+            _logger.LogInformation("SuggestTop3Hybrid: source=ai-service-wsm-fallback userId={UserId} count={Count} total={Total} traceId={TraceId}",
+                request.UserId, wsmCount, wsmTotal, HttpContext.TraceIdentifier);
+            return Ok(new { success = true, source = "ai-service-wsm-fallback", aiBaseUrl = _aiOptions.BaseUrl, occupiedHallIds, count = wsmCount, totalCandidatesEvaluated = wsmTotal, weights_source = wsmWeights, data = JsonSerializer.Deserialize<object>(json, AiJsonOptions) });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "SuggestTop3Hybrid: wsm fallback cung loi, dung fallback noi bo. traceId={TraceId}", HttpContext.TraceIdentifier);
+            var fallback = await BuildFallbackTop3Async(request, desiredShift, desiredStyle, targetDate, nextDay, existingDataStatusId, tableCount);
+            _logger.LogInformation("SuggestTop3Hybrid: source=fallback-internal userId={UserId} traceId={TraceId}",
+                request.UserId, HttpContext.TraceIdentifier);
+            return Ok(new { success = true, source = "fallback-internal", aiBaseUrl = _aiOptions.BaseUrl, aiError = ex.Message, traceId = HttpContext.TraceIdentifier, occupiedHallIds, data = fallback });
+        }
+    }
+
+    /// <summary>
     /// Default-to-Available (BR03): sảnh hoạt động, đủ sức chứa, KHÔNG bị chặn
     /// (LichSanh != AVAILABLE hoặc DatTiec hoạt động chiếm giữ) đều là ứng viên.
     /// Ngày xa chưa có record LichSanh -> HallScheduleId = 0, tự INSERT khi đặt giữ chỗ.
@@ -478,8 +617,8 @@ public sealed class RecommendationController : ControllerBase
             var menuTotal = menu.PricePerTable * tableCount;
             // Dự toán trọn gói = Giá thuê sảnh + (Đơn giá Menu × Tổng số bàn) + Giá Decor + Tổng giá Dịch vụ ưu tiên.
             var totalCost = hall.RentalPrice + menuTotal + decor.Gia + servicesTotalFallback;
-            // Hard filter WSM: est_total <= budget + 10tr (đồng bộ py + C#).
-            if (totalCost > request.ExpectedBudget + OverBudgetToleranceVnd)
+            // Hard filter WSM: est_total <= budget + Δ (Δ = min(10tr, 5%) tu PricingPolicyOptions, dong bo py + C#).
+            if (totalCost > request.ExpectedBudget + _pricing.GetTolerance(request.ExpectedBudget))
                 continue;
             var budgetDifference = request.ExpectedBudget - totalCost;
             // WSM chuẩn 4 chiều (r1..r4 0..1) — khớp wsm_engine.py.
@@ -597,17 +736,18 @@ public sealed class RecommendationController : ControllerBase
         combo.PackageName = title;
     }
 
-    private static List<ComboSuggestionDto> SelectDiverseTop3(List<ComboSuggestionDto> scored, decimal? expectedBudget = null)
+    private List<ComboSuggestionDto> SelectDiverseTop3(List<ComboSuggestionDto> scored, decimal? expectedBudget = null)
     {
-        // Ưu tiên ngân sách: trong ngân sách trước, sau đó vượt nhẹ ≤ 10tr, cuối cùng mới tới vượt xa.
-        // Tránh trả combo vượt quá xa gây chênh lệch lớn so với dự trù của khách.
-        const decimal ToleranceVnd = 10_000_000m;
+        // Uu tien ngan sach: trong ngan sach truoc, sau do vuot nhe <= Δ, cuoi cung moi toi vuot xa.
+        // Tranh tra combo vuot qua xa gay chenh lech lon so voi du tru cua khach.
+        // Δ = min(10tr, 5% budget) tu PricingPolicyOptions theo prompt.txt.
         List<ComboSuggestionDto> ordered;
         if (expectedBudget.HasValue && expectedBudget.Value > 0)
         {
             var budget = expectedBudget.Value;
+            var toleranceVnd = _pricing.GetTolerance(budget);
             ordered = scored
-                .OrderBy(c => c.TotalEstimatedCost - budget > ToleranceVnd ? 2
+                .OrderBy(c => c.TotalEstimatedCost - budget > toleranceVnd ? 2
                     : c.TotalEstimatedCost - budget > 0 ? 1 : 0)
                 .ThenByDescending(c => c.OverallMatchScore)
                 .ThenBy(c => c.TotalEstimatedCost)
@@ -875,8 +1015,8 @@ public sealed class RecommendationController : ControllerBase
             var menuTotal = menu.PricePerTable * estimatedTableCount;
             // Dự toán trọn gói = Giá thuê sảnh + (Đơn giá Menu × Tổng số bàn) + Giá Decor + Tổng giá Dịch vụ ưu tiên.
             var totalCost = hall.RentalPrice + menuTotal + decor.Gia + servicesTotal;
-            // Hard filter WSM: est_total <= budget + 10tr (đồng bộ py + C#).
-            if (totalCost > request.ExpectedBudget + OverBudgetToleranceVnd)
+            // Hard filter WSM: est_total <= budget + Δ (Δ = min(10tr, 5%) tu PricingPolicyOptions, dong bo py + C#).
+            if (totalCost > request.ExpectedBudget + _pricing.GetTolerance(request.ExpectedBudget))
                 continue;
             var budgetDifference = request.ExpectedBudget - totalCost;
             var r1 = CalculateBudgetScore(totalCost, request.ExpectedBudget);
@@ -1720,17 +1860,19 @@ public sealed class RecommendationController : ControllerBase
         ["nature"] = ["Thiên nhiên / ngoài trời"],
     };
 
-    /// <summary>r1 ngân sách 0..1 — port y hệt wsm_engine.py score_candidate.</summary>
-    private static double CalculateBudgetScore(decimal totalCost, decimal expectedBudget)
+    /// <summary>r1 ngan sach 0..1 — port y het wsm_engine.py score_candidate (Δ = min(10tr, 5%)).</summary>
+    private double CalculateBudgetScore(decimal totalCost, decimal expectedBudget)
     {
         var budget = (double)(expectedBudget > 0 ? expectedBudget : 1m);
         var total = (double)totalCost;
         var over = total - budget;
+        var tolerance = (double)_pricing.GetTolerance(expectedBudget > 0 ? expectedBudget : 0m);
+        var soft = tolerance / 2.0;
         if (over <= 0)
             return Math.Max(0.0, 1.0 - Math.Abs(total - budget) / Math.Max(1.0, budget));
-        if (over <= 5_000_000) return 0.70 - (over / 5_000_000) * 0.05;
-        if (over <= 10_000_000) return 0.65 - ((over - 5_000_000) / 5_000_000) * 0.10;
-        var extraTens = (over - 10_000_000) / 10_000_000;
+        if (over <= soft) return 0.70 - (over / soft) * 0.05;
+        if (over <= tolerance) return 0.65 - ((over - soft) / soft) * 0.10;
+        var extraTens = (over - tolerance) / tolerance;
         return Math.Max(0.0, 0.45 - extraTens * 0.08);
     }
 
@@ -1883,5 +2025,25 @@ public sealed class RecommendationController : ControllerBase
         [JsonPropertyName("top_3")] public List<AiRankItem>? Top3 { get; set; }
         [JsonPropertyName("top_3_recommendations")] public List<AiRankItem>? Top3Recommendations { get; set; }
         [JsonPropertyName("algorithm_notice")] public string? AlgorithmNotice { get; set; }
+        // VĐ2: nguồn trọng số hybrid (learned:... / default-unlearned). Nullable, thiếu field không vỡ.
+        [JsonPropertyName("weights_source")] public string? WeightsSource { get; set; }
+    }
+
+    /// <summary>VĐ2: bóc (count, totalCandidatesEvaluated, weights_source) null-safe từ JSON AI
+    /// snake_case để đưa lên envelope BE. Không ném exception — lỗi parse trả (0,0,null).</summary>
+    private (int Count, int Total, string? WeightsSource) TryParseAiEnvelope(string json)
+    {
+        try
+        {
+            var typed = JsonSerializer.Deserialize<AiRankResponse>(json, AiJsonOptions);
+            if (typed is null) return (0, 0, null);
+            var top = typed.Top3 ?? typed.Top3Recommendations;
+            return (top?.Count ?? 0, typed.TotalCandidatesEvaluated, string.IsNullOrWhiteSpace(typed.WeightsSource) ? null : typed.WeightsSource);
+        }
+        catch (JsonException jex)
+        {
+            _logger.LogWarning(jex, "TryParseAiEnvelope: AI JSON không đúng contract. traceId={TraceId}.", HttpContext.TraceIdentifier);
+            return (0, 0, null);
+        }
     }
 }

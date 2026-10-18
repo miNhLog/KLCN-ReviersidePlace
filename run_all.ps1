@@ -7,6 +7,10 @@ Write-Host ">>> [1/4] Dang don dep cac tien trinh dotnet cu..." -ForegroundColor
 Stop-Process -Name dotnet -ErrorAction SilentlyContinue
 
 Write-Host ">>> [2/4] Khoi dong AI Microservice (FastAPI - Port 8000)..." -ForegroundColor Yellow
+if (-not (Test-Path -LiteralPath "AI_Service\.env")) {
+    Write-Host "    [Canh bao] Chua co AI_Service\.env -> chatbot chay offline (rule-based), khong dung LLM." -ForegroundColor Yellow
+    Write-Host "    Tao tu mau: Copy-Item AI_Service\.env.example AI_Service\.env roi dien OPENAI_API_KEY/GEMINI_API_KEY." -ForegroundColor DarkYellow
+}
 Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd AI_Service; Write-Host '=== AI MICROSERVICE (PORT 8000) ===' -ForegroundColor Yellow; python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload"
 
 Start-Sleep -Seconds 2
