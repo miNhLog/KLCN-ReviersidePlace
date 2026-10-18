@@ -66,7 +66,7 @@ def dcg_at_k(grades, k):
     return value
 
 
-def main():
+def run(write_weights: bool = True):
     catalog = load_catalog()
     halls = catalog["halls"]
     menus = catalog["menus"]
@@ -115,15 +115,22 @@ def main():
     w_base = np.array([0.25, 0.25, 0.25, 0.25])
     print(f"Toi uu hoi tu: success={result.success} message={result.message}")
     print(f"Trong so toi uu: w1={w_opt[0]:.4f} w2={w_opt[1]:.4f} w3={w_opt[2]:.4f} w4={w_opt[3]:.4f}")
-    print(f"Baseline: w1=w2=w3=w4=0.25 | MSE train baseline={float(np.mean((X_train @ w_base - y_train)**2)):.6f} | MSE train optimized={float(np.mean((X_train @ w_opt - y_train)**2)):.6f}")
-    print(f"MSE test baseline={float(np.mean((X_test @ w_base - y_test)**2)):.6f} | MSE test optimized={float(np.mean((X_test @ w_opt - y_test)**2)):.6f}")
+    mse_train_base = float(np.mean((X_train @ w_base - y_train) ** 2))
+    mse_train_opt = float(np.mean((X_train @ w_opt - y_train) ** 2))
+    mse_test_base = float(np.mean((X_test @ w_base - y_test) ** 2))
+    mse_test_opt = float(np.mean((X_test @ w_opt - y_test) ** 2))
+    print(f"Baseline: w1=w2=w3=w4=0.25 | MSE train baseline={mse_train_base:.6f} | MSE train optimized={mse_train_opt:.6f}")
+    print(f"MSE test baseline={mse_test_base:.6f} | MSE test optimized={mse_test_opt:.6f}")
 
-    with open(WEIGHTS_PATH, "w", encoding="utf-8") as f:
-        json.dump({"w1_budget": float(w_opt[0]), "w2_capacity": float(w_opt[1]),
-                   "w3_style": float(w_opt[2]), "w4_service": float(w_opt[3]),
-                   "method": "SLSQP min MSE(S vs Satisfaction/5.0)",
-                   "baseline": [0.25, 0.25, 0.25, 0.25]}, f, ensure_ascii=False, indent=2)
-    print(f"Da luu trong so -> {WEIGHTS_PATH}")
+    if write_weights:
+        with open(WEIGHTS_PATH, "w", encoding="utf-8") as f:
+            json.dump({"w1_budget": float(w_opt[0]), "w2_capacity": float(w_opt[1]),
+                       "w3_style": float(w_opt[2]), "w4_service": float(w_opt[3]),
+                       "method": "SLSQP min MSE(S vs Satisfaction/5.0)",
+                       "baseline": [0.25, 0.25, 0.25, 0.25]}, f, ensure_ascii=False, indent=2)
+        print(f"Da luu trong so -> {WEIGHTS_PATH}")
+    else:
+        print("Bo qua ghi trained_weights.json (write_weights=False) — giu trong so dang trien khai.")
 
     # ---- Danh gia ranking Top-3 tren test: moi sample sinh 20 ung vien ----
     rng = np.random.default_rng(RANDOM_SEED)
@@ -237,6 +244,24 @@ def main():
     fig3.savefig(PLOT_DIR / "score_distribution.png", dpi=150)
     plt.close(fig3)
     print(f"Da luu plots -> {PLOT_DIR}")
+    return {
+        "baseline": avg_base,
+        "optimized": avg_opt,
+        "weights": {
+            "w1_budget": float(w_opt[0]),
+            "w2_capacity": float(w_opt[1]),
+            "w3_style": float(w_opt[2]),
+            "w4_service": float(w_opt[3]),
+        },
+        "mse_train": {"baseline": mse_train_base, "optimized": mse_train_opt},
+        "mse_test": {"baseline": mse_test_base, "optimized": mse_test_opt},
+        "n_train": int(len(X_train)),
+        "n_test": int(len(X_test)),
+    }
+
+
+def main():
+    run()
 
 
 if __name__ == "__main__":

@@ -1,0 +1,4 @@
+# TODO-7: giam context dotnet.
+bin/
+obj/
+.vs/

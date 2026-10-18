@@ -1,0 +1,9 @@
+[SAMPLE - MO PHONG, KHONG PHAI REAL]
+File: wedding_reviews_real.csv (50 dong dau tu wedding_dataset_5k.csv)
+Ly do: DB local-docker khong ket noi duoc (docker daemon down, sqlcmd localhost timeout),
+  dry-run export_reviews.py --out giu header-only, cf_engine fallback synthetic.
+Muc dich: de CF het fallback (>=20 dong) phuc vu VĐ1b.
+KHONG mạo nhận REAL: khi co QR/DanhGia that (DanhGia/MaQRDanhGia/DatTiec/LichSanh/KhachHang),
+  chay lai: python AI_Service/app/core/export_reviews.py --connection-string "<ODBC>" --out data/wedding_reviews_real.csv
+  de thay the bang SELECT-only tu DB. Tuyet doi KHONG ALTER/INSERT/UPDATE/MIGRATION.
+Ngay: 2026-10-16 (VĐ1b)

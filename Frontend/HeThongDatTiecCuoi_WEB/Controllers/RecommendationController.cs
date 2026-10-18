@@ -100,6 +100,14 @@ public class RecommendationController : Controller
         if (request.OfficialTableCount <= 0 && request.GuestCount > 0)
             request.OfficialTableCount = (int)Math.Ceiling(request.GuestCount / 10m);
         request.TableCount = request.OfficialTableCount + Math.Max(0, request.SpareTableCount);
+        // VĐ2: truyền user_id (CustomerId nullable, anonymous=null) từ FE → BE → AI hybrid/rank để CF cá nhân hóa.
+        // Chỉ liên kết tài khoản khách hàng; nội bộ (quản lý/nhân viên) và ẩn danh giữ null.
+        if (User.Identity?.IsAuthenticated == true && User.IsInRole(RoleNames.Customer))
+        {
+            var idClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (int.TryParse(idClaim, out var uid))
+                request.CustomerId = uid;
+        }
         // P0: Grand Ballroom tối đa ~140 bàn — chặn trước khi gọi Backend.
         if (request.TableCount > 140)
             return Json(new { success = false, message = "Quy mô vượt quá sức chứa sảnh lớn nhất Grand Ballroom (tối đa 140 bàn / 1400 khách). Hai bạn vui lòng giảm số khách hoặc liên hệ Riverside Palace để tách ca tổ chức nhé!" });
@@ -126,6 +134,9 @@ public class RecommendationController : Controller
             return Json(new { success = false, message = result.Error ?? "Không thể phân tích gói tiệc lúc này, vui lòng thử lại sau." });
         }
 
+        // VĐ2: log nguồn gợi ý (ai-service-hybrid / wsm-fallback / fallback-internal / heuristic) + weights_source, null-safe.
+        _logger.LogInformation("AnalyzeTop3: source={Source} weights={Weights} combos={Count}",
+            result.Value.Source ?? "unknown", result.Value.WeightsSource ?? "n/a", result.Value.TopCombos?.Count ?? 0);
         return Json(new { success = true, data = result.Value });
         }
         catch (Exception ex)

@@ -2,6 +2,13 @@
 # Set default behavior to automatically normalize line endings.
 ###############################################################################
 * text=auto
+# TODO-3: chuan hoa encoding UTF-8 BOM-less cho source tri thuc tieng Viet.
+*.cs text working-tree-encoding=UTF-8
+*.py text working-tree-encoding=UTF-8
+*.md text working-tree-encoding=UTF-8
+*.json text working-tree-encoding=UTF-8
+*.yml text working-tree-encoding=UTF-8
+*.yaml text working-tree-encoding=UTF-8
 
 ###############################################################################
 # Set default behavior for command prompt diff.
