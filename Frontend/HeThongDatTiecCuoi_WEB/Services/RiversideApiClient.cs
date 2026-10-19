@@ -30,23 +30,20 @@ public sealed class RiversideApiClient : IRiversideApiClient
         PropertyNameCaseInsensitive = true
     };
     private readonly HttpClient _httpClient;
+    private readonly ProjectImageCatalog _projectImages;
     private readonly RecommendationOptions _recOptions;
     private readonly ILogger<RiversideApiClient>? _recLogger;
 
     public RiversideApiClient(
         HttpClient httpClient,
+        ProjectImageCatalog projectImages,
         IOptions<RecommendationOptions>? recommendationOptions = null,
         ILogger<RiversideApiClient>? logger = null)
     {
         _httpClient = httpClient;
+        _projectImages = projectImages;
         _recOptions = recommendationOptions?.Value ?? new RecommendationOptions();
         _recLogger = logger;
-    private readonly ProjectImageCatalog _projectImages;
-
-    public RiversideApiClient(HttpClient httpClient, ProjectImageCatalog projectImages)
-    {
-        _httpClient = httpClient;
-        _projectImages = projectImages;
     }
 
     public Task<ApiCallResult<EventCoordinationListResponseViewModel>> GetManagerEventCoordinationAsync(
