@@ -27,15 +27,18 @@ public sealed class HallController : ControllerBase
     private readonly ApplicationDbContext _context;
     private readonly IStatusService _statusService;
     private readonly IWebHostEnvironment _environment;
+    private readonly IAiCatalogSyncService? _catalogSyncService;
 
     public HallController(
         ApplicationDbContext context,
         IStatusService statusService,
-        IWebHostEnvironment environment)
+        IWebHostEnvironment environment,
+        IAiCatalogSyncService? catalogSyncService = null)
     {
         _context = context;
         _statusService = statusService;
         _environment = environment;
+        _catalogSyncService = catalogSyncService;
     }
 
     [HttpGet("public")]
@@ -291,6 +294,7 @@ public sealed class HallController : ControllerBase
             await _context.SaveChangesAsync(cancellationToken);
             hall.Images.Add(primaryImage);
         }
+        _catalogSyncService?.SyncCatalogInBackground();
         return CreatedAtAction(nameof(GetHall), new { hallId = hall.HallId }, ToDto(hall, status));
     }
 
@@ -333,6 +337,7 @@ public sealed class HallController : ControllerBase
         if (!string.IsNullOrWhiteSpace(request.ImageUrl))
             await UpsertPrimaryImageAsync(hall, request.ImageUrl, cancellationToken);
         await _context.SaveChangesAsync(cancellationToken);
+        _catalogSyncService?.SyncCatalogInBackground();
         return Ok(ToDto(hall, status));
     }
 
@@ -357,6 +362,7 @@ public sealed class HallController : ControllerBase
 
         hall.StatusId = status.StatusId;
         await _context.SaveChangesAsync(cancellationToken);
+        _catalogSyncService?.SyncCatalogInBackground();
         return Ok(new { message = "Cập nhật trạng thái thành công.", hall = ToDto(hall, status) });
     }
 
@@ -403,6 +409,7 @@ public sealed class HallController : ControllerBase
         var deletedDataStatus = await GetDataStatusAsync(DataStatusCodes.Deleted, cancellationToken);
         hall.DataStatusId = deletedDataStatus.DataStatusId;
         await _context.SaveChangesAsync(cancellationToken);
+        _catalogSyncService?.SyncCatalogInBackground();
         return Ok(new { message = "Xóa sảnh thành công." });
     }
 

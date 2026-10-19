@@ -65,6 +65,14 @@ def _query_text(desired_style: str, priority: List[str], catalog: Dict) -> str:
 
 
 def _load_catalog(catalog_path: Optional[str] = None) -> Dict:
+    if catalog_path is None:
+        try:
+            from . import wsm_engine
+            cat = wsm_engine.load_catalog()
+            if cat and cat.get("halls"):
+                return cat
+        except Exception:
+            pass
     path = Path(catalog_path) if catalog_path else _DEFAULT_CATALOG
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)

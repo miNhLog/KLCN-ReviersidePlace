@@ -1,7 +1,7 @@
 """WSM Engine: Hard Filtering + Soft Scoring WSM + XAI tieng Viet."""
 import json
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from .config import DEFAULT_WEIGHTS, OVER_BUDGET_TOLERANCE_VND, budget_tolerance
 
@@ -19,13 +19,24 @@ def _weights_path() -> Path:
     return Path(cfg.WEIGHTS_PATH)
 
 
-def load_catalog() -> Dict:
+def load_catalog(force: bool = False) -> Dict:
     global _catalog_cache
-    if _catalog_cache:
+    if _catalog_cache and not force:
         return _catalog_cache
     path = _catalog_path()
     with open(path, "r", encoding="utf-8") as f:
         _catalog_cache = json.load(f)
+    return _catalog_cache
+
+
+def reload_catalog(new_catalog: Optional[Dict] = None) -> Dict:
+    """Lam moi in-memory cache cua catalog (ho tro sync truc tiep hoac doc lai tu file)."""
+    global _catalog_cache
+    if new_catalog is not None:
+        _catalog_cache = new_catalog
+    else:
+        _catalog_cache = {}
+        load_catalog(force=True)
     return _catalog_cache
 
 
