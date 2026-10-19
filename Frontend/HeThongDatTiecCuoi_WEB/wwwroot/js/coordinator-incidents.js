@@ -1,0 +1,93 @@
+(() => {
+    const page = document.querySelector('.incident-page');
+    if (!page) return;
+    const formModal = document.getElementById('incidentFormModal');
+    const detailModal = document.getElementById('incidentDetailModal');
+    const form = document.getElementById('incidentForm');
+    const errorBox = document.getElementById('incidentFormError');
+    const toast = document.getElementById('incidentToast');
+    const idInput = document.getElementById('incidentId');
+    const title = document.getElementById('incidentFormTitle');
+    const booking = document.getElementById('incidentBooking');
+    const type = document.getElementById('incidentType');
+    const severity = document.getElementById('incidentSeverity');
+    const occurred = document.getElementById('incidentOccurredAt');
+    const description = document.getElementById('incidentDescription');
+    let toastTimer;
+
+    const localDateTime = () => {
+        const date = new Date();
+        date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+        return date.toISOString().slice(0, 16);
+    };
+    const setOpenState = () => document.body.classList.toggle('incident-modal-open', !formModal.hidden || !detailModal.hidden);
+    const openForm = (data) => {
+        form.reset(); errorBox.hidden = true; idInput.value = '';
+        booking.disabled = false; title.textContent = 'Báo cáo sự cố'; occurred.value = localDateTime();
+        document.querySelector('#saveIncident span').textContent = 'Gửi báo cáo';
+        if (data) {
+            idInput.value = data.id; booking.value = data.bookingId; booking.disabled = true;
+            type.value = data.type; severity.value = data.severity; occurred.value = data.occurred;
+            description.value = data.description; title.textContent = 'Chỉnh sửa báo cáo';
+            document.querySelector('#saveIncident span').textContent = 'Lưu thay đổi';
+        }
+        formModal.hidden = false; setOpenState(); setTimeout(() => type.focus(), 30);
+    };
+    const closeForm = () => { formModal.hidden = true; setOpenState(); };
+    const closeDetail = () => { detailModal.hidden = true; setOpenState(); };
+    const notify = (message, isError = false) => {
+        clearTimeout(toastTimer); toast.textContent = message; toast.classList.toggle('error', isError);
+        toast.classList.add('show'); toastTimer = setTimeout(() => toast.classList.remove('show'), 3500);
+    };
+    const readMessage = async response => {
+        try { const body = await response.json(); return body.message || 'Yêu cầu không thành công.'; }
+        catch { return 'Không thể kết nối đến hệ thống.'; }
+    };
+    const openDetail = async id => {
+        detailModal.hidden = false; setOpenState();
+        const body = document.getElementById('incidentDetailBody');
+        body.className = 'detail-loading'; body.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang tải chi tiết...';
+        const response = await fetch(`/dieu-phoi/su-co/${id}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+        if (!response.ok) { body.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> ${await readMessage(response)}`; return; }
+        body.className = ''; body.innerHTML = await response.text();
+    };
+    const editFromDetail = () => {
+        const root = document.querySelector('.incident-detail');
+        const button = root?.querySelector('.js-edit-from-detail');
+        if (!root || !button) return;
+        const data = { id: button.dataset.id, bookingId: root.dataset.bookingId, type: root.dataset.type,
+            severity: root.dataset.severity, occurred: root.dataset.occurred, description: root.dataset.description };
+        closeDetail(); openForm(data);
+    };
+
+    document.getElementById('openCreateIncident')?.addEventListener('click', () => openForm());
+    document.querySelectorAll('[data-close-modal]').forEach(button => button.addEventListener('click', closeForm));
+    document.querySelectorAll('[data-close-detail]').forEach(button => button.addEventListener('click', closeDetail));
+    document.addEventListener('click', event => {
+        const detail = event.target.closest('.js-detail'); if (detail) openDetail(detail.dataset.id);
+        const edit = event.target.closest('.js-edit'); if (edit) {
+            openDetail(edit.dataset.id).then(() => editFromDetail());
+        }
+        if (event.target.closest('[data-close-detail]')) closeDetail();
+        if (event.target.closest('.js-edit-from-detail')) editFromDetail();
+    });
+    document.addEventListener('keydown', event => { if (event.key === 'Escape') { closeForm(); closeDetail(); } });
+
+    form.addEventListener('submit', async event => {
+        event.preventDefault(); errorBox.hidden = true;
+        if (!form.checkValidity()) { form.reportValidity(); return; }
+        const submit = document.getElementById('saveIncident'); submit.disabled = true;
+        const payload = new FormData(form); if (booking.disabled) payload.set('BookingId', booking.value);
+        const id = idInput.value; const url = id ? `/dieu-phoi/su-co/${id}` : '/dieu-phoi/su-co';
+        try {
+            const response = await fetch(url, { method: 'POST', body: payload, headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+            if (!response.ok) { errorBox.textContent = await readMessage(response); errorBox.hidden = false; return; }
+            const result = await response.json(); closeForm(); notify(result.message || 'Đã lưu báo cáo sự cố.');
+            setTimeout(() => window.location.reload(), 650);
+        } catch { errorBox.textContent = 'Không thể kết nối đến hệ thống. Vui lòng thử lại.'; errorBox.hidden = false; }
+        finally { submit.disabled = false; }
+    });
+
+    const requestedId = page.dataset.openIncident;
+    if (requestedId && /^\d+$/.test(requestedId)) openDetail(requestedId);
+})();

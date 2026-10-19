@@ -18,6 +18,7 @@ using HeThongDatTiecCuoi_WEB.Models.Home;
 using HeThongDatTiecCuoi_WEB.Models.ManagerHr;
 using HeThongDatTiecCuoi_WEB.Models.ManagerContractPayment;
 using HeThongDatTiecCuoi_WEB.Models.ManagerEventCoordination;
+using HeThongDatTiecCuoi_WEB.Models.Incident;
 using Microsoft.AspNetCore.Mvc;
 using HeThongDatTiecCuoi_WEB.Models.DecorPackages;
 using HeThongDatTiecCuoi_WEB.Options;
@@ -45,6 +46,52 @@ public sealed class RiversideApiClient : IRiversideApiClient
         _recOptions = recommendationOptions?.Value ?? new RecommendationOptions();
         _recLogger = logger;
     }
+
+    public Task<ApiCallResult<IncidentListResponseViewModel>> GetIncidentsAsync(string accessToken,
+        string? search, string? status, string? severity, int? hallId, DateTime? fromDate, DateTime? toDate,
+        int page, int pageSize, CancellationToken cancellationToken)
+    {
+        var query = new List<string> { $"page={Math.Max(1, page)}", $"pageSize={Math.Clamp(pageSize, 1, 50)}" };
+        AddQueryParameter(query, "search", search);
+        AddQueryParameter(query, "status", status);
+        AddQueryParameter(query, "severity", severity);
+        if (hallId.HasValue) query.Add($"hallId={hallId.Value}");
+        if (fromDate.HasValue) query.Add($"fromDate={fromDate.Value:yyyy-MM-dd}");
+        if (toDate.HasValue) query.Add($"toDate={toDate.Value:yyyy-MM-dd}");
+        return SendAsync<IncidentListResponseViewModel>(HttpMethod.Get, $"api/incidents?{string.Join('&', query)}",
+            null, accessToken, cancellationToken);
+    }
+
+    public Task<ApiCallResult<List<IncidentBookingOptionViewModel>>> GetIncidentBookingOptionsAsync(
+        string accessToken, CancellationToken cancellationToken) =>
+        SendAsync<List<IncidentBookingOptionViewModel>>(HttpMethod.Get, "api/incidents/booking-options", null,
+            accessToken, cancellationToken);
+
+    public Task<ApiCallResult<IncidentDetailViewModel>> GetIncidentAsync(string accessToken, int id,
+        CancellationToken cancellationToken) => SendAsync<IncidentDetailViewModel>(HttpMethod.Get,
+            $"api/incidents/{id}", null, accessToken, cancellationToken);
+
+    public Task<ApiCallResult<IncidentDetailViewModel>> CreateIncidentAsync(string accessToken,
+        IncidentFormViewModel model, CancellationToken cancellationToken) =>
+        SendAsync<IncidentDetailViewModel>(HttpMethod.Post, "api/incidents", model, accessToken, cancellationToken);
+
+    public Task<ApiCallResult<IncidentDetailViewModel>> UpdateIncidentAsync(string accessToken, int id,
+        IncidentFormViewModel model, CancellationToken cancellationToken) =>
+        SendAsync<IncidentDetailViewModel>(HttpMethod.Put, $"api/incidents/{id}", model, accessToken, cancellationToken);
+
+    public Task<ApiCallResult<IncidentDetailViewModel>> UpdateIncidentStatusAsync(string accessToken, int id,
+        string status, string? resolution, CancellationToken cancellationToken) =>
+        SendAsync<IncidentDetailViewModel>(HttpMethod.Patch, $"api/incidents/{id}/status",
+            new { status, resolution }, accessToken, cancellationToken);
+
+    public Task<ApiCallResult<IncidentDetailViewModel>> UpdateIncidentResolutionAsync(string accessToken, int id,
+        string resolution, CancellationToken cancellationToken) =>
+        SendAsync<IncidentDetailViewModel>(HttpMethod.Patch, $"api/incidents/{id}/resolution",
+            new { resolution }, accessToken, cancellationToken);
+
+    public Task<ApiCallResult<List<IncidentHistoryItemViewModel>>> GetIncidentHistoryAsync(string accessToken, int id,
+        CancellationToken cancellationToken) => SendAsync<List<IncidentHistoryItemViewModel>>(HttpMethod.Get,
+            $"api/incidents/{id}/history", null, accessToken, cancellationToken);
 
     public Task<ApiCallResult<EventCoordinationListResponseViewModel>> GetManagerEventCoordinationAsync(
         string accessToken, string? search, string? bookingStatus, string? coordinationStatus,

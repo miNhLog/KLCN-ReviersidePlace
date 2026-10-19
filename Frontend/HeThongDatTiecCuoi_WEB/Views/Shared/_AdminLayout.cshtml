@@ -59,7 +59,7 @@
           href="~/css/admin-common.css"
           asp-append-version="true" />
     @if (isManager) { <link rel="stylesheet" href="~/css/manager-theme.css" asp-append-version="true" /> }
-    @if (isAdmin || isManager) { <link rel="stylesheet" href="~/css/notifications.css" asp-append-version="true" /> }
+    @if (isAdmin || isManager || isHallManager || isCoordinator) { <link rel="stylesheet" href="~/css/notifications.css" asp-append-version="true" /> }
 
     <link rel="stylesheet" href="~/css/ui-format.css" asp-append-version="true" />
     @await RenderSectionAsync("Styles", required: false)
@@ -229,7 +229,10 @@
                            class="sidebar-item @(IsActive("ManagerEventCoordination") ? "active" : string.Empty)"
                            aria-current="@(IsActive("ManagerEventCoordination") ? "page" : null)"
                            data-sidebar-tooltip="Tiệc &amp; Điều phối"><span class="sidebar-icon" aria-hidden="true"><i class="fa-solid fa-people-arrows"></i></span><span class="sidebar-label">Tiệc &amp; Điều phối</span></a>
-                        <button type="button" class="sidebar-item developing" data-sidebar-tooltip="Sự cố"><span class="sidebar-icon" aria-hidden="true"><i class="fa-solid fa-triangle-exclamation"></i></span><span class="sidebar-label">Sự cố</span></button>
+                        <a asp-controller="ManagerIncident" asp-action="Index"
+                           class="sidebar-item @(IsActive("ManagerIncident") ? "active" : string.Empty)"
+                           aria-current="@(IsActive("ManagerIncident") ? "page" : null)"
+                           data-sidebar-tooltip="Sự cố"><span class="sidebar-icon" aria-hidden="true"><i class="fa-solid fa-triangle-exclamation"></i></span><span class="sidebar-label">Sự cố</span></a>
                         <button type="button" class="sidebar-item developing" data-sidebar-tooltip="Thay đổi lịch"><span class="sidebar-icon" aria-hidden="true"><i class="fa-solid fa-calendar-days"></i></span><span class="sidebar-label">Thay đổi lịch</span></button>
                     </nav>
                 </section>
@@ -284,7 +287,10 @@
                 <section class="sidebar-section" aria-labelledby="hallManagerOperationsMenuTitle">
                     <h2 class="sidebar-section-title" id="hallManagerOperationsMenuTitle">Vận hành</h2>
                     <nav class="sidebar-menu" aria-label="Vận hành sảnh">
-                        <button type="button" class="sidebar-item developing" data-sidebar-tooltip="Sự cố"><span class="sidebar-icon" aria-hidden="true"><i class="fa-solid fa-triangle-exclamation"></i></span><span class="sidebar-label">Sự cố</span></button>
+                        <a asp-controller="HallManagerIncident" asp-action="Index"
+                           class="sidebar-item @(IsActive("HallManagerIncident") ? "active" : string.Empty)"
+                           aria-current="@(IsActive("HallManagerIncident") ? "page" : null)"
+                           data-sidebar-tooltip="Sự cố"><span class="sidebar-icon" aria-hidden="true"><i class="fa-solid fa-triangle-exclamation"></i></span><span class="sidebar-label">Sự cố</span></a>
                         <button type="button" class="sidebar-item developing" data-sidebar-tooltip="Thay đổi lịch"><span class="sidebar-icon" aria-hidden="true"><i class="fa-solid fa-calendar-days"></i></span><span class="sidebar-label">Thay đổi lịch</span></button>
                     </nav>
                 </section>
@@ -331,7 +337,10 @@
                     <h2 class="sidebar-section-title" id="coordinatorOperationsMenuTitle">Vận hành tiệc</h2>
                     <nav class="sidebar-menu" aria-label="Vận hành tiệc">
                         <button type="button" class="sidebar-item developing" data-sidebar-tooltip="Theo dõi tiến độ"><span class="sidebar-icon" aria-hidden="true"><i class="fa-solid fa-list-check"></i></span><span class="sidebar-label">Theo dõi tiến độ</span></button>
-                        <button type="button" class="sidebar-item developing" data-sidebar-tooltip="Sự cố"><span class="sidebar-icon" aria-hidden="true"><i class="fa-solid fa-triangle-exclamation"></i></span><span class="sidebar-label">Sự cố</span></button>
+                        <a asp-controller="CoordinatorIncident" asp-action="Index"
+                           class="sidebar-item @(IsActive("CoordinatorIncident") ? "active" : string.Empty)"
+                           aria-current="@(IsActive("CoordinatorIncident") ? "page" : null)"
+                           data-sidebar-tooltip="Sự cố"><span class="sidebar-icon" aria-hidden="true"><i class="fa-solid fa-triangle-exclamation"></i></span><span class="sidebar-label">Sự cố</span></a>
                     </nav>
                 </section>
                 }
@@ -382,7 +391,7 @@
                         <span>@currentDateText</span>
                     </div>
                     <span class="topbar-divider" aria-hidden="true"></span>
-                    @if (isAdmin || isManager)
+                    @if (isAdmin || isManager || isHallManager || isCoordinator)
                     {
                     <div class="topbar-notifications" data-notification-root>
                         <button type="button"
@@ -445,7 +454,7 @@
 
     <script src="~/js/admin-sidebar.js" asp-append-version="true"></script>
     <script src="~/js/ui-format.js" asp-append-version="true"></script>
-    @if (isAdmin || isManager) { <script src="~/js/notifications.js" asp-append-version="true"></script> }
+    @if (isAdmin || isManager || isHallManager || isCoordinator) { <script src="~/js/notifications.js" asp-append-version="true"></script> }
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

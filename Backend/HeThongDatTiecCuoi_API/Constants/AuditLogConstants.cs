@@ -20,6 +20,10 @@ public static class AuditActions
     public const string ContractActivated = "CONTRACT_ACTIVATED";
     public const string ContractCompleted = "CONTRACT_COMPLETED";
     public const string ContractCancelled = "CONTRACT_CANCELLED";
+    public const string IncidentCreated = "INCIDENT_CREATED";
+    public const string IncidentUpdated = "INCIDENT_UPDATED";
+    public const string IncidentStatusChanged = "INCIDENT_STATUS_CHANGED";
+    public const string IncidentResolutionUpdated = "INCIDENT_RESOLUTION_UPDATED";
 
     public static readonly string[] AdminVisibleActions =
     [
@@ -55,4 +59,5 @@ public static class AuditEntityNames
     public const string RoleChangeRequest = "RoleChangeRequest";
     public const string HallManagerAssignment = "HallManagerAssignment";
     public const string Contract = "Contract";
+    public const string Incident = "Incident";
 }

@@ -15,11 +15,20 @@ using HeThongDatTiecCuoi_WEB.Models.Profile;
 using HeThongDatTiecCuoi_WEB.Models.ManagerHr;
 using HeThongDatTiecCuoi_WEB.Models.ManagerContractPayment;
 using HeThongDatTiecCuoi_WEB.Models.ManagerEventCoordination;
+using HeThongDatTiecCuoi_WEB.Models.Incident;
 using Microsoft.AspNetCore.Mvc;
 using HeThongDatTiecCuoi_WEB.Models.DecorPackages;
 
 public interface IRiversideApiClient
 {
+    Task<ApiCallResult<IncidentListResponseViewModel>> GetIncidentsAsync(string accessToken, string? search, string? status, string? severity, int? hallId, DateTime? fromDate, DateTime? toDate, int page, int pageSize, CancellationToken cancellationToken);
+    Task<ApiCallResult<List<IncidentBookingOptionViewModel>>> GetIncidentBookingOptionsAsync(string accessToken, CancellationToken cancellationToken);
+    Task<ApiCallResult<IncidentDetailViewModel>> GetIncidentAsync(string accessToken, int id, CancellationToken cancellationToken);
+    Task<ApiCallResult<IncidentDetailViewModel>> CreateIncidentAsync(string accessToken, IncidentFormViewModel model, CancellationToken cancellationToken);
+    Task<ApiCallResult<IncidentDetailViewModel>> UpdateIncidentAsync(string accessToken, int id, IncidentFormViewModel model, CancellationToken cancellationToken);
+    Task<ApiCallResult<IncidentDetailViewModel>> UpdateIncidentStatusAsync(string accessToken, int id, string status, string? resolution, CancellationToken cancellationToken);
+    Task<ApiCallResult<IncidentDetailViewModel>> UpdateIncidentResolutionAsync(string accessToken, int id, string resolution, CancellationToken cancellationToken);
+    Task<ApiCallResult<List<IncidentHistoryItemViewModel>>> GetIncidentHistoryAsync(string accessToken, int id, CancellationToken cancellationToken);
     Task<ApiCallResult<EventCoordinationListResponseViewModel>> GetManagerEventCoordinationAsync(string accessToken, string? search, string? bookingStatus, string? coordinationStatus, DateTime? fromDate, DateTime? toDate, int page, int pageSize, CancellationToken cancellationToken);
     Task<ApiCallResult<EventCoordinationDetailViewModel>> GetManagerEventCoordinationDetailAsync(string accessToken, int bookingId, CancellationToken cancellationToken);
     Task<ApiCallResult<EventCoordinationCalendarViewModel>> GetManagerEventCoordinationCalendarAsync(string accessToken, DateTime fromDate, DateTime toDate, int? hallId, int? coordinatorEmployeeId, bool conflictsOnly, CancellationToken cancellationToken);

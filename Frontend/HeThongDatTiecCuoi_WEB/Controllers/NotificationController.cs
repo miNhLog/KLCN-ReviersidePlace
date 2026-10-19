@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace HeThongDatTiecCuoi_WEB.Controllers;
 
-[Authorize(Roles = RoleNames.Admin + "," + RoleNames.Manager)]
+[Authorize(Roles = RoleNames.Admin + "," + RoleNames.Manager + "," + RoleNames.HallManager + "," + RoleNames.Coordinator)]
 [Route("thong-bao")]
 public sealed class NotificationController : Controller
 {
