@@ -538,7 +538,8 @@ def _call_external_llm(prompt: str) -> Optional[str]:
                     txt = data["candidates"][0]["content"]["parts"][0]["text"].strip()
                     if txt:
                         return txt
-        except Exception:
+        except Exception as e:
+            print(f"[Gemini Error] {e}")
             pass
     return None
 
@@ -633,9 +634,6 @@ def chat(query: str, history: Optional[List] = None) -> Dict:
     elif (hits and max_score >= 0.30 and _concept_points(query) >= 2
             and not _forced_out_of_scope(query)):
         out_of_scope = False
-    if out_of_scope:
-        return {"reply": SAFE_OUT_OF_SCOPE, "sources": [],
-                "confidence": round(float(max_score), 3), "is_out_of_scope": True}
     sources = [{"text": t[:500], "score": round(float(s), 3), **m} for t, s, m in hits]
     context = "\n---\n".join(t for t, _, _ in hits)
     hist_txt = ""
@@ -652,6 +650,27 @@ def chat(query: str, history: Optional[List] = None) -> Dict:
             hist_txt = "\n".join(parts)
     except Exception:
         hist_txt = ""
+
+    if out_of_scope:
+        # Cách 2: Nếu có LLM (OpenAI / Gemini), cho phép trả lời câu hỏi tự nhiên / toán học / xã giao
+        # nhưng giữ phong thái trợ lý Riverside Palace và khéo léo gợi ý dịch vụ tiệc cưới.
+        casual_prompt = (
+            "Bạn là Trợ lý ảo Riverside Palace - Trung tâm Hội nghị Tiệc cưới cao cấp ven sông Sài Gòn (360D Bến Vân Đồn, Q4, TP.HCM).\n"
+            "Khách hàng vừa hỏi một câu hỏi tự nhiên, toán học hoặc ngoài lề dịch vụ tiệc cưới.\n"
+            "Nhiệm vụ của bạn:\n"
+            "1. Trả lời câu hỏi của khách một cách chính xác, ngắn gọn và thân thiện bằng tiếng Việt, xưng 'Dạ/em'.\n"
+            "2. Khéo léo nói thêm rằng bạn là Trợ lý ảo của Riverside Palace và luôn sẵn sàng tư vấn về sảnh tiệc, thực đơn 7 món Á–Âu, ưu đãi tiệc cưới hoặc Hotline 0933 777 888.\n"
+            f"Lịch sử trò chuyện:\n{hist_txt}\n"
+            f"Câu hỏi của khách: {query}\n"
+            "Trả lời:"
+        )
+        casual_reply = _call_external_llm(casual_prompt)
+        if casual_reply:
+            return {"reply": casual_reply, "sources": [],
+                    "confidence": round(float(max_score), 3), "is_out_of_scope": False}
+        return {"reply": SAFE_OUT_OF_SCOPE, "sources": [],
+                "confidence": round(float(max_score), 3), "is_out_of_scope": True}
+
     prompt = ("Bạn là trợ lý ảo Riverside Palace, trả lời tiếng Việt thân thiện, xưng 'Dạ/em', "
               "chỉ dùng thông tin trong Context, kèm báo giá chuẩn và Hotline 0933 777 888.\n"
               f"Context:\n{context}\nLịch sử:\n{hist_txt}\nCâu hỏi: {query}\nTrả lời:")
@@ -783,6 +802,10 @@ def _iter_texts_newest_first(history: List) -> List[str]:
     texts = []
     for m in reversed(history or []):
         if isinstance(m, dict):
+            role = str(m.get("role", "")).lower()
+            # Bỏ qua tin nhắn của bot/assistant, chỉ lấy tin nhắn của khách (user)
+            if role in ("assistant", "bot", "system"):
+                continue
             c = m.get("content", m.get("message", m.get("text", "")))
             if c:
                 texts.append(str(c))

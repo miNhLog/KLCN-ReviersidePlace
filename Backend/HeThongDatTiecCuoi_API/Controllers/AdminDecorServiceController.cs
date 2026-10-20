@@ -19,15 +19,18 @@ public sealed class AdminDecorServiceController : ControllerBase
     private readonly ApplicationDbContext _context;
     private readonly IStatusService _statusService;
     private readonly IWebHostEnvironment _environment;
+    private readonly IAiCatalogSyncService? _catalogSyncService;
 
     public AdminDecorServiceController(
         ApplicationDbContext context,
         IStatusService statusService,
-        IWebHostEnvironment environment)
+        IWebHostEnvironment environment,
+        IAiCatalogSyncService? catalogSyncService = null)
     {
         _context = context;
         _statusService = statusService;
         _environment = environment;
+        _catalogSyncService = catalogSyncService;
     }
 
     [HttpGet("decor")]
@@ -85,6 +88,7 @@ public sealed class AdminDecorServiceController : ControllerBase
 
         _context.DecorPackages.Add(decor);
         await _context.SaveChangesAsync();
+        _catalogSyncService?.SyncCatalogInBackground();
         return Ok(new { success = true, id = decor.GoiTrangTriID, message = "Thêm gói decor thành công!" });
     }
 
@@ -112,6 +116,7 @@ public sealed class AdminDecorServiceController : ControllerBase
         decor.Gia = request.Price;
         decor.StatusId = statusId.Value;
         await _context.SaveChangesAsync();
+        _catalogSyncService?.SyncCatalogInBackground();
         return Ok(new { success = true, id = decor.GoiTrangTriID, message = "Cập nhật gói decor thành công!" });
     }
 
@@ -167,6 +172,7 @@ public sealed class AdminDecorServiceController : ControllerBase
 
         _context.ServiceItems.Add(service);
         await _context.SaveChangesAsync();
+        _catalogSyncService?.SyncCatalogInBackground();
         return Ok(new { success = true, id = service.DichVuID, message = "Thêm dịch vụ thành công!" });
     }
 
@@ -194,6 +200,7 @@ public sealed class AdminDecorServiceController : ControllerBase
         service.Gia = request.Price;
         service.StatusId = statusId.Value;
         await _context.SaveChangesAsync();
+        _catalogSyncService?.SyncCatalogInBackground();
         return Ok(new { success = true, id = service.DichVuID, message = "Cập nhật dịch vụ thành công!" });
     }
 

@@ -16,79 +16,188 @@ Neu chua co DB that, script tao file mau header-only va in huong dan.
 """
 import argparse
 import csv
+import logging
+import os
 import sys
 from pathlib import Path
+from typing import Optional
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+logger = logging.getLogger("export_reviews")
 
 BASE = Path(__file__).resolve().parent.parent.parent
 OUT_DEFAULT = BASE / "data" / "wedding_reviews_real.csv"
-HEADER = ["SampleId", "HallId", "MenuId", "DecorId", "Satisfaction"]
 MIN_REAL_ROWS = 20
 
-# TODO-5: dung ten bang/cot that (DanhGia/MaQRDanhGia/DatTiec/LichSanh/KhachHang),
-# JOIN LichSanh de lay SanhTiecID that thay vi ghi 0.
+CSV_COLUMNS = [
+    "SampleId",
+    "user_id",
+    "HallId",
+    "MenuId",
+    "DecorId",
+    "combo_id",
+    "Satisfaction",
+    "rating",
+    "FoodQuality",
+    "StaffService",
+    "DecorationAtmosphere",
+    "CostEffectiveness",
+    "comment",
+    "created_at",
+]
+
+# Truy van dung schema thuc te cua Riverside Palace:
+# DanhGia (r) -> MaQRDanhGia (qr) -> DatTiec (dt) -> LichSanh (ls)
 QUERY = """
-SELECT c.KhachHangID AS SampleId, ls.SanhTiecID AS HallId, b.ThucDonID AS MenuId,
-       b.GoiTrangTriID AS DecorId, r.DiemTongThe AS Satisfaction
+SELECT 
+    r.DanhGiaID AS SampleId,
+    ISNULL(dt.KhachHangID, 0) AS user_id,
+    ISNULL(ls.SanhTiecID, 0) AS HallId,
+    ISNULL(dt.ThucDonID, 0) AS MenuId,
+    ISNULL(dt.GoiTrangTriID, 0) AS DecorId,
+    CAST(r.DiemTongThe AS FLOAT) AS rating,
+    CAST(r.DiemTongThe AS FLOAT) AS Satisfaction,
+    CAST(ISNULL(r.DiemMonAn, 0) AS FLOAT) AS FoodQuality,
+    CAST(ISNULL(r.DiemPhucVu, 0) AS FLOAT) AS StaffService,
+    CAST(ISNULL(r.DiemSanh, 0) AS FLOAT) AS DecorationAtmosphere,
+    CAST(ISNULL(r.DiemAmThanh, 0) AS FLOAT) AS CostEffectiveness,
+    REPLACE(REPLACE(ISNULL(r.BinhLuan, N''), CHAR(13), ' '), CHAR(10), ' ') AS comment,
+    CONVERT(VARCHAR(19), r.NgayDanhGia, 120) AS created_at
 FROM DanhGia r
-JOIN MaQRDanhGia q ON q.MaQRDanhGiaID = r.MaQRDanhGiaID
-JOIN DatTiec b ON b.DatTiecID = q.DatTiecID
-JOIN LichSanh ls ON ls.LichSanhID = b.LichSanhID
-JOIN KhachHang c ON c.KhachHangID = b.KhachHangID
-WHERE r.DiemTongThe IS NOT NULL;
+INNER JOIN MaQRDanhGia qr ON r.MaQRDanhGiaID = qr.MaQRDanhGiaID
+INNER JOIN DatTiec dt ON qr.DatTiecID = dt.DatTiecID
+LEFT JOIN LichSanh ls ON dt.LichSanhID = ls.LichSanhID
+WHERE r.DiemTongThe IS NOT NULL
+ORDER BY r.NgayDanhGia DESC;
 """
+
+CANDIDATE_CONNECTION_STRINGS = [
+    # 1. Local SQLEXPRESS with Windows Authentication (ODBC 17)
+    r"Driver={ODBC Driver 17 for SQL Server};Server=.\SQLEXPRESS;Database=IRiversidePalaceDB;Trusted_Connection=yes;TrustServerCertificate=yes;",
+    # 2. Local SQLEXPRESS with Windows Authentication (ODBC 18)
+    r"Driver={ODBC Driver 18 for SQL Server};Server=.\SQLEXPRESS;Database=IRiversidePalaceDB;Trusted_Connection=yes;TrustServerCertificate=yes;",
+    # 3. Docker / localhost with sa credentials
+    r"Driver={ODBC Driver 17 for SQL Server};Server=localhost,1433;Database=IRiversidePalaceDB;UID=sa;PWD=Riverside@12345;TrustServerCertificate=yes;",
+    # 4. Default instance (.)
+    r"Driver={ODBC Driver 17 for SQL Server};Server=.;Database=IRiversidePalaceDB;Trusted_Connection=yes;TrustServerCertificate=yes;",
+]
+
+
+def detect_connection_string(explicit_str: Optional[str] = None) -> Optional[str]:
+    """Tu dong tim connection string hoat dong toi CSDL SQL Server."""
+    if explicit_str and explicit_str.strip():
+        return explicit_str.strip()
+
+    env_str = os.getenv("DB_CONNECTION_STRING") or os.getenv("SQL_CONNECTION_STRING")
+    if env_str and env_str.strip():
+        return env_str.strip()
+
+    try:
+        import pyodbc
+    except ImportError:
+        logger.error("Chua cai dat thu vien pyodbc. Vui long chay: pip install pyodbc")
+        return None
+
+    for conn_str in CANDIDATE_CONNECTION_STRINGS:
+        try:
+            con = pyodbc.connect(conn_str, timeout=3)
+            con.close()
+            logger.info(f"Ket noi SQL Server thanh cong qua: {conn_str.split(';')[1]}")
+            return conn_str
+        except Exception:
+            continue
+
+    return None
 
 
 def export_via_odbc(conn_str: str, out_path: Path) -> int:
     try:
-        import pyodbc  # type: ignore
-    except Exception:
-        print("pyodbc chua cai: pip install pyodbc. Ghi file header-only lam mau.", file=sys.stderr)
-        with open(out_path, "w", newline="", encoding="utf-8") as f:
-            csv.writer(f).writerow(HEADER)
+        import pyodbc
+    except ImportError:
+        logger.error("pyodbc chua duoc cai dat. Vui long chay: pip install pyodbc")
         return 0
+
+    out_path.parent.mkdir(parents=True, exist_ok=True)
     con = pyodbc.connect(conn_str)
     cur = con.cursor()
     cur.execute(QUERY)
     rows = cur.fetchall()
+
     kept = 0
     with open(out_path, "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
-        w.writerow(HEADER)
+        w.writerow(CSV_COLUMNS)
         for r in rows:
-            hall_id, menu_id, decor_id = r[1], r[2], r[3]
-            if hall_id is None or menu_id is None or decor_id is None:
-                continue
-            try:
-                w.writerow([int(r[0]), int(hall_id), int(menu_id), int(decor_id), float(r[4])])
-            except (TypeError, ValueError):
-                continue
+            sample_id = int(r[0])
+            user_id = int(r[1])
+            hall_id = int(r[2])
+            menu_id = int(r[3])
+            decor_id = int(r[4])
+            rating = float(r[5])
+            satisfaction = float(r[6])
+            food = float(r[7])
+            service = float(r[8])
+            atmosphere = float(r[9])
+            cost = float(r[10])
+            comment = str(r[11])
+            created_at = str(r[12])
+
+            combo_id = f"{hall_id}_{menu_id}_{decor_id}"
+
+            w.writerow([
+                sample_id,
+                user_id,
+                hall_id,
+                menu_id,
+                decor_id,
+                combo_id,
+                satisfaction,
+                rating,
+                food,
+                service,
+                atmosphere,
+                cost,
+                comment,
+                created_at,
+            ])
             kept += 1
+
     con.close()
+
     if kept < MIN_REAL_ROWS:
-        print(f"[export_reviews] CANH BAO: chi co {kept} dong that (< {MIN_REAL_ROWS}); "
-              f"cf_engine se fallback synthetic cho den khi du lieu that.",
-              file=sys.stderr)
+        logger.warning(
+            f"[export_reviews] CANH BAO: Chi trich xuat duoc {kept} dong danh gia (< {MIN_REAL_ROWS}). "
+            f"CF Engine se tu dong fallback sang du lieu synthetic (wedding_dataset_5k.csv)."
+        )
+    else:
+        logger.info(
+            f"[export_reviews] Da xuat thanh cong {kept} dong danh gia thuc te (>= {MIN_REAL_ROWS}). "
+            f"CF Engine san sang huan luyen tren du lieu that."
+        )
+
     return kept
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description="Export DanhGia that ra CSV cho CF.")
-    ap.add_argument("--connection-string", default="", help="ODBC/SQL Server connection string")
-    ap.add_argument("--out", default=str(OUT_DEFAULT))
+    ap = argparse.ArgumentParser(description="Trich xuat DanhGia that tu SQL Server ra CSV cho CF Engine.")
+    ap.add_argument("--connection-string", default="", help="Chuoi ket noi ODBC SQL Server")
+    ap.add_argument("--out", default=str(OUT_DEFAULT), help="Duong dan file CSV xuat ra")
     args = ap.parse_args()
+
     out = Path(args.out)
-    if not args.connection_string:
-        out.parent.mkdir(parents=True, exist_ok=True)
-        if not out.exists():
-            with open(out, "w", newline="", encoding="utf-8") as f:
-                csv.writer(f).writerow(HEADER)
-        print(f"[export_reviews] Chua co connection-string: giu file mau {out}. "
-              f"Khi co du lieu that, chay lai voi --connection-string.")
-        print(f"[export_reviews] Query tham khao:\n{QUERY}")
+    conn_str = detect_connection_string(args.connection_string)
+
+    if not conn_str:
+        logger.warning(
+            f"Khong the tu dong ket noi toi SQL Server. Giu file CSV hien tai tai {out}.\n"
+            f"Ban co the chi dinh qua tham so: python export_reviews.py --connection-string \"...\""
+        )
         return
-    n = export_via_odbc(args.connection_string, out)
-    print(f"[export_reviews] Da xuat {n} dong that -> {out}")
+
+    n = export_via_odbc(conn_str, out)
+    print(f"[export_reviews] Da trich xuat xong {n} dong du lieu danh gia -> {out}")
 
 
 if __name__ == "__main__":
     main()
+

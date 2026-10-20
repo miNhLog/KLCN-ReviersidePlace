@@ -26,15 +26,18 @@ public sealed class MenuController : ControllerBase
     private readonly ApplicationDbContext _context;
     private readonly IStatusService _statusService;
     private readonly IWebHostEnvironment _environment;
+    private readonly IAiCatalogSyncService? _catalogSyncService;
 
     public MenuController(
         ApplicationDbContext context,
         IStatusService statusService,
-        IWebHostEnvironment environment)
+        IWebHostEnvironment environment,
+        IAiCatalogSyncService? catalogSyncService = null)
     {
         _context = context;
         _statusService = statusService;
         _environment = environment;
+        _catalogSyncService = catalogSyncService;
     }
 
     [HttpGet("public")]
@@ -370,6 +373,7 @@ public sealed class MenuController : ControllerBase
 
         _context.Menus.Add(menu);
         await _context.SaveChangesAsync(cancellationToken);
+        _catalogSyncService?.SyncCatalogInBackground();
 
         return Created($"/api/menus/{menu.MenuId}", ToDto(menu, activeStatus));
     }
@@ -415,6 +419,7 @@ public sealed class MenuController : ControllerBase
         menu.PricePerTable = request.PricePerTable;
 
         await _context.SaveChangesAsync(cancellationToken);
+        _catalogSyncService?.SyncCatalogInBackground();
         return Ok(ToDto(menu));
     }
 
@@ -454,6 +459,7 @@ public sealed class MenuController : ControllerBase
 
         menu.StatusId = status.StatusId;
         await _context.SaveChangesAsync(cancellationToken);
+        _catalogSyncService?.SyncCatalogInBackground();
 
         return Ok(ToDto(menu, status));
     }
@@ -583,6 +589,7 @@ public sealed class MenuController : ControllerBase
             _context.MenuDishes.Add(menuDish);
         }
         await _context.SaveChangesAsync(cancellationToken);
+        _catalogSyncService?.SyncCatalogInBackground();
 
         var response = new MenuDishDto
         {
@@ -710,6 +717,7 @@ public sealed class MenuController : ControllerBase
                 cancellationToken);
 
         await transaction.CommitAsync(cancellationToken);
+        _catalogSyncService?.SyncCatalogInBackground();
 
         return Ok(new
         {
