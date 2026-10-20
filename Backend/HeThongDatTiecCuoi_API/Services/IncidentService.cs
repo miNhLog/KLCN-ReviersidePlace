@@ -252,15 +252,15 @@ public sealed class IncidentService : IIncidentService
         var query = Scope(role, userId, tracking: false)!;
         var snapshot = await query.Where(i => i.IncidentId == incidentId).Select(i => new
         {
-            i.IncidentId, StatusCode = i.Status.StatusCode, i.Resolution, i.Severity,
+            i.IncidentId, i.StatusId, StatusCode = i.Status.StatusCode, i.Resolution, i.Severity,
             ReporterUserId = i.ReportedByEmployee != null ? (int?)i.ReportedByEmployee.UserId : null
         }).SingleOrDefaultAsync(cancellationToken);
         if (snapshot is null)
             return ServiceResult<IncidentDetailDto>.Failure("Không tìm thấy sự cố hoặc bạn không có quyền xử lý.", StatusCodes.Status404NotFound);
-        var expected = snapshot.StatusCode == BusinessStatusCodes.Pending
+        var expectedNextStatus = snapshot.StatusCode == BusinessStatusCodes.Pending
             ? BusinessStatusCodes.Processing
             : snapshot.StatusCode == BusinessStatusCodes.Processing ? BusinessStatusCodes.Resolved : null;
-        if (nextCode != expected)
+        if (nextCode != expectedNextStatus)
             return ServiceResult<IncidentDetailDto>.Failure("Trạng thái phải chuyển tuần tự: Chờ xử lý → Đang xử lý → Đã xử lý.", StatusCodes.Status409Conflict);
         if (nextCode == BusinessStatusCodes.Resolved && string.IsNullOrWhiteSpace(request.Resolution))
             return ServiceResult<IncidentDetailDto>.Failure("Vui lòng nhập hướng giải quyết trước khi hoàn tất.", StatusCodes.Status400BadRequest);
@@ -272,7 +272,7 @@ public sealed class IncidentService : IIncidentService
         var resolution = string.IsNullOrWhiteSpace(request.Resolution) ? snapshot.Resolution : request.Resolution.Trim();
         await using var transaction = _context.Database.IsRelational()
             ? await _context.Database.BeginTransactionAsync(cancellationToken) : null;
-        var affected = await UpdateStatusAtomicallyAsync(role, userId, incidentId, expected, statusId.Value,
+        var affected = await UpdateStatusAtomicallyAsync(role, userId, incidentId, snapshot.StatusId, statusId.Value,
             nextCode, resolution, resolvedAt, cancellationToken);
         if (affected == 0)
             return ServiceResult<IncidentDetailDto>.Failure("Sự cố vừa được người khác cập nhật. Vui lòng tải lại trạng thái mới nhất.", StatusCodes.Status409Conflict);
@@ -382,13 +382,13 @@ public sealed class IncidentService : IIncidentService
         return 1;
     }
 
-    private async Task<int> UpdateStatusAtomicallyAsync(string role, int userId, int incidentId, string expectedCode,
+    private async Task<int> UpdateStatusAtomicallyAsync(string role, int userId, int incidentId, int expectedStatusId,
         int nextStatusId, string nextCode, string? resolution, DateTime? resolvedAt, CancellationToken cancellationToken)
     {
         if (_context.Database.IsRelational())
         {
             var scoped = Scope(role, userId, tracking: false)!
-                .Where(i => i.IncidentId == incidentId && i.Status.StatusCode == expectedCode);
+                .Where(i => i.IncidentId == incidentId && i.StatusId == expectedStatusId);
             if (nextCode == BusinessStatusCodes.Resolved)
                 return await scoped.ExecuteUpdateAsync(setters => setters
                     .SetProperty(i => i.StatusId, nextStatusId)
@@ -399,7 +399,7 @@ public sealed class IncidentService : IIncidentService
         }
         var incident = await Scope(role, userId, tracking: true)!
             .SingleOrDefaultAsync(i => i.IncidentId == incidentId, cancellationToken);
-        if (incident is null) return 0;
+        if (incident is null || incident.StatusId != expectedStatusId) return 0;
         incident.StatusId = nextStatusId;
         incident.Status = await _context.Statuses.SingleAsync(s => s.StatusId == nextStatusId, cancellationToken);
         if (nextCode == BusinessStatusCodes.Resolved)
