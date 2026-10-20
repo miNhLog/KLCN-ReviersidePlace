@@ -11,4 +11,7 @@ public static class NotificationTypeCodes
     public const string AccountUnlocked = "ACCOUNT_UNLOCKED";
     public const string IncidentCreated = "INCIDENT_CREATED";
     public const string IncidentUpdated = "INCIDENT_UPDATED";
+    public const string CoordinationAssigned = "COORDINATION_ASSIGNED";
+    public const string CoordinationChanged = "COORDINATION_CHANGED";
+    public const string CoordinationCancelled = "COORDINATION_CANCELLED";
 }

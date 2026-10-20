@@ -14,11 +14,14 @@ public sealed class MyBookingsController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
     private readonly IStatusService _statusService;
+    private readonly ICoordinationAssignmentService _coordinationAssignments;
 
-    public MyBookingsController(ApplicationDbContext context, IStatusService statusService)
+    public MyBookingsController(ApplicationDbContext context, IStatusService statusService,
+        ICoordinationAssignmentService coordinationAssignments)
     {
         _context = context;
         _statusService = statusService;
+        _coordinationAssignments = coordinationAssignments;
     }
 
     [HttpGet]
@@ -92,6 +95,8 @@ public sealed class MyBookingsController : ControllerBase
         booking.CancellationReason = string.IsNullOrWhiteSpace(cancellationReason)
             ? "Hủy theo yêu cầu khách hàng"
             : cancellationReason.Trim();
+        await _coordinationAssignments.SynchronizeBookingAssignmentsAsync(booking.BookingId,
+            BookingStatusCodes.Cancelled, null, booking.CancellationReason, HttpContext.RequestAborted);
 
         // Giải phóng LichSanh về AVAILABLE theo BR03 trong cùng transaction.
         // Bỏ qua nếu schedule null (default-available). Chỉ giữ BOOKED khi còn DatTiec hoạt động khác.

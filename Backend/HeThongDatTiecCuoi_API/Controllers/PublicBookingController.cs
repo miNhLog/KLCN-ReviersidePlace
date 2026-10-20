@@ -27,17 +27,20 @@ public sealed class PublicBookingController : ControllerBase
     private readonly IStatusService _statusService;
     private readonly IMemoryCache _cache;
     private readonly ILogger<PublicBookingController> _logger;
+    private readonly ICoordinationAssignmentService _coordinationAssignments;
 
     public PublicBookingController(
         ApplicationDbContext context,
         IStatusService statusService,
         IMemoryCache cache,
-        ILogger<PublicBookingController> logger)
+        ILogger<PublicBookingController> logger,
+        ICoordinationAssignmentService coordinationAssignments)
     {
         _context = context;
         _statusService = statusService;
         _cache = cache;
         _logger = logger;
+        _coordinationAssignments = coordinationAssignments;
     }
 
     /// <summary>UC14: POST /api/v1/public/bookings/lookup — tra cứu bằng mã + SĐT.</summary>
@@ -77,6 +80,7 @@ public sealed class PublicBookingController : ControllerBase
                 .Include(b => b.BookingServices).ThenInclude(bs => bs.ServiceItem)
                 .Include(b => b.Contract!).ThenInclude(c => c!.Payments).ThenInclude(p => p.Status)
                 .Include(b => b.CoordinationAssignments).ThenInclude(a => a.Coordinator)
+                .Include(b => b.CoordinationAssignments).ThenInclude(a => a.Status)
                 .SingleOrDefaultAsync(b =>
                     b.BookingCode == code &&
                     b.Customer.PhoneNumber == phone &&
@@ -163,6 +167,8 @@ public sealed class PublicBookingController : ControllerBase
             booking.CancellationReason = string.IsNullOrWhiteSpace(request.Reason)
                 ? "Khách hủy giữ chỗ online"
                 : request.Reason.Trim();
+            await _coordinationAssignments.SynchronizeBookingAssignmentsAsync(booking.BookingId,
+                BookingStatusCodes.Cancelled, null, booking.CancellationReason, HttpContext.RequestAborted);
 
             // Giải phóng lịch sảnh về TRỐNG (AVAILABLE) theo BR03 trong cùng transaction.
             // Dùng AVAILABLE qua IStatusService đúng domain HALL_SCHEDULE (không hardcode số).
@@ -258,6 +264,7 @@ public sealed class PublicBookingController : ControllerBase
         var remaining = Math.Max(0m, total - deposit);
 
         var consultant = booking.CoordinationAssignments
+            .Where(a => a.Status.StatusCode == CoordinationAssignmentStatusCodes.Assigned)
             .OrderByDescending(a => a.AssignedAt)
             .FirstOrDefault();
 
