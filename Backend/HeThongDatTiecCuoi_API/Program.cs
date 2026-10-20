@@ -126,6 +126,7 @@ builder.Services.AddScoped<IContractCodeGenerator, ContractCodeGenerator>();
 builder.Services.AddScoped<IContractPdfGenerator, ContractPdfGenerator>();
 builder.Services.AddScoped<IEmployeeCodeGenerator, EmployeeCodeGenerator>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<IIncidentService, IncidentService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
 builder.Services.AddScoped<IFirstPasswordOtpService, FirstPasswordOtpService>();

@@ -76,7 +76,7 @@
 
             <aside class="manager-side-stack">
                 <article class="manager-panel">
-                    <div class="manager-panel-header"><div><h3>Cần chú ý</h3><p>Sự cố chưa hoàn tất</p></div><span class="manager-count-badge">@Model.OpenIncidentCount</span></div>
+                    <div class="manager-panel-header"><div><h3>Cần chú ý</h3><p>Sự cố chưa hoàn tất</p></div><a asp-controller="ManagerIncident" asp-action="Index">Xem tất cả <i class="fa-solid fa-arrow-right"></i></a></div>
                     <div class="manager-incident-list">
                     @if (Model.OpenIncidents.Count == 0)
                     {
@@ -86,7 +86,7 @@
                     {
                         @foreach (var incident in Model.OpenIncidents)
                         {
-                            <div class="manager-incident-item"><span class="manager-severity severity-@incident.Severity.ToLowerInvariant()"><i class="fa-solid fa-triangle-exclamation"></i></span><div><strong>@incident.IncidentType</strong><small>@incident.BookingCode · @incident.StatusName</small><time>@incident.OccurredAt.ToString("dd/MM/yyyy HH:mm")</time></div></div>
+                            <a class="manager-incident-item" asp-controller="ManagerIncident" asp-action="Index" asp-route-incidentId="@incident.IncidentId"><span class="manager-severity severity-@incident.Severity.ToLowerInvariant()"><i class="fa-solid fa-triangle-exclamation"></i></span><div><strong>@incident.IncidentType</strong><small>@incident.BookingCode · @incident.StatusName</small><time>@incident.OccurredAt.ToString("dd/MM/yyyy HH:mm")</time></div></a>
                         }
                     }
                     </div>

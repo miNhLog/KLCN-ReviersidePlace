@@ -111,6 +111,7 @@ public sealed class EventScheduleChangeDto
 
 public sealed class EventIncidentDto
 {
+    public int IncidentId { get; set; }
     public string IncidentType { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public string Severity { get; set; } = string.Empty;

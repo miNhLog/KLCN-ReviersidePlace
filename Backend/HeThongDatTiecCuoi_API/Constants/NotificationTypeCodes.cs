@@ -9,4 +9,6 @@ public static class NotificationTypeCodes
     public const string AccountCreated = "ACCOUNT_CREATED";
     public const string AccountLocked = "ACCOUNT_LOCKED";
     public const string AccountUnlocked = "ACCOUNT_UNLOCKED";
+    public const string IncidentCreated = "INCIDENT_CREATED";
+    public const string IncidentUpdated = "INCIDENT_UPDATED";
 }
