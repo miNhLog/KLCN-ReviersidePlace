@@ -24,6 +24,10 @@ public static class AuditActions
     public const string IncidentUpdated = "INCIDENT_UPDATED";
     public const string IncidentStatusChanged = "INCIDENT_STATUS_CHANGED";
     public const string IncidentResolutionUpdated = "INCIDENT_RESOLUTION_UPDATED";
+    public const string CoordinationAssigned = "COORDINATION_ASSIGNED";
+    public const string CoordinationChanged = "COORDINATION_CHANGED";
+    public const string CoordinationCancelled = "COORDINATION_CANCELLED";
+    public const string CoordinationCompleted = "COORDINATION_COMPLETED";
 
     public static readonly string[] AdminVisibleActions =
     [
@@ -60,4 +64,5 @@ public static class AuditEntityNames
     public const string HallManagerAssignment = "HallManagerAssignment";
     public const string Contract = "Contract";
     public const string Incident = "Incident";
+    public const string CoordinationAssignment = "CoordinationAssignment";
 }
