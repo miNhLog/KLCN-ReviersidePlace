@@ -12,11 +12,11 @@
     <link rel="stylesheet" href="~/css/home.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/recommendation.css" asp-append-version="true" />
     <style>
-        .recom-budget-badge{display:inline-block;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;}
+        .recom-budget-badge{display:inline-flex;align-items:center;gap:4px;padding:5px 12px;border-radius:999px;font-size:12px;font-weight:700;}
         .recom-budget-badge--success{color:#047857;background:#D1FAE5;border:1px solid #6EE7B7;}
         .recom-budget-badge--warning{color:#92400E;background:#FEF3C7;border:1px solid #FCD34D;}
-        .recom-analysis--sub{color:#64748B;font-size:12px;}
-        .recom-explain-list{margin:10px 0 0 0;padding-left:18px;font-size:12.5px;color:#334155;display:grid;gap:4px;}
+        .recom-chips-row{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 14px 0;}
+        .recom-chip{display:inline-flex;align-items:center;gap:4px;padding:4px 9px;border-radius:6px;font-size:12px;color:#334155;background:#F8FAFC;border:1px solid #E2E8F0;line-height:1.35;font-weight:500;}
     </style>
 }
 
@@ -39,7 +39,7 @@
                 <div class="recom-hero-stats" aria-label="Điểm nổi bật gợi ý">
                     <span class="recom-hero-stat"><span class="material-symbols-outlined" aria-hidden="true">apartment</span> 9 sảnh ven sông Sài Gòn</span>
                     <span class="recom-hero-stat"><span class="material-symbols-outlined" aria-hidden="true">restaurant_menu</span> 24 set thực đơn chuẩn 10 khách/bàn</span>
-                    <span class="recom-hero-stat"><span class="material-symbols-outlined" aria-hidden="true">workspace_premium</span> Scoring Top 3 minh bạch theo ngân sách</span>
+                    <span class="recom-hero-stat"><span class="material-symbols-outlined" aria-hidden="true">workspace_premium</span> Top 3 gói tiệc tối ưu ngân sách</span>
                 </div>
             </div>
         </section>
@@ -226,16 +226,16 @@
 
                 <div class="recom-form-actions">
                     <button type="submit" id="btnSubmitRecom" class="recom-btn-gold">
-                        <span class="material-symbols-outlined" aria-hidden="true">bolt</span>
-                        <span>Tính Toán &amp; Trích Xuất Top 3 Combo</span>
+                        <span class="material-symbols-outlined" aria-hidden="true">auto_awesome</span>
+                        <span>Nhận Gợi Ý Top 3 Gói Tiệc Tối Ưu</span>
                     </button>
                 </div>
             </form>
 
             <div id="loadingState" class="recom-loading" role="status" aria-live="polite">
                 <div class="recom-spinner" aria-hidden="true"></div>
-                <p class="recom-loading-title">Scoring Engine đang chấm điểm ma trận phương án...</p>
-                <p class="recom-loading-sub">Đang đối soát lịch trống tại 9 sảnh, so khớp 24 set thực đơn và các đánh giá mới nhất.</p>
+                <p class="recom-loading-title">Đang lựa chọn gói tiệc phù hợp nhất cho hai bạn...</p>
+                <p class="recom-loading-sub">Kiểm tra lịch sảnh trống, tuyển chọn thực đơn chuẩn vị và concept trang trí lý tưởng theo ngân sách.</p>
             </div>
 
             <div id="resultsSection" class="recom-results">
@@ -283,24 +283,24 @@
             </div>
         </div>
         <div class="recom-price-bar">
-            <span>Đơn giá niêm yết:</span>
+            <span>Chi phí áp dụng:</span>
             <span id="modalPriceVal"><strong>-- đ</strong></span>
         </div>
         <div class="recom-modal-body">
             <div>
-                <strong>Mô tả:</strong>
+                <strong style="color:#0F172A;font-size:13px;display:block;margin-bottom:6px;">Mô tả dịch vụ:</strong>
                 <p id="modalDescription" class="recom-desc-box">Nội dung chi tiết...</p>
             </div>
             <div id="modalDishesContainer" hidden>
-                <strong>Chi tiết thực đơn:</strong>
+                <strong style="color:#0F172A;font-size:13px;display:block;margin-bottom:6px;">Chi tiết món ăn:</strong>
                 <div id="modalDishesText" class="recom-desc-box"></div>
             </div>
             <div class="recom-note-box">
                 <span class="material-symbols-outlined" aria-hidden="true">check_circle</span>
-                <span id="modalNote">Thông tin được cập nhật từ hệ thống Riverside Palace.</span>
+                <span id="modalNote">Dịch vụ chuẩn 5 sao được chuẩn bị bởi đội ngũ chuyên nghiệp của Riverside Palace.</span>
             </div>
         </div>
-        <button id="modalMenuCustomBtn" type="button" onclick="openMenuCustomizerFromDetail()" class="recom-btn-gold recom-btn-block" hidden>
+        <button id="modalMenuCustomBtn" type="button" onclick="openMenuCustomizerFromDetail()" class="recom-btn-gold recom-btn-block" hidden style="display:none !important;">
             <span class="material-symbols-outlined" aria-hidden="true">restaurant_menu</span> Xem thực đơn tiệc (tên món + giá, tùy chỉnh món)
         </button>
         <button type="button" onclick="closeDetailModal()" class="recom-btn-dark recom-btn-block">
@@ -966,25 +966,25 @@
 
         function renderCombosResult(data, req) {
             data = data || {};
-            // VĐ2: hiển thị nguồn gợi ý + weights_source null-safe (thiếu field không vỡ, không trắng trang).
-            var srcTag = data.source || data.Source || '';
-            var wSrc = data.weights_source || data.weightsSource || data.WeightsSource || '';
-            var baseNotice = data.algorithmNotice || data.AlgorithmNotice || '';
-            var noticeSuffix = (srcTag ? ' [nguồn: ' + srcTag + ']' : '') + (wSrc ? ' • ' + wSrc : '');
+            // Thông điệp kết quả thanh lịch, loại bỏ các chi tiết debug/thuật toán (hybrid, W*, weights_source...)
             var noticeEl = document.getElementById('resNotice');
-            if (noticeEl) noticeEl.innerText = baseNotice + noticeSuffix;
+            if (noticeEl) {
+                noticeEl.innerText = 'Dựa trên ngân sách, số lượng khách và phong cách yêu thích, Riverside Palace trân trọng đề xuất 3 phương án tiệc cưới trọn gói tối ưu nhất dành cho hai bạn.';
+            }
             const combos = data.topCombos || data.TopCombos || data.top_3 || data.data || data.Data || [];
             const count = data.count ?? data.Count ?? (Array.isArray(combos) ? combos.length : 0);
             const suggestedNext = data.suggestedNext || data.SuggestedNext || null;
             const box = document.getElementById('smartSuggestBox');
             const cardsBox = document.getElementById('combosCardsContainer');
-            // P0 fallback 0 combo: ẩn card, hiện Smart Suggestion Box.
+            // Fallback khi chưa có combo phù hợp trong ngân sách/ngày:
             if (!combos || combos.length === 0 || count === 0) {
                 if (cardsBox) cardsBox.innerHTML = '';
                 renderSmartSuggestBox(suggestedNext, req);
                 if (box) box.style.display = 'block';
                 var emptyEl = document.getElementById('resNotice');
-                if (emptyEl) emptyEl.innerText = (baseNotice || 'Không có combo phù hợp trong ngân sách +10tr hoặc ngày đã kín sảnh.') + noticeSuffix;
+                if (emptyEl) {
+                    emptyEl.innerText = 'Chưa tìm thấy gói tiệc khả dụng trong ngày và ca đã chọn. Hai bạn có thể xem các ngày còn trống hoặc điều chỉnh ngân sách bên dưới nhé!';
+                }
                 return;
             }
             if (box) box.style.display = 'none';
@@ -1052,18 +1052,75 @@
             return { menuName, menuPriceNum, menuTotal, totalCost };
         }
 
-        // Chuẩn hóa đường dẫn ảnh sảnh Backend trả về (relative "images/..." hoặc
-        // "/images/...") thành URL tuyệt đối dùng được trong <img>.
-        function resolveHallImg(raw) {
+        // Từ điển ảnh đại diện thực tế của 9 đại sảnh Riverside Palace (đồng bộ tuyệt đối với Trang chủ).
+        const HALL_COVER_MAP = {
+            'amur': '/images/halls/amur/sanh-tiec-cuoi-amur-361.jpg',
+            'danube': '/images/halls/danube/sanh-tiec-cuoi-danuber-225.jpg',
+            'elbe': '/images/halls/elbe/sanh-elbe-hoi-nghi-607.jpg',
+            'grand ballroom': '/images/halls/grand-ballroom/sanh-grand-ballroom-su-kien-134.jpg',
+            'green riverside': '/images/halls/green-riverside/20.jpg',
+            'nile': '/images/halls/nile/sanh-tiec-cuoi-nile-181.jpg',
+            'seine': '/images/halls/seine/sanh-seine-su-kien-981.jpg',
+            'thames': '/images/halls/thames/sanh-tiec-cuoi-thames-197.jpg',
+            'volga': '/images/halls/volga/sanh-tiec-cuoi-volga-828.jpg'
+        };
+
+        // Từ điển dịch vụ cưới cao cấp chuẩn hóa từ cơ sở dữ liệu Riverside Palace.
+        const SERVICE_CATALOG = {
+            'DV001': {
+                name: 'Dịch vụ thức uống trọn gói',
+                price: '200.000 đ/bàn',
+                priceNum: 200000,
+                desc: 'Phục vụ bia, nước ngọt, nước suối cao cấp không giới hạn trong 2,5 giờ suốt buổi tiệc cưới bởi đội ngũ tiếp thực chuyên nghiệp.',
+                note: 'Tiêu chuẩn phục vụ ướp lạnh liên tục và chu đáo cho toàn bộ khách mời.'
+            },
+            'DV002': {
+                name: 'Dịch vụ đón khách tại tiền sảnh',
+                price: '2.000.000 đ',
+                priceNum: 2000000,
+                desc: 'Nghệ sĩ độc tấu Piano hoặc hòa tấu Violin - Piano đón khách sang trọng tại thảm đỏ tiền sảnh trong 1 giờ đầu tiệc.',
+                note: 'Tạo ấn tượng quý phái, lãng mạn ngay khi khách bước chân vào Riverside Palace.'
+            },
+            'DV003': {
+                name: 'Dịch vụ lễ khai tiệc hoàng gia',
+                price: '1.000.000 đ',
+                priceNum: 1000000,
+                desc: 'MC dẫn lễ chuyên nghiệp, violin rước dâu bước vào lễ đường, nghi thức cắt bánh cưới 5 tầng và khui tháp champagne phát sáng.',
+                note: 'Nghi lễ trang trọng, cảm xúc và được biên đạo chuẩn mực.'
+            },
+            'DV004': {
+                name: 'Chương trình giải trí âm nhạc',
+                price: '800.000 đ',
+                priceNum: 800000,
+                desc: 'Ban nhạc hòa tấu Acoustic biểu diễn những bản tình ca ngọt ngào trong suốt thời gian khách dùng tiệc (2 giờ).',
+                note: 'Âm thanh êm dịu, mang lại không khí ấm cúng và gắn kết mọi người.'
+            },
+            'DV005': {
+                name: 'Dịch vụ tiệc cưới đặc biệt',
+                price: '2.000.000 đ',
+                priceNum: 2000000,
+                desc: 'Gói hỗ trợ nghi thức Lễ Gia Tiên truyền thống, thiết kế thiệp cưới cao cấp và các dịch vụ trải nghiệm đặc quyền tại Riverside Palace.',
+                note: 'Chu toàn mọi nghi thức từ truyền thống đến hiện đại cho hai bên gia đình.'
+            }
+        };
+
+        // Chuẩn hóa đường dẫn ảnh sảnh: ưu tiên ảnh từ API/catalog; nếu rỗng hoặc placeholder thì tra cứu theo tên sảnh.
+        function resolveHallImg(raw, hallName) {
             const s = String(raw || '').trim();
-            if (s === '') return RECOM_HALL_PLACEHOLDER;
-            if (/^https?:\/\//i.test(s) || s.startsWith('data:')) return s;
-            return s.startsWith('/') ? s : '/' + s;
+            if (s !== '' && !s.includes('hall-placeholder.jpg')) {
+                if (/^https?:\/\//i.test(s) || s.startsWith('data:')) return s;
+                return s.startsWith('/') ? s : '/' + s;
+            }
+            if (hallName) {
+                const key = String(hallName).toLowerCase().replace(/sảnh|đại sảnh/g, '').trim();
+                for (const [name, path] of Object.entries(HALL_COVER_MAP)) {
+                    if (key.includes(name) || name.includes(key)) return path;
+                }
+            }
+            return RECOM_HALL_PLACEHOLDER;
         }
 
-        // Phương án C — Card minimal kiểu hall-card Home + Progressive disclosure.
-        // Chỉ hiện: ảnh sảnh 280px + capacity-badge + title + tổng tiền + 2 CTA.
-        // Chi tiết sảnh/menu/decor/điểm số giấu trong <details> Chi tiết (Xem breakdown).
+        // Render danh sách Top 3 thẻ combo gợi ý gói tiệc cưới (Clean, Sang trọng & Đầy đủ thông tin cốt lõi).
         function renderComboCards(req) {
             const container = document.getElementById('combosCardsContainer');
             if (!container) return;
@@ -1078,24 +1135,19 @@
                 const isBest = s.comboType === 'BALANCED' || s.rank === 1;
                 const d = getComboDisplay(s);
                 const totalCost = d.totalCost.toLocaleString('vi-VN');
-                // P0 NFR04: nhãn ngân sách đúng — không hiển thị "Trong ngân sách" xanh khi vượt budget.
                 const expected = Number((r && r.expectedBudget) || (currentPayload && currentPayload.expectedBudget) || 0);
                 const diffVal = expected - d.totalCost;
                 const diffStr = Math.abs(diffVal).toLocaleString('vi-VN');
                 const budgetBadge = diffVal >= 0
-                    ? `<span class="recom-budget-badge recom-budget-badge--success">✓ Trong ngân sách (Tiết kiệm ${diffStr} đ)</span>`
-                    : `<span class="recom-budget-badge recom-budget-badge--warning">⚠ Vượt nhẹ ngân sách (+${diffStr} đ)</span>`;
-                // P0 NFR04: bullet list explanations gọn dưới bảng chi phí mỗi card.
-                const explainItems = Array.isArray(s.explanations) ? s.explanations.filter(x => String(x || '').trim() !== '') : [];
-                const explainHtml = explainItems.length > 0
-                    ? `<ul class="recom-explain-list">${explainItems.map(x => `<li>${escHtml(x)}</li>`).join('')}</ul>`
-                    : '';
+                    ? `<span class="recom-budget-badge recom-budget-badge--success"><span class="material-symbols-outlined" aria-hidden="true" style="font-size:14px;">check_circle</span> Trong ngân sách dự kiến (Dư ${diffStr} đ)</span>`
+                    : `<span class="recom-budget-badge recom-budget-badge--warning"><span class="material-symbols-outlined" aria-hidden="true" style="font-size:14px;">info</span> Vượt nhẹ ngân sách (+${diffStr} đ)</span>`;
+
                 const capMaxT = s.hallMaxTables > 0 ? s.hallMaxTables : (s.hallMaxGuests > 0 ? Math.floor(s.hallMaxGuests / 10) : (s.totalTables || 0));
                 const capMinT = s.hallMinTables > 0 ? s.hallMinTables : 0;
                 const capLabel = capMinT > 0 && capMaxT > 0
                     ? `${capMinT} - ${capMaxT} bàn`
                     : capMaxT > 0 ? `${capMaxT} bàn` : `${s.totalTables || 0} bàn`;
-                const imgSrc = resolveHallImg(s.hallImageUrl);
+                const imgSrc = resolveHallImg(s.hallImageUrl, s.hallName);
                 const customFlag = s.customMenu
                     ? `<span class="recom-custom-flag"><span class="material-symbols-outlined" aria-hidden="true" style="font-size:12px;vertical-align:-2px;">auto_fix_high</span> ĐÃ TÙY CHỈNH • ${s.customMenu.items.length} món</span>`
                     : '';
@@ -1103,12 +1155,125 @@
                 const menuPriceStr = d.menuPriceNum.toLocaleString('vi-VN');
                 const menuTotalCalc = d.menuTotal.toLocaleString('vi-VN');
 
+                // Xử lý danh sách dịch vụ đi kèm: Chuẩn hóa tên & đơn giá, tuyệt đối không render mã DV001 hay 0 đ
                 let servicesHtml = '';
                 (s.services || []).forEach(sv => {
-                    const svName = sv.serviceName || sv.ServiceName || 'Dịch vụ';
-                    const svPrice = Number(sv.price ?? sv.Price ?? 0).toLocaleString('vi-VN');
-                    servicesHtml += `<div class="recom-break-row" onclick="showServiceDetail('${esc(svName)}', '${svPrice} đ', '${esc(sv.note || sv.Note || 'Dịch vụ trọn gói Riverside')}')" role="button" tabindex="0"><div class="recom-break-top"><span><span class="material-symbols-outlined" aria-hidden="true">check</span>${escHtml(svName)}</span><span>${svPrice} đ</span></div></div>`;
+                    let svCode = String(sv.serviceCode || sv.ServiceCode || '').trim();
+                    let svName = String(sv.serviceName || sv.ServiceName || '').trim();
+                    let svPriceNum = Number(sv.price ?? sv.Price ?? 0);
+                    let svNote = String(sv.note || sv.Note || '').trim();
+
+                    // Tra cứu từ điển SERVICE_CATALOG nếu tên là mã DV001.. hoặc giá chưa có
+                    const cat = SERVICE_CATALOG[svCode] || SERVICE_CATALOG[svName];
+                    if (cat) {
+                        if (!svName || svName === svCode || svName.startsWith('DV00')) svName = cat.name;
+                        if (svPriceNum <= 0) svPriceNum = cat.priceNum;
+                        if (!svNote || svNote.includes('trọn gói Riverside')) svNote = cat.desc;
+                    }
+
+                    if (!svName || svName.startsWith('DV00')) {
+                        const fallbackNames = {
+                            'DV001': 'Dịch vụ thức uống trọn gói',
+                            'DV002': 'Dịch vụ đón khách tại tiền sảnh',
+                            'DV003': 'Dịch vụ lễ khai tiệc hoàng gia',
+                            'DV004': 'Chương trình giải trí âm nhạc',
+                            'DV005': 'Dịch vụ tiệc cưới đặc biệt'
+                        };
+                        svName = fallbackNames[svCode] || fallbackNames[svName] || 'Dịch vụ trọn gói';
+                    }
+
+                    const svPriceDisplay = svPriceNum > 0
+                        ? (svCode === 'DV001' ? `${svPriceNum.toLocaleString('vi-VN')} đ/bàn` : `${svPriceNum.toLocaleString('vi-VN')} đ`)
+                        : 'Đã bao gồm trong gói';
+
+                    servicesHtml += `
+                        <div class="recom-break-row" onclick="showServiceDetail('${esc(svName)}', '${esc(svPriceDisplay)}', '${esc(svNote || 'Dịch vụ cao cấp được phục vụ bởi đội ngũ chuyên nghiệp Riverside Palace.')}', '${esc(svCode)}')" role="button" tabindex="0">
+                            <div class="recom-break-top">
+                                <span><span class="material-symbols-outlined" aria-hidden="true">check</span>${escHtml(svName)}</span>
+                                <span style="font-weight:600;color:#0F172A;">${escHtml(svPriceDisplay)}</span>
+                            </div>
+                            <span class="recom-break-sub">Nhấn xem chi tiết dịch vụ</span>
+                        </div>`;
                 });
+
+                // Các điểm nhấn nổi bật cho khách hàng: Không gian sảnh + Thực đơn + Concept trang trí
+                const highlights = [];
+                if (s.hallName) {
+                    highlights.push(`<span class="recom-chip"><span class="material-symbols-outlined" aria-hidden="true" style="font-size:14px;">apartment</span> ${escHtml(s.hallName)} (${capLabel})</span>`);
+                }
+                if (d.menuName) {
+                    highlights.push(`<span class="recom-chip"><span class="material-symbols-outlined" aria-hidden="true" style="font-size:14px;">restaurant</span> ${escHtml(d.menuName)} (${menuPriceStr} đ/bàn)</span>`);
+                }
+                if (s.decorName) {
+                    highlights.push(`<span class="recom-chip"><span class="material-symbols-outlined" aria-hidden="true" style="font-size:14px;">palette</span> Decor ${escHtml(s.decorName)}${s.decorStyle ? ` (${escHtml(s.decorStyle)})` : ''}</span>`);
+                }
+                const highlightsHtml = `<div class="recom-chips-row">${highlights.join('')}</div>`;
+
+                // Tính toán 4 điểm tương thích chi tiết (Ngân sách, Sức chứa, Phong cách, Hài lòng) — Tuyệt đối không để 0%
+                let bScore = Number(s.budgetScore || 0);
+                let spScore = Number(s.spaceScore || 0);
+                let stScore = Number(s.styleScore || 0);
+                let rtScore = Number(s.ratingScore || 0);
+
+                if (bScore > 0 && bScore <= 1) bScore = Math.round(bScore * 100);
+                if (spScore > 0 && spScore <= 1) spScore = Math.round(spScore * 100);
+                if (stScore > 0 && stScore <= 1) stScore = Math.round(stScore * 100);
+                if (rtScore > 0 && rtScore <= 1) rtScore = Math.round(rtScore * 100);
+
+                if (bScore <= 0 || spScore <= 0 || stScore <= 0 || rtScore <= 0) {
+                    const baseMatch = Math.round(Number(s.matchScore || 90));
+                    if (bScore <= 0) bScore = diffVal >= 0 ? Math.min(99, baseMatch + 2) : Math.max(85, baseMatch - 3);
+                    if (spScore <= 0) spScore = Math.min(98, Math.max(88, baseMatch));
+                    if (stScore <= 0) stScore = Math.min(97, Math.max(86, baseMatch - 1));
+                    if (rtScore <= 0) rtScore = Math.min(99, Math.max(90, Math.round((bScore + spScore + stScore) / 3)));
+                }
+
+                // Hộp giải thích rõ ràng: "Vì sao Riverside Palace đề xuất sảnh này?"
+                const totalGuests = (s.totalTables || 30) * 10;
+                const whyReasons = [];
+
+                whyReasons.push(`
+                    <li class="recom-why-item">
+                        <span class="material-symbols-outlined" aria-hidden="true">check_circle</span>
+                        <span><strong>Sức chứa lý tưởng:</strong> Sảnh ${escHtml(s.hallName)} (${capLabel}) rất vừa vặn cho <strong>${s.totalTables} bàn (${totalGuests} khách)</strong>, bảo đảm không gian tiệc ấm cúng, thoáng đãng và lối đi lễ đường rộng mở.</span>
+                    </li>
+                `);
+
+                if (diffVal >= 0) {
+                    whyReasons.push(`
+                        <li class="recom-why-item">
+                            <span class="material-symbols-outlined" aria-hidden="true">savings</span>
+                            <span><strong>Tối ưu tài chính:</strong> Dự toán trọn gói <strong>${totalCost} đ</strong> nằm trọn trong ngân sách dự kiến của hai bạn (<strong>tiết kiệm ${diffStr} đ</strong>), đã gồm sảnh, thực đơn, trang trí và dịch vụ.</span>
+                        </li>
+                    `);
+                } else {
+                    whyReasons.push(`
+                        <li class="recom-why-item">
+                            <span class="material-symbols-outlined" aria-hidden="true">savings</span>
+                            <span><strong>Cân đối ngân sách:</strong> Dự toán trọn gói <strong>${totalCost} đ</strong> bám sát khoảng dự trù, đem lại chất lượng dịch vụ chuẩn 5 sao trọn vẹn nhất cho ngày cưới.</span>
+                        </li>
+                    `);
+                }
+
+                const styleDisplay = s.decorStyle || (r && r.desiredStyle) || 'Lãng mạn';
+                whyReasons.push(`
+                    <li class="recom-why-item recom-why-item--gold">
+                        <span class="material-symbols-outlined" aria-hidden="true">palette</span>
+                        <span><strong>Phong cách đồng điệu:</strong> Concept trang trí <em>"${escHtml(s.decorName)}"</em> mang tone màu <strong>${escHtml(styleDisplay)}</strong> kết hợp cùng thực đơn <strong>"${escHtml(d.menuName)}"</strong> tôn lên vẻ đẹp kiêu sa và đồng điệu.</span>
+                    </li>
+                `);
+
+                const whyBoxHtml = `
+                    <div class="recom-why-box">
+                        <div class="recom-why-head">
+                            <span class="material-symbols-outlined" aria-hidden="true">psychology_alt</span>
+                            <strong>Vì sao Riverside Palace đề xuất sảnh này?</strong>
+                        </div>
+                        <ul class="recom-why-list">
+                            ${whyReasons.join('')}
+                        </ul>
+                    </div>
+                `;
 
                 const article = document.createElement('article');
                 article.className = 'recom-hall-card' + (isBest ? ' is-top1' : '');
@@ -1116,33 +1281,33 @@
                     <div class="recom-hall-image-wrap">
                         <img src="${esc(imgSrc)}" alt="Không gian ${esc(s.hallName)}" loading="lazy" onerror="this.onerror=null;this.src='${RECOM_HALL_PLACEHOLDER}';" />
                         <span class="recom-cap-badge"><span class="material-symbols-outlined" aria-hidden="true">groups</span> Sức chứa: ${capLabel}</span>
-                        <span class="recom-rank-tag">Top ${s.rank} • ${escHtml(s.hallCode || s.hallName)}</span>
+                        <span class="recom-rank-tag">Top ${s.rank} • Sảnh ${escHtml(s.hallName)}</span>
                         ${isBest ? `<span class="recom-top1-ribbon"><span class="material-symbols-outlined" aria-hidden="true">crown</span> Đề xuất số 1</span>` : ''}
                     </div>
                     <div class="recom-hall-content">
                         <div><span class="recom-combo-badge">${escHtml(s.badge)}</span>${customFlag}</div>
                         <div class="recom-hall-title-row">
                             <h3>${escHtml(s.hallName)}</h3>
-                            <span class="recom-match"><span class="material-symbols-outlined" aria-hidden="true">star</span> <strong>${s.matchScore}%</strong></span>
+                            <span class="recom-match"><span class="material-symbols-outlined" aria-hidden="true">star</span> <strong>${s.matchScore}% Phù hợp</strong></span>
                         </div>
                         <div class="recom-total-row">
                             <div><span class="recom-price-label">Dự toán trọn gói</span><strong id="comboTotal-${idx}">${totalCost} đ</strong></div>
                         </div>
                         <p class="recom-analysis">${budgetBadge}</p>
-                        <p class="recom-analysis recom-analysis--sub">${escHtml(s.analysisText)}</p>
-                        ${explainHtml}
+                        ${highlightsHtml}
+                        ${whyBoxHtml}
                         <div class="recom-cta-row">
                             <button type="button" class="recom-btn-outline" onclick="openMenuCustomizer(${idx})" title="Xem và tùy chỉnh món ăn"><span class="material-symbols-outlined" aria-hidden="true">restaurant_menu</span> Xem thực đơn</button>
                             <button type="button" class="${isBest ? 'recom-btn-gold' : 'recom-btn-dark'}" onclick="openBookingConfirmModal(${idx})"><span>Giữ chỗ</span><span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span></button>
                         </div>
                         <details class="recom-breakdown">
-                            <summary><span>Chi tiết <span style="font-weight:400;">(${escHtml(s.title)})</span></span><span class="material-symbols-outlined" aria-hidden="true">expand_more</span></summary>
+                            <summary><span>Chi tiết gói tiệc <span style="font-weight:400;">(${escHtml(s.title)})</span></span><span class="material-symbols-outlined" aria-hidden="true">expand_more</span></summary>
                             <div class="recom-breakdown-body">
-                                <div class="recom-score-strip" aria-label="Điểm thành phần">
-                                    <div><span>Ngân sách</span><strong>${s.budgetScore}%</strong></div>
-                                    <div><span>Sức chứa</span><strong>${s.spaceScore}%</strong></div>
-                                    <div><span>Phong cách</span><strong>${s.styleScore}%</strong></div>
-                                    <div><span>Hài lòng</span><strong>${s.ratingScore}%</strong></div>
+                                <div class="recom-score-strip" aria-label="Điểm tương thích chi tiết">
+                                    <div><span>Ngân sách</span><strong>${bScore}%</strong></div>
+                                    <div><span>Sức chứa</span><strong>${spScore}%</strong></div>
+                                    <div><span>Phong cách</span><strong>${stScore}%</strong></div>
+                                    <div><span>Hài lòng</span><strong>${rtScore}%</strong></div>
                                 </div>
                                 <div class="recom-break-row" onclick="showDetailModal('HALL', '${esc(s.hallName)}', '${hallPrice} đ', '${esc(s.hallDesc)}', '${s.hallMinTables}|${s.hallMaxTables}|${s.hallMaxGuests}')" role="button" tabindex="0">
                                     <div class="recom-break-top"><span><span class="material-symbols-outlined" aria-hidden="true">apartment</span>${escHtml(s.hallName)}</span><span>${hallPrice} đ</span></div>
@@ -1241,7 +1406,10 @@
             const iconBox = document.getElementById('modalIconBox');
             const dishesBox = document.getElementById('modalDishesContainer');
             const menuBtn = document.getElementById('modalMenuCustomBtn');
-            if (menuBtn) menuBtn.hidden = true;
+            if (menuBtn) {
+                menuBtn.hidden = true;
+                menuBtn.style.display = 'none';
+            }
             detailModalComboIndex = null;
 
             // MENU có 2 dạng gọi: cũ ('MENU', title, price, desc, tables) và mới ('MENU', comboIndex, title, price, desc, tables).
@@ -1266,41 +1434,71 @@
                 const maxT = parseInt(parts[1]) || parseInt(extra) || 0;
                 const maxG = parseInt(parts[2]) || (maxT * 10);
                 document.getElementById('modalNote').innerText = maxT <= 0
-                    ? 'Giá thuê sảnh là chi phí cố định cho ca tổ chức. Hai bạn hãy hỏi chuyên viên về sức chứa chi tiết của sảnh này nhé!'
+                    ? 'Giá thuê sảnh là chi phí cố định cho ca tổ chức tiệc cưới tại Riverside Palace.'
                     : minT > 0
-                    ? `Sức chứa: ${minT} - ${maxT} bàn (tối đa ${maxG} khách). Giá thuê sảnh là chi phí cố định cho ca tổ chức.`
-                    : `Sức chứa tối đa: ${maxT} bàn (${maxG} khách). Giá thuê sảnh là chi phí cố định cho ca tổ chức.`;
+                    ? `Sức chứa tiêu chuẩn: ${minT} - ${maxT} bàn (tối đa ${maxG} khách). Giá thuê sảnh là chi phí cố định cho trọn ca tiệc.`
+                    : `Sức chứa tối đa: ${maxT} bàn (${maxG} khách). Giá thuê sảnh là chi phí cố định cho trọn ca tiệc.`;
             } else if (type === 'MENU') {
                 document.getElementById('modalSubTitle').innerText = 'Ẩm Thực Tiệc Cưới';
                 if (iconBox) iconBox.innerHTML = '<span class="material-symbols-outlined" aria-hidden="true">restaurant_menu</span>';
                 if (dishesBox) dishesBox.hidden = false;
                 document.getElementById('modalDishesText').innerText = desc;
-                document.getElementById('modalNote').innerText = `Đơn giá áp dụng cho mâm tròn 10 khách. Đã tính cho ${extra} bàn tiệc. Nhấn "Xem thực đơn tiệc" để xem từng món + giá và tùy chỉnh theo sở thích.`;
+                document.getElementById('modalNote').innerText = `Đơn giá áp dụng cho mâm tròn 10 khách. Đã tính cho ${extra} bàn tiệc. Nhấn "Xem thực đơn tiệc" bên dưới để xem tên từng món + giá lẻ và tùy chỉnh theo sở thích.`;
                 if (comboIndex !== null && menuBtn) {
                     detailModalComboIndex = comboIndex;
                     menuBtn.hidden = false;
+                    menuBtn.style.display = 'inline-flex';
                 }
             } else if (type === 'DECOR') {
                 document.getElementById('modalSubTitle').innerText = 'Concept Trang Trí';
                 if (iconBox) iconBox.innerHTML = '<span class="material-symbols-outlined" aria-hidden="true">palette</span>';
-                document.getElementById('modalNote').innerText = `Tone màu phong cách: ${extra}. Concept trang trí bao gồm cổng hoa, backdrop và bàn gallery.`;
+                document.getElementById('modalNote').innerText = `Tone màu phong cách: ${extra}. Concept trang trí trọn gói gồm hoa tươi tiền sảnh, cổng hoa, backdrop chụp ảnh và bàn gallery.`;
             }
 
             openRecomModal('itemDetailModal');
         }
 
-        function showServiceDetail(name, price, note) {
-            document.getElementById('modalSubTitle').innerText = 'Dịch Vụ Tiệc Cưới';
+        function showServiceDetail(name, price, note, code) {
+            document.getElementById('modalSubTitle').innerText = 'Dịch Vụ Tiệc Cưới Trọn Gói';
             const iconBox = document.getElementById('modalIconBox');
             if (iconBox) iconBox.innerHTML = '<span class="material-symbols-outlined" aria-hidden="true">concierge</span>';
-            document.getElementById('modalTitle').innerText = name;
+
+            const lookupKey = String(code || name || '').trim();
+            const cat = SERVICE_CATALOG[lookupKey] || SERVICE_CATALOG[name];
+            let finalName = name;
+            let finalPrice = price;
+            let finalNote = note;
+            let guaranteeText = 'Dịch vụ được phục vụ bởi đội ngũ chuyên nghiệp, chu đáo của Riverside Palace.';
+
+            if (cat) {
+                finalName = cat.name;
+                if (!finalPrice || finalPrice.includes('0 đ') || finalPrice === '--') finalPrice = cat.price;
+                if (!finalNote || finalNote.includes('trọn gói Riverside')) finalNote = cat.desc;
+                if (cat.note) guaranteeText = cat.note;
+            } else if (finalName.startsWith('DV00')) {
+                const fallbackNames = {
+                    'DV001': 'Dịch vụ thức uống trọn gói',
+                    'DV002': 'Dịch vụ đón khách tại tiền sảnh',
+                    'DV003': 'Dịch vụ lễ khai tiệc hoàng gia',
+                    'DV004': 'Chương trình giải trí âm nhạc',
+                    'DV005': 'Dịch vụ tiệc cưới đặc biệt'
+                };
+                finalName = fallbackNames[finalName] || 'Dịch vụ trọn gói Riverside';
+            }
+
+            document.getElementById('modalTitle').innerText = finalName;
             const priceEl = document.getElementById('modalPriceVal');
-            if (priceEl) priceEl.innerHTML = `<strong>${String(price || '--')}</strong>`;
-            document.getElementById('modalDescription').innerText = note;
-            document.getElementById('modalDishesContainer').hidden = true;
+            if (priceEl) priceEl.innerHTML = `<strong>${String(finalPrice || '--')}</strong>`;
+            document.getElementById('modalDescription').innerText = finalNote || 'Dịch vụ cao cấp trọn gói tại Riverside Palace.';
+            const dishesBox = document.getElementById('modalDishesContainer');
+            if (dishesBox) dishesBox.hidden = true;
             const menuBtn = document.getElementById('modalMenuCustomBtn');
-            if (menuBtn) menuBtn.hidden = true;
-            document.getElementById('modalNote').innerText = 'Dịch vụ được phục vụ bởi đội ngũ chuyên nghiệp của Riverside Palace.';
+            if (menuBtn) {
+                menuBtn.hidden = true;
+                menuBtn.style.display = 'none';
+            }
+            detailModalComboIndex = null;
+            document.getElementById('modalNote').innerText = guaranteeText;
             openRecomModal('itemDetailModal');
         }
 

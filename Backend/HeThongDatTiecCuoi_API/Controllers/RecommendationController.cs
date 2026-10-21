@@ -2015,6 +2015,10 @@ public sealed class RecommendationController : ControllerBase
         [JsonPropertyName("included_services")] public List<string> IncludedServices { get; set; } = new();
         [JsonPropertyName("total_estimated_cost")] public double TotalEstimatedCost { get; set; }
         [JsonPropertyName("matching_score")] public double MatchingScore { get; set; }
+        [JsonPropertyName("budget_match_score")] public double BudgetMatchScore { get; set; }
+        [JsonPropertyName("space_fit_score")] public double SpaceFitScore { get; set; }
+        [JsonPropertyName("style_theme_score")] public double StyleThemeScore { get; set; }
+        [JsonPropertyName("rating_credibility_score")] public double RatingCredibilityScore { get; set; }
         [JsonPropertyName("explanation_arguments")] public List<string> ExplanationArguments { get; set; } = new();
     }
 
