@@ -167,7 +167,7 @@ public sealed class ManagerEventCoordinationController : ControllerBase
                 Reason = c.Reason, StatusName = c.Status.StatusName, RequestedAt = c.RequestedAt, ProcessedAt = c.ProcessedAt }).ToListAsync(cancellationToken);
         result.Incidents = await _context.Incidents.AsNoTracking().Where(i => i.BookingId == bookingId)
             .OrderByDescending(i => i.OccurredAt).Select(i => new EventIncidentDto
-            { IncidentType = i.IncidentType, Description = i.Description, Severity = i.Severity,
+            { IncidentId = i.IncidentId, IncidentType = i.IncidentType, Description = i.Description, Severity = i.Severity,
                 StatusCode = i.Status.StatusCode, StatusName = i.Status.StatusName,
                 ReportedByName = i.ReportedByEmployee != null ? i.ReportedByEmployee.FullName : null,
                 Resolution = i.Resolution, OccurredAt = i.OccurredAt, ResolvedAt = i.ResolvedAt }).ToListAsync(cancellationToken);

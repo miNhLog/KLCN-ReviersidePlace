@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Data;
+using System.Security.Claims;
 
 namespace HeThongDatTiecCuoi_API.Controllers;
 
@@ -18,11 +19,14 @@ public sealed class AdminBookingController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
     private readonly IStatusService _statusService;
+    private readonly ICoordinationAssignmentService _coordinationAssignments;
 
-    public AdminBookingController(ApplicationDbContext context, IStatusService statusService)
+    public AdminBookingController(ApplicationDbContext context, IStatusService statusService,
+        ICoordinationAssignmentService coordinationAssignments)
     {
         _context = context;
         _statusService = statusService;
+        _coordinationAssignments = coordinationAssignments;
     }
 
     [HttpGet]
@@ -333,6 +337,11 @@ public sealed class AdminBookingController : ControllerBase
         booking.CancellationReason = code == BookingStatusCodes.Cancelled
             ? NormalizeOptional(request.CancellationReason) ?? "Hủy theo yêu cầu khách hàng"
             : null;
+
+        var actorUserId = int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var parsedUserId)
+            ? parsedUserId : (int?)null;
+        await _coordinationAssignments.SynchronizeBookingAssignmentsAsync(booking.BookingId, code, actorUserId,
+            booking.CancellationReason, HttpContext.RequestAborted);
 
         // BR03 trong cùng transaction: hủy -> giải phóng LichSanh về AVAILABLE (bỏ qua nếu schedule null);
         // chuyển sang trạng thái chiếm giữ -> LichSanh BOOKED.
