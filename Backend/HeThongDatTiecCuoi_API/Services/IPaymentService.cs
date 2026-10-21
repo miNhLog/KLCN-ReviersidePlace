@@ -8,4 +8,6 @@ public interface IPaymentService
     Task<CreateDepositPaymentResponseDto> CreateDepositPaymentAsync(CreateDepositPaymentRequestDto request, int? userId = null);
     Task<PaymentStatusResponseDto> GetPaymentStatusAsync(long orderCode);
     Task<bool> ProcessWebhookAsync(Webhook webhookBody);
+    Task<(byte[] PdfBytes, string FileName, InvoiceSignatureResult Signature)> GetSignedInvoicePdfAsync(string bookingCode, string phone);
 }
+

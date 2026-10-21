@@ -443,4 +443,9 @@ public interface IRiversideApiClient
     Task<ApiCallResult<HeThongDatTiecCuoi_WEB.Models.Payment.PaymentStatusResponseViewModel>> CheckPaymentStatusAsync(
         long orderCode,
         CancellationToken cancellationToken = default);
+
+    Task<ApiCallResult<HeThongDatTiecCuoi_WEB.Models.ManagerContractPayment.PdfDownloadViewModel>> DownloadInvoicePdfAsync(
+        string bookingCode,
+        string phoneNumber,
+        CancellationToken cancellationToken = default);
 }

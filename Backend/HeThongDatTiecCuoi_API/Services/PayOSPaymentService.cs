@@ -20,6 +20,9 @@ public sealed class PayOSPaymentService : IPaymentService
     private readonly PayOSClient _payOSClient;
     private readonly IOptions<AppPayOSOptions> _options;
     private readonly IStatusService _statusService;
+    private readonly IEmailService _emailService;
+    private readonly IInvoicePdfGenerator _invoicePdfGenerator;
+    private readonly IInvoiceDigitalSignatureService _signatureService;
     private readonly ILogger<PayOSPaymentService> _logger;
 
     public PayOSPaymentService(
@@ -27,12 +30,18 @@ public sealed class PayOSPaymentService : IPaymentService
         PayOSClient payOSClient,
         IOptions<AppPayOSOptions> options,
         IStatusService statusService,
+        IEmailService emailService,
+        IInvoicePdfGenerator invoicePdfGenerator,
+        IInvoiceDigitalSignatureService signatureService,
         ILogger<PayOSPaymentService> logger)
     {
         _context = context;
         _payOSClient = payOSClient;
         _options = options;
         _statusService = statusService;
+        _emailService = emailService;
+        _invoicePdfGenerator = invoicePdfGenerator;
+        _signatureService = signatureService;
         _logger = logger;
     }
 
@@ -292,7 +301,9 @@ public sealed class PayOSPaymentService : IPaymentService
 
             var booking = await _context.WeddingBookings
                 .Include(b => b.Customer)
-                .Include(b => b.HallSchedule)
+                .Include(b => b.HallSchedule).ThenInclude(s => s.Hall)
+                .Include(b => b.Menu)
+                .Include(b => b.DecorationPackage)
                 .Include(b => b.Contract)
                 .SingleAsync(b => b.BookingId == tx.DatTiecId);
 
@@ -359,6 +370,89 @@ public sealed class PayOSPaymentService : IPaymentService
             _logger.LogInformation(
                 "Đã hoàn tất thanh toán cọc thành công: BookingCode={BookingCode}, OrderCode={OrderCode}, Số tiền ghi nhận={Amount:N0} VNĐ",
                 booking.BookingCode, orderCode, tx.SoTienGhiNhan);
+
+            // Gửi email xác nhận đặt cọc thành công kèm Hóa đơn / Biên lai điện tử có chữ ký số (PAdES)
+            if (!string.IsNullOrWhiteSpace(booking.Customer.Email))
+            {
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        var remaining = Math.Max(0, (booking.EstimatedTotal ?? tx.SoTienGhiNhan) - booking.PaidAmount);
+                        var invoiceDto = new DTOs.Invoice.InvoicePdfDto
+                        {
+                            InvoiceNumber = $"HDDT-{booking.BookingCode}-01",
+                            BookingCode = booking.BookingCode,
+                            CustomerName = booking.Customer.FullName,
+                            CustomerPhone = booking.Customer.PhoneNumber,
+                            CustomerEmail = booking.Customer.Email ?? string.Empty,
+                            PaymentType = "Đặt cọc (10%)",
+                            PaymentMethod = "VIETQR_PAYOS",
+                            TransactionCode = orderCode.ToString(),
+                            InvoiceDate = DateTime.Now,
+                            EventDate = booking.HallSchedule?.Date ?? DateTime.Today,
+                            Shift = booking.HallSchedule?.Shift ?? "Tối",
+                            HallName = booking.HallSchedule?.Hall?.HallName ?? "Sảnh tiệc Riverside",
+                            GuestCount = booking.GuestCount,
+                            TotalTables = (booking.GuestCount + 9) / 10,
+                            MenuName = booking.Menu?.MenuName,
+                            DecorName = booking.DecorationPackage?.TenGoi,
+                            TotalEstimatedCost = booking.EstimatedTotal ?? tx.SoTienGhiNhan,
+                            AmountPaid = tx.SoTienGhiNhan,
+                            AccumulatedPaid = booking.PaidAmount,
+                            RemainingDebt = remaining,
+                            VerificationUrl = $"https://localhost:7102/MyBooking?bookingCode={Uri.EscapeDataString(booking.BookingCode)}&phone={Uri.EscapeDataString(booking.Customer.PhoneNumber)}",
+                            IsDigitallySigned = true,
+                            SignedAt = DateTime.Now
+                        };
+
+                        bool isFullSettlement = remaining <= 0 || booking.PaidAmount >= (booking.EstimatedTotal ?? tx.SoTienGhiNhan);
+                        if (isFullSettlement)
+                        {
+                            invoiceDto.PaymentType = "Thanh toán toàn bộ (100%)";
+                        }
+
+                        byte[] unsignedPdf = _invoicePdfGenerator.Generate(invoiceDto);
+                        var signResult = _signatureService.SignPdfDocument(unsignedPdf, invoiceDto.InvoiceNumber);
+
+                        if (isFullSettlement)
+                        {
+                            await _emailService.SendFullPaymentSuccessEmailAsync(
+                                booking.Customer.Email!,
+                                booking.Customer.FullName,
+                                booking.BookingCode,
+                                booking.Contract?.ContractCode ?? $"HD-{booking.BookingCode}",
+                                booking.PaidAmount,
+                                booking.HallSchedule?.Date ?? DateTime.Today,
+                                booking.HallSchedule?.Shift ?? "Tối",
+                                booking.HallSchedule?.Hall?.HallName ?? "Sảnh tiệc Riverside",
+                                booking.Customer.PhoneNumber,
+                                signResult.SignedPdfBytes,
+                                $"HoaDonDienTu_{booking.BookingCode}.pdf");
+                        }
+                        else
+                        {
+                            await _emailService.SendDepositPaymentSuccessEmailAsync(
+                                booking.Customer.Email!,
+                                booking.Customer.FullName,
+                                booking.BookingCode,
+                                orderCode,
+                                tx.SoTienGhiNhan,
+                                remaining,
+                                booking.HallSchedule?.Date ?? DateTime.Today,
+                                booking.HallSchedule?.Shift ?? "Tối",
+                                booking.HallSchedule?.Hall?.HallName ?? "Sảnh tiệc Riverside",
+                                booking.Customer.PhoneNumber,
+                                signResult.SignedPdfBytes,
+                                $"BienLaiDatCoc_{booking.BookingCode}.pdf");
+                        }
+                    }
+                    catch (Exception mailEx)
+                    {
+                        _logger.LogWarning(mailEx, "Không thể gửi email xác nhận đặt cọc thành công cho {Email}", booking.Customer.Email);
+                    }
+                });
+            }
         }
         catch (Exception ex)
         {
@@ -379,4 +473,80 @@ public sealed class PayOSPaymentService : IPaymentService
         return booking.BookingCode.Equals(cleanCode, StringComparison.OrdinalIgnoreCase) &&
                booking.Customer.PhoneNumber.Equals(cleanPhone, StringComparison.OrdinalIgnoreCase);
     }
+
+    public async Task<(byte[] PdfBytes, string FileName, InvoiceSignatureResult Signature)> GetSignedInvoicePdfAsync(string bookingCode, string phone)
+    {
+        if (string.IsNullOrWhiteSpace(bookingCode) || string.IsNullOrWhiteSpace(phone))
+            throw new ArgumentException("Mã đặt tiệc và số điện thoại không được để trống.");
+
+        var cleanCode = bookingCode.Trim().ToUpperInvariant();
+        var cleanPhone = phone.Trim();
+
+        var booking = await _context.WeddingBookings
+            .Include(b => b.Customer)
+            .Include(b => b.Status)
+            .Include(b => b.HallSchedule).ThenInclude(s => s.Hall)
+            .Include(b => b.Menu)
+            .Include(b => b.DecorationPackage)
+            .Include(b => b.Contract).ThenInclude(c => c!.Payments)
+            .Include(b => b.PaymentTransactions)
+            .SingleOrDefaultAsync(b => b.BookingCode == cleanCode);
+
+        if (booking == null)
+            throw new KeyNotFoundException($"Không tìm thấy đơn đặt tiệc với mã {cleanCode}.");
+
+        if (!booking.Customer.PhoneNumber.Equals(cleanPhone, StringComparison.OrdinalIgnoreCase))
+            throw new UnauthorizedAccessException("Số điện thoại không khớp với thông tin đơn đặt tiệc.");
+
+        var latestPayment = booking.Contract?.Payments?
+            .OrderByDescending(p => p.PaymentDate)
+            .FirstOrDefault();
+
+        var latestTx = booking.PaymentTransactions?
+            .OrderByDescending(t => t.NgayTao)
+            .FirstOrDefault(t => t.TrangThai == "SUCCESS");
+
+        var amountPaid = booking.PaidAmount > 0 
+            ? (latestPayment?.Amount ?? latestTx?.SoTienGhiNhan ?? booking.PaidAmount)
+            : 0;
+
+        var remaining = Math.Max(0, (booking.EstimatedTotal ?? amountPaid) - booking.PaidAmount);
+        var paymentDate = latestPayment?.PaymentDate ?? latestTx?.NgayTao ?? DateTime.Now;
+        var orderCodeStr = latestPayment?.TransactionCode ?? latestTx?.OrderCode.ToString() ?? booking.BookingCode;
+
+        var invoiceDto = new DTOs.Invoice.InvoicePdfDto
+        {
+            InvoiceNumber = $"HDDT-{booking.BookingCode}-01",
+            BookingCode = booking.BookingCode,
+            CustomerName = booking.Customer.FullName,
+            CustomerPhone = booking.Customer.PhoneNumber,
+            CustomerEmail = booking.Customer.Email ?? string.Empty,
+            PaymentType = booking.PaidAmount >= (booking.EstimatedTotal ?? 0) && booking.PaidAmount > 0
+                ? "Thanh toán toàn bộ (100%)" 
+                : "Đặt cọc (10%)",
+            PaymentMethod = latestPayment?.PaymentMethod ?? "VIETQR_PAYOS",
+            TransactionCode = orderCodeStr,
+            InvoiceDate = paymentDate,
+            EventDate = booking.HallSchedule?.Date ?? DateTime.Today,
+            Shift = booking.HallSchedule?.Shift ?? "Tối",
+            HallName = booking.HallSchedule?.Hall?.HallName ?? "Sảnh tiệc Riverside",
+            GuestCount = booking.GuestCount,
+            TotalTables = (booking.GuestCount + 9) / 10,
+            MenuName = booking.Menu?.MenuName,
+            DecorName = booking.DecorationPackage?.TenGoi,
+            TotalEstimatedCost = booking.EstimatedTotal ?? amountPaid,
+            AmountPaid = amountPaid,
+            AccumulatedPaid = booking.PaidAmount,
+            RemainingDebt = remaining,
+            VerificationUrl = $"https://localhost:7102/MyBooking?bookingCode={Uri.EscapeDataString(booking.BookingCode)}&phone={Uri.EscapeDataString(booking.Customer.PhoneNumber)}",
+            IsDigitallySigned = true,
+            SignedAt = DateTime.Now
+        };
+
+        byte[] unsignedPdf = _invoicePdfGenerator.Generate(invoiceDto);
+        var signResult = _signatureService.SignPdfDocument(unsignedPdf, invoiceDto.InvoiceNumber);
+
+        return (signResult.SignedPdfBytes, $"HoaDonDienTu_{booking.BookingCode}.pdf", signResult);
+    }
 }
+

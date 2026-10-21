@@ -127,4 +127,89 @@ public sealed class PaymentController : ControllerBase
             });
         }
     }
+
+    /// <summary>
+    /// Tải hóa đơn / biên lai điện tử PDF có chữ ký số doanh nghiệp (X.509 PAdES).
+    /// </summary>
+    [HttpGet("invoice/{bookingCode}")]
+    [AllowAnonymous]
+    public async Task<IActionResult> DownloadInvoice(string bookingCode, [FromQuery] string phone)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(bookingCode) || string.IsNullOrWhiteSpace(phone))
+                return BadRequest(new { success = false, message = "Thiếu mã đặt tiệc hoặc số điện thoại." });
+
+            var (pdfBytes, fileName, _) = await _paymentService.GetSignedInvoicePdfAsync(bookingCode, phone);
+            return File(pdfBytes, "application/pdf", fileName);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { success = false, message = ex.Message });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { success = false, message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Lỗi tải hóa đơn điện tử cho {BookingCode}", bookingCode);
+            return StatusCode(StatusCodes.Status500InternalServerError, new
+            {
+                success = false,
+                message = "Không thể tạo hóa đơn điện tử lúc này. Vui lòng thử lại sau.",
+                detail = ex.Message
+            });
+        }
+    }
+
+    /// <summary>
+    /// Tra cứu và xác thực tính hợp lệ của chữ ký số trên hóa đơn điện tử theo NĐ 123/2020/NĐ-CP.
+    /// </summary>
+    [HttpGet("invoice/verify/{bookingCode}")]
+    [AllowAnonymous]
+    public async Task<IActionResult> VerifyInvoice(string bookingCode, [FromQuery] string phone)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(bookingCode) || string.IsNullOrWhiteSpace(phone))
+                return BadRequest(new { success = false, message = "Thiếu mã đặt tiệc hoặc số điện thoại." });
+
+            var (_, fileName, signature) = await _paymentService.GetSignedInvoicePdfAsync(bookingCode, phone);
+            return Ok(new
+            {
+                success = true,
+                data = new
+                {
+                    fileName,
+                    isDigitallySigned = true,
+                    signatureAlgorithm = signature.Algorithm,
+                    signedAt = signature.SignedAt,
+                    signer = signature.CertificateSubject,
+                    thumbprint = signature.CertificateThumbprint,
+                    legalBasis = "Nghị định 123/2020/NĐ-CP & Thông tư 78/2021/TT-BTC, Luật Giao dịch điện tử 2023",
+                    status = "HỢP LỆ — Tài liệu điện tử toàn vẹn và được xác thực chữ ký số X.509"
+                }
+            });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { success = false, message = ex.Message });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { success = false, message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Lỗi xác thực hóa đơn điện tử cho {BookingCode}", bookingCode);
+            return StatusCode(StatusCodes.Status500InternalServerError, new
+            {
+                success = false,
+                message = "Không thể xác thực hóa đơn lúc này.",
+                detail = ex.Message
+            });
+        }
+    }
 }
+

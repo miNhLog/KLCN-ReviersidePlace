@@ -18,12 +18,14 @@ public sealed class CoordinationAssignmentSqlServerTests
     public async Task ConcurrentRequests_OnSqlServer_OnlyOneSameDateShiftAssignmentSucceeds()
     {
         var databaseName = $"RiversideCoordinationTests_{Guid.NewGuid():N}";
-        var master = "Server=.;Database=master;Trusted_Connection=True;TrustServerCertificate=True;Encrypt=False;Connect Timeout=5";
-        var testConnection = $"Server=.;Database={databaseName};Trusted_Connection=True;TrustServerCertificate=True;Encrypt=False;Connect Timeout=5";
+        var server = Environment.GetEnvironmentVariable("TEST_SQL_SERVER") ?? ".\\SQLEXPRESS";
+        var master = $"Server={server};Database=master;Trusted_Connection=True;TrustServerCertificate=True;Encrypt=False;Connect Timeout=5";
+        var testConnection = $"Server={server};Database={databaseName};Trusted_Connection=True;TrustServerCertificate=True;Encrypt=False;Connect Timeout=5";
         await using var masterConnection = new SqlConnection(master);
         await masterConnection.OpenAsync();
         await using (var create = masterConnection.CreateCommand())
         {
+            create.CommandTimeout = 60;
             create.CommandText = $"CREATE DATABASE [{databaseName}]";
             await create.ExecuteNonQueryAsync();
         }
@@ -73,10 +75,11 @@ public sealed class CoordinationAssignmentSqlServerTests
     public async Task ChangeFailure_AfterOldAssignmentUpdate_RollsBackWholeSqlServerTransaction()
     {
         var databaseName = $"RiversideCoordinationRollback_{Guid.NewGuid():N}";
-        var master = "Server=.;Database=master;Trusted_Connection=True;TrustServerCertificate=True;Encrypt=False;Connect Timeout=5";
-        var testConnection = $"Server=.;Database={databaseName};Trusted_Connection=True;TrustServerCertificate=True;Encrypt=False;Connect Timeout=5";
+        var server = Environment.GetEnvironmentVariable("TEST_SQL_SERVER") ?? ".\\SQLEXPRESS";
+        var master = $"Server={server};Database=master;Trusted_Connection=True;TrustServerCertificate=True;Encrypt=False;Connect Timeout=5";
+        var testConnection = $"Server={server};Database={databaseName};Trusted_Connection=True;TrustServerCertificate=True;Encrypt=False;Connect Timeout=5";
         await using var masterConnection = new SqlConnection(master); await masterConnection.OpenAsync();
-        await using (var create = masterConnection.CreateCommand()) { create.CommandText = $"CREATE DATABASE [{databaseName}]"; await create.ExecuteNonQueryAsync(); }
+        await using (var create = masterConnection.CreateCommand()) { create.CommandTimeout = 60; create.CommandText = $"CREATE DATABASE [{databaseName}]"; await create.ExecuteNonQueryAsync(); }
         try
         {
             var options = new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlServer(testConnection).Options;

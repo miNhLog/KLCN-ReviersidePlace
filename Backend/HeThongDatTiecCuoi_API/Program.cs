@@ -131,6 +131,8 @@ builder.Services.AddScoped<IPaymentService, PayOSPaymentService>();
 builder.Services.AddScoped<IContractTemplateProvider, ContractTemplateProvider>();
 builder.Services.AddScoped<IContractCodeGenerator, ContractCodeGenerator>();
 builder.Services.AddScoped<IContractPdfGenerator, ContractPdfGenerator>();
+builder.Services.AddSingleton<IInvoiceDigitalSignatureService, InvoiceDigitalSignatureService>();
+builder.Services.AddScoped<IInvoicePdfGenerator, InvoicePdfGenerator>();
 builder.Services.AddScoped<IEmployeeCodeGenerator, EmployeeCodeGenerator>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IIncidentService, IncidentService>();

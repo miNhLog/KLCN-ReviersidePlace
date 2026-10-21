@@ -39,10 +39,24 @@
                 <!-- QR Card -->
                 <div class="rp-pay-qr-card">
                     <div class="rp-pay-qr-wrapper">
+                        <!-- Loading State -->
                         <div id="rpPayQrLoading" class="rp-pay-qr-loading">
                             <div class="rp-pay-spinner"></div>
-                            <span>Đang tạo mã VietQR...</span>
+                            <span id="rpPayQrLoadingText">Đang tạo mã VietQR...</span>
                         </div>
+
+                        <!-- Error State -->
+                        <div id="rpPayQrError" class="rp-pay-qr-error" style="display:none;">
+                            <i class="fa-solid fa-triangle-exclamation" style="font-size:30px;color:#EF4444;margin-bottom:8px;"></i>
+                            <p id="rpPayQrErrorMsg" style="font-size:12.5px;color:#991B1B;margin:0 0 12px;line-height:1.4;">
+                                Không thể tải mã QR thanh toán. Vui lòng bấm thử lại hoặc liên hệ quản trị viên.
+                            </p>
+                            <button type="button" id="rpPayQrRetryBtn" class="rp-pay-retry-btn">
+                                <i class="fa-solid fa-rotate-right"></i> Thử lại
+                            </button>
+                        </div>
+
+                        <!-- QR Image -->
                         <img id="rpPayQrImg" class="rp-pay-qr-img" alt="Mã VietQR Thanh toán cọc" style="display:none;" />
                     </div>
 

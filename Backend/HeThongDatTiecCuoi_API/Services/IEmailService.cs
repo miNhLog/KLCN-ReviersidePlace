@@ -40,4 +40,43 @@ public interface IEmailService
         DateTime holdExpiresAt,
         string? phoneNumber = null,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gửi email xác nhận đặt cọc thành công qua VietQR PayOS (10%).
+    /// Lịch sảnh đã được khóa chính thức trên hệ thống Riverside Palace.
+    /// Đính kèm hóa đơn / biên lai điện tử có chữ ký số (PAdES).
+    /// </summary>
+    Task SendDepositPaymentSuccessEmailAsync(
+        string recipientEmail,
+        string customerName,
+        string bookingCode,
+        long orderCode,
+        decimal depositAmount,
+        decimal remainingAmount,
+        DateTime eventDate,
+        string shift,
+        string hallName,
+        string? phoneNumber = null,
+        byte[]? invoicePdfBytes = null,
+        string? invoiceFileName = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gửi email xác nhận hoàn tất 100% thanh toán tiệc cưới (Quyết toán).
+    /// Đính kèm hóa đơn điện tử giá trị gia tăng có chữ ký số (PAdES).
+    /// </summary>
+    Task SendFullPaymentSuccessEmailAsync(
+        string recipientEmail,
+        string customerName,
+        string bookingCode,
+        string contractCode,
+        decimal totalAmount,
+        DateTime eventDate,
+        string shift,
+        string hallName,
+        string? phoneNumber = null,
+        byte[]? invoicePdfBytes = null,
+        string? invoiceFileName = null,
+        CancellationToken cancellationToken = default);
 }
+

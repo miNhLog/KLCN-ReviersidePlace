@@ -23,7 +23,6 @@ public class SmtpEmailService : IEmailService
         _logger = logger;
     }
 
-    // Constructor tương thích khi DI chỉ đăng ký SmtpOptions (giữ build cũ / test).
     public SmtpEmailService(IOptions<SmtpOptions> smtp)
         : this(smtp, Microsoft.Extensions.Options.Options.Create(new MailSettings()),
             LoggerFactory.Create(b => { }).CreateLogger<SmtpEmailService>())
@@ -37,7 +36,7 @@ public class SmtpEmailService : IEmailService
         CancellationToken cancellationToken = default) =>
         SendAsync(
             recipientEmail,
-            "[Riverside Palace] Mã xác nhận đổi mật khẩu lần đầu",
+            "Riverside Palace · Mã xác nhận đổi mật khẩu lần đầu",
             $"""
             Xin chào nhân viên Riverside Palace,
 
@@ -48,7 +47,7 @@ public class SmtpEmailService : IEmailService
 
             Nếu bạn không thực hiện yêu cầu này, vui lòng liên hệ Quản trị viên hệ thống.
 
-            Riverside Palace
+            Riverside Palace Convention Center
             """,
             cancellationToken);
 
@@ -59,7 +58,7 @@ public class SmtpEmailService : IEmailService
         CancellationToken cancellationToken = default) =>
         SendAsync(
             recipientEmail,
-            "[Riverside Palace] Mã OTP đặt lại mật khẩu",
+            "Riverside Palace · Mã OTP đặt lại mật khẩu",
             $"""
             Xin chào nhân viên Riverside Palace,
 
@@ -70,7 +69,7 @@ public class SmtpEmailService : IEmailService
 
             Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email và liên hệ Quản trị viên hệ thống.
 
-            Riverside Palace
+            Riverside Palace Convention Center
             """,
             cancellationToken);
 
@@ -93,9 +92,9 @@ public class SmtpEmailService : IEmailService
 
                 Nếu bạn không nhận ra yêu cầu này, vui lòng liên hệ Quản trị viên hệ thống.
 
-                Riverside Palace
+                Riverside Palace Convention Center
                 """;
-        await SendAsync(recipientEmail, "[Riverside Palace] Yêu cầu đặt lại mật khẩu", body, cancellationToken);
+        await SendAsync(recipientEmail, "Riverside Palace · Yêu cầu đặt lại mật khẩu", body, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -118,15 +117,74 @@ public class SmtpEmailService : IEmailService
         if (string.IsNullOrWhiteSpace(recipientEmail))
             throw new ArgumentException("Email người nhận không được để trống.", nameof(recipientEmail));
 
-        var subject = $"[Riverside Palace] Xác nhận đăng ký giữ chỗ tiệc cưới - Mã hồ sơ: {bookingCode}";
-        var html = BuildBookingConfirmationHtml(
+        var subject = $"Riverside Palace - Xác nhận giữ chỗ tiệc cưới #{bookingCode}";
+        var effectiveBaseUrl = !string.IsNullOrWhiteSpace(_mail.PublicSiteUrl) ? _mail.PublicSiteUrl : _mail.ClientAppBaseUrl;
+        var (html, plain) = BuildBookingConfirmationContent(
             customerName, bookingCode, eventDate, shift, hallName,
             totalTables, guestCount, menuName, decorName, totalEstimatedCost, holdExpiresAt,
-            _mail.ClientAppBaseUrl, phoneNumber);
-        return SendHtmlAsync(recipientEmail, subject, html, cancellationToken);
+            effectiveBaseUrl, phoneNumber);
+
+        return SendMultipartAsync(recipientEmail, subject, plain, html, null, null, cancellationToken);
     }
 
-    internal static string BuildBookingConfirmationHtml(
+    /// <inheritdoc />
+    public Task SendDepositPaymentSuccessEmailAsync(
+        string recipientEmail,
+        string customerName,
+        string bookingCode,
+        long orderCode,
+        decimal depositAmount,
+        decimal remainingAmount,
+        DateTime eventDate,
+        string shift,
+        string hallName,
+        string? phoneNumber = null,
+        byte[]? invoicePdfBytes = null,
+        string? invoiceFileName = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(recipientEmail))
+            throw new ArgumentException("Email người nhận không được để trống.", nameof(recipientEmail));
+
+        var subject = $"Riverside Palace - Xác nhận đặt cọc thành công hồ sơ #{bookingCode}";
+        var effectiveBaseUrl = !string.IsNullOrWhiteSpace(_mail.PublicSiteUrl) ? _mail.PublicSiteUrl : _mail.ClientAppBaseUrl;
+        var (html, plain) = BuildDepositSuccessContent(
+            customerName, bookingCode, orderCode, depositAmount, remainingAmount,
+            eventDate, shift, hallName, effectiveBaseUrl, phoneNumber);
+
+        var attachmentName = invoiceFileName ?? $"BienLaiDatCoc_{bookingCode}.pdf";
+        return SendMultipartAsync(recipientEmail, subject, plain, html, invoicePdfBytes, attachmentName, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public Task SendFullPaymentSuccessEmailAsync(
+        string recipientEmail,
+        string customerName,
+        string bookingCode,
+        string contractCode,
+        decimal totalAmount,
+        DateTime eventDate,
+        string shift,
+        string hallName,
+        string? phoneNumber = null,
+        byte[]? invoicePdfBytes = null,
+        string? invoiceFileName = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(recipientEmail))
+            throw new ArgumentException("Email người nhận không được để trống.", nameof(recipientEmail));
+
+        var subject = $"Riverside Palace - Xác nhận hoàn tất thanh toán tiệc cưới #{bookingCode}";
+        var effectiveBaseUrl = !string.IsNullOrWhiteSpace(_mail.PublicSiteUrl) ? _mail.PublicSiteUrl : _mail.ClientAppBaseUrl;
+        var (html, plain) = BuildFullPaymentSuccessContent(
+            customerName, bookingCode, contractCode, totalAmount,
+            eventDate, shift, hallName, effectiveBaseUrl, phoneNumber);
+
+        var attachmentName = invoiceFileName ?? $"HoaDonDienTu_{bookingCode}.pdf";
+        return SendMultipartAsync(recipientEmail, subject, plain, html, invoicePdfBytes, attachmentName, cancellationToken);
+    }
+
+    public static (string Html, string Plain) BuildBookingConfirmationContent(
         string customerName,
         string bookingCode,
         DateTime eventDate,
@@ -144,69 +202,331 @@ public class SmtpEmailService : IEmailService
         var vi = new CultureInfo("vi-VN");
         string E(string? v) => WebUtility.HtmlEncode(string.IsNullOrWhiteSpace(v) ? "—" : v.Trim());
         var totalStr = totalEstimatedCost.ToString("N0", vi) + " VNĐ";
-        // Quy ước chung: hiển thị duy nhất `dd/MM/yyyy · Ca` (khớp lookup MyBooking/Index.cshtml:184).
+        var depositEstStr = Math.Round(totalEstimatedCost * 0.10m, 0).ToString("N0", vi) + " VNĐ";
         var eventStr = $"{eventDate:dd/MM/yyyy} · {E(shift)}";
         var scaleStr = $"{guestCount} khách ({totalTables} bàn)";
         var holdStr = holdExpiresAt.ToString("HH:mm - dd/MM/yyyy", vi);
         var baseUrl = string.IsNullOrWhiteSpace(clientAppBaseUrl) ? "https://localhost:7102" : clientAppBaseUrl.TrimEnd('/');
-        // LỖI E: link auto-fill cả mã + SĐT để /MyBooking tự tra cứu (deep-link).
+
+        // Link tra cứu thông thường
         var lookupUrl = string.IsNullOrWhiteSpace(phoneNumber)
             ? $"{baseUrl}/MyBooking?bookingCode={Uri.EscapeDataString(bookingCode)}"
             : $"{baseUrl}/MyBooking?bookingCode={Uri.EscapeDataString(bookingCode)}&phone={Uri.EscapeDataString(phoneNumber.Trim())}";
 
-        var sb = new StringBuilder();
-        sb.Append($"""
+        // Deep-link thanh toán đặt cọc trực tuyến có autoDeposit=true
+        var depositUrl = string.IsNullOrWhiteSpace(phoneNumber)
+            ? $"{baseUrl}/MyBooking?bookingCode={Uri.EscapeDataString(bookingCode)}&autoDeposit=true"
+            : $"{baseUrl}/MyBooking?bookingCode={Uri.EscapeDataString(bookingCode)}&phone={Uri.EscapeDataString(phoneNumber.Trim())}&autoDeposit=true";
+
+        var html = $"""
         <!DOCTYPE html>
         <html lang="vi"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-        <title>Xác nhận giữ chỗ {E(bookingCode)}</title></head>
-        <body style="margin:0;padding:0;background:#FDFBF7;font-family:Arial,Helvetica,sans-serif;color:#111822;">
-        <div style="max-width:640px;margin:0 auto;padding:24px 16px;">
-          <div style="background:#111822;color:#fff;text-align:center;padding:28px 20px;border-radius:12px 12px 0 0;">
-            <div style="letter-spacing:4px;font-size:13px;color:#B89758;">RIVERSIDE PALACE</div>
-            <h1 style="margin:8px 0 4px;font-size:22px;">Xác nhận đăng ký giữ chỗ tiệc cưới</h1>
-            <p style="margin:0;color:#d7d7d7;font-size:13px;">Trung Tâm Hội Nghị Tiệc Cưới Riverside Palace</p>
+        <title>Xác nhận giữ chỗ {E(bookingCode)} - Riverside Palace</title></head>
+        <body style="margin:0;padding:0;background:#FDFBF7;font-family:'Plus Jakarta Sans',Arial,Helvetica,sans-serif;color:#111822;">
+        <!-- Preheader preview text for inbox (RFC-compliant, no tiny font or zero opacity) -->
+        <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;visibility:hidden;color:transparent;line-height:0;">
+          Xác nhận đăng ký giữ chỗ tiệc cưới #{E(bookingCode)} tại Riverside Palace.
+        </div>
+        <div style="max-width:620px;margin:0 auto;padding:24px 16px;">
+          <!-- Header -->
+          <div style="background:linear-gradient(135deg, #1A222D 0%, #111822 100%);color:#fff;text-align:center;padding:30px 20px;border-radius:16px 16px 0 0;border-bottom:3px solid #B89758;">
+            <div style="letter-spacing:4px;font-size:12px;font-weight:700;color:#B89758;text-transform:uppercase;">RIVERSIDE PALACE</div>
+            <h1 style="margin:8px 0 4px;font-size:22px;font-weight:700;">Xác Nhận Giữ Chỗ Tiệc Cưới</h1>
+            <p style="margin:0;color:#cbd5e1;font-size:12.5px;">Trung Tâm Hội Nghị Tiệc Cưới Riverside Palace ven sông Bến Vân Đồn</p>
           </div>
-          <div style="background:#fff;border:1px solid #eee;border-top:none;border-radius:0 0 12px 12px;padding:24px;">
-            <p style="font-size:15px;">Xin chào <strong>{E(customerName)}</strong>,</p>
-            <p style="font-size:14px;line-height:1.6;">Cảm ơn Quý khách đã tin tưởng Riverside Palace. Hồ sơ giữ chỗ của Quý khách đã được ghi nhận thành công với thông tin bên dưới.</p>
-            <div style="border:2px dashed #B89758;border-radius:10px;padding:16px;text-align:center;background:#FDFBF7;margin:16px 0;">
-              <div style="font-size:13px;color:#666;">MÃ HỒ SƠ GIỮ CHỖ</div>
-              <div style="font-size:26px;font-weight:bold;letter-spacing:2px;color:#111822;">{E(bookingCode)}</div>
-              <div style="font-size:12px;color:#666;margin-top:6px;">Vui lòng lưu mã này để tra cứu tiến độ tại mục <strong>MyBooking</strong>.</div>
+          <!-- Body -->
+          <div style="background:#ffffff;border:1px solid #E9E2D3;border-top:none;border-radius:0 0 16px 16px;padding:26px;box-shadow:0 8px 25px rgba(0,0,0,0.04);">
+            <p style="font-size:14.5px;margin-top:0;">Kính gửi Quý khách <strong>{E(customerName)}</strong>,</p>
+            <p style="font-size:13.5px;line-height:1.6;color:#475569;">Cảm ơn hai bạn đã lựa chọn Riverside Palace là nơi lưu giữ khoảnh khắc trăm năm. Hồ sơ đăng ký giữ chỗ tiệc cưới của bạn đã được ghi nhận trên hệ thống với thông tin chi tiết:</p>
+
+            <!-- Booking Code Box -->
+            <div style="border:2px dashed #B89758;border-radius:12px;padding:16px;text-align:center;background:#FDFBF7;margin:18px 0;">
+              <div style="font-size:11.5px;font-weight:700;letter-spacing:1px;color:#64748B;">MÃ HỒ SƠ GIỮ CHỖ CỦA BẠN</div>
+              <div style="font-size:26px;font-weight:800;letter-spacing:2px;color:#111822;margin:4px 0;">{E(bookingCode)}</div>
+              <div style="font-size:12px;color:#64748B;">Tiền cọc giữ chỗ (10%): <strong style="color:#DC2626;font-size:14px;">{depositEstStr}</strong></div>
             </div>
-            <table style="width:100%;border-collapse:collapse;font-size:14px;">
-              <tr><td style="padding:10px;border-bottom:1px solid #f0e8d5;color:#666;width:38%;">Đại sảnh</td><td style="padding:10px;border-bottom:1px solid #f0e8d5;font-weight:bold;">{E(hallName)}</td></tr>
-              <tr><td style="padding:10px;border-bottom:1px solid #f0e8d5;color:#666;">Thời gian</td><td style="padding:10px;border-bottom:1px solid #f0e8d5;font-weight:bold;">{eventStr}</td></tr>
-              <tr><td style="padding:10px;border-bottom:1px solid #f0e8d5;color:#666;">Quy mô</td><td style="padding:10px;border-bottom:1px solid #f0e8d5;font-weight:bold;">{E(scaleStr)}</td></tr>
-              <tr><td style="padding:10px;border-bottom:1px solid #f0e8d5;color:#666;">Thực đơn</td><td style="padding:10px;border-bottom:1px solid #f0e8d5;">{E(menuName)}</td></tr>
-              <tr><td style="padding:10px;border-bottom:1px solid #f0e8d5;color:#666;">Trang trí</td><td style="padding:10px;border-bottom:1px solid #f0e8d5;">{E(decorName)}</td></tr>
-              <tr><td style="padding:10px;color:#666;">Tổng dự kiến</td><td style="padding:10px;font-weight:bold;color:#B89758;font-size:16px;">{E(totalStr)}</td></tr>
+
+            <!-- Details Table -->
+            <table style="width:100%;border-collapse:collapse;font-size:13.5px;margin-bottom:18px;">
+              <tr><td style="padding:10px 6px;border-bottom:1px solid #F1ECE1;color:#64748B;width:38%;">Đại sảnh tiệc</td><td style="padding:10px 6px;border-bottom:1px solid #F1ECE1;font-weight:700;color:#111822;">{E(hallName)}</td></tr>
+              <tr><td style="padding:10px 6px;border-bottom:1px solid #F1ECE1;color:#64748B;">Thời gian tổ chức</td><td style="padding:10px 6px;border-bottom:1px solid #F1ECE1;font-weight:700;color:#111822;">{eventStr}</td></tr>
+              <tr><td style="padding:10px 6px;border-bottom:1px solid #F1ECE1;color:#64748B;">Quy mô tiệc</td><td style="padding:10px 6px;border-bottom:1px solid #F1ECE1;font-weight:700;color:#111822;">{E(scaleStr)}</td></tr>
+              <tr><td style="padding:10px 6px;border-bottom:1px solid #F1ECE1;color:#64748B;">Gói thực đơn</td><td style="padding:10px 6px;border-bottom:1px solid #F1ECE1;color:#111822;">{E(menuName)}</td></tr>
+              <tr><td style="padding:10px 6px;border-bottom:1px solid #F1ECE1;color:#64748B;">Gói trang trí</td><td style="padding:10px 6px;border-bottom:1px solid #F1ECE1;color:#111822;">{E(decorName)}</td></tr>
+              <tr><td style="padding:10px 6px;color:#64748B;">Tổng dự toán ước tính</td><td style="padding:10px 6px;font-weight:800;color:#B89758;font-size:16px;">{E(totalStr)}</td></tr>
             </table>
-            <div style="background:#fff8e8;border-left:4px solid #B89758;padding:12px 14px;border-radius:6px;margin:16px 0;font-size:13px;line-height:1.6;">
-              <strong>Lưu ý giữ chỗ 48 giờ (BR07):</strong> hồ sơ được giữ đến <strong>{E(holdStr)}</strong>.
-              Sau thời gian này nếu chưa xác nhận đặt cọc, lịch sảnh sẽ tự động giải phóng.
-              Đội ngũ tư vấn sẽ liên hệ trong <strong>24 giờ</strong> để hỗ trợ Quý khách hoàn tất thủ tục.
+
+            <!-- Notice Box -->
+            <div style="background:#FFFBEB;border:1px solid #FDE68A;border-left:4px solid #D97706;padding:12px 14px;border-radius:8px;margin:18px 0;font-size:12.5px;line-height:1.6;color:#92400E;">
+              <strong>Thời hạn giữ chỗ 48 giờ (BR07):</strong> Hồ sơ được ưu tiên giữ đến <strong>{E(holdStr)}</strong>.<br/>
+              Sau thời gian này, nếu chưa hoàn tất thanh toán đặt cọc 10%, lịch sảnh sẽ tự động giải phóng để phục vụ các cặp đôi khác.
             </div>
-            <div style="text-align:center;margin:20px 0;">
-              <a href="{E(lookupUrl)}" style="display:inline-block;background:#B89758;color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:bold;font-size:15px;">Tra cứu hồ sơ của tôi</a>
-              <div style="font-size:12px;color:#666;margin-top:8px;">{E(lookupUrl)}</div>
+
+            <!-- Call-To-Action Buttons -->
+            <div style="text-align:center;margin:24px 0 16px;">
+              <a href="{E(depositUrl)}" style="display:inline-block;background:#B89758;color:#ffffff;text-decoration:none;padding:14px 30px;border-radius:10px;font-weight:800;font-size:15px;box-shadow:0 4px 14px rgba(184,151,88,0.35);">
+                💳 Thanh toán đặt cọc VietQR ngay (10%)
+              </a>
+              <div style="margin-top:12px;">
+                <a href="{E(lookupUrl)}" style="display:inline-block;background:#ffffff;border:1.5px solid #CBD5E1;color:#111822;text-decoration:none;padding:9px 22px;border-radius:8px;font-weight:700;font-size:13px;">
+                  📄 Tra cứu hồ sơ &amp; chi tiết thực đơn
+                </a>
+              </div>
             </div>
-            <hr style="border:none;border-top:1px solid #eee;margin:20px 0;"/>
-            <p style="font-size:12px;color:#666;line-height:1.7;margin:0;">
-              Trung Tâm Hội Nghị Tiệc Cưới Riverside Palace<br/>
-              Địa chỉ: 360D Bến Vân Đồn, Quận 4, TP. Hồ Chí Minh<br/>
-              Hotline tư vấn: <strong>0933 777 888</strong> — Email: riversidepalace.contact@gmail.com
+
+            <!-- Footer Contact -->
+            <hr style="border:none;border-top:1px solid #F1ECE1;margin:22px 0 16px;"/>
+            <p style="font-size:11.5px;color:#64748B;line-height:1.7;margin:0;">
+              <strong>Trung Tâm Hội Nghị Tiệc Cưới Riverside Palace</strong><br/>
+              Địa chỉ: 360D Bến Vân Đồn, Phường 1, Quận 4, TP. Hồ Chí Minh<br/>
+              Hotline tư vấn: <strong>0933 777 888</strong> · (028) 6256 8888 — Email: event@riversidepalace.vn<br/>
+              Website: <a href="{baseUrl}" style="color:#B89758;text-decoration:none;">{baseUrl}</a>
             </p>
           </div>
         </div>
         </body></html>
-        """);
-        return sb.ToString();
+        """;
+
+        var plain = $"""
+        RIVERSIDE PALACE - XÁC NHẬN GIỮ CHỖ TIỆC CƯỚI
+        =====================================================
+        Kính gửi Quý khách: {customerName}
+        Mã hồ sơ giữ chỗ: {bookingCode}
+
+        THÔNG TIN TIỆC CƯỚI:
+        - Đại sảnh: {hallName}
+        - Thời gian: {eventDate:dd/MM/yyyy} ({shift})
+        - Quy mô: {guestCount} khách ({totalTables} bàn)
+        - Thực đơn: {menuName ?? "—"}
+        - Trang trí: {decorName ?? "—"}
+        - Tổng dự toán: {totalStr}
+        - Tiền cọc giữ chỗ (10%): {depositEstStr}
+
+        LƯU Ý GIỮ CHỖ 48 GIỜ:
+        Hồ sơ được ưu tiên giữ đến {holdStr}.
+        Sau thời gian này, nếu chưa thanh toán cọc 10%, lịch sảnh sẽ tự động giải phóng.
+
+        ĐẶT CỌC TRỰC TUYẾN NGAY QUA VIETQR:
+        {depositUrl}
+
+        TRA CỨU HỒ SƠ CHI TIẾT:
+        {lookupUrl}
+
+        -----------------------------------------------------
+        Trung Tâm Hội Nghị Tiệc Cưới Riverside Palace
+        Địa chỉ: 360D Bến Vân Đồn, P.1, Q.4, TP.HCM
+        Hotline: 0933 777 888 - (028) 6256 8888
+        Email: event@riversidepalace.vn
+        """;
+
+        return (html, plain);
+    }
+
+    public static (string Html, string Plain) BuildDepositSuccessContent(
+        string customerName,
+        string bookingCode,
+        long orderCode,
+        decimal depositAmount,
+        decimal remainingAmount,
+        DateTime eventDate,
+        string shift,
+        string hallName,
+        string? clientAppBaseUrl = null,
+        string? phoneNumber = null)
+    {
+        var vi = new CultureInfo("vi-VN");
+        string E(string? v) => WebUtility.HtmlEncode(string.IsNullOrWhiteSpace(v) ? "—" : v.Trim());
+        var depositStr = depositAmount.ToString("N0", vi) + " VNĐ";
+        var remainStr = remainingAmount.ToString("N0", vi) + " VNĐ";
+        var eventStr = $"{eventDate:dd/MM/yyyy} · {E(shift)}";
+        var baseUrl = string.IsNullOrWhiteSpace(clientAppBaseUrl) ? "https://localhost:7102" : clientAppBaseUrl.TrimEnd('/');
+        var lookupUrl = string.IsNullOrWhiteSpace(phoneNumber)
+            ? $"{baseUrl}/MyBooking?bookingCode={Uri.EscapeDataString(bookingCode)}"
+            : $"{baseUrl}/MyBooking?bookingCode={Uri.EscapeDataString(bookingCode)}&phone={Uri.EscapeDataString(phoneNumber.Trim())}";
+
+        var html = $"""
+        <!DOCTYPE html>
+        <html lang="vi"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+        <title>Xác nhận đặt cọc thành công #{E(bookingCode)} - Riverside Palace</title></head>
+        <body style="margin:0;padding:0;background:#FDFBF7;font-family:'Plus Jakarta Sans',Arial,Helvetica,sans-serif;color:#111822;">
+        <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;visibility:hidden;color:transparent;line-height:0;">
+          Xác nhận thanh toán đặt cọc 10% thành công cho hồ sơ #{E(bookingCode)} tại Riverside Palace.
+        </div>
+        <div style="max-width:620px;margin:0 auto;padding:24px 16px;">
+          <div style="background:linear-gradient(135deg, #065F46 0%, #047857 100%);color:#fff;text-align:center;padding:30px 20px;border-radius:16px 16px 0 0;border-bottom:3px solid #10B981;">
+            <div style="letter-spacing:4px;font-size:12px;font-weight:700;color:#A7F3D0;text-transform:uppercase;">RIVERSIDE PALACE</div>
+            <h1 style="margin:8px 0 4px;font-size:22px;font-weight:700;">✓ Xác Nhận Đặt Cọc Thành Công</h1>
+            <p style="margin:0;color:#D1FAE5;font-size:12.5px;">Lịch sảnh tiệc của bạn đã được khóa chính thức trên hệ thống</p>
+          </div>
+          <div style="background:#ffffff;border:1px solid #E9E2D3;border-top:none;border-radius:0 0 16px 16px;padding:26px;box-shadow:0 8px 25px rgba(0,0,0,0.04);">
+            <p style="font-size:14.5px;margin-top:0;">Kính gửi Quý khách <strong>{E(customerName)}</strong>,</p>
+            <p style="font-size:13.5px;line-height:1.6;color:#475569;">Hệ thống thanh toán điện tử Riverside Palace trân trọng thông báo giao dịch đặt cọc giữ chỗ của Quý khách đã được xác nhận thành công qua cổng thanh toán VietQR PayOS.</p>
+
+            <!-- Success Box -->
+            <div style="background:#ECFDF5;border:1.5px solid #A7F3D0;border-radius:12px;padding:18px;text-align:center;margin:18px 0;">
+              <div style="font-size:12px;font-weight:700;color:#065F46;">SỐ TIỀN ĐẶT CỌC ĐÃ THANH TOÁN (10%)</div>
+              <div style="font-size:28px;font-weight:800;color:#047857;margin:4px 0;">{depositStr}</div>
+              <div style="font-size:12px;color:#065F46;">Mã giao dịch VietQR: <strong>#{orderCode}</strong> · Mã hồ sơ: <strong>{E(bookingCode)}</strong></div>
+            </div>
+
+            <table style="width:100%;border-collapse:collapse;font-size:13.5px;margin-bottom:18px;">
+              <tr><td style="padding:10px 6px;border-bottom:1px solid #F1ECE1;color:#64748B;width:40%;">Trạng thái hồ sơ</td><td style="padding:10px 6px;border-bottom:1px solid #F1ECE1;font-weight:800;color:#047857;">ĐÃ XÁC NHẬN (CONFIRMED)</td></tr>
+              <tr><td style="padding:10px 6px;border-bottom:1px solid #F1ECE1;color:#64748B;">Sảnh tiệc đã khóa</td><td style="padding:10px 6px;border-bottom:1px solid #F1ECE1;font-weight:700;color:#111822;">{E(hallName)}</td></tr>
+              <tr><td style="padding:10px 6px;border-bottom:1px solid #F1ECE1;color:#64748B;">Thời gian tổ chức</td><td style="padding:10px 6px;border-bottom:1px solid #F1ECE1;font-weight:700;color:#111822;">{eventStr}</td></tr>
+              <tr><td style="padding:10px 6px;color:#64748B;">Dự toán còn lại cần thanh toán</td><td style="padding:10px 6px;font-weight:800;color:#B89758;font-size:15px;">{remainStr}</td></tr>
+            </table>
+
+            <div style="background:#F0FDF4;border-left:4px solid #10B981;padding:12px 14px;border-radius:6px;font-size:12.5px;line-height:1.6;color:#166534;margin:18px 0;">
+              <strong>Biên lai &amp; Hóa đơn điện tử có chữ ký số:</strong> File PDF biên lai thu tiền đã được ký số điện tử hợp chuẩn (PAdES) và đính kèm trong email này để Quý khách lưu trữ phục vụ đối soát.
+            </div>
+
+            <div style="text-align:center;margin:22px 0 16px;">
+              <a href="{E(lookupUrl)}" style="display:inline-block;background:#B89758;color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:700;font-size:14px;box-shadow:0 4px 12px rgba(184,151,88,0.3);">
+                📄 Xem chi tiết hồ sơ &amp; Hợp đồng trực tuyến
+              </a>
+            </div>
+
+            <hr style="border:none;border-top:1px solid #F1ECE1;margin:22px 0 16px;"/>
+            <p style="font-size:11.5px;color:#64748B;line-height:1.7;margin:0;">
+              <strong>Trung Tâm Hội Nghị Tiệc Cưới Riverside Palace</strong><br/>
+              Địa chỉ: 360D Bến Vân Đồn, Phường 1, Quận 4, TP. Hồ Chí Minh<br/>
+              Hotline hỗ trợ tiệc cưới: <strong>0933 777 888</strong> · (028) 6256 8888
+            </p>
+          </div>
+        </div>
+        </body></html>
+        """;
+
+        var plain = $"""
+        RIVERSIDE PALACE - XÁC NHẬN ĐẶT CỌC THÀNH CÔNG
+        =====================================================
+        Kính gửi Quý khách: {customerName}
+        Mã hồ sơ: {bookingCode}
+        Mã giao dịch VietQR: #{orderCode}
+
+        SỐ TIỀN ĐẶT CỌC ĐÃ THANH TOÁN: {depositStr}
+        DỰ TOÁN CÒN LẠI CẦN THANH TOÁN: {remainStr}
+
+        THÔNG TIN SẢNH TIỆC:
+        - Đại sảnh: {hallName} (Đã khóa chính thức)
+        - Thời gian: {eventDate:dd/MM/yyyy} ({shift})
+        - Trạng thái: ĐÃ XÁC NHẬN (CONFIRMED)
+
+        Hóa đơn/biên lai điện tử có chữ ký số (PAdES) được đính kèm trong email này.
+
+        XEM HỒ SƠ & HỢP ĐỒNG TRỰC TUYẾN:
+        {lookupUrl}
+
+        -----------------------------------------------------
+        Riverside Palace Convention Center
+        Hotline: 0933 777 888 - (028) 6256 8888
+        Email: event@riversidepalace.vn
+        """;
+
+        return (html, plain);
+    }
+
+    public static (string Html, string Plain) BuildFullPaymentSuccessContent(
+        string customerName,
+        string bookingCode,
+        string contractCode,
+        decimal totalAmount,
+        DateTime eventDate,
+        string shift,
+        string hallName,
+        string? clientAppBaseUrl = null,
+        string? phoneNumber = null)
+    {
+        var vi = new CultureInfo("vi-VN");
+        string E(string? v) => WebUtility.HtmlEncode(string.IsNullOrWhiteSpace(v) ? "—" : v.Trim());
+        var totalStr = totalAmount.ToString("N0", vi) + " VNĐ";
+        var eventStr = $"{eventDate:dd/MM/yyyy} · {E(shift)}";
+        var baseUrl = string.IsNullOrWhiteSpace(clientAppBaseUrl) ? "https://localhost:7102" : clientAppBaseUrl.TrimEnd('/');
+        var lookupUrl = string.IsNullOrWhiteSpace(phoneNumber)
+            ? $"{baseUrl}/MyBooking?bookingCode={Uri.EscapeDataString(bookingCode)}"
+            : $"{baseUrl}/MyBooking?bookingCode={Uri.EscapeDataString(bookingCode)}&phone={Uri.EscapeDataString(phoneNumber.Trim())}";
+
+        var html = $"""
+        <!DOCTYPE html>
+        <html lang="vi"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+        <title>Xác nhận hoàn tất thanh toán #{E(bookingCode)} - Riverside Palace</title></head>
+        <body style="margin:0;padding:0;background:#FDFBF7;font-family:'Plus Jakarta Sans',Arial,Helvetica,sans-serif;color:#111822;">
+        <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;visibility:hidden;color:transparent;line-height:0;">
+          Xác nhận hoàn tất quyết toán 100% hợp đồng tiệc cưới #{E(bookingCode)} tại Riverside Palace.
+        </div>
+        <div style="max-width:620px;margin:0 auto;padding:24px 16px;">
+          <div style="background:linear-gradient(135deg, #1E3A8A 0%, #172554 100%);color:#fff;text-align:center;padding:30px 20px;border-radius:16px 16px 0 0;border-bottom:3px solid #3B82F6;">
+            <div style="letter-spacing:4px;font-size:12px;font-weight:700;color:#93C5FD;text-transform:uppercase;">RIVERSIDE PALACE</div>
+            <h1 style="margin:8px 0 4px;font-size:22px;font-weight:700;">✓ Hoàn Tất 100% Thanh Toán</h1>
+            <p style="margin:0;color:#BFDBFE;font-size:12.5px;">Hợp đồng tiệc cưới đã được quyết toán đầy đủ</p>
+          </div>
+          <div style="background:#ffffff;border:1px solid #E9E2D3;border-top:none;border-radius:0 0 16px 16px;padding:26px;box-shadow:0 8px 25px rgba(0,0,0,0.04);">
+            <p style="font-size:14.5px;margin-top:0;">Kính gửi Quý khách <strong>{E(customerName)}</strong>,</p>
+            <p style="font-size:13.5px;line-height:1.6;color:#475569;">Riverside Palace trân trọng cảm ơn Quý khách. Hợp đồng tổ chức tiệc cưới của bạn đã hoàn tất quyết toán 100%.</p>
+
+            <div style="background:#EFF6FF;border:1.5px solid #BFDBFE;border-radius:12px;padding:18px;text-align:center;margin:18px 0;">
+              <div style="font-size:12px;font-weight:700;color:#1E40AF;">TỔNG GIÁ TRỊ HỢP ĐỒNG ĐÃ QUYẾT TOÁN</div>
+              <div style="font-size:28px;font-weight:800;color:#1D4ED8;margin:4px 0;">{totalStr}</div>
+              <div style="font-size:12px;color:#1E40AF;">Mã hợp đồng: <strong>{E(contractCode)}</strong> · Số dư còn lại: <strong>0 VNĐ</strong></div>
+            </div>
+
+            <table style="width:100%;border-collapse:collapse;font-size:13.5px;margin-bottom:18px;">
+              <tr><td style="padding:10px 6px;border-bottom:1px solid #F1ECE1;color:#64748B;width:40%;">Đại sảnh tiệc</td><td style="padding:10px 6px;border-bottom:1px solid #F1ECE1;font-weight:700;">{E(hallName)}</td></tr>
+              <tr><td style="padding:10px 6px;border-bottom:1px solid #F1ECE1;color:#64748B;">Thời gian tổ chức</td><td style="padding:10px 6px;border-bottom:1px solid #F1ECE1;font-weight:700;">{eventStr}</td></tr>
+              <tr><td style="padding:10px 6px;color:#64748B;">Tình trạng công nợ</td><td style="padding:10px 6px;font-weight:800;color:#047857;">HOÀN TẤT (100%)</td></tr>
+            </table>
+
+            <div style="background:#F0FDF4;border-left:4px solid #10B981;padding:12px 14px;border-radius:6px;font-size:12.5px;line-height:1.6;color:#166534;margin:18px 0;">
+              <strong>Hóa đơn điện tử có chữ ký số:</strong> Hóa đơn điện tử chính thức đã được ký số PAdES bởi Riverside Palace và đính kèm trong email này.
+            </div>
+
+            <div style="text-align:center;margin:22px 0 16px;">
+              <a href="{E(lookupUrl)}" style="display:inline-block;background:#B89758;color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:700;font-size:14px;box-shadow:0 4px 12px rgba(184,151,88,0.3);">
+                📄 Xem hồ sơ tiệc &amp; Hóa đơn trực tuyến
+              </a>
+            </div>
+
+            <hr style="border:none;border-top:1px solid #F1ECE1;margin:22px 0 16px;"/>
+            <p style="font-size:11.5px;color:#64748B;line-height:1.7;margin:0;">
+              <strong>Trung Tâm Hội Nghị Tiệc Cưới Riverside Palace</strong><br/>
+              Địa chỉ: 360D Bến Vân Đồn, Phường 1, Quận 4, TP. Hồ Chí Minh<br/>
+              Hotline: <strong>0933 777 888</strong> · (028) 6256 8888
+            </p>
+          </div>
+        </div>
+        </body></html>
+        """;
+
+        var plain = $"""
+        RIVERSIDE PALACE - XÁC NHẬN HOÀN TẤT THANH TOÁN
+        =====================================================
+        Kính gửi Quý khách: {customerName}
+        Mã hồ sơ: {bookingCode}
+        Mã hợp đồng: {contractCode}
+
+        TỔNG GIÁ TRỊ ĐÃ QUYẾT TOÁN: {totalStr}
+        SỐ DƯ CÒN LẠI: 0 VNĐ (Đã thanh toán 100%)
+
+        THÔNG TIN TIỆC:
+        - Đại sảnh: {hallName}
+        - Thời gian: {eventDate:dd/MM/yyyy} ({shift})
+
+        Hóa đơn điện tử có chữ ký số PAdES được đính kèm trong email này.
+
+        TRA CỨU HỒ SƠ:
+        {lookupUrl}
+
+        -----------------------------------------------------
+        Riverside Palace Convention Center
+        Hotline: 0933 777 888 - (028) 6256 8888
+        Email: event@riversidepalace.vn
+        """;
+
+        return (html, plain);
     }
 
     private (string Host, int Port, bool EnableSsl, string SenderEmail, string SenderName, ICredentialsByHost Credentials) ResolveSmtp()
     {
-        // Ưu tiên MailSettings (FR15), fallback Smtp cũ (OTP/Reset) để không gãy cấu hình hiện tại.
         string host = string.IsNullOrWhiteSpace(_mail.Server) ? _smtp.Host : _mail.Server.Trim();
         var senderEmail = string.IsNullOrWhiteSpace(_mail.SenderEmail) ? _smtp.SenderEmail : _mail.SenderEmail.Trim();
         var senderName = string.IsNullOrWhiteSpace(_mail.SenderName) ? _smtp.SenderName : _mail.SenderName.Trim();
@@ -231,42 +551,29 @@ public class SmtpEmailService : IEmailService
         if (string.IsNullOrWhiteSpace(cfg.Host) || string.IsNullOrWhiteSpace(cfg.SenderEmail))
             throw new InvalidOperationException("SMTP chưa được cấu hình. Hãy cấu hình bằng User Secrets hoặc biến môi trường.");
 
+        var fromAddress = new MailAddress(cfg.SenderEmail, cfg.SenderName, Encoding.UTF8);
         using var message = new MailMessage
         {
-            From = new MailAddress(cfg.SenderEmail, cfg.SenderName),
+            From = fromAddress,
+            Sender = fromAddress,
             Subject = subject,
             Body = body,
-            IsBodyHtml = false
-        };
-        message.To.Add(recipientEmail);
-
-        using var client = new SmtpClient(cfg.Host, cfg.Port)
-        {
-            EnableSsl = cfg.EnableSsl,
-            UseDefaultCredentials = false,
-            Credentials = cfg.Credentials
-        };
-
-        cancellationToken.ThrowIfCancellationRequested();
-        await client.SendMailAsync(message, cancellationToken);
-    }
-
-    private async Task SendHtmlAsync(string recipientEmail, string subject, string htmlBody, CancellationToken cancellationToken)
-    {
-        var cfg = ResolveSmtp();
-        if (string.IsNullOrWhiteSpace(cfg.Host) || string.IsNullOrWhiteSpace(cfg.SenderEmail))
-            throw new InvalidOperationException("SMTP chưa được cấu hình (MailSettings/Smtp). Hãy điền SenderEmail + App Password.");
-
-        using var message = new MailMessage
-        {
-            From = new MailAddress(cfg.SenderEmail, cfg.SenderName),
-            Subject = subject,
-            Body = htmlBody,
-            IsBodyHtml = true,
+            IsBodyHtml = false,
             BodyEncoding = Encoding.UTF8,
-            SubjectEncoding = Encoding.UTF8
+            SubjectEncoding = Encoding.UTF8,
+            HeadersEncoding = Encoding.UTF8,
+            Priority = MailPriority.Normal
         };
-        message.To.Add(recipientEmail);
+        message.ReplyToList.Add(fromAddress);
+        message.To.Add(new MailAddress(recipientEmail));
+
+        // RFC 3834 & Anti-spam standards
+        message.Headers.Add("Auto-Submitted", "auto-generated");
+        message.Headers.Add("X-Auto-Response-Suppress", "All");
+
+        var domain = cfg.SenderEmail.Contains('@') ? cfg.SenderEmail.Split('@')[1] : "gmail.com";
+        message.Headers.Add("Message-ID", $"<{Guid.NewGuid():N}.{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}@{domain}>");
+        message.Headers.Add("Date", DateTime.UtcNow.ToString("ddd, dd MMM yyyy HH:mm:ss +0000", CultureInfo.InvariantCulture));
 
         using var client = new SmtpClient(cfg.Host, cfg.Port)
         {
@@ -278,7 +585,71 @@ public class SmtpEmailService : IEmailService
         };
 
         cancellationToken.ThrowIfCancellationRequested();
-        _logger.LogInformation("Gửi email xác nhận giữ chỗ tới {Email}, subject={Subject}", recipientEmail, subject);
+        await client.SendMailAsync(message, cancellationToken);
+    }
+
+    private async Task SendMultipartAsync(
+        string recipientEmail,
+        string subject,
+        string plainTextBody,
+        string htmlBody,
+        byte[]? attachmentBytes = null,
+        string? attachmentFileName = null,
+        CancellationToken cancellationToken = default)
+    {
+        var cfg = ResolveSmtp();
+        if (string.IsNullOrWhiteSpace(cfg.Host) || string.IsNullOrWhiteSpace(cfg.SenderEmail))
+            throw new InvalidOperationException("SMTP chưa được cấu hình (MailSettings/Smtp). Hãy điền SenderEmail + App Password.");
+
+        var fromAddress = new MailAddress(cfg.SenderEmail, cfg.SenderName, Encoding.UTF8);
+        using var message = new MailMessage
+        {
+            From = fromAddress,
+            Sender = fromAddress,
+            Subject = subject,
+            SubjectEncoding = Encoding.UTF8,
+            BodyEncoding = Encoding.UTF8,
+            HeadersEncoding = Encoding.UTF8,
+            Priority = MailPriority.Normal
+        };
+        message.ReplyToList.Add(fromAddress);
+        message.To.Add(new MailAddress(recipientEmail));
+
+        // Chuẩn MIME multipart/alternative: Chứa đồng thời text/plain và text/html
+        var plainView = AlternateView.CreateAlternateViewFromString(plainTextBody, Encoding.UTF8, "text/plain");
+        plainView.ContentType.CharSet = "utf-8";
+        var htmlView = AlternateView.CreateAlternateViewFromString(htmlBody, Encoding.UTF8, "text/html");
+        htmlView.ContentType.CharSet = "utf-8";
+        message.AlternateViews.Add(plainView);
+        message.AlternateViews.Add(htmlView);
+
+        // RFC 3834 & Anti-spam standards
+        message.Headers.Add("Auto-Submitted", "auto-generated");
+        message.Headers.Add("X-Auto-Response-Suppress", "All");
+
+        var domain = cfg.SenderEmail.Contains('@') ? cfg.SenderEmail.Split('@')[1] : "gmail.com";
+        message.Headers.Add("Message-ID", $"<{Guid.NewGuid():N}.{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}@{domain}>");
+        message.Headers.Add("Date", DateTime.UtcNow.ToString("ddd, dd MMM yyyy HH:mm:ss +0000", CultureInfo.InvariantCulture));
+
+        // Đính kèm file PDF nếu có (hóa đơn ký số / biên lai)
+        if (attachmentBytes != null && attachmentBytes.Length > 0)
+        {
+            var ms = new MemoryStream(attachmentBytes);
+            var attachment = new Attachment(ms, attachmentFileName ?? "HoaDonDienTu_RiversidePalace.pdf", "application/pdf");
+            message.Attachments.Add(attachment);
+        }
+
+        using var client = new SmtpClient(cfg.Host, cfg.Port)
+        {
+            EnableSsl = cfg.EnableSsl,
+            UseDefaultCredentials = false,
+            Credentials = cfg.Credentials,
+            DeliveryMethod = SmtpDeliveryMethod.Network,
+            Timeout = 20000
+        };
+
+        cancellationToken.ThrowIfCancellationRequested();
+        _logger.LogInformation("Gửi email (Multipart/Alternative) tới {Email}, subject={Subject}", recipientEmail, subject);
         await client.SendMailAsync(message, cancellationToken);
     }
 }

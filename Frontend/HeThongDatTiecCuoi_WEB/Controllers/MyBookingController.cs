@@ -171,7 +171,42 @@ public class MyBookingController : Controller
         }
     }
 
+    // GET /MyBooking/DownloadInvoice?bookingCode=...&phone=...
+    [HttpGet("DownloadInvoice")]
+    public async Task<IActionResult> DownloadInvoice(
+        [FromQuery] string? bookingCode,
+        [FromQuery] string? phone,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var code = (bookingCode ?? Request.Cookies["booking_code"] ?? string.Empty).Trim().ToUpperInvariant();
+            var targetPhone = (phone ?? Request.Cookies["customer_phone"] ?? string.Empty).Trim();
+            if (User.Identity?.IsAuthenticated == true && string.IsNullOrEmpty(targetPhone))
+                targetPhone = User.FindFirstValue(ClaimTypes.MobilePhone) ?? User.FindFirstValue("phone") ?? string.Empty;
+
+            if (!IsLookupShapeValid(code, targetPhone))
+                return BadRequest("Thông tin mã đặt tiệc hoặc số điện thoại không hợp lệ.");
+
+            var result = await _apiClient.DownloadInvoicePdfAsync(code, targetPhone, cancellationToken);
+            if (result.Succeeded && result.Value is not null)
+            {
+                return File(result.Value.Content, result.Value.ContentType, result.Value.FileName);
+            }
+
+            TempData["ErrorMessage"] = result.Error ?? "Không thể tải hóa đơn điện tử lúc này.";
+            return RedirectToAction(nameof(Index), new { bookingCode = code, phone = targetPhone });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Lỗi khi tải hóa đơn điện tử cho {BookingCode}", bookingCode);
+            TempData["ErrorMessage"] = "Không thể tải hóa đơn lúc này.";
+            return RedirectToAction(nameof(Index), new { bookingCode, phone });
+        }
+    }
+
     private static bool IsLookupShapeValid(string code, string phone) =>
         Regex.IsMatch(code ?? string.Empty, @"^DT-\d{8}-[A-Z0-9]{4,}$")
         && Regex.IsMatch(phone ?? string.Empty, @"^0\d{9}$");
 }
+

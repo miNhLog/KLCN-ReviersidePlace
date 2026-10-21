@@ -2616,4 +2616,47 @@ public sealed class RiversideApiClient : IRiversideApiClient
             return ApiCallResult<HeThongDatTiecCuoi_WEB.Models.Payment.PaymentStatusResponseViewModel>.Failure($"Lỗi kiểm tra trạng thái: {ex.Message}");
         }
     }
+
+    public async Task<ApiCallResult<HeThongDatTiecCuoi_WEB.Models.ManagerContractPayment.PdfDownloadViewModel>> DownloadInvoicePdfAsync(
+        string bookingCode,
+        string phoneNumber,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var url = $"api/v1/payment/invoice/{Uri.EscapeDataString(bookingCode)}?phone={Uri.EscapeDataString(phoneNumber)}";
+            using var response = await _httpClient.GetAsync(url, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorJson = await response.Content.ReadAsStringAsync(cancellationToken);
+                return ApiCallResult<HeThongDatTiecCuoi_WEB.Models.ManagerContractPayment.PdfDownloadViewModel>.Failure(
+                    ExtractApiMessage(errorJson, response.StatusCode), (int)response.StatusCode);
+            }
+
+            var bytes = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+            var fileName = response.Content.Headers.ContentDisposition?.FileNameStar
+                ?? response.Content.Headers.ContentDisposition?.FileName
+                ?? $"HoaDonDienTu_{bookingCode}.pdf";
+            fileName = fileName.Trim('"');
+
+            return ApiCallResult<HeThongDatTiecCuoi_WEB.Models.ManagerContractPayment.PdfDownloadViewModel>.Success(
+                new HeThongDatTiecCuoi_WEB.Models.ManagerContractPayment.PdfDownloadViewModel(
+                    bytes,
+                    fileName,
+                    "application/pdf"));
+        }
+        catch (HttpRequestException)
+        {
+            return ApiCallResult<HeThongDatTiecCuoi_WEB.Models.ManagerContractPayment.PdfDownloadViewModel>.Failure("Không thể kết nối Backend API. Hãy kiểm tra API đã chạy hay chưa.");
+        }
+        catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return ApiCallResult<HeThongDatTiecCuoi_WEB.Models.ManagerContractPayment.PdfDownloadViewModel>.Failure("Backend API phản hồi quá lâu.");
+        }
+        catch (Exception ex)
+        {
+            return ApiCallResult<HeThongDatTiecCuoi_WEB.Models.ManagerContractPayment.PdfDownloadViewModel>.Failure($"Lỗi tải hóa đơn điện tử: {ex.Message}");
+        }
+    }
 }
+
