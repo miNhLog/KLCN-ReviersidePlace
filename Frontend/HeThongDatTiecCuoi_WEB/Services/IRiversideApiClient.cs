@@ -56,6 +56,8 @@ public interface IRiversideApiClient
     Task<ApiCallResult<ManagerHrActionViewModel>> AssignManagerHallsAsync(int employeeId,AssignHallsViewModel model,string accessToken,CancellationToken cancellationToken);
     Task<ApiCallResult<ManagerHrActionViewModel>> EndManagerHallAssignmentAsync(int assignmentId,string accessToken,CancellationToken cancellationToken);
     Task<ApiCallResult<ManagerDashboardViewModel>> GetManagerDashboardAsync(string accessToken, CancellationToken cancellationToken);
+    Task<ApiCallResult<HallManagerDashboardViewModel>> GetHallManagerDashboardAsync(string accessToken, CancellationToken cancellationToken);
+    Task<ApiCallResult<HallManagerScheduleViewModel>> GetHallManagerDashboardScheduleAsync(string accessToken, DateTime date, CancellationToken cancellationToken);
     Task<ApiCallResult<List<NotificationViewModel>>> GetRecentNotificationsAsync(string accessToken, int limit, CancellationToken cancellationToken);
     Task<ApiCallResult<NotificationCountViewModel>> GetUnreadNotificationCountAsync(string accessToken, CancellationToken cancellationToken);
     Task<ApiCallResult<NotificationPageViewModel>> GetNotificationsAsync(string accessToken, int page, int pageSize, string? readStatus, CancellationToken cancellationToken);

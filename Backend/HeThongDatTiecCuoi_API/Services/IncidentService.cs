@@ -446,9 +446,10 @@ public sealed class IncidentService : IIncidentService
             return query.Where(i => i.Booking.CoordinationAssignments.Any(a => a.Coordinator.UserId == userId &&
                 a.Status.StatusCode == CoordinationAssigned));
         if (role == RoleNames.HallManager)
-            return query.Where(i => i.Booking.HallSchedule.Hall.HallManagerAssignments.Any(a =>
-                a.HallManager.UserId == userId && a.FromDate <= i.Booking.HallSchedule.Date &&
-                (!a.ToDate.HasValue || a.ToDate.Value >= i.Booking.HallSchedule.Date)));
+        {
+            var hallIds = HallManagerQueryScope.CurrentHallIds(_context, userId, DateTime.Today);
+            return query.Where(i => hallIds.Contains(i.Booking.HallSchedule.HallId));
+        }
         return null;
     }
 
@@ -460,8 +461,10 @@ public sealed class IncidentService : IIncidentService
             return query.Where(b => b.CoordinationAssignments.Any(a => a.Coordinator.UserId == userId &&
                 a.Status.StatusCode == CoordinationAssigned));
         if (role == RoleNames.HallManager)
-            return query.Where(b => b.HallSchedule.Hall.HallManagerAssignments.Any(a => a.HallManager.UserId == userId &&
-                a.FromDate <= b.HallSchedule.Date && (!a.ToDate.HasValue || a.ToDate.Value >= b.HallSchedule.Date)));
+        {
+            var hallIds = HallManagerQueryScope.CurrentHallIds(_context, userId, DateTime.Today);
+            return query.Where(b => hallIds.Contains(b.HallSchedule.HallId));
+        }
         return null;
     }
 
@@ -476,8 +479,8 @@ public sealed class IncidentService : IIncidentService
             ReporterCode = i.ReportedByEmployee != null ? i.ReportedByEmployee.EmployeeCode : string.Empty,
             Resolution = i.Resolution, OccurredAt = i.OccurredAt, ResolvedAt = i.ResolvedAt,
             HallManagerNames = i.Booking.HallSchedule.Hall.HallManagerAssignments
-                .Where(a => a.FromDate <= i.Booking.HallSchedule.Date &&
-                    (!a.ToDate.HasValue || a.ToDate.Value >= i.Booking.HallSchedule.Date))
+                .Where(a => a.FromDate <= DateTime.Today &&
+                    (!a.ToDate.HasValue || a.ToDate.Value >= DateTime.Today))
                 .OrderByDescending(a => a.FromDate).Select(a => a.HallManager.FullName).ToList(),
             CanEdit = i.Status.StatusCode == BusinessStatusCodes.Pending &&
                 (role != RoleNames.Coordinator || i.ReportedByEmployee != null && i.ReportedByEmployee.UserId == userId)
@@ -503,12 +506,14 @@ public sealed class IncidentService : IIncidentService
     private async Task AddCreatedNotificationsAsync(Incident incident, int actorUserId, CancellationToken cancellationToken)
     {
         var booking = await _context.WeddingBookings.AsNoTracking().Where(b => b.BookingId == incident.BookingId)
-            .Select(b => new { b.BookingCode, HallId = b.HallSchedule.HallId, EventDate = b.HallSchedule.Date })
+            .Select(b => new { b.BookingCode, HallId = b.HallSchedule.HallId })
             .SingleAsync(cancellationToken);
         var recipients = await _context.HallManagerAssignments.AsNoTracking()
-            .Where(a => a.HallId == booking.HallId && a.FromDate <= booking.EventDate &&
-                (!a.ToDate.HasValue || a.ToDate.Value >= booking.EventDate) &&
+            .Where(a => a.HallId == booking.HallId && a.FromDate <= DateTime.Today &&
+                (!a.ToDate.HasValue || a.ToDate.Value >= DateTime.Today) &&
+                a.HallManager.User.Role.RoleName == RoleNames.HallManager &&
                 a.HallManager.User.Status.StatusCode == AccountStatusCodes.Active &&
+                a.HallManager.User.DataStatus.DataStatusCode == DataStatusCodes.Existing &&
                 a.HallManager.DataStatus.DataStatusCode == DataStatusCodes.Existing)
             .Select(a => a.HallManager.UserId).ToListAsync(cancellationToken);
         recipients.AddRange(await _context.Users.AsNoTracking().Where(u => u.Role.RoleName == RoleNames.Manager &&
@@ -525,12 +530,14 @@ public sealed class IncidentService : IIncidentService
         string title, string message, CancellationToken cancellationToken)
     {
         var incident = await _context.Incidents.AsNoTracking().Where(i => i.IncidentId == incidentId)
-            .Select(i => new { HallId = i.Booking.HallSchedule.HallId, EventDate = i.Booking.HallSchedule.Date })
+            .Select(i => new { HallId = i.Booking.HallSchedule.HallId })
             .SingleAsync(cancellationToken);
         var recipients = await _context.HallManagerAssignments.AsNoTracking()
-            .Where(a => a.HallId == incident.HallId && a.FromDate <= incident.EventDate &&
-                (!a.ToDate.HasValue || a.ToDate.Value >= incident.EventDate) &&
+            .Where(a => a.HallId == incident.HallId && a.FromDate <= DateTime.Today &&
+                (!a.ToDate.HasValue || a.ToDate.Value >= DateTime.Today) &&
+                a.HallManager.User.Role.RoleName == RoleNames.HallManager &&
                 a.HallManager.User.Status.StatusCode == AccountStatusCodes.Active &&
+                a.HallManager.User.DataStatus.DataStatusCode == DataStatusCodes.Existing &&
                 a.HallManager.DataStatus.DataStatusCode == DataStatusCodes.Existing)
             .Select(a => a.HallManager.UserId).ToListAsync(cancellationToken);
         if (reporterUserId.HasValue) recipients.Add(reporterUserId.Value);
