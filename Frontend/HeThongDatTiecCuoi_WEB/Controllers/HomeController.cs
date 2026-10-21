@@ -52,6 +52,20 @@ public sealed class HomeController : Controller
             return RedirectToAction("Dashboard", "AdminAccount");
         }
 
+        if (User.IsInRole(RoleNames.HallManager))
+        {
+            if (!TryGetAccessToken(out var hallManagerToken)) return RedirectToAction("Login", "Auth");
+            var hallManagerResult = await _apiClient.GetHallManagerDashboardAsync(hallManagerToken, cancellationToken);
+            if (hallManagerResult.Succeeded && hallManagerResult.Value is not null)
+                return View("HallManagerDashboard", hallManagerResult.Value);
+
+            return View("HallManagerDashboard", new HallManagerDashboardViewModel
+            {
+                Schedule = new HallManagerScheduleViewModel { Date = DateTime.Today },
+                ErrorMessage = hallManagerResult.Error ?? "Không thể tải dữ liệu tổng quan quản lý sảnh."
+            });
+        }
+
         if (!User.IsInRole(RoleNames.Manager))
         {
             return View(new ManagerDashboardViewModel());
@@ -73,6 +87,19 @@ public sealed class HomeController : Controller
         {
             ErrorMessage = result.Error ?? "Không thể tải dữ liệu tổng quan từ hệ thống."
         });
+    }
+
+    [HttpGet]
+    [Authorize(Roles = RoleNames.HallManager)]
+    public async Task<IActionResult> HallManagerDashboardSchedule(DateTime date,
+        CancellationToken cancellationToken)
+    {
+        if (date == default) return BadRequest(new { message = "Ngày xem lịch không hợp lệ." });
+        if (!TryGetAccessToken(out var token)) return Unauthorized(new { message = "Phiên đăng nhập đã hết hạn." });
+        var result = await _apiClient.GetHallManagerDashboardScheduleAsync(token, date, cancellationToken);
+        return result.Succeeded && result.Value is not null
+            ? Json(result.Value)
+            : StatusCode(result.StatusCode ?? 502, new { message = result.Error ?? "Không thể tải lịch sảnh." });
     }
 
     [Authorize(Roles = RoleNames.Manager)]

@@ -797,6 +797,15 @@ public sealed class RiversideApiClient : IRiversideApiClient
         CancellationToken cancellationToken) =>
         SendAsync<ManagerDashboardViewModel>(HttpMethod.Get, "api/manager/dashboard", null, accessToken, cancellationToken);
 
+    public Task<ApiCallResult<HallManagerDashboardViewModel>> GetHallManagerDashboardAsync(
+        string accessToken, CancellationToken cancellationToken) =>
+        SendAsync<HallManagerDashboardViewModel>(HttpMethod.Get, "api/hall-manager/dashboard", null, accessToken, cancellationToken);
+
+    public Task<ApiCallResult<HallManagerScheduleViewModel>> GetHallManagerDashboardScheduleAsync(
+        string accessToken, DateTime date, CancellationToken cancellationToken) =>
+        SendAsync<HallManagerScheduleViewModel>(HttpMethod.Get,
+            $"api/hall-manager/dashboard/schedule?date={date:yyyy-MM-dd}", null, accessToken, cancellationToken);
+
     public Task<ApiCallResult<List<NotificationViewModel>>> GetRecentNotificationsAsync(string accessToken, int limit, CancellationToken cancellationToken) =>
         SendAsync<List<NotificationViewModel>>(HttpMethod.Get, $"api/notifications/recent?limit={Math.Clamp(limit, 1, 5)}", null, accessToken, cancellationToken);
     public Task<ApiCallResult<NotificationCountViewModel>> GetUnreadNotificationCountAsync(string accessToken, CancellationToken cancellationToken) =>

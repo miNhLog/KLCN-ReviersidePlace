@@ -46,7 +46,7 @@ public sealed class CoordinationAssignmentService : ICoordinationAssignmentServi
         if (filter.HallId is > 0) query = query.Where(b => b.HallSchedule.HallId == filter.HallId);
         if (filter.EventDate.HasValue) query = query.Where(b => b.HallSchedule.Date == filter.EventDate.Value.Date);
 
-        var conflicts = ConflictBookingIds();
+        var conflicts = HallManagerQueryScope.ConflictBookingIds(_context);
         var state = filter.CoordinationStatus?.Trim().ToUpperInvariant();
         if (state == StateAssigned)
             query = query.Where(b => b.CoordinationAssignments.Any(a => a.Status.StatusCode == CoordinationAssignmentStatusCodes.Assigned) &&
@@ -403,19 +403,7 @@ public sealed class CoordinationAssignmentService : ICoordinationAssignmentServi
             .Select(b => new BookingSnapshot(b.BookingId, b.BookingCode, b.Customer.FullName, b.HallSchedule.Date,
                 b.HallSchedule.Shift, b.HallSchedule.HallId, b.HallSchedule.Hall.HallName, b.GuestCount,
                 b.Status.StatusCode, b.Status.StatusName,
-                ConflictBookingIds().Contains(b.BookingId))).SingleOrDefaultAsync(cancellationToken);
-    }
-
-    private IQueryable<int> ConflictBookingIds()
-    {
-        var active = _context.CoordinationAssignments.AsNoTracking().Where(a =>
-            a.Status.StatusCode == CoordinationAssignmentStatusCodes.Assigned &&
-            a.Booking.Status.StatusCode != BookingStatusCodes.Cancelled &&
-            a.Booking.Status.StatusCode != BookingStatusCodes.Completed);
-        return active.Where(a => active.Any(other => other.CoordinationAssignmentId != a.CoordinationAssignmentId &&
-            other.CoordinatorEmployeeId == a.CoordinatorEmployeeId &&
-            other.Booking.HallSchedule.Date == a.Booking.HallSchedule.Date &&
-            other.Booking.HallSchedule.Shift == a.Booking.HallSchedule.Shift)).Select(a => a.BookingId).Distinct();
+                HallManagerQueryScope.ConflictBookingIds(_context).Contains(b.BookingId))).SingleOrDefaultAsync(cancellationToken);
     }
 
     private Task<bool> HasConflictAsync(int employeeId, DateTime date, string shift, int? excludedBookingId,

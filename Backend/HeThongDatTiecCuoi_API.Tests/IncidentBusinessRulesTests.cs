@@ -108,6 +108,44 @@ public sealed class IncidentBusinessRulesTests
     }
 
     [Fact]
+    public async Task HallTransfer_GivesCurrentManagerExistingIncidentAccess_AndRevokesPreviousManager()
+    {
+        await using var fixture = await IncidentFixture.CreateAsync();
+        var oldAssignment = await fixture.Context.HallManagerAssignments.SingleAsync();
+        oldAssignment.ToDate = DateTime.Today.AddDays(-1);
+        var activeStatus = await fixture.Context.Statuses.SingleAsync(status =>
+            status.StatusGroup == StatusGroups.Account && status.StatusCode == AccountStatusCodes.Active);
+        var dataStatus = await fixture.Context.DataStatuses.SingleAsync();
+        var role = await fixture.Context.Roles.SingleAsync(item => item.RoleName == RoleNames.HallManager);
+        var newUser = new User { UserId = 21, RoleId = role.RoleId, Role = role, Email = "new-manager@test.local", PasswordHash = "x", StatusId = activeStatus.StatusId, Status = activeStatus, DataStatusId = 1, DataStatus = dataStatus };
+        var newEmployee = new Employee { EmployeeId = 201, UserId = 21, User = newUser, EmployeeCode = "QLS002", FullName = "Quản lý mới", PhoneNumber = "0900000021", DataStatusId = 1, DataStatus = dataStatus };
+        fixture.Context.AddRange(newUser, newEmployee, new HallManagerAssignment
+        {
+            HallManagerAssignmentId = 2, HallId = 1, HallManagerEmployeeId = 201,
+            HallManager = newEmployee, FromDate = DateTime.Today
+        });
+        await fixture.Context.SaveChangesAsync();
+
+        var newManagerDetail = await fixture.Service.GetDetailAsync(21, RoleNames.HallManager,
+            fixture.PendingCoordinatorIncidentId, default);
+        var history = await fixture.Service.GetHistoryAsync(21, RoleNames.HallManager,
+            fixture.PendingCoordinatorIncidentId, default);
+        var accepted = await fixture.Service.UpdateStatusAsync(21, RoleNames.HallManager,
+            fixture.PendingCoordinatorIncidentId,
+            new UpdateIncidentStatusRequest { Status = BusinessStatusCodes.Processing }, default);
+        var oldManagerDetail = await fixture.Service.GetDetailAsync(20, RoleNames.HallManager,
+            fixture.PendingCoordinatorIncidentId, default);
+
+        Assert.True(newManagerDetail.Succeeded, newManagerDetail.Error);
+        Assert.True(history.Succeeded, history.Error);
+        Assert.True(accepted.Succeeded, accepted.Error);
+        Assert.Equal(404, oldManagerDetail.StatusCode);
+        Assert.Contains(await fixture.Context.AuditLogs.ToListAsync(), log =>
+            log.EntityId == fixture.PendingCoordinatorIncidentId && log.UserId == 21 &&
+            log.Action == AuditActions.IncidentStatusChanged);
+    }
+
+    [Fact]
     public async Task HallManager_ProcessesIncidentInOrder_AndWritesHistoryAndNotifications()
     {
         await using var fixture = await IncidentFixture.CreateAsync();
