@@ -36,6 +36,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&amp;family=Plus+Jakarta+Sans:wght@300..800&amp;display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <link rel="stylesheet" href="~/css/home.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/payment-deposit.css" asp-append-version="true" />
     <style>
         :root { --rp-gold: #B89758; --rp-ink: #111822; --rp-cream: #FDFBF7; }
         .rp-wrap { background: var(--rp-cream); padding: 48px 20px 80px; font-family: 'Plus Jakarta Sans', sans-serif; color: var(--rp-ink); min-height: 80vh; }
@@ -217,15 +218,25 @@
                             <div class="rp-kv"><span>Còn lại</span><b style="color:#B89758;">@detail.RemainingDebt.ToString("N0") đ</b></div>
                             <div style="font-size:11.5px;color:#94A3B8;margin-top:8px;">Đã cọc = tổng ThanhToan SUCCESS thuộc HopDong của đơn này.</div>
 
-                            @if (detail.CanCancelOnline && !detail.IsCancelled)
+                            @if (!detail.IsCancelled && detail.DepositPaid <= 0)
                             {
-                                <div class="rp-countdown">
-                                    <i class="fa-regular fa-hourglass-half"></i>
-                                    Giữ chỗ hết hạn lúc <b>@detail.HoldExpiresAt.ToString("HH:mm dd/MM/yyyy")</b> (48 giờ sau khi đặt).<br />
-                                    Thời gian còn lại: <b id="holdCountdown" data-expires="@detail.HoldExpiresAt.ToString("o")">--:--:--</b>
-                                </div>
-                                <div style="margin-top:12px;display:flex;justify-content:flex-end;">
-                                    <button type="button" class="rp-btn-danger" id="openCancelModalBtn"><i class="fa-regular fa-trash-can"></i> Hủy giữ chỗ tiệc này</button>
+                                @if (detail.CanCancelOnline)
+                                {
+                                    <div class="rp-countdown">
+                                        <i class="fa-regular fa-hourglass-half"></i>
+                                        Giữ chỗ hết hạn lúc <b>@detail.HoldExpiresAt.ToString("HH:mm dd/MM/yyyy")</b> (48 giờ sau khi đặt).<br />
+                                        Thời gian còn lại: <b id="holdCountdown" data-expires="@detail.HoldExpiresAt.ToString("o")">--:--:--</b>
+                                    </div>
+                                }
+                                <div style="margin-top:14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+                                    <button type="button" class="rp-btn-gold" id="btnOpenDepositModal"
+                                            onclick="RiversidePayment.open('@detail.BookingId', '@detail.BookingCode', '@detail.PhoneNumber', @detail.TotalAmount)">
+                                        <i class="fa-solid fa-qrcode"></i> Đặt cọc giữ chỗ ngay (10%)
+                                    </button>
+                                    @if (detail.CanCancelOnline)
+                                    {
+                                        <button type="button" class="rp-btn-danger" id="openCancelModalBtn"><i class="fa-regular fa-trash-can"></i> Hủy giữ chỗ tiệc này</button>
+                                    }
                                 </div>
                             }
                             else if (!detail.IsCancelled && detail.DepositPaid > 0)
@@ -293,7 +304,11 @@
     <partial name="_PublicFooter" />
 </div>
 
+<partial name="_PaymentDepositModal" />
+
 @section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+    <script src="~/js/payment-deposit.js" asp-append-version="true"></script>
     <script>
         (function () {
             var codeInput = document.getElementById('bookingCodeInput');

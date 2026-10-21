@@ -2439,4 +2439,81 @@ public sealed class RiversideApiClient : IRiversideApiClient
             model.PhoneNumber
         }, accessToken, cancellationToken);
 
+    public async Task<ApiCallResult<HeThongDatTiecCuoi_WEB.Models.Payment.CreateDepositPaymentResponseViewModel>> CreateDepositPaymentAsync(
+        HeThongDatTiecCuoi_WEB.Models.Payment.CreateDepositPaymentRequestViewModel request,
+        string? accessToken = null,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var req = new HttpRequestMessage(HttpMethod.Post, "api/v1/payment/create-deposit")
+            {
+                Content = JsonContent.Create(request, options: JsonOptions)
+            };
+            if (!string.IsNullOrWhiteSpace(accessToken))
+                req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+            using var response = await _httpClient.SendAsync(req, cancellationToken);
+            var json = await response.Content.ReadAsStringAsync(cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                return ApiCallResult<HeThongDatTiecCuoi_WEB.Models.Payment.CreateDepositPaymentResponseViewModel>.Failure(
+                    ExtractApiMessage(json, response.StatusCode), (int)response.StatusCode);
+            }
+
+            using var doc = JsonDocument.Parse(json);
+            if (doc.RootElement.TryGetProperty("data", out var dataEl))
+            {
+                var dto = JsonSerializer.Deserialize<HeThongDatTiecCuoi_WEB.Models.Payment.CreateDepositPaymentResponseViewModel>(dataEl.GetRawText(), JsonOptions);
+                return dto != null
+                    ? ApiCallResult<HeThongDatTiecCuoi_WEB.Models.Payment.CreateDepositPaymentResponseViewModel>.Success(dto)
+                    : ApiCallResult<HeThongDatTiecCuoi_WEB.Models.Payment.CreateDepositPaymentResponseViewModel>.Failure("Không thể đọc dữ liệu phản hồi thanh toán.");
+            }
+
+            return ApiCallResult<HeThongDatTiecCuoi_WEB.Models.Payment.CreateDepositPaymentResponseViewModel>.Failure("Không tìm thấy dữ liệu thanh toán trong phản hồi.");
+        }
+        catch (HttpRequestException)
+        {
+            return ApiCallResult<HeThongDatTiecCuoi_WEB.Models.Payment.CreateDepositPaymentResponseViewModel>.Failure("Không thể kết nối đến máy chủ thanh toán.");
+        }
+        catch (Exception ex)
+        {
+            return ApiCallResult<HeThongDatTiecCuoi_WEB.Models.Payment.CreateDepositPaymentResponseViewModel>.Failure($"Lỗi khởi tạo thanh toán: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiCallResult<HeThongDatTiecCuoi_WEB.Models.Payment.PaymentStatusResponseViewModel>> CheckPaymentStatusAsync(
+        long orderCode,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var response = await _httpClient.GetAsync($"api/v1/payment/check-status/{orderCode}", cancellationToken);
+            var json = await response.Content.ReadAsStringAsync(cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                return ApiCallResult<HeThongDatTiecCuoi_WEB.Models.Payment.PaymentStatusResponseViewModel>.Failure(
+                    ExtractApiMessage(json, response.StatusCode), (int)response.StatusCode);
+            }
+
+            using var doc = JsonDocument.Parse(json);
+            if (doc.RootElement.TryGetProperty("data", out var dataEl))
+            {
+                var dto = JsonSerializer.Deserialize<HeThongDatTiecCuoi_WEB.Models.Payment.PaymentStatusResponseViewModel>(dataEl.GetRawText(), JsonOptions);
+                return dto != null
+                    ? ApiCallResult<HeThongDatTiecCuoi_WEB.Models.Payment.PaymentStatusResponseViewModel>.Success(dto)
+                    : ApiCallResult<HeThongDatTiecCuoi_WEB.Models.Payment.PaymentStatusResponseViewModel>.Failure("Không thể đọc dữ liệu trạng thái.");
+            }
+
+            return ApiCallResult<HeThongDatTiecCuoi_WEB.Models.Payment.PaymentStatusResponseViewModel>.Failure("Không tìm thấy dữ liệu trạng thái.");
+        }
+        catch (HttpRequestException)
+        {
+            return ApiCallResult<HeThongDatTiecCuoi_WEB.Models.Payment.PaymentStatusResponseViewModel>.Failure("Không thể kết nối kiểm tra thanh toán.");
+        }
+        catch (Exception ex)
+        {
+            return ApiCallResult<HeThongDatTiecCuoi_WEB.Models.Payment.PaymentStatusResponseViewModel>.Failure($"Lỗi kiểm tra trạng thái: {ex.Message}");
+        }
+    }
 }

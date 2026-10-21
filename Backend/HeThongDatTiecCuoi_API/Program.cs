@@ -121,6 +121,13 @@ builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IStatusService, StatusService>();
 builder.Services.AddSingleton<IPaymentPolicyProvider, PaymentPolicyProvider>();
+builder.Services.Configure<PayOSOptions>(builder.Configuration.GetSection("PayOS"));
+builder.Services.AddSingleton(sp =>
+{
+    var opt = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<PayOSOptions>>().Value;
+    return new PayOS.PayOSClient(opt.ClientId, opt.ApiKey, opt.ChecksumKey);
+});
+builder.Services.AddScoped<IPaymentService, PayOSPaymentService>();
 builder.Services.AddScoped<IContractTemplateProvider, ContractTemplateProvider>();
 builder.Services.AddScoped<IContractCodeGenerator, ContractCodeGenerator>();
 builder.Services.AddScoped<IContractPdfGenerator, ContractPdfGenerator>();
