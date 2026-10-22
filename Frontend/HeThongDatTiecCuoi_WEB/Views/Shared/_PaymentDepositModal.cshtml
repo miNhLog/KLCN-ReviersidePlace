@@ -1,0 +1,122 @@
+@* Modal Thanh toán Đặt cọc VietQR PayOS - Nhận diện thương hiệu Riverside Palace *@
+
+<div class="rp-pay-backdrop" id="rpPayModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="rpPayModalTitle">
+    <div class="rp-pay-modal">
+        <!-- Header -->
+        <div class="rp-pay-header">
+            <div class="rp-pay-kicker">
+                <i class="fa-solid fa-shield-halved"></i> Riverside Palace · Thanh toán an toàn
+            </div>
+            <h3 class="rp-pay-title" id="rpPayModalTitle">Thanh toán Đặt cọc Giữ chỗ Sảnh</h3>
+            <button type="button" class="rp-pay-close" onclick="RiversidePayment.close()" aria-label="Đóng popup">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <div class="rp-pay-body">
+            <!-- Initial State (Chờ thanh toán) -->
+            <div id="rpPayInitialContent">
+                <!-- Info Box -->
+                <div class="rp-pay-info-box">
+                    <div class="rp-pay-booking-code">
+                        <span>Đơn đặt tiệc:</span>
+                        <strong id="rpPayBookingCode">DT-ONLINE</strong>
+                    </div>
+                    <div class="rp-pay-deposit-amount">
+                        <span>Tiền cọc giữ chỗ (10%):</span>
+                        <h3 id="rpPayDepositVal">20.000.000 đ</h3>
+                    </div>
+                </div>
+
+                <!-- Alert Demo Scale -->
+                <div class="rp-pay-demo-banner">
+                    <i class="fa-solid fa-lightbulb"></i>
+                    <div>
+                        <strong>Chế độ Thử nghiệm:</strong> Số tiền thanh toán qua VietQR đã được quy đổi thành <strong id="rpPayActualAmount" style="color:#DC2626;font-size:13.5px;">2.000 VNĐ</strong> (tỷ lệ 1/10.000) để hai bạn có thể quét chuyển tiền thật bằng App ngân hàng trải nghiệm trọn vẹn quy trình.
+                    </div>
+                </div>
+
+                <!-- QR Card -->
+                <div class="rp-pay-qr-card">
+                    <div class="rp-pay-qr-wrapper">
+                        <!-- Loading State -->
+                        <div id="rpPayQrLoading" class="rp-pay-qr-loading">
+                            <div class="rp-pay-spinner"></div>
+                            <span id="rpPayQrLoadingText">Đang tạo mã VietQR...</span>
+                        </div>
+
+                        <!-- Error State -->
+                        <div id="rpPayQrError" class="rp-pay-qr-error" style="display:none;">
+                            <i class="fa-solid fa-triangle-exclamation" style="font-size:30px;color:#EF4444;margin-bottom:8px;"></i>
+                            <p id="rpPayQrErrorMsg" style="font-size:12.5px;color:#991B1B;margin:0 0 12px;line-height:1.4;">
+                                Không thể tải mã QR thanh toán. Vui lòng bấm thử lại hoặc liên hệ quản trị viên.
+                            </p>
+                            <button type="button" id="rpPayQrRetryBtn" class="rp-pay-retry-btn">
+                                <i class="fa-solid fa-rotate-right"></i> Thử lại
+                            </button>
+                        </div>
+
+                        <!-- QR Image -->
+                        <img id="rpPayQrImg" class="rp-pay-qr-img" alt="Mã VietQR Thanh toán cọc" style="display:none;" />
+                    </div>
+
+                    <div>
+                        <div class="rp-pay-timer-pill">
+                            <span class="dot"></span>
+                            Thời gian thanh toán: <span id="rpPayCountdownVal">10:00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Transfer Details -->
+                <div class="rp-pay-details">
+                    <div class="rp-pay-detail-row">
+                        <span class="rp-pay-detail-label">Ngân hàng thụ hưởng:</span>
+                        <span class="rp-pay-detail-val" id="rpPayBankName">VietinBank</span>
+                    </div>
+                    <div class="rp-pay-detail-row">
+                        <span class="rp-pay-detail-label">Chủ tài khoản:</span>
+                        <span class="rp-pay-detail-val" id="rpPayAccountName">RIVERSIDE PALACE</span>
+                    </div>
+                    <div class="rp-pay-detail-row">
+                        <span class="rp-pay-detail-label">Số tài khoản:</span>
+                        <div class="rp-pay-detail-val">
+                            <span id="rpPayAccountNumber" style="font-family:monospace;letter-spacing:0.05em;">--</span>
+                            <button type="button" class="rp-pay-copy-btn" id="rpPayCopyAccBtn"><i class="fa-regular fa-copy"></i> Chép</button>
+                        </div>
+                    </div>
+                    <div class="rp-pay-detail-row">
+                        <span class="rp-pay-detail-label">Nội dung chuyển khoản:</span>
+                        <div class="rp-pay-detail-val">
+                            <span id="rpPayDescription" style="color:#DC2626;font-family:monospace;font-weight:800;">RSP --</span>
+                            <button type="button" class="rp-pay-copy-btn" id="rpPayCopyDescBtn"><i class="fa-regular fa-copy"></i> Chép</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Polling Status -->
+                <div class="rp-pay-status-bar">
+                    <div class="rp-pay-spinner"></div>
+                    <span id="rpPayStatusText">Đang chờ hệ thống ngân hàng xác nhận giao dịch...</span>
+                </div>
+            </div>
+
+            <!-- Success State (Thanh toán thành công) -->
+            <div id="rpPaySuccessContent" class="rp-pay-success-box">
+                <div class="rp-pay-success-icon">
+                    <i class="fa-solid fa-check"></i>
+                </div>
+                <h3 class="rp-pay-success-title">Thanh Toán Đặt Cọc Thành Công!</h3>
+                <p class="rp-pay-success-desc">
+                    Hệ thống đã xác nhận đặt cọc thành công <strong id="rpPaySuccessAmount">20.000.000 đ</strong> cho hồ sơ <strong id="rpPaySuccessBookingCode">DT-...</strong>. Lịch sảnh tiệc đã được <strong>khóa chính thức</strong> trên hệ thống Riverside Palace.
+                </p>
+                <div style="font-size:12.5px;color:#10B981;font-weight:700;margin-bottom:18px;">
+                    <i class="fa-solid fa-circle-check"></i> Hợp đồng và biên lai điện tử đã được cập nhật vào hồ sơ của bạn.
+                </div>
+                <button type="button" class="rp-pay-btn-done" onclick="window.location.reload()">
+                    <i class="fa-solid fa-arrow-rotate-right"></i> Xem lại chi tiết hồ sơ tiệc
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

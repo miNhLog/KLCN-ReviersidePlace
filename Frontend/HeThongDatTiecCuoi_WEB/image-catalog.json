@@ -1,7 +1,15 @@
 {
   "ProjectImages": {
     "HallCovers": {
-      "Amur": ""
+      "Amur": "/images/halls/amur/sanh-tiec-cuoi-amur-361.jpg",
+      "Danube": "/images/halls/danube/sanh-tiec-cuoi-danuber-225.jpg",
+      "Elbe": "/images/halls/elbe/sanh-elbe-hoi-nghi-607.jpg",
+      "Grand Ballroom": "/images/halls/grand-ballroom/sanh-grand-ballroom-su-kien-134.jpg",
+      "Green Riverside": "/images/halls/green-riverside/20.jpg",
+      "Nile": "/images/halls/nile/sanh-tiec-cuoi-nile-181.jpg",
+      "Seine": "/images/halls/seine/sanh-seine-su-kien-981.jpg",
+      "Thames": "/images/halls/thames/sanh-tiec-cuoi-thames-197.jpg",
+      "Volga": "/images/halls/volga/sanh-tiec-cuoi-volga-828.jpg"
     },
     "Dishes": {
       "MA001": "/images/dishes/appetizers/photo-34.jpg",

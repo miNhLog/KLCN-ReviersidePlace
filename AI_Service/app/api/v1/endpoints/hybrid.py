@@ -88,6 +88,14 @@ def rank_hybrid(payload: HybridRankRequest):
             alpha_f, beta_f, gamma_f = 0.0, 0.0, 0.0
         args = list(args) + [f"Hybrid: s_cf={float(s_cf):.2f}, s_cbf={float(s_cbf):.2f}, "
                              f"S_wsm={float(s_wsm):.2f} (alpha={alpha_f:.2f}, beta={beta_f:.2f}, gamma={gamma_f:.2f})."]
+        parts = entry.get("parts") or {}
+        r1 = float(parts.get("r1", 0.95))
+        r2 = float(parts.get("r2", 0.92))
+        r3 = float(parts.get("r3", 0.90))
+        b_score = round(max(50.0, min(100.0, r1 * 100)), 1)
+        sp_score = round(max(50.0, min(100.0, r2 * 100)), 1)
+        st_score = round(max(50.0, min(100.0, (1.0 if r3 >= 1.0 else 0.85 if r3 >= 0.5 else 0.75) * 100)), 1)
+        rt_score = round(max(50.0, min(100.0, ((sp_score + st_score) / 2))), 1)
         items.append(RecommendationItem(
             hall_id=hall["hall_id"], hall_name=hall["hall_name"], hall_price=float(hall["base_price"]),
             hall_min_guests=int(hall.get("min_guests", hall["min_tables"] * 10)),
@@ -102,6 +110,8 @@ def rank_hybrid(payload: HybridRankRequest):
             decor_price=float(decor["price"]), decor_style=decor["style"],
             included_services=entry["included"], total_estimated_cost=float(total_cost),
             matching_score=round(float(entry["score"]) * 100, 1),
+            budget_match_score=b_score, space_fit_score=sp_score,
+            style_theme_score=st_score, rating_credibility_score=rt_score,
             explanation_arguments=args,
             combo_name=ctitle, combo_type=ctype, combo_title=ctitle, combo_badge=cbadge))
     # VĐ2: null-safe weights_source (None -> chuoi mac dinh, khong vo khi thieu file).

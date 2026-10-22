@@ -59,6 +59,10 @@ class RecommendationItem(BaseModel):
     included_services: List[str] = Field(default_factory=list)
     total_estimated_cost: float
     matching_score: float = Field(ge=0, le=100)
+    budget_match_score: float = Field(default=0.0, ge=0, le=100)
+    space_fit_score: float = Field(default=0.0, ge=0, le=100)
+    style_theme_score: float = Field(default=0.0, ge=0, le=100)
+    rating_credibility_score: float = Field(default=0.0, ge=0, le=100)
     explanation_arguments: List[str] = Field(default_factory=list)
     # Chuẩn hóa tên combo — Frontend không bao giờ render undefined.
     combo_name: str = ""

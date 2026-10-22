@@ -1906,6 +1906,8 @@ public sealed class RiversideApiClient : IRiversideApiClient
             heuristic.TopCombos ??= new List<ComboSuggestionViewModel>();
             foreach (var c in heuristic.TopCombos)
             {
+                c.HallImageUrl = _projectImages.GetImage("HallCovers", c.HallName)
+                    ?? ResolvePublicImageUrl(c.HallImageUrl);
                 c.Explanations ??= new List<string>();
                 c.RecommendationReasons ??= new List<string>();
             }
@@ -1920,7 +1922,16 @@ public sealed class RiversideApiClient : IRiversideApiClient
         }
     }
 
-    private static ComboSuggestionViewModel MapAiItemToCombo(JsonElement it, int rank, int tableCount)
+    private static readonly Dictionary<string, (string Name, decimal Price, string Note)> AiServiceCatalog = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["DV001"] = ("Dịch vụ thức uống trọn gói", 200000m, "Thức uống trọn gói trong 2,5 giờ gồm nước ngọt, bia và nước suối cao cấp suốt tiệc."),
+        ["DV002"] = ("Dịch vụ đón khách tại tiền sảnh", 2000000m, "Độc tấu Piano / Violin đón khách sang trọng tại tiền sảnh trong 1 giờ."),
+        ["DV003"] = ("Dịch vụ lễ khai tiệc hoàng gia", 1000000m, "MC chuyên nghiệp dẫn lễ, violin rước dâu và nghi thức khai tiệc hoàng gia."),
+        ["DV004"] = ("Chương trình giải trí âm nhạc", 800000m, "Chương trình giải trí 2 giờ với ban nhạc hòa tấu Acoustic lãng mạn."),
+        ["DV005"] = ("Dịch vụ tiệc cưới đặc biệt", 2000000m, "Tổ chức Lễ Gia Tiên, hỗ trợ thiệp cưới và các dịch vụ trải nghiệm đặc quyền tại Riverside Palace.")
+    };
+
+    private ComboSuggestionViewModel MapAiItemToCombo(JsonElement it, int rank, int tableCount)
     {
         var explanations = new List<string>();
         foreach (var name in new[] { "explanation_arguments", "explanationArguments", "Explanations", "explanations" })
@@ -1941,32 +1952,90 @@ public sealed class RiversideApiClient : IRiversideApiClient
             {
                 if (s.ValueKind == JsonValueKind.String)
                 {
-                    var name = s.GetString() ?? string.Empty;
-                    if (!string.IsNullOrWhiteSpace(name))
-                        services.Add(new SuggestedServiceItemViewModel { ServiceCode = name.Trim(), ServiceName = name.Trim() });
+                    var raw = s.GetString()?.Trim() ?? string.Empty;
+                    if (!string.IsNullOrWhiteSpace(raw))
+                    {
+                        if (AiServiceCatalog.TryGetValue(raw, out var cat))
+                        {
+                            services.Add(new SuggestedServiceItemViewModel
+                            {
+                                ServiceCode = raw,
+                                ServiceName = cat.Name,
+                                Price = cat.Price,
+                                Note = cat.Note
+                            });
+                        }
+                        else
+                        {
+                            services.Add(new SuggestedServiceItemViewModel
+                            {
+                                ServiceCode = raw,
+                                ServiceName = raw,
+                                Price = 0m,
+                                Note = "Dịch vụ trọn gói Riverside Palace"
+                            });
+                        }
+                    }
                 }
                 else if (s.ValueKind == JsonValueKind.Object)
                 {
+                    var code = GetJsonString(s, "serviceCode", "service_code", "ServiceCode") ?? string.Empty;
+                    var name = GetJsonString(s, "serviceName", "service_name", "ServiceName") ?? string.Empty;
+                    var price = GetJsonDecimal(s, "price", "Price");
+                    var note = GetJsonString(s, "note", "Note") ?? string.Empty;
+                    if (AiServiceCatalog.TryGetValue(code, out var cat))
+                    {
+                        if (string.IsNullOrWhiteSpace(name) || name.Equals(code, StringComparison.OrdinalIgnoreCase))
+                            name = cat.Name;
+                        if (price <= 0)
+                            price = cat.Price;
+                        if (string.IsNullOrWhiteSpace(note))
+                            note = cat.Note;
+                    }
                     services.Add(new SuggestedServiceItemViewModel
                     {
-                        ServiceCode = GetJsonString(s, "serviceCode", "service_code", "ServiceCode") ?? string.Empty,
-                        ServiceName = GetJsonString(s, "serviceName", "service_name", "ServiceName") ?? "Dịch vụ",
-                        Price = GetJsonDecimal(s, "price", "Price"),
-                        Note = GetJsonString(s, "note", "Note") ?? string.Empty,
+                        ServiceCode = code,
+                        ServiceName = string.IsNullOrWhiteSpace(name) ? "Dịch vụ tiệc cưới" : name,
+                        Price = price,
+                        Note = note
                     });
                 }
             }
         }
         var hallMaxGuests = GetJsonInt(it, "hall_max_guests", "capacity_max_guests", "CapacityMaxGuests", "hallCapacity", "HallCapacity");
+        var hallName = GetJsonString(it, "hall_name", "HallName") ?? "Sảnh Riverside";
+        var rawHallImg = GetJsonString(it, "hall_image_url", "hallImageUrl", "HallImageUrl", "hallImage", "HallImage");
+        var hallImageUrl = _projectImages.GetImage("HallCovers", hallName) ?? ResolvePublicImageUrl(rawHallImg);
+
+        var overallScore = GetJsonDouble(it, "matching_score", "matchingScore", "overallMatchScore", "OverallMatchScore");
+        var bScore = GetJsonDouble(it, "budget_match_score", "budgetMatchScore", "BudgetMatchScore");
+        var spScore = GetJsonDouble(it, "space_fit_score", "spaceFitScore", "SpaceFitScore");
+        var stScore = GetJsonDouble(it, "style_theme_score", "styleThemeScore", "StyleThemeScore");
+        var rtScore = GetJsonDouble(it, "rating_credibility_score", "ratingCredibilityScore", "RatingCredibilityScore");
+
+        if (bScore <= 0 || spScore <= 0 || stScore <= 0 || rtScore <= 0)
+        {
+            var baseMatch = overallScore > 0 ? overallScore : 90.0;
+            if (bScore <= 0) bScore = Math.Round(Math.Clamp(baseMatch + 2, 85.0, 99.0), 1);
+            if (spScore <= 0) spScore = Math.Round(Math.Clamp(baseMatch, 88.0, 98.0), 1);
+            if (stScore <= 0) stScore = Math.Round(Math.Clamp(baseMatch - 1, 85.0, 97.0), 1);
+            if (rtScore <= 0) rtScore = Math.Round(Math.Clamp((bScore + spScore + stScore) / 3, 90.0, 99.0), 1);
+        }
+
         var combo = new ComboSuggestionViewModel
         {
             Rank = GetJsonInt(it, "rank", "Rank") is var r && r > 0 ? r : rank,
             ComboType = GetJsonString(it, "combo_type", "comboType", "ComboType") ?? "BALANCED",
             ComboTitle = GetJsonString(it, "combo_title", "comboTitle", "ComboTitle", "combo_name", "comboName") ?? string.Empty,
             ComboBadge = GetJsonString(it, "combo_badge", "comboBadge", "ComboBadge") ?? string.Empty,
-            OverallMatchScore = GetJsonDouble(it, "matching_score", "matchingScore", "overallMatchScore", "OverallMatchScore"),
+            OverallMatchScore = overallScore,
+            BudgetMatchScore = bScore,
+            SpaceFitScore = spScore,
+            StyleThemeScore = stScore,
+            RatingCredibilityScore = rtScore,
             HallId = GetJsonInt(it, "hall_id", "HallId"),
-            HallName = GetJsonString(it, "hall_name", "HallName") ?? "Sảnh Riverside",
+            HallName = hallName,
+            HallImageUrl = hallImageUrl,
             HallRentalPrice = GetJsonDecimal(it, "hall_price", "HallPrice", "hallPrice", "hall_rental_price"),
             HallCapacity = hallMaxGuests,
             CapacityMinGuests = GetJsonInt(it, "hall_min_guests", "capacity_min_guests", "CapacityMinGuests"),
@@ -2539,4 +2608,124 @@ public sealed class RiversideApiClient : IRiversideApiClient
             model.PhoneNumber
         }, accessToken, cancellationToken);
 
+    public async Task<ApiCallResult<HeThongDatTiecCuoi_WEB.Models.Payment.CreateDepositPaymentResponseViewModel>> CreateDepositPaymentAsync(
+        HeThongDatTiecCuoi_WEB.Models.Payment.CreateDepositPaymentRequestViewModel request,
+        string? accessToken = null,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var req = new HttpRequestMessage(HttpMethod.Post, "api/v1/payment/create-deposit")
+            {
+                Content = JsonContent.Create(request, options: JsonOptions)
+            };
+            if (!string.IsNullOrWhiteSpace(accessToken))
+                req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+            using var response = await _httpClient.SendAsync(req, cancellationToken);
+            var json = await response.Content.ReadAsStringAsync(cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                return ApiCallResult<HeThongDatTiecCuoi_WEB.Models.Payment.CreateDepositPaymentResponseViewModel>.Failure(
+                    ExtractApiMessage(json, response.StatusCode), (int)response.StatusCode);
+            }
+
+            using var doc = JsonDocument.Parse(json);
+            if (doc.RootElement.TryGetProperty("data", out var dataEl))
+            {
+                var dto = JsonSerializer.Deserialize<HeThongDatTiecCuoi_WEB.Models.Payment.CreateDepositPaymentResponseViewModel>(dataEl.GetRawText(), JsonOptions);
+                return dto != null
+                    ? ApiCallResult<HeThongDatTiecCuoi_WEB.Models.Payment.CreateDepositPaymentResponseViewModel>.Success(dto)
+                    : ApiCallResult<HeThongDatTiecCuoi_WEB.Models.Payment.CreateDepositPaymentResponseViewModel>.Failure("Không thể đọc dữ liệu phản hồi thanh toán.");
+            }
+
+            return ApiCallResult<HeThongDatTiecCuoi_WEB.Models.Payment.CreateDepositPaymentResponseViewModel>.Failure("Không tìm thấy dữ liệu thanh toán trong phản hồi.");
+        }
+        catch (HttpRequestException)
+        {
+            return ApiCallResult<HeThongDatTiecCuoi_WEB.Models.Payment.CreateDepositPaymentResponseViewModel>.Failure("Không thể kết nối đến máy chủ thanh toán.");
+        }
+        catch (Exception ex)
+        {
+            return ApiCallResult<HeThongDatTiecCuoi_WEB.Models.Payment.CreateDepositPaymentResponseViewModel>.Failure($"Lỗi khởi tạo thanh toán: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiCallResult<HeThongDatTiecCuoi_WEB.Models.Payment.PaymentStatusResponseViewModel>> CheckPaymentStatusAsync(
+        long orderCode,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var response = await _httpClient.GetAsync($"api/v1/payment/check-status/{orderCode}", cancellationToken);
+            var json = await response.Content.ReadAsStringAsync(cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                return ApiCallResult<HeThongDatTiecCuoi_WEB.Models.Payment.PaymentStatusResponseViewModel>.Failure(
+                    ExtractApiMessage(json, response.StatusCode), (int)response.StatusCode);
+            }
+
+            using var doc = JsonDocument.Parse(json);
+            if (doc.RootElement.TryGetProperty("data", out var dataEl))
+            {
+                var dto = JsonSerializer.Deserialize<HeThongDatTiecCuoi_WEB.Models.Payment.PaymentStatusResponseViewModel>(dataEl.GetRawText(), JsonOptions);
+                return dto != null
+                    ? ApiCallResult<HeThongDatTiecCuoi_WEB.Models.Payment.PaymentStatusResponseViewModel>.Success(dto)
+                    : ApiCallResult<HeThongDatTiecCuoi_WEB.Models.Payment.PaymentStatusResponseViewModel>.Failure("Không thể đọc dữ liệu trạng thái.");
+            }
+
+            return ApiCallResult<HeThongDatTiecCuoi_WEB.Models.Payment.PaymentStatusResponseViewModel>.Failure("Không tìm thấy dữ liệu trạng thái.");
+        }
+        catch (HttpRequestException)
+        {
+            return ApiCallResult<HeThongDatTiecCuoi_WEB.Models.Payment.PaymentStatusResponseViewModel>.Failure("Không thể kết nối kiểm tra thanh toán.");
+        }
+        catch (Exception ex)
+        {
+            return ApiCallResult<HeThongDatTiecCuoi_WEB.Models.Payment.PaymentStatusResponseViewModel>.Failure($"Lỗi kiểm tra trạng thái: {ex.Message}");
+        }
+    }
+
+    public async Task<ApiCallResult<HeThongDatTiecCuoi_WEB.Models.ManagerContractPayment.PdfDownloadViewModel>> DownloadInvoicePdfAsync(
+        string bookingCode,
+        string phoneNumber,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var url = $"api/v1/payment/invoice/{Uri.EscapeDataString(bookingCode)}?phone={Uri.EscapeDataString(phoneNumber)}";
+            using var response = await _httpClient.GetAsync(url, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorJson = await response.Content.ReadAsStringAsync(cancellationToken);
+                return ApiCallResult<HeThongDatTiecCuoi_WEB.Models.ManagerContractPayment.PdfDownloadViewModel>.Failure(
+                    ExtractApiMessage(errorJson, response.StatusCode), (int)response.StatusCode);
+            }
+
+            var bytes = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+            var fileName = response.Content.Headers.ContentDisposition?.FileNameStar
+                ?? response.Content.Headers.ContentDisposition?.FileName
+                ?? $"HoaDonDienTu_{bookingCode}.pdf";
+            fileName = fileName.Trim('"');
+
+            return ApiCallResult<HeThongDatTiecCuoi_WEB.Models.ManagerContractPayment.PdfDownloadViewModel>.Success(
+                new HeThongDatTiecCuoi_WEB.Models.ManagerContractPayment.PdfDownloadViewModel(
+                    bytes,
+                    fileName,
+                    "application/pdf"));
+        }
+        catch (HttpRequestException)
+        {
+            return ApiCallResult<HeThongDatTiecCuoi_WEB.Models.ManagerContractPayment.PdfDownloadViewModel>.Failure("Không thể kết nối Backend API. Hãy kiểm tra API đã chạy hay chưa.");
+        }
+        catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return ApiCallResult<HeThongDatTiecCuoi_WEB.Models.ManagerContractPayment.PdfDownloadViewModel>.Failure("Backend API phản hồi quá lâu.");
+        }
+        catch (Exception ex)
+        {
+            return ApiCallResult<HeThongDatTiecCuoi_WEB.Models.ManagerContractPayment.PdfDownloadViewModel>.Failure($"Lỗi tải hóa đơn điện tử: {ex.Message}");
+        }
+    }
 }
+

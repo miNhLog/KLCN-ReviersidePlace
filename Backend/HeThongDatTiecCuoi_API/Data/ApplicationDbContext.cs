@@ -41,6 +41,7 @@ public sealed class ApplicationDbContext : DbContext
     public DbSet<FirstPasswordOtp> FirstPasswordOtps => Set<FirstPasswordOtp>();
     public DbSet<DecorPackage> DecorPackages { get; set; }
     public DbSet<ServiceItem> ServiceItems { get; set; }
+    public DbSet<PaymentTransaction> PaymentTransactions => Set<PaymentTransaction>();
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -638,6 +639,8 @@ public sealed class ApplicationDbContext : DbContext
             entity.Property(x => x.EstimatedTotal).HasColumnName("TongTienDuKien").HasColumnType("decimal(18,2)");
             entity.Property(x => x.SpecialRequests).HasColumnName("YeuCauDacBiet").HasColumnType("nvarchar(max)");
             entity.Property(x => x.StatusId).HasColumnName("TrangThaiID").HasDefaultValue(801);
+            entity.Property(x => x.DepositAmount).HasColumnName("TienCoc").HasColumnType("decimal(18,2)");
+            entity.Property(x => x.PaidAmount).HasColumnName("SoTienDaThanhToan").HasColumnType("decimal(18,2)").HasDefaultValue(0);
             entity.Property(x => x.CancellationReason).HasColumnName("LyDoHuy").HasMaxLength(500);
             entity.Property(x => x.BookedAt).HasColumnName("NgayDat").HasPrecision(0).HasDefaultValueSql("SYSDATETIME()");
             entity.HasIndex(x => x.BookingCode).IsUnique();
@@ -711,6 +714,27 @@ public sealed class ApplicationDbContext : DbContext
             entity.HasOne(x => x.Contract).WithMany(x => x.Payments)
                 .HasForeignKey(x => x.ContractId).OnDelete(DeleteBehavior.NoAction);
             entity.HasOne(x => x.Status).WithMany().HasForeignKey(x => x.StatusId).OnDelete(DeleteBehavior.NoAction);
+        });
+
+        modelBuilder.Entity<PaymentTransaction>(entity =>
+        {
+            entity.ToTable("GiaoDichThanhToan");
+            entity.HasKey(x => x.GiaoDichId);
+            entity.Property(x => x.GiaoDichId).HasColumnName("GiaoDichID");
+            entity.Property(x => x.DatTiecId).HasColumnName("DatTiecID");
+            entity.Property(x => x.OrderCode).HasColumnName("OrderCode");
+            entity.Property(x => x.SoTienGiaoDich).HasColumnName("SoTienGiaoDich").HasColumnType("decimal(18,2)").IsRequired();
+            entity.Property(x => x.SoTienGhiNhan).HasColumnName("SoTienGhiNhan").HasColumnType("decimal(18,2)").IsRequired();
+            entity.Property(x => x.PhuongThuc).HasColumnName("PhuongThuc").HasMaxLength(50).IsRequired();
+            entity.Property(x => x.TrangThai).HasColumnName("TrangThai").HasMaxLength(30).IsRequired();
+            entity.Property(x => x.NgayTao).HasColumnName("NgayTao").HasPrecision(0).HasDefaultValueSql("SYSDATETIME()");
+            entity.Property(x => x.NgayThanhToan).HasColumnName("NgayThanhToan").HasPrecision(0);
+            entity.Property(x => x.PayloadWebhook).HasColumnName("PayloadWebhook").HasColumnType("nvarchar(max)");
+            entity.HasIndex(x => x.OrderCode).IsUnique();
+            entity.HasOne(x => x.Booking)
+                .WithMany(x => x.PaymentTransactions)
+                .HasForeignKey(x => x.DatTiecId)
+                .OnDelete(DeleteBehavior.NoAction);
         });
 
         modelBuilder.Entity<RecommendationRequestEntity>(entity =>
@@ -915,6 +939,29 @@ public sealed class ApplicationDbContext : DbContext
             entity.HasOne(x => x.DataStatus)
                 .WithMany()
                 .HasForeignKey(x => x.DataStatusId)
+                .OnDelete(DeleteBehavior.NoAction);
+        });
+
+        modelBuilder.Entity<PaymentTransaction>(entity =>
+        {
+            entity.ToTable("GiaoDichThanhToan");
+            entity.HasKey(x => x.GiaoDichId);
+            entity.Property(x => x.GiaoDichId).HasColumnName("GiaoDichID");
+            entity.Property(x => x.DatTiecId).HasColumnName("DatTiecID");
+            entity.Property(x => x.OrderCode).HasColumnName("OrderCode").IsRequired();
+            entity.Property(x => x.SoTienGiaoDich).HasColumnName("SoTienGiaoDich").HasColumnType("decimal(18,2)").IsRequired();
+            entity.Property(x => x.SoTienGhiNhan).HasColumnName("SoTienGhiNhan").HasColumnType("decimal(18,2)").IsRequired();
+            entity.Property(x => x.PhuongThuc).HasColumnName("PhuongThuc").HasMaxLength(50).IsRequired();
+            entity.Property(x => x.TrangThai).HasColumnName("TrangThai").HasMaxLength(30).IsRequired();
+            entity.Property(x => x.NgayTao).HasColumnName("NgayTao").HasPrecision(0).HasDefaultValueSql("SYSDATETIME()");
+            entity.Property(x => x.NgayThanhToan).HasColumnName("NgayThanhToan").HasPrecision(0);
+            entity.Property(x => x.PayloadWebhook).HasColumnName("PayloadWebhook").HasColumnType("nvarchar(max)");
+            entity.HasIndex(x => x.OrderCode).IsUnique();
+            entity.HasIndex(x => x.DatTiecId);
+            entity.HasIndex(x => x.TrangThai);
+            entity.HasOne(x => x.Booking)
+                .WithMany(x => x.PaymentTransactions)
+                .HasForeignKey(x => x.DatTiecId)
                 .OnDelete(DeleteBehavior.NoAction);
         });
     }

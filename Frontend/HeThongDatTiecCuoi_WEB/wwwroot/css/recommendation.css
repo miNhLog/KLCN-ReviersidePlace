@@ -1873,42 +1873,175 @@ body.recom-modal-open {
     direction: ltr;
     -webkit-font-smoothing: antialiased;
 }
-.recom-custom-modal .recom-modal-head { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
-.recom-custom-modal .recom-modal-icon {
-    width: 44px; height: 44px; border-radius: 12px;
-    background: rgba(212, 175, 55, 0.15); color: #735c00;
-    display: inline-flex; align-items: center; justify-content: center; flex: none;
+/* ---- Card: Vì sao Riverside Palace đề xuất sảnh này? ---- */
+.recom-why-box {
+    margin: 10px 0 14px 0;
+    background: linear-gradient(135deg, #FAF7F2 0%, #F5EFE6 100%);
+    border: 1px solid #E8DFCE;
+    border-radius: 14px;
+    padding: 12px 14px;
+    text-align: left;
 }
-.recom-custom-modal .recom-modal-kicker { font-size: 11px; text-transform: uppercase; font-weight: 700; color: #d4af37; display: block; }
-.recom-custom-modal .recom-modal-title { font-family: "Playfair Display", Georgia, serif; font-size: 20px; font-weight: 700; color: #0f172a; margin: 0; }
+.recom-why-head {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: #735C00;
+    margin-bottom: 8px;
+    letter-spacing: 0.02em;
+}
+.recom-why-head .material-symbols-outlined {
+    font-size: 17px;
+    color: #9A7B38;
+}
+.recom-why-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.recom-why-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 7px;
+    font-size: 12px;
+    line-height: 1.45;
+    color: #334155;
+}
+.recom-why-item .material-symbols-outlined {
+    font-size: 15px;
+    color: #16A34A;
+    flex: none;
+    margin-top: 1px;
+}
+.recom-why-item--gold .material-symbols-outlined {
+    color: #B89758;
+}
+.recom-why-item strong {
+    color: #0F172A;
+}
+
+/* ---- Modal chi tiết itemDetailModal - Sang Trọng & Thân Thiện ---- */
+.recom-custom-modal [hidden],
+#modalMenuCustomBtn[hidden] {
+    display: none !important;
+}
+
+.recom-custom-modal .recom-modal-head {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 16px;
+    padding-right: 32px;
+}
+.recom-custom-modal .recom-modal-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #FAF4E8 0%, #F5E7CD 100%);
+    border: 1.5px solid #E8DFD0;
+    color: #9A7B38;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    box-shadow: 0 4px 12px rgba(184, 151, 88, 0.15);
+}
+.recom-custom-modal .recom-modal-icon .material-symbols-outlined {
+    font-size: 24px;
+}
+.recom-custom-modal .recom-modal-kicker {
+    font-size: 11px;
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: #9A7B38;
+    display: block;
+    margin-bottom: 2px;
+}
+.recom-custom-modal .recom-modal-title {
+    font-family: "Playfair Display", Georgia, serif;
+    font-size: 21px;
+    font-weight: 700;
+    color: #0F172A;
+    line-height: 1.3;
+    margin: 0;
+}
 .recom-custom-modal .recom-results-sub { font-size: 13px; color: #64748b; margin: 4px 0 0 0; }
 .recom-custom-modal .recom-price-bar {
-    background: #fdfbf7; padding: 12px 16px; border-radius: 8px;
-    border: 1px solid #e2e8f0; display: flex; justify-content: space-between;
-    align-items: center; font-size: 13px; margin-bottom: 16px;
+    background: linear-gradient(135deg, #FCF9F4 0%, #F8F3EA 100%);
+    padding: 13px 18px;
+    border-radius: 14px;
+    border: 1px solid #EADBCC;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    color: #64748B;
+    margin-bottom: 16px;
+}
+.recom-custom-modal .recom-price-bar strong {
+    font-family: "Playfair Display", Georgia, serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: #9A7B38;
 }
 .recom-custom-modal .recom-modal-body { font-size: 13px; color: #475569; display: flex; flex-direction: column; gap: 12px; }
-.recom-custom-modal .recom-desc-box { margin: 0; background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; line-height: 1.5; }
+.recom-custom-modal .recom-desc-box {
+    margin: 0;
+    background: #F8FAFC;
+    padding: 14px 16px;
+    border-radius: 12px;
+    border: 1px solid #E2E8F0;
+    line-height: 1.6;
+    color: #334155;
+    font-size: 13px;
+}
 .recom-custom-modal .recom-note-box {
-    padding: 10px 14px; border-radius: 8px; background: #fef3c7; color: #92400e;
-    font-size: 12px; border: 1px solid #fde68a; display: flex; align-items: flex-start; gap: 6px;
+    padding: 11px 14px;
+    border-radius: 12px;
+    background: #F0FDF4;
+    color: #166534;
+    font-size: 12.5px;
+    border: 1px solid #BBF7D0;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    line-height: 1.5;
+}
+.recom-custom-modal .recom-note-box .material-symbols-outlined {
+    font-size: 18px;
+    color: #16A34A;
+    flex: none;
+    margin-top: 1px;
 }
 .recom-custom-modal .recom-btn-gold {
     display: inline-flex; min-height: 48px; align-items: center; justify-content: center; gap: 7px;
-    border: 0; border-radius: 8px; padding: 10px 22px; font-size: 15px; font-weight: 600;
-    background: #d4af37; color: #1e242b; box-shadow: 0 12px 22px rgba(0, 0, 0, 0.14); cursor: pointer;
+    border: 0; border-radius: 12px; padding: 12px 22px; font-size: 14px; font-weight: 700;
+    background: linear-gradient(135deg, #B89758 0%, #96783E 100%);
+    color: #ffffff; box-shadow: 0 4px 14px rgba(184, 151, 88, 0.35); cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
 }
-.recom-custom-modal .recom-btn-gold:hover { background: #f7efcf; }
+.recom-custom-modal .recom-btn-gold:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(184, 151, 88, 0.45);
+}
 .recom-custom-modal .recom-btn-light {
     padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 700;
     background: #f1f5f9; border: 1px solid #e2e8f0; color: #334155; cursor: pointer;
 }
 .recom-custom-modal .recom-btn-dark {
-    display: inline-flex; min-height: 48px; align-items: center; justify-content: center; gap: 7px;
-    border: 0; border-radius: 8px; padding: 10px 20px; font-size: 15px; font-weight: 600;
-    background: #162839; color: #fff; cursor: pointer;
+    display: inline-flex; min-height: 46px; align-items: center; justify-content: center; gap: 7px;
+    border: 0; border-radius: 12px; padding: 11px 20px; font-size: 14px; font-weight: 600;
+    background: #0F172A; color: #fff; cursor: pointer;
+    transition: background 0.2s;
 }
-.recom-custom-modal .recom-btn-block { width: 100%; margin-top: 12px; font-size: 13px; }
+.recom-custom-modal .recom-btn-dark:hover { background: #1E293B; }
+.recom-custom-modal .recom-btn-block { width: 100%; margin-top: 10px; font-size: 13.5px; }
 .recom-custom-modal .recom-alert-icon {
     width: 64px; height: 64px; border-radius: 50%; display: flex;
     align-items: center; justify-content: center; margin: 0 auto 14px auto; flex: none;

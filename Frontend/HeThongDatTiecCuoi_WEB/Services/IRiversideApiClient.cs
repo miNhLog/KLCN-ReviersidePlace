@@ -1,4 +1,4 @@
-﻿using HeThongDatTiecCuoi_WEB.Models.AdminHall;
+using HeThongDatTiecCuoi_WEB.Models.AdminHall;
 using HeThongDatTiecCuoi_WEB.Models.AdminAccount;
 using HeThongDatTiecCuoi_WEB.Models.Auth;
 using HeThongDatTiecCuoi_WEB.Models.Halls;
@@ -432,5 +432,20 @@ public interface IRiversideApiClient
 
     Task<ApiCallResult<HeThongDatTiecCuoi_WEB.Models.AiChat.AiChatExtractResultViewModel>> ExtractAiEntitiesAsync(
         List<HeThongDatTiecCuoi_WEB.Models.AiChat.AiChatMessageViewModel> history,
+        CancellationToken cancellationToken = default);
+
+    // Module Thanh toán Đặt cọc VietQR PayOS
+    Task<ApiCallResult<HeThongDatTiecCuoi_WEB.Models.Payment.CreateDepositPaymentResponseViewModel>> CreateDepositPaymentAsync(
+        HeThongDatTiecCuoi_WEB.Models.Payment.CreateDepositPaymentRequestViewModel request,
+        string? accessToken = null,
+        CancellationToken cancellationToken = default);
+
+    Task<ApiCallResult<HeThongDatTiecCuoi_WEB.Models.Payment.PaymentStatusResponseViewModel>> CheckPaymentStatusAsync(
+        long orderCode,
+        CancellationToken cancellationToken = default);
+
+    Task<ApiCallResult<HeThongDatTiecCuoi_WEB.Models.ManagerContractPayment.PdfDownloadViewModel>> DownloadInvoicePdfAsync(
+        string bookingCode,
+        string phoneNumber,
         CancellationToken cancellationToken = default);
 }
