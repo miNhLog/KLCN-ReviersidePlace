@@ -8,7 +8,7 @@ namespace HeThongDatTiecCuoi_WEB.Controllers;
 [Route("halls")]
 public sealed class HallsController : Controller
 {
-    private const int PageSize = 6;
+    private const int PageSize = 20;
     private readonly IRiversideApiClient _apiClient;
     private readonly IWebHostEnvironment _environment;
 
@@ -20,44 +20,32 @@ public sealed class HallsController : Controller
 
     [HttpGet("")]
     [AllowAnonymous]
-    public async Task<IActionResult> Index(
-        string? keyword,
-        string? capacity,
-        string? priceRange,
-        string? sort,
-        int page = 1,
-        CancellationToken cancellationToken = default)
+    public async Task<IActionResult> Index(CancellationToken cancellationToken = default)
     {
-        page = Math.Max(1, page);
-        sort = string.IsNullOrWhiteSpace(sort) ? "name-asc" : sort;
         var result = await _apiClient.GetPublicHallsAsync(
-            keyword, capacity, priceRange, sort, page, PageSize, cancellationToken);
-
+            null, null, null, "name-asc", 1, PageSize, cancellationToken);
         var response = result.Value;
-        if (response is not null && response.TotalPages > 0 && page > response.TotalPages)
+        var halls = response?.Items.ToList() ?? [];
+
+        // Keep the complete collection available without filter or pagination controls.
+        if (result.Succeeded && response is not null)
         {
-            return RedirectToAction(nameof(Index), new
+            for (var page = 2; page <= response.TotalPages; page++)
             {
-                keyword,
-                capacity,
-                priceRange,
-                sort,
-                page = response.TotalPages
-            });
+                result = await _apiClient.GetPublicHallsAsync(
+                    null, null, null, "name-asc", page, PageSize, cancellationToken);
+                if (!result.Succeeded || result.Value is null) break;
+                halls.AddRange(result.Value.Items);
+            }
         }
 
         return View(new HallListViewModel
         {
-            Halls = response?.Items ?? [],
-            Keyword = keyword?.Trim(),
-            Capacity = capacity,
-            PriceRange = priceRange,
-            Sort = sort,
-            Page = response?.Page ?? page,
-            PageSize = response?.PageSize ?? PageSize,
-            TotalItems = response?.TotalItems ?? 0,
-            TotalPages = response?.TotalPages ?? 0,
-            ErrorMessage = result.Succeeded
+            Halls = halls,
+            PageSize = PageSize,
+            TotalItems = halls.Count,
+            TotalPages = halls.Count > 0 ? 1 : 0,
+            ErrorMessage = result.Succeeded && result.Value is not null
                 ? null
                 : result.Error ?? "Không thể tải danh sách sảnh. Vui lòng thử lại sau."
         });

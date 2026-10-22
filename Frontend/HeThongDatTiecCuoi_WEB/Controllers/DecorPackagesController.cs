@@ -8,7 +8,7 @@ namespace HeThongDatTiecCuoi_WEB.Controllers;
 [Route("decor-packages")]
 public sealed class DecorPackagesController : Controller
 {
-    private const int PageSize = 6;
+    private const int PageSize = 20;
     private readonly IRiversideApiClient _apiClient;
 
     public DecorPackagesController(IRiversideApiClient apiClient)
@@ -18,42 +18,32 @@ public sealed class DecorPackagesController : Controller
 
     [HttpGet("")]
     [AllowAnonymous]
-    public async Task<IActionResult> Index(
-        string? keyword,
-        string? sort,
-        int page = 1,
-        CancellationToken cancellationToken = default)
+    public async Task<IActionResult> Index(CancellationToken cancellationToken = default)
     {
-        page = Math.Max(1, page);
-        sort = string.IsNullOrWhiteSpace(sort) ? "name-asc" : sort;
-
+        // Load every API page so the deck includes the complete catalogue.
         var result = await _apiClient.GetPublicDecorPackagesAsync(
-            keyword, sort, page, PageSize, cancellationToken);
-
+            null, "name-asc", 1, PageSize, cancellationToken);
         var response = result.Value;
+        var packages = response?.Items.ToList() ?? [];
 
-        if (response is not null &&
-            response.TotalPages > 0 &&
-            page > response.TotalPages)
+        if (result.Succeeded && response is not null)
         {
-            return RedirectToAction(nameof(Index), new
+            for (var page = 2; page <= response.TotalPages; page++)
             {
-                keyword,
-                sort,
-                page = response.TotalPages
-            });
+                result = await _apiClient.GetPublicDecorPackagesAsync(
+                    null, "name-asc", page, PageSize, cancellationToken);
+                if (!result.Succeeded || result.Value is null) break;
+                packages.AddRange(result.Value.Items);
+            }
         }
 
         return View(new DecorPackageListViewModel
         {
-            Packages = response?.Items ?? [],
-            Keyword = keyword?.Trim(),
-            Sort = sort,
-            Page = response?.Page ?? page,
-            PageSize = response?.PageSize ?? PageSize,
-            TotalItems = response?.TotalItems ?? 0,
-            TotalPages = response?.TotalPages ?? 0,
-            ErrorMessage = result.Succeeded
+            Packages = packages,
+            PageSize = PageSize,
+            TotalItems = packages.Count,
+            TotalPages = packages.Count > 0 ? 1 : 0,
+            ErrorMessage = result.Succeeded && result.Value is not null
                 ? null
                 : result.Error ??
                   "Không thể tải danh sách gói trang trí. Vui lòng thử lại sau."

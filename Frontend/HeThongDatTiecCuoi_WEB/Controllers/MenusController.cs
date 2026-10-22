@@ -6,96 +6,69 @@ using Microsoft.AspNetCore.Mvc;
 namespace HeThongDatTiecCuoi_WEB.Controllers;
 
 [Route("menus")]
-public sealed class MenusController : Controller
+[AllowAnonymous]
+public sealed class MenusController(IRiversideApiClient apiClient) : Controller
 {
-    private const int PageSize = 6;
-    private readonly IRiversideApiClient _apiClient;
-
-    public MenusController(IRiversideApiClient apiClient)
-    {
-        _apiClient = apiClient;
-    }
+    private const int PageSize = 20;
 
     [HttpGet("")]
-    [AllowAnonymous]
-    public async Task<IActionResult> Index(
-        string? keyword,
-        string? priceRange,
-        string? sort,
-        int page = 1,
-        CancellationToken cancellationToken = default)
+    public async Task<IActionResult> Index(int? menuId, CancellationToken cancellationToken = default)
     {
-        page = Math.Max(1, page);
-        sort = string.IsNullOrWhiteSpace(sort) ? "name-asc" : sort;
-
-        var result = await _apiClient.GetPublicMenusAsync(
-            keyword,
-            priceRange,
-            sort,
-            page,
-            PageSize,
-            cancellationToken);
-
+        var dishesTask = apiClient.GetPublicDishesAsync(null, null, cancellationToken);
+        var listTask = apiClient.GetPublicMenusAsync(null, null, "name-asc", 1, PageSize, cancellationToken);
+        await Task.WhenAll(dishesTask, listTask);
+        var dishes = await dishesTask;
+        var result = await listTask;
         var response = result.Value;
-        if (response is not null && response.TotalPages > 0 && page > response.TotalPages)
-        {
-            return RedirectToAction(nameof(Index), new
-            {
-                keyword,
-                priceRange,
-                sort,
-                page = response.TotalPages
-            });
-        }
+        var menus = response?.Items.ToList() ?? [];
 
-        return View(new MenuListViewModel
+        if (result.Succeeded && response is not null)
         {
-            Menus = response?.Items ?? [],
-            Keyword = keyword?.Trim(),
-            PriceRange = priceRange,
-            Sort = sort,
-            Page = response?.Page ?? page,
-            PageSize = response?.PageSize ?? PageSize,
-            TotalItems = response?.TotalItems ?? 0,
-            TotalPages = response?.TotalPages ?? 0,
-            ErrorMessage = result.Succeeded
-                ? null
-                : result.Error ?? "Không thể tải danh sách thực đơn. Vui lòng thử lại sau."
-        });
-    }
-
-    [HttpGet("{menuId:int}")]
-    [AllowAnonymous]
-    public async Task<IActionResult> Details(
-        int menuId,
-        CancellationToken cancellationToken)
-    {
-        var result = await _apiClient.GetPublicMenuDetailAsync(menuId, cancellationToken);
-        if (!result.Succeeded || result.Value is null)
-        {
-            if (result.StatusCode == StatusCodes.Status404NotFound)
+            for (var page = 2; page <= response.TotalPages; page++)
             {
-                Response.StatusCode = StatusCodes.Status404NotFound;
-                return View(new MenuDetailViewModel { IsNotFound = true });
+                result = await apiClient.GetPublicMenusAsync(null, null, "name-asc", page, PageSize, cancellationToken);
+                if (!result.Succeeded || result.Value is null) break;
+                menus.AddRange(result.Value.Items);
             }
-
-            Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
-            return View(new MenuDetailViewModel
-            {
-                ErrorMessage = "Không thể tải thông tin thực đơn. Vui lòng thử lại sau."
-            });
         }
 
-        var menu = result.Value;
-        return View(new MenuDetailViewModel
+        var listSucceeded = result.Succeeded && result.Value is not null;
+        MenuGallerySetViewModel[] sets = [];
+        if (listSucceeded)
         {
-            MenuId = menu.MenuId,
-            MenuCode = menu.MenuCode,
-            MenuName = menu.MenuName,
-            Description = menu.Description,
-            PricePerTable = menu.PricePerTable,
-            DishCount = menu.DishCount,
-            Dishes = menu.Dishes
+            // Bound simultaneous requests while loading each set's actual dish membership.
+            using var gate = new SemaphoreSlim(6);
+            sets = await Task.WhenAll(menus
+                .OrderBy(menu => menu.MenuCode, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(menu => menu.MenuId)
+                .Select(async menu =>
+                {
+                    await gate.WaitAsync(cancellationToken);
+                    try
+                    {
+                        var detail = await apiClient.GetPublicMenuDetailAsync(menu.MenuId, cancellationToken);
+                        return new MenuGallerySetViewModel(menu,
+                            detail.Succeeded && detail.Value is not null
+                                ? detail.Value.Dishes.OrderBy(dish => dish.SortOrder).ToArray() : [],
+                            detail.Succeeded && detail.Value is not null
+                                ? null : "Không thể tải các món trong thực đơn này. Vui lòng thử lại sau.");
+                    }
+                    finally { gate.Release(); }
+                }));
+        }
+
+        return View(new MenuGalleryViewModel
+        {
+            Dishes = dishes.Succeeded ? dishes.Value ?? [] : [],
+            Menus = sets,
+            SelectedMenuId = menuId,
+            DishesError = dishes.Succeeded && dishes.Value is not null ? null : "Không thể tải danh sách món ăn. Vui lòng thử lại sau.",
+            MenusError = listSucceeded ? null : "Không thể tải danh sách thực đơn. Vui lòng thử lại sau."
         });
     }
+
+    // Existing bookmarks now select the set on the gallery instead of opening a detail page.
+    [HttpGet("{menuId:int}")]
+    public IActionResult Details(int menuId) =>
+        Redirect(Url.Action(nameof(Index), new { menuId }) + "#special-set-menu");
 }

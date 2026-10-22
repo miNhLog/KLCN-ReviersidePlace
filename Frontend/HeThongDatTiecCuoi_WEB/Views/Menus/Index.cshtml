@@ -1,143 +1,138 @@
 @using System.Globalization
-@model HeThongDatTiecCuoi_WEB.Models.Menus.MenuListViewModel
+@model HeThongDatTiecCuoi_WEB.Models.Menus.MenuGalleryViewModel
 @{
-    ViewData["Title"] = "Danh sách thực đơn";
+    ViewData["Title"] = "Thực đơn tiệc cưới";
     ViewData["PublicActivePage"] = "menus";
     var vi = CultureInfo.GetCultureInfo("vi-VN");
     var placeholderImage = Url.Content("~/images/menus/menu-banquet.png");
+    var categories = Model.Categories;
+    var groupCount = (int)Math.Ceiling(Model.Menus.Count / 6d);
 }
 
 @section Styles {
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&amp;family=Plus+Jakarta+Sans:wght@300..800&amp;family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&amp;display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&amp;family=Sora:wght@400;500;600&amp;family=Syne:wght@600;700;800&amp;display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="~/css/home.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/menu-list.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/menu-gallery.css" asp-append-version="true" />
 }
 
-<div class="home-page menu-list-page">
+<div class="home-page menu-gallery-page" data-menu-gallery data-selected-menu="@Model.SelectedMenuId">
     <partial name="_PublicHeader" />
-    <main>
-        <section class="menu-list-hero" aria-labelledby="menu-list-title">
-            <div class="menu-list-hero-image" aria-hidden="true"></div>
-            <div class="home-container menu-list-hero-content">
-                <span class="menu-list-eyebrow">THỰC ĐƠN</span>
-                <h1 id="menu-list-title">Tinh hoa ẩm thực<br />cho tiệc cưới trọn vẹn</h1>
-                <p>Sự kết hợp tinh tế giữa hương vị truyền thống và phong cách ẩm thực hiện đại, mang đến trải nghiệm ẩm thực hoàn hảo cho ngày trọng đại của bạn.</p>
-            </div>
+    <main id="main-content" tabindex="-1">
+        <section class="mg-hero" aria-labelledby="menu-gallery-title">
+            <img src="~/images/dishes/main-courses/photo-25.jpg" alt="" aria-hidden="true" fetchpriority="high" />
+            <h1 id="menu-gallery-title">THỰC ĐƠN <strong>TIỆC CƯỚI</strong></h1>
         </section>
-
-        <nav class="menu-breadcrumb" aria-label="Đường dẫn trang">
+        <section class="mg-custom" id="custom-menu" aria-labelledby="custom-menu-title">
+            <h2 class="mg-section-title" id="custom-menu-title">THỰC ĐƠN TỰ CHỌN</h2>
             <div class="home-container">
-                <a asp-controller="Home" asp-action="Index"><span class="material-symbols-outlined" aria-hidden="true">home</span> Trang chủ</a>
-                <span class="material-symbols-outlined" aria-hidden="true">chevron_right</span>
-                <span aria-current="page">Thực đơn</span>
-            </div>
-        </nav>
-
-        <section class="menu-catalog" aria-label="Danh sách thực đơn">
-            <div class="home-container">
-                <form class="menu-filter" method="get" asp-controller="Menus" asp-action="Index">
-                    <div class="menu-filter-field menu-filter-keyword">
-                        <label for="keyword">Tìm theo tên thực đơn</label>
-                        <div class="menu-input-with-icon">
-                            <span class="material-symbols-outlined" aria-hidden="true">search</span>
-                            <input id="keyword" name="keyword" value="@Model.Keyword" placeholder="Nhập tên thực đơn..." />
-                        </div>
-                    </div>
-                    <div class="menu-filter-field">
-                        <label for="priceRange">Khoảng giá</label>
-                        <select id="priceRange" name="priceRange">
-                            <option value="" selected="@(string.IsNullOrEmpty(Model.PriceRange))">Tất cả</option>
-                            <option value="under-10000000" selected="@(Model.PriceRange == "under-10000000")">Dưới 10 triệu</option>
-                            <option value="10000000-15000000" selected="@(Model.PriceRange == "10000000-15000000")">10 - 15 triệu</option>
-                            <option value="15000000-20000000" selected="@(Model.PriceRange == "15000000-20000000")">15 - 20 triệu</option>
-                            <option value="over-20000000" selected="@(Model.PriceRange == "over-20000000")">Trên 20 triệu</option>
-                        </select>
-                    </div>
-                    <input type="hidden" name="sort" value="@Model.Sort" />
-                    <button class="menu-filter-button" type="submit">
-                        <span class="material-symbols-outlined" aria-hidden="true">search</span>
-                        Lọc thực đơn
-                    </button>
-                </form>
-
-                <div class="menu-list-toolbar">
-                    <p>Có <strong>@Model.TotalItems</strong> thực đơn phù hợp</p>
-                    <form method="get" asp-controller="Menus" asp-action="Index" data-sort-form>
-                        <input type="hidden" name="keyword" value="@Model.Keyword" />
-                        <input type="hidden" name="priceRange" value="@Model.PriceRange" />
-                        <label for="sort">Sắp xếp theo</label>
-                        <select id="sort" name="sort">
-                            <option value="name-asc" selected="@(Model.Sort == "name-asc")">Tên A - Z</option>
-                            <option value="price-asc" selected="@(Model.Sort == "price-asc")">Giá thấp → cao</option>
-                            <option value="price-desc" selected="@(Model.Sort == "price-desc")">Giá cao → thấp</option>
-                            <option value="dish-count-desc" selected="@(Model.Sort == "dish-count-desc")">Nhiều món → ít món</option>
-                        </select>
-                    </form>
-                </div>
-
-                @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+                @if (Model.DishesError is not null)
                 {
-                    <div class="menu-empty-state" role="alert">
-                        <span class="material-symbols-outlined" aria-hidden="true">error</span>
-                        <h2>Không thể tải danh sách thực đơn</h2>
-                        <p>Không thể tải danh sách thực đơn. Vui lòng thử lại sau.</p>
-                        <a asp-controller="Menus" asp-action="Index">Thử lại</a>
-                    </div>
+                    <div class="mg-empty" role="alert"><p>@Model.DishesError</p><a asp-controller="Menus" asp-action="Index">Thử lại</a></div>
                 }
-                else if (Model.Menus.Count == 0)
+                else if (Model.Dishes.Count == 0)
                 {
-                    <div class="menu-empty-state">
-                        <span class="material-symbols-outlined" aria-hidden="true">search_off</span>
-                        <h2>Không tìm thấy thực đơn phù hợp</h2>
-                        <p>Không tìm thấy thực đơn phù hợp với tiêu chí của bạn.</p>
-                        <a asp-controller="Menus" asp-action="Index">Xóa bộ lọc</a>
-                    </div>
+                    <p class="mg-empty">Chưa có món ăn được giới thiệu.</p>
                 }
                 else
                 {
-                    <div class="public-menu-grid">
-                        @foreach (var menu in Model.Menus)
+                    <nav class="mg-tabs" aria-label="Nhóm món ăn" data-category-controls hidden>
+                        @for (var index = 0; index < categories.Count; index++)
                         {
-                            <article class="public-menu-card">
-                                <a class="public-menu-image" href="/menus/@menu.MenuId" aria-label="Xem thực đơn @menu.MenuName">
-                                    <img src="@(menu.ImageUrl ?? ProjectImages.GetImage("Menus", menu.MenuName) ?? placeholderImage)" alt="@menu.MenuName" loading="lazy" data-fallback="@placeholderImage" />
-                                </a>
-                                <div class="public-menu-content">
-                                    <h2>@menu.MenuName</h2>
-                                    <p class="public-menu-description">@(string.IsNullOrWhiteSpace(menu.Description) ? "Khám phá thực đơn được Riverside Palace lựa chọn cho ngày trọng đại." : menu.Description)</p>
-                                    <div class="public-menu-meta">
-                                        <span><span class="material-symbols-outlined" aria-hidden="true">restaurant</span> @menu.DishCount món</span>
-                                        <span class="public-menu-price"><strong>@menu.PricePerTable.ToString("N0", vi) VNĐ</strong><small>/ bàn</small></span>
-                                    </div>
-                                    <a class="public-menu-detail" href="/menus/@menu.MenuId">
-                                        Xem thực đơn <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
-                                    </a>
-                                </div>
-                            </article>
+                            <button type="button" data-category-index="@index" aria-controls="dish-category-@index" aria-pressed="false">@categories[index]</button>
                         }
-                    </div>
-                }
-
-                @if (Model.TotalPages > 1)
-                {
-                    <nav class="menu-pagination" aria-label="Phân trang danh sách thực đơn">
-                        <a class="@(Model.Page <= 1 ? "disabled" : null)" asp-controller="Menus" asp-action="Index" asp-route-keyword="@Model.Keyword" asp-route-priceRange="@Model.PriceRange" asp-route-sort="@Model.Sort" asp-route-page="@(Model.Page - 1)" aria-label="Trang trước" aria-disabled="@(Model.Page <= 1)"><span class="material-symbols-outlined" aria-hidden="true">chevron_left</span></a>
-                        @for (var pageNumber = 1; pageNumber <= Model.TotalPages; pageNumber++)
-                        {
-                            <a class="@(pageNumber == Model.Page ? "active" : null)" asp-controller="Menus" asp-action="Index" asp-route-keyword="@Model.Keyword" asp-route-priceRange="@Model.PriceRange" asp-route-sort="@Model.Sort" asp-route-page="@pageNumber" aria-current="@(pageNumber == Model.Page ? "page" : null)">@pageNumber</a>
-                        }
-                        <a class="@(Model.Page >= Model.TotalPages ? "disabled" : null)" asp-controller="Menus" asp-action="Index" asp-route-keyword="@Model.Keyword" asp-route-priceRange="@Model.PriceRange" asp-route-sort="@Model.Sort" asp-route-page="@(Model.Page + 1)" aria-label="Trang sau" aria-disabled="@(Model.Page >= Model.TotalPages)"><span class="material-symbols-outlined" aria-hidden="true">chevron_right</span></a>
                     </nav>
+                    @for (var index = 0; index < categories.Count; index++)
+                    {
+                        var categoryDishes = Model.Dishes.Where(dish => string.Equals(dish.Category.Trim(), categories[index], StringComparison.OrdinalIgnoreCase)).ToArray();
+                        <section id="dish-category-@index" data-category-panel="@index" aria-labelledby="dish-category-heading-@index">
+                            <h3 class="mg-category-heading" id="dish-category-heading-@index">@categories[index]</h3>
+                            @if (categoryDishes.Length == 0)
+                            {
+                                <p class="mg-empty">Chưa có món ăn trong nhóm này.</p>
+                            }
+                            <div class="mg-grid">
+                                @foreach (var dish in categoryDishes)
+                                {
+                                    var dishImage = string.IsNullOrWhiteSpace(dish.ImageUrl) ? placeholderImage : dish.ImageUrl;
+                                    <figure class="mg-food" data-custom-dish><a class="mg-zoom-trigger" href="@dishImage" target="_blank" rel="noopener" aria-label="Phóng to ảnh @dish.DishName"><img src="@dishImage" alt="@dish.DishName" loading="lazy" data-fallback="@placeholderImage" /><span class="mg-zoom-icon material-symbols-outlined" aria-hidden="true">zoom_in</span></a><figcaption>@dish.DishName</figcaption></figure>
+                                }
+                            </div>
+                            <button class="mg-expand" type="button" data-expand-category="@index" aria-expanded="false" aria-controls="dish-category-@index" hidden>Xem toàn bộ @categoryDishes.Length món ↓</button>
+                        </section>
+                    }
+                }
+            </div>
+        </section>
+        <section class="mg-sets" id="special-set-menu" aria-labelledby="set-menu-title">
+            <div class="mg-set-banner"><img src="~/images/dishes/main-courses/photo-30.jpg" alt="" aria-hidden="true" loading="lazy" /><h2 id="set-menu-title">SPECIAL SET MENU</h2></div>
+            <div class="home-container">
+                @if (Model.MenusError is not null)
+                {
+                    <div class="mg-empty" role="alert"><p>@Model.MenusError</p><a asp-controller="Menus" asp-action="Index">Thử lại</a></div>
+                }
+                else if (Model.Menus.Count == 0)
+                {
+                    <p class="mg-empty">Chưa có gói thực đơn được giới thiệu.</p>
+                }
+                else
+                {
+                    <div class="mg-selector" data-set-controls hidden>
+                        <p class="mg-collection-label">Bộ sưu tập @Model.Menus.Count thực đơn</p>
+                        <nav class="mg-groups" aria-label="Nhóm thực đơn">
+                            @for (var group = 0; group < groupCount; group++)
+                            {
+                                <button type="button" data-menu-group="@group" aria-pressed="false" aria-controls="menu-choices">@((group * 6 + 1).ToString("00")) — @(Math.Min((group + 1) * 6, Model.Menus.Count).ToString("00"))</button>
+                            }
+                        </nav>
+                        <div class="mg-menu-choices" id="menu-choices" aria-label="Chọn thực đơn">
+                            @for (var index = 0; index < Model.Menus.Count; index++)
+                            {
+                                var menu = Model.Menus[index].Menu;
+                                <button class="mg-choice" type="button" data-menu-index="@index" data-menu-id="@menu.MenuId" aria-pressed="false" aria-controls="set-menu-@menu.MenuId"><span class="mg-number">@((index + 1).ToString("00"))</span><span><strong>MENU @((index + 1).ToString("00"))</strong><small>@menu.PricePerTable.ToString("N0", vi) VNĐ</small></span></button>
+                            }
+                        </div>
+                    </div>
+                    <p class="mg-sr-only" data-menu-announcement role="status" aria-live="polite"></p>
+                    @foreach (var set in Model.Menus)
+                    {
+                        <section id="set-menu-@set.Menu.MenuId" data-menu-panel data-menu-id="@set.Menu.MenuId" aria-labelledby="set-menu-heading-@set.Menu.MenuId">
+                            <header class="mg-set-summary"><h3 id="set-menu-heading-@set.Menu.MenuId">@set.Menu.MenuName</h3><p>@set.Menu.Description</p><span class="mg-set-price">@if (set.ErrorMessage is null) {<text>@set.Dishes.Count món · </text>}@set.Menu.PricePerTable.ToString("N0", vi) VNĐ / bàn</span></header>
+                            @if (set.ErrorMessage is not null)
+                            {
+                                <div class="mg-empty" role="alert"><p>@set.ErrorMessage</p><a asp-controller="Menus" asp-action="Index" asp-route-menuId="@set.Menu.MenuId" asp-fragment="special-set-menu">Thử lại</a></div>
+                            }
+                            else if (set.Dishes.Count == 0)
+                            {
+                                <p class="mg-empty">Thực đơn hiện chưa có món ăn được công khai.</p>
+                            }
+                            else
+                            {
+                                <div class="mg-grid">
+                                    @foreach (var dish in set.Dishes)
+                                    {
+                                        var dishImage = string.IsNullOrWhiteSpace(dish.ImageUrl) ? placeholderImage : dish.ImageUrl;
+                                        <figure class="mg-food"><a class="mg-zoom-trigger" href="@dishImage" target="_blank" rel="noopener" aria-label="Phóng to ảnh @dish.DishName"><img src="@dishImage" alt="@dish.DishName" loading="lazy" data-fallback="@placeholderImage" /><span class="mg-zoom-icon material-symbols-outlined" aria-hidden="true">zoom_in</span></a><figcaption>@dish.DishName</figcaption></figure>
+                                    }
+                                </div>
+                            }
+                        </section>
+                    }
                 }
             </div>
         </section>
     </main>
+    <dialog class="mg-zoom-dialog" data-image-dialog data-fallback="@placeholderImage" aria-label="Ảnh món ăn phóng to" aria-describedby="menu-image-caption">
+        <button class="mg-zoom-close" type="button" data-close-image aria-label="Đóng ảnh phóng to"><span aria-hidden="true">×</span></button>
+        <img class="mg-zoom-image" alt="" />
+        <p id="menu-image-caption"></p>
+    </dialog>
     <partial name="_PublicFooter" />
     <div class="home-toast" role="status" aria-live="polite" hidden></div>
 </div>
 
 @section Scripts {
-    <script src="~/js/hall-list.js" asp-append-version="true"></script>
+    <script src="~/js/public-site.js" asp-append-version="true"></script>
+    <script src="~/js/menu-gallery.js" asp-append-version="true"></script>
 }
