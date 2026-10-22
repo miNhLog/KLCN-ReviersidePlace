@@ -14,4 +14,5 @@ public sealed class Contract
     public WeddingBooking Booking { get; set; } = null!;
     public Status Status { get; set; } = null!;
     public ICollection<Payment> Payments { get; set; } = [];
+    public ICollection<ContractAmendment> Amendments { get; set; } = [];
 }

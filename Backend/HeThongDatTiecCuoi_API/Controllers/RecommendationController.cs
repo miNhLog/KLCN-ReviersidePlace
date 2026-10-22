@@ -1,3 +1,4 @@
+using System.Data;
 using System.Security.Claims;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -1377,7 +1378,7 @@ public sealed class RecommendationController : ControllerBase
         if (request.GuestCount <= 0)
             return BadRequest(new { success = false, message = "Số lượng khách phải lớn hơn 0." });
 
-        await using var transaction = await _context.Database.BeginTransactionAsync();
+        await using var transaction = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable);
         try
         {
         var existingDataStatus = await _context.DataStatuses.SingleAsync(item => item.DataStatusCode == DataStatusCodes.Existing);
@@ -1590,6 +1591,11 @@ public sealed class RecommendationController : ControllerBase
             if (occupied)
                 return Conflict(new { success = false, message = "Lịch sảnh không còn AVAILABLE." });
         }
+        if (await _context.ScheduleChangeHolds.AnyAsync(hold =>
+                hold.HallScheduleId == schedule.HallScheduleId &&
+                hold.Status == ScheduleChangeHoldStatusCodes.Active &&
+                hold.ExpiresAt > RiversideBusinessClock.Now))
+            return Conflict(new { success = false, message = "Lịch sảnh đang được giữ tạm cho một yêu cầu đổi lịch." });
         if (request.GuestCount > schedule.Hall.MaximumCapacity ||
             (schedule.Hall.MinimumCapacity.HasValue && request.GuestCount < schedule.Hall.MinimumCapacity.Value))
             return BadRequest(new { success = false, message = "Số khách không phù hợp sức chứa sảnh." });

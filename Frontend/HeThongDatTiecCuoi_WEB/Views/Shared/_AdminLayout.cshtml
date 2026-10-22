@@ -233,7 +233,7 @@
                            class="sidebar-item @(IsActive("ManagerIncident") ? "active" : string.Empty)"
                            aria-current="@(IsActive("ManagerIncident") ? "page" : null)"
                            data-sidebar-tooltip="Sự cố"><span class="sidebar-icon" aria-hidden="true"><i class="fa-solid fa-triangle-exclamation"></i></span><span class="sidebar-label">Sự cố</span></a>
-                        <button type="button" class="sidebar-item developing" data-sidebar-tooltip="Thay đổi lịch"><span class="sidebar-icon" aria-hidden="true"><i class="fa-solid fa-calendar-days"></i></span><span class="sidebar-label">Thay đổi lịch</span></button>
+                        <a asp-controller="ManagerScheduleChange" asp-action="Index" class="sidebar-item @(IsActive("ManagerScheduleChange") ? "active" : string.Empty)" data-sidebar-tooltip="Phê duyệt thay đổi lịch"><span class="sidebar-icon" aria-hidden="true"><i class="fa-solid fa-calendar-days"></i></span><span class="sidebar-label">Phê duyệt thay đổi lịch</span></a>
                     </nav>
                 </section>
                 <section class="sidebar-section" aria-labelledby="managerReportMenuTitle">
@@ -283,7 +283,7 @@
                            class="sidebar-item @(IsActive("HallManagerIncident") ? "active" : string.Empty)"
                            aria-current="@(IsActive("HallManagerIncident") ? "page" : null)"
                            data-sidebar-tooltip="Sự cố"><span class="sidebar-icon" aria-hidden="true"><i class="fa-solid fa-triangle-exclamation"></i></span><span class="sidebar-label">Sự cố</span></a>
-                        <button type="button" class="sidebar-item developing" data-sidebar-tooltip="Thay đổi lịch"><span class="sidebar-icon" aria-hidden="true"><i class="fa-solid fa-calendar-days"></i></span><span class="sidebar-label">Thay đổi lịch</span></button>
+                        <a asp-controller="HallManagerScheduleChange" asp-action="Index" class="sidebar-item @(IsActive("HallManagerScheduleChange") ? "active" : string.Empty)" data-sidebar-tooltip="Thay đổi lịch"><span class="sidebar-icon" aria-hidden="true"><i class="fa-solid fa-calendar-days"></i></span><span class="sidebar-label">Thay đổi lịch</span></a>
                     </nav>
                 </section>
                 }

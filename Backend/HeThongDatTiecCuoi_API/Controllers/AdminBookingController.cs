@@ -257,6 +257,11 @@ public sealed class AdminBookingController : ControllerBase
         if (!createdSchedule && (schedule!.Status.StatusGroup != StatusGroups.HallSchedule || schedule.Status.StatusCode != HallScheduleStatusCodes.Available))
             return Conflict(new { message = "Lịch sảnh không còn ở trạng thái AVAILABLE." });
         var resolvedSchedule = schedule!;
+        if (!createdSchedule && await _context.ScheduleChangeHolds.AnyAsync(hold =>
+                hold.HallScheduleId == resolvedSchedule.HallScheduleId &&
+                hold.Status == ScheduleChangeHoldStatusCodes.Active &&
+                hold.ExpiresAt > RiversideBusinessClock.Now))
+            return Conflict(new { message = "Lịch sảnh đang được giữ tạm cho một yêu cầu đổi lịch." });
 
         Menu? menu = null;
         if (request.MenuId.HasValue)

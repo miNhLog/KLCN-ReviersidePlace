@@ -24,6 +24,7 @@ public sealed class PayOSPaymentService : IPaymentService
     private readonly IInvoicePdfGenerator _invoicePdfGenerator;
     private readonly IInvoiceDigitalSignatureService _signatureService;
     private readonly ILogger<PayOSPaymentService> _logger;
+    private readonly IScheduleChangeService _scheduleChanges;
 
     public PayOSPaymentService(
         ApplicationDbContext context,
@@ -33,6 +34,7 @@ public sealed class PayOSPaymentService : IPaymentService
         IEmailService emailService,
         IInvoicePdfGenerator invoicePdfGenerator,
         IInvoiceDigitalSignatureService signatureService,
+        IScheduleChangeService scheduleChanges,
         ILogger<PayOSPaymentService> logger)
     {
         _context = context;
@@ -42,6 +44,7 @@ public sealed class PayOSPaymentService : IPaymentService
         _emailService = emailService;
         _invoicePdfGenerator = invoicePdfGenerator;
         _signatureService = signatureService;
+        _scheduleChanges = scheduleChanges;
         _logger = logger;
     }
 
@@ -152,6 +155,7 @@ public sealed class PayOSPaymentService : IPaymentService
         var transaction = new PaymentTransactionEntity
         {
             DatTiecId = booking.BookingId,
+            TransactionType = PaymentTransactionTypes.Deposit,
             OrderCode = orderCode,
             SoTienGiaoDich = actualAmount,
             SoTienGhiNhan = businessDeposit,
@@ -213,6 +217,13 @@ public sealed class PayOSPaymentService : IPaymentService
             return true; // Trả về true để PayOS không retry vô tận
         }
 
+        if (tx.TransactionType == PaymentTransactionTypes.ScheduleChange)
+        {
+            return await _scheduleChanges.ProcessVerifiedPaymentAsync(
+                webhookData.OrderCode, webhookData.Amount, webhookData.Code ?? webhookBody.Code,
+                JsonSerializer.Serialize(webhookBody), CancellationToken.None);
+        }
+
         // 3. Cơ chế Idempotency: nếu đã PAID thì return thành công ngay, tránh ghi nhận tiền 2 lần
         if (tx.TrangThai == "PAID")
         {
@@ -238,7 +249,7 @@ public sealed class PayOSPaymentService : IPaymentService
     {
         var tx = await _context.PaymentTransactions
             .Include(t => t.Booking)
-            .SingleOrDefaultAsync(t => t.OrderCode == orderCode);
+            .SingleOrDefaultAsync(t => t.OrderCode == orderCode && t.TransactionType == PaymentTransactionTypes.Deposit);
 
         if (tx == null)
         {

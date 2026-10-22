@@ -37,6 +37,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <link rel="stylesheet" href="~/css/home.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/payment-deposit.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/schedule-change.css" asp-append-version="true" />
     <style>
         :root { --rp-gold: #B89758; --rp-ink: #111822; --rp-cream: #FDFBF7; }
         .rp-wrap { background: var(--rp-cream); padding: 96px 20px 80px; font-family: 'Plus Jakarta Sans', sans-serif; color: var(--rp-ink); min-height: 80vh; flex: 1; }
@@ -269,6 +270,8 @@
                     </div>
                 </section>
 
+                <partial name="_ScheduleChange" model="detail" />
+
                 <!-- MODAL HỦY GIỮ CHỖ -->
                 @if (detail.CanCancelOnline && !detail.IsCancelled)
                 {
@@ -329,6 +332,7 @@
     <script src="~/js/public-site.js" asp-append-version="true"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
     <script src="~/js/payment-deposit.js" asp-append-version="true"></script>
+    <script src="~/js/schedule-change.js" asp-append-version="true"></script>
     <script>
         (function () {
             var codeInput = document.getElementById('bookingCodeInput');
