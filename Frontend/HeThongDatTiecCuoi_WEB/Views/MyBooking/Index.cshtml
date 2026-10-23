@@ -114,7 +114,7 @@
             <div>
                 <span class="rp-eyebrow">Tra cứu tiệc cưới trực tuyến </span>
                 <h1 class="rp-h1">Tiệc của tôi</h1>
-                <p class="rp-sub">Nhập mã đặt tiệc (ví dụ DT-20261012-0001) và số điện thoại 10 số đã dùng khi giữ chỗ để xem hồ sơ chi tiết, thực đơn 7 món, chi phí và hủy giữ chỗ online trong 48 giờ.</p>
+                <p class="rp-sub">Nhập mã đặt tiệc cùng email hoặc số điện thoại đã dùng khi giữ chỗ để xem hồ sơ, chi phí và gửi yêu cầu thay đổi lịch.</p>
             </div>
 
             <!-- PHẦN 1: FORM TRA CỨU -->
@@ -132,10 +132,10 @@
                             <span asp-validation-for="BookingCode" style="font-size:12px;color:#DC2626;"></span>
                         </div>
                         <div class="rp-field">
-                            <label asp-for="PhoneNumber">Số điện thoại <span class="req">*</span></label>
-                            <input asp-for="PhoneNumber" id="phoneInput" placeholder="0901234567" maxlength="10" inputmode="numeric" autocomplete="tel" />
-                            <div class="hint">SĐT Việt Nam 10 số, bắt đầu bằng 0.</div>
-                            <div class="field-error" id="phoneError">Số điện thoại phải gồm đúng 10 số và bắt đầu bằng 0.</div>
+                            <label asp-for="PhoneNumber">Email hoặc số điện thoại <span class="req">*</span></label>
+                            <input asp-for="PhoneNumber" id="phoneInput" placeholder="email@gmail.com hoặc 0901234567" maxlength="320" inputmode="text" autocomplete="username" />
+                            <div class="hint">Dùng đúng email hoặc số điện thoại đã đăng ký với tiệc.</div>
+                            <div class="field-error" id="phoneError">Vui lòng nhập email hợp lệ hoặc số điện thoại 10 số bắt đầu bằng 0.</div>
                             <span asp-validation-for="PhoneNumber" style="font-size:12px;color:#DC2626;"></span>
                         </div>
                     </div>
@@ -300,7 +300,7 @@
                 <div class="rp-alert-empty">
                     <i class="fa-regular fa-envelope-open" style="font-size:26px;color:#B89758;"></i>
                     <p style="margin:10px 0 4px;font-weight:700;color:#111822;">Chưa có hồ sơ nào được hiển thị</p>
-                    <p style="margin:0;">Nhập mã đặt tiệc và số điện thoại ở biểu mẫu phía trên rồi bấm <b>“Tra cứu hồ sơ tiệc cưới”</b>.</p>
+                    <p style="margin:0;">Nhập mã đặt tiệc cùng email hoặc số điện thoại ở biểu mẫu phía trên rồi bấm <b>“Tra cứu hồ sơ tiệc cưới”</b>.</p>
                 </div>
             }
 
@@ -341,19 +341,25 @@
             var phoneErr = document.getElementById('phoneError');
             var form = document.getElementById('lookupForm');
             var codeRe = /^DT-\d{8}-[A-Z0-9]{4,}$/;
-            var phoneRe = /^0\d{9}$/;
+            var contactRe = /^(0\d{9}|[^\s@@]+@@[^\s@@]+\.[^\s@@]+)$/i;
             function normCode() { if (codeInput) codeInput.value = (codeInput.value || '').trim().toUpperCase(); }
             function validateLive() {
                 if (codeInput && codeErr) codeErr.style.display = (codeInput.value.trim() === '' || codeRe.test(codeInput.value.trim().toUpperCase())) ? 'none' : 'block';
-                if (phoneInput && phoneErr) phoneErr.style.display = (phoneInput.value.trim() === '' || phoneRe.test(phoneInput.value.trim())) ? 'none' : 'block';
+                if (phoneInput && phoneErr) phoneErr.style.display = (phoneInput.value.trim() === '' || contactRe.test(phoneInput.value.trim())) ? 'none' : 'block';
             }
             if (codeInput) { codeInput.addEventListener('input', validateLive); codeInput.addEventListener('blur', function () { normCode(); validateLive(); }); }
-            if (phoneInput) { phoneInput.addEventListener('input', function () { phoneInput.value = (phoneInput.value || '').replace(/\D/g, '').slice(0, 10); validateLive(); }); }
+            if (phoneInput) {
+                phoneInput.addEventListener('input', validateLive);
+                phoneInput.addEventListener('blur', function () {
+                    phoneInput.value = (phoneInput.value || '').trim();
+                    validateLive();
+                });
+            }
             if (form) {
                 form.addEventListener('submit', function (e) {
                     normCode();
                     var okCode = codeInput && codeRe.test((codeInput.value || '').trim());
-                    var okPhone = phoneInput && phoneRe.test((phoneInput.value || '').trim());
+                    var okPhone = phoneInput && contactRe.test((phoneInput.value || '').trim());
                     validateLive();
                     if (!okCode || !okPhone) {
                         e.preventDefault();

@@ -56,7 +56,7 @@ public sealed class ScheduleChangeService : IScheduleChangeService
     private readonly ApplicationDbContext _context;
     private readonly IStatusService _statuses;
     private readonly IScheduleChangePolicyService _policies;
-    private readonly ISmsSender _sms;
+    private readonly IEmailService _email;
     private readonly IPasswordHasher<ScheduleChangeOtp> _otpHasher;
     private readonly IOptions<SmsOptions> _smsOptions;
     private readonly IOptions<AppPayOSOptions> _payOsOptions;
@@ -66,11 +66,11 @@ public sealed class ScheduleChangeService : IScheduleChangeService
     private readonly ILogger<ScheduleChangeService> _logger;
 
     public ScheduleChangeService(ApplicationDbContext context, IStatusService statuses,
-        IScheduleChangePolicyService policies, ISmsSender sms, IPasswordHasher<ScheduleChangeOtp> otpHasher,
+        IScheduleChangePolicyService policies, IEmailService email, IPasswordHasher<ScheduleChangeOtp> otpHasher,
         IOptions<SmsOptions> smsOptions, IOptions<AppPayOSOptions> payOsOptions, IHostEnvironment environment,
         PayOSClient payOs, INotificationService notifications, ILogger<ScheduleChangeService> logger)
     {
-        _context = context; _statuses = statuses; _policies = policies; _sms = sms; _otpHasher = otpHasher;
+        _context = context; _statuses = statuses; _policies = policies; _email = email; _otpHasher = otpHasher;
         _smsOptions = smsOptions; _payOsOptions = payOsOptions; _environment = environment; _payOs = payOs;
         _notifications = notifications; _logger = logger;
     }
@@ -162,7 +162,9 @@ public sealed class ScheduleChangeService : IScheduleChangeService
         }
 
         var now = RiversideBusinessClock.Now;
-        var phoneHash = Hash(request.PhoneNumber.Trim());
+        if (string.IsNullOrWhiteSpace(booking.Customer.Email))
+            throw new ScheduleChangeException("Booking chưa có email nhận OTP. Vui lòng liên hệ Riverside Palace để cập nhật email.", StatusCodes.Status409Conflict);
+        var contactHash = Hash(booking.Customer.Email.Trim().ToLowerInvariant());
         var ipHash = Hash(clientIp);
         var last = await _context.ScheduleChangeOtps.AsNoTracking()
             .Where(x => x.BookingId == booking.BookingId && x.Purpose == request.Purpose)
@@ -170,21 +172,32 @@ public sealed class ScheduleChangeService : IScheduleChangeService
         if (!ScheduleChangeBusinessRules.CanResendOtp(last?.CreatedAt, now))
             throw new ScheduleChangeException("Vui lòng chờ đủ 60 giây trước khi gửi lại OTP.", StatusCodes.Status429TooManyRequests);
         if (await _context.ScheduleChangeOtps.CountAsync(x =>
-                (x.BookingId == booking.BookingId || x.PhoneHash == phoneHash || x.IpHash == ipHash) &&
+                (x.BookingId == booking.BookingId || x.PhoneHash == contactHash || x.IpHash == ipHash) &&
                 x.CreatedAt > now.AddHours(-1), cancellationToken) >= 5)
             throw new ScheduleChangeException("Đã vượt giới hạn gửi OTP. Vui lòng thử lại sau.", StatusCodes.Status429TooManyRequests);
 
-        var code = _environment.IsDevelopment() &&
-                   string.Equals(_smsOptions.Value.Provider, "Development", StringComparison.OrdinalIgnoreCase)
-            ? _smsOptions.Value.DevelopmentCode
+        var configuredDevelopmentCode = _smsOptions.Value.DevelopmentCode?.Trim();
+        var useDevelopmentCode = _environment.IsDevelopment() &&
+                                 string.Equals(_smsOptions.Value.Provider, "Development", StringComparison.OrdinalIgnoreCase) &&
+                                 configuredDevelopmentCode is { Length: 6 } && configuredDevelopmentCode.All(char.IsDigit);
+        var code = useDevelopmentCode
+            ? configuredDevelopmentCode!
             : RandomNumberGenerator.GetInt32(0, 1_000_000).ToString("D6");
-        if (code is not { Length: 6 } || !await _sms.SendOtpAsync(booking.Customer.PhoneNumber, code, cancellationToken))
-            throw new ScheduleChangeException("Dịch vụ SMS chưa được cấu hình hoặc gửi OTP thất bại.", StatusCodes.Status503ServiceUnavailable);
+        try
+        {
+            await _email.SendScheduleChangeOtpEmailAsync(booking.Customer.Email, booking.Customer.FullName,
+                booking.BookingCode, code, 5, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Gửi OTP đổi lịch qua email thất bại cho BookingId={BookingId}", booking.BookingId);
+            throw new ScheduleChangeException("Dịch vụ email chưa được cấu hình hoặc gửi OTP thất bại.", StatusCodes.Status503ServiceUnavailable);
+        }
 
         var otp = new ScheduleChangeOtp
         {
             BookingId = booking.BookingId, ScheduleChangeId = request.ScheduleChangeId,
-            Purpose = request.Purpose, PhoneHash = phoneHash, IpHash = ipHash,
+            Purpose = request.Purpose, PhoneHash = contactHash, IpHash = ipHash,
             CreatedAt = now, ExpiresAt = now.AddMinutes(5)
         };
         otp.CodeHash = _otpHasher.HashPassword(otp, code);
@@ -907,10 +920,18 @@ public sealed class ScheduleChangeService : IScheduleChangeService
         .Include(x => x.Quotes).Include(x => x.Holds).Include(x => x.StatusHistory)
         .Include(x => x.PaymentTransactions).Include(x => x.Refunds);
 
-    private async Task<WeddingBooking> FindBookingAsync(string code, string phone, CancellationToken cancellationToken) =>
-        await BookingQuery(false).SingleOrDefaultAsync(x => x.BookingCode == code.Trim().ToUpperInvariant() &&
-            x.Customer.PhoneNumber == phone.Trim() && x.Customer.DataStatus.DataStatusCode == DataStatusCodes.Existing, cancellationToken)
-        ?? throw new ScheduleChangeException("Mã đặt tiệc hoặc số điện thoại không chính xác.", StatusCodes.Status404NotFound);
+    private async Task<WeddingBooking> FindBookingAsync(string code, string contact, CancellationToken cancellationToken)
+    {
+        var normalizedContact = contact.Trim();
+        var normalizedEmail = normalizedContact.ToLowerInvariant();
+        var lookupByEmail = normalizedContact.Contains('@');
+        return await BookingQuery(false).SingleOrDefaultAsync(x =>
+                x.BookingCode == code.Trim().ToUpperInvariant() &&
+                (lookupByEmail ? x.Customer.Email != null && x.Customer.Email.ToLower() == normalizedEmail
+                    : x.Customer.PhoneNumber == normalizedContact) &&
+                x.Customer.DataStatus.DataStatusCode == DataStatusCodes.Existing, cancellationToken)
+            ?? throw new ScheduleChangeException("Mã đặt tiệc hoặc email/số điện thoại không chính xác.", StatusCodes.Status404NotFound);
+    }
 
     private async Task<WeddingScheduleChange> LoadChangeAsync(int id, bool tracking, CancellationToken cancellationToken)
     {

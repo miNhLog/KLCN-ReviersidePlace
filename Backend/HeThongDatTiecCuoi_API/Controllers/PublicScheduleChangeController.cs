@@ -26,7 +26,7 @@ public sealed class PublicScheduleChangeController : ControllerBase
     public Task<IActionResult> SendOtp([FromBody] SendScheduleChangeOtpRequest request) => ExecuteAsync(async () =>
     {
         await _service.SendOtpAsync(request, HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown", HttpContext.RequestAborted);
-        return new { message = "Nếu thông tin hợp lệ, OTP đã được gửi qua SMS." };
+        return new { message = "Nếu thông tin hợp lệ, OTP đã được gửi tới email của booking." };
     });
 
     [HttpPost("otp/verify")]

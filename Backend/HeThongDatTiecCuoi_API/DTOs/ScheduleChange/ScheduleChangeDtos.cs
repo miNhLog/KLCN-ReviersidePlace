@@ -5,7 +5,7 @@ namespace HeThongDatTiecCuoi_API.DTOs.ScheduleChange;
 public class ScheduleChangeLookupRequest
 {
     [Required, StringLength(50)] public string BookingCode { get; init; } = string.Empty;
-    [Required, StringLength(20)] public string PhoneNumber { get; init; } = string.Empty;
+    [Required, StringLength(320)] public string PhoneNumber { get; init; } = string.Empty;
 }
 
 public sealed class ScheduleChangeAvailabilityRequest : ScheduleChangeLookupRequest
@@ -28,7 +28,7 @@ public sealed class VerifyScheduleChangeOtpRequest : SendScheduleChangeOtpReques
 public sealed class CreateScheduleChangeRequest
 {
     [Required, StringLength(50)] public string BookingCode { get; init; } = string.Empty;
-    [Required, StringLength(20)] public string PhoneNumber { get; init; } = string.Empty;
+    [Required, StringLength(320)] public string PhoneNumber { get; init; } = string.Empty;
     [Required, StringLength(200)] public string VerificationToken { get; init; } = string.Empty;
     [Range(1, int.MaxValue)] public int NewHallId { get; init; }
     [Required] public DateTime NewDate { get; init; }

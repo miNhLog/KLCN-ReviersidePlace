@@ -4,77 +4,113 @@
     var eligibility = ViewBag.ScheduleChangeEligibility as ScheduleChangeEligibilityViewModel;
     var changes = ViewBag.ScheduleChanges as List<ScheduleChangeViewModel> ?? [];
     var open = changes.FirstOrDefault(x => new[] { "PENDING", "UNDER_REVIEW", "AWAITING_QUOTE_ACCEPTANCE", "PAYMENT_PENDING", "RECONCILIATION_REQUIRED" }.Contains(x.Status));
+    var customerEmail = Model.Email?.Trim() ?? string.Empty;
+    var emailAt = customerEmail.IndexOf('@');
+    var maskedEmail = emailAt > 0 ? $"{customerEmail[..Math.Min(2, emailAt)]}***{customerEmail[emailAt..]}" : "email đã đăng ký";
 }
 <section class="rp-card schedule-change" id="scheduleChangeSection"
-         data-booking-code="@Model.BookingCode" data-phone="@Model.PhoneNumber">
+         data-booking-code="@Model.BookingCode" data-phone="@Model.PhoneNumber" data-email="@Model.Email">
     <div class="sc-heading">
-        <div><span class="rp-eyebrow">Điều chỉnh lịch tổ chức</span><h2>Yêu cầu thay đổi lịch</h2></div>
+        <div>
+            <span class="rp-eyebrow">Điều chỉnh lịch tổ chức</span>
+            <h2>Thay đổi lịch tiệc</h2>
+            <p>Chọn lịch mới, kiểm tra sảnh trống và xác nhận bằng OTP gửi qua email.</p>
+        </div>
         @if (eligibility is not null)
         {
-            <span class="sc-policy">POL-CHG-05 · phiên bản @eligibility.PolicyVersion</span>
+            <span class="sc-policy"><i class="fa-solid fa-shield-halved"></i> POL-CHG-05 · v@eligibility.PolicyVersion</span>
         }
     </div>
 
     @if (eligibility is null)
     {
-        <div class="sc-alert danger">@(ViewBag.ScheduleChangeEligibilityError ?? "Chưa thể kiểm tra điều kiện đổi lịch lúc này.")</div>
+        <div class="sc-alert danger"><i class="fa-solid fa-circle-exclamation"></i> @(ViewBag.ScheduleChangeEligibilityError ?? "Chưa thể kiểm tra điều kiện đổi lịch lúc này.")</div>
     }
     else if (!eligibility.CanRequestOnline)
     {
-        <div class="sc-alert danger"><b>Không thể gửi yêu cầu online.</b> @eligibility.Reason</div>
+        <div class="sc-alert danger"><i class="fa-solid fa-circle-xmark"></i> <b>Không thể gửi yêu cầu online.</b> @eligibility.Reason</div>
     }
     else if (open is not null)
     {
-        <div class="sc-alert info">Booking đang có yêu cầu <b>#@open.ScheduleChangeId</b> – @open.DisplayStatus. Bạn không thể gửi thêm yêu cầu cho tới khi yêu cầu này kết thúc.</div>
+        <div class="sc-alert info"><i class="fa-solid fa-clock-rotate-left"></i> Booking đang có yêu cầu <b>#@open.ScheduleChangeId</b> – @open.DisplayStatus. Bạn có thể theo dõi tiến trình bên dưới.</div>
     }
     else
     {
-        <div class="sc-summary">
-            <span><small>Lịch hiện tại</small><b>@Model.Shift · @Model.EventDate.ToString("dd/MM/yyyy")</b><em>@Model.HallName</em></span>
-            <span><small>Phụ phí dự kiến</small><b>@eligibility.ScheduleChangeFee.ToString("N0") ₫</b><em>Có thể cộng chênh lệch giá sảnh</em></span>
-            <span><small>Ngày mới sớm nhất</small><b>@eligibility.MinimumNewDate.ToString("dd/MM/yyyy")</b><em>Cách ngày gửi ít nhất 14 ngày</em></span>
+        <div class="sc-overview">
+            <div class="sc-current-date">
+                <span class="sc-icon"><i class="fa-regular fa-calendar-check"></i></span>
+                <div><small>Lịch hiện tại</small><b>@Model.EventDate.ToString("dd/MM/yyyy") · @Model.Shift</b><em>@Model.HallName</em></div>
+            </div>
+            <div class="sc-facts">
+                <span><small>Ngày mới sớm nhất</small><b>@eligibility.MinimumNewDate.ToString("dd/MM/yyyy")</b></span>
+                <span><small>Phụ phí dự kiến</small><b>@eligibility.ScheduleChangeFee.ToString("N0") ₫</b></span>
+                <span><small>Xác thực</small><b><i class="fa-regular fa-envelope"></i> Email OTP</b></span>
+            </div>
         </div>
+
+        <div class="sc-steps" aria-label="Quy trình gửi yêu cầu">
+            <span class="active"><b>1</b> Chọn lịch mới</span>
+            <i class="fa-solid fa-chevron-right"></i>
+            <span><b>2</b> Xác nhận email</span>
+            <i class="fa-solid fa-chevron-right"></i>
+            <span><b>3</b> Chờ báo giá</span>
+        </div>
+
         <form id="scheduleChangeForm" class="sc-form">
             @Html.AntiForgeryToken()
             <input type="hidden" name="bookingCode" value="@Model.BookingCode" />
             <input type="hidden" name="phoneNumber" value="@Model.PhoneNumber" />
             <input type="hidden" name="verificationToken" id="scVerificationToken" />
-            <label>Ngày muốn chuyển<input type="date" name="newDate" id="scDate" min="@eligibility.MinimumNewDate.ToString("yyyy-MM-dd")" required /></label>
-            <label>Ca tổ chức<select name="newShift" id="scShift" required><option value="">Chọn ca</option><option value="Ca trưa">Ca trưa</option><option value="Ca tối">Ca tối</option></select></label>
-            <button type="button" class="sc-btn secondary" id="scCheckAvailability">Kiểm tra lịch trống</button>
-            <label class="wide">Sảnh khả dụng<select name="newHallId" id="scHall" required disabled><option value="">Vui lòng kiểm tra lịch trước</option></select></label>
-            <div id="scAvailabilityNote" class="wide sc-help" aria-live="polite"></div>
-            <label class="wide">Lý do đổi lịch<textarea name="reason" id="scReason" minlength="3" maxlength="500" required></textarea></label>
-            <div class="wide sc-confirm"><b>Lưu ý:</b> lịch mới chưa được giữ chỗ khi gửi yêu cầu. Riverside Palace chỉ giữ lịch sau khi bạn đồng ý báo giá.</div>
-            <button type="button" class="sc-btn primary wide" id="scStartOtp">Xác thực số điện thoại và gửi yêu cầu</button>
+
+            <div class="sc-form-card">
+                <div class="sc-card-title"><span>1</span><div><b>Chọn thời gian</b><small>Ngày mới phải từ @eligibility.MinimumNewDate.ToString("dd/MM/yyyy")</small></div></div>
+                <div class="sc-form-row">
+                    <label>Ngày muốn chuyển<input type="date" name="newDate" id="scDate" min="@eligibility.MinimumNewDate.ToString("yyyy-MM-dd")" required /></label>
+                    <label>Ca tổ chức<select name="newShift" id="scShift" required><option value="">Chọn ca</option><option value="Ca trưa">Ca trưa</option><option value="Ca tối">Ca tối</option></select></label>
+                    <button type="button" class="sc-btn secondary sc-check" id="scCheckAvailability"><i class="fa-solid fa-magnifying-glass"></i> Kiểm tra</button>
+                </div>
+            </div>
+
+            <div class="sc-form-card">
+                <div class="sc-card-title"><span>2</span><div><b>Chọn sảnh</b><small>Trạng thái trống được cập nhật tại thời điểm kiểm tra</small></div></div>
+                <label>Sảnh khả dụng<select name="newHallId" id="scHall" required disabled><option value="">Chọn ngày và ca để kiểm tra</option></select></label>
+                <div id="scAvailabilityNote" class="sc-help" aria-live="polite"></div>
+            </div>
+
+            <div class="sc-form-card">
+                <div class="sc-card-title"><span>3</span><div><b>Hoàn tất yêu cầu</b><small>Mô tả ngắn gọn để nhân viên hỗ trợ nhanh hơn</small></div></div>
+                <label>Lý do đổi lịch<textarea name="reason" id="scReason" minlength="3" maxlength="500" required placeholder="Ví dụ: Gia đình cần dời ngày tổ chức..."></textarea></label>
+                <div class="sc-email-note"><i class="fa-regular fa-envelope"></i><span>OTP sẽ được gửi đến email đã đăng ký: <b>@maskedEmail</b></span></div>
+                <div class="sc-confirm"><i class="fa-solid fa-circle-info"></i><span>Lịch mới chỉ được giữ sau khi Riverside Palace duyệt và bạn đồng ý báo giá.</span></div>
+                <button type="button" class="sc-btn primary sc-submit" id="scStartOtp"><i class="fa-solid fa-paper-plane"></i> Nhận OTP qua email và gửi yêu cầu</button>
+            </div>
         </form>
     }
 
     <div class="sc-history">
-        <h3>Lịch sử thay đổi lịch</h3>
+        <div class="sc-history-title"><div><span class="rp-eyebrow">Theo dõi xử lý</span><h3>Lịch sử thay đổi lịch</h3></div><span class="sc-count">@changes.Count yêu cầu</span></div>
         @if (changes.Count == 0)
         {
-            <p class="sc-empty">Booking chưa có yêu cầu thay đổi lịch.</p>
+            <div class="sc-empty"><i class="fa-regular fa-calendar"></i><b>Chưa có yêu cầu thay đổi lịch</b><span>Các yêu cầu đã gửi sẽ được hiển thị tại đây.</span></div>
         }
         @foreach (var item in changes.OrderByDescending(x => x.RequestedAt))
         {
             <article class="sc-request" data-change-id="@item.ScheduleChangeId">
-                <header><b>Yêu cầu #@item.ScheduleChangeId</b><span class="sc-status @item.Status.ToLowerInvariant()">@item.DisplayStatus</span></header>
-                <div class="sc-route"><span>@item.OldShift · @item.OldDate.ToString("dd/MM/yyyy")<small>@item.OldHallName</small></span><i class="fa-solid fa-arrow-right"></i><span>@item.NewShift · @item.NewDate.ToString("dd/MM/yyyy")<small>@item.NewHallName</small></span></div>
-                <p><b>Lý do:</b> @item.Reason</p>
-                <p><b>Ngày gửi:</b> @item.RequestedAt.ToString("dd/MM/yyyy HH:mm") · <b>Phụ phí:</b> @item.AppliedFee.ToString("N0") ₫</p>
+                <header><div><b>Yêu cầu #@item.ScheduleChangeId</b><small>@item.RequestedAt.ToString("HH:mm · dd/MM/yyyy")</small></div><span class="sc-status @item.Status.ToLowerInvariant()">@item.DisplayStatus</span></header>
+                <div class="sc-route"><span><small>Lịch cũ</small><b>@item.OldDate.ToString("dd/MM/yyyy") · @item.OldShift</b><em>@item.OldHallName</em></span><i class="fa-solid fa-arrow-right-long"></i><span><small>Lịch đề xuất</small><b>@item.NewDate.ToString("dd/MM/yyyy") · @item.NewShift</b><em>@item.NewHallName</em></span></div>
+                <div class="sc-meta"><span><small>Lý do</small><b>@item.Reason</b></span><span><small>Phụ phí</small><b>@item.AppliedFee.ToString("N0") ₫</b></span></div>
                 @if (!string.IsNullOrWhiteSpace(item.ResolutionReason)) { <p class="sc-alert danger">@item.ResolutionReason</p> }
                 @if (item.Quote is not null)
                 {
                     <details class="sc-quote" open="@(item.Status == "AWAITING_QUOTE_ACCEPTANCE")">
-                        <summary>Chi tiết báo giá phiên bản @item.Quote.Version</summary>
+                        <summary>Chi tiết báo giá · phiên bản @item.Quote.Version</summary>
                         <div class="sc-money"><span>Giá sảnh cũ<b>@item.Quote.OldHallPrice.ToString("N0") ₫</b></span><span>Giá sảnh mới<b>@item.Quote.NewHallPrice.ToString("N0") ₫</b></span><span>Chênh lệch<b>@item.Quote.HallPriceDifference.ToString("N0") ₫</b></span><span>Phụ phí vận hành<b>@item.Quote.ScheduleChangeFee.ToString("N0") ₫</b></span><span>Phải thanh toán thêm<b>@item.Quote.AmountDue.ToString("N0") ₫</b></span><span>Giảm trừ / hoàn dự kiến<b>@Math.Max(item.Quote.CreditAmount, item.Quote.RefundAmount).ToString("N0") ₫</b></span></div>
                     </details>
                 }
                 <div class="sc-actions">
                     @if (item.Status == "AWAITING_QUOTE_ACCEPTANCE" && item.Quote is not null)
                     {
-                        <button class="sc-btn primary sc-accept-quote" data-id="@item.ScheduleChangeId" data-quote="@item.Quote.QuoteId">Đồng ý báo giá bằng OTP</button>
+                        <button class="sc-btn primary sc-accept-quote" data-id="@item.ScheduleChangeId" data-quote="@item.Quote.QuoteId"><i class="fa-regular fa-envelope"></i> Đồng ý báo giá bằng OTP email</button>
                     }
                     @if (item.Status is "PENDING" or "UNDER_REVIEW" or "AWAITING_QUOTE_ACCEPTANCE")
                     {
@@ -87,7 +123,7 @@
                 </div>
                 @if (item.History.Count > 0)
                 {
-                    <details><summary>Lịch sử xử lý</summary><ol class="sc-timeline">@foreach (var h in item.History.OrderBy(x => x.ChangedAt)) { <li><b>@ScheduleChangeStatusDisplay.Name(h.ToStatus)</b><span>@h.ChangedAt.ToString("dd/MM/yyyy HH:mm")</span><small>@h.Note</small></li> }</ol></details>
+                    <details class="sc-process"><summary>Lịch sử xử lý</summary><ol class="sc-timeline">@foreach (var h in item.History.OrderBy(x => x.ChangedAt)) { <li><b>@ScheduleChangeStatusDisplay.Name(h.ToStatus)</b><span>@h.ChangedAt.ToString("dd/MM/yyyy HH:mm")</span><small>@h.Note</small></li> }</ol></details>
                 }
             </article>
         }
@@ -95,7 +131,16 @@
 </section>
 
 <div class="sc-modal" id="scOtpModal" role="dialog" aria-modal="true" aria-labelledby="scOtpTitle" hidden>
-    <div class="sc-modal-card"><button type="button" class="sc-close" aria-label="Đóng">×</button><h3 id="scOtpTitle">Xác thực OTP SMS</h3><p>Mã 6 số được gửi tới <b id="scMaskedPhone"></b>. Không chia sẻ mã này.</p><input id="scOtpCode" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" autocomplete="one-time-code" placeholder="••••••" /><p id="scOtpTimer" class="sc-help"></p><div id="scOtpMessage" class="sc-help" aria-live="polite"></div><button type="button" class="sc-btn primary" id="scVerifyOtp">Xác nhận</button><button type="button" class="sc-btn secondary" id="scResendOtp" disabled>Gửi lại OTP</button></div>
+    <div class="sc-modal-card">
+        <button type="button" class="sc-close" aria-label="Đóng">×</button>
+        <div class="sc-modal-icon"><i class="fa-regular fa-envelope"></i></div>
+        <h3 id="scOtpTitle">Xác thực qua email</h3>
+        <p>Mã OTP gồm 6 số đã được gửi đến <b id="scMaskedEmail"></b>. Mã có hiệu lực trong 5 phút.</p>
+        <input id="scOtpCode" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" autocomplete="one-time-code" placeholder="••••••" aria-label="Mã OTP gồm 6 số" />
+        <p id="scOtpTimer" class="sc-help"></p>
+        <div id="scOtpMessage" class="sc-help" aria-live="polite"></div>
+        <div class="sc-modal-actions"><button type="button" class="sc-btn primary" id="scVerifyOtp">Xác nhận OTP</button><button type="button" class="sc-btn secondary" id="scResendOtp" disabled>Gửi lại</button></div>
+    </div>
 </div>
 
 <div class="sc-modal" id="scPaymentModal" role="dialog" aria-modal="true" aria-labelledby="scPaymentTitle" hidden>

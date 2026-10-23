@@ -29,6 +29,30 @@ public class SmtpEmailService : IEmailService
     {
     }
 
+    public Task SendScheduleChangeOtpEmailAsync(
+        string recipientEmail,
+        string customerName,
+        string bookingCode,
+        string otpCode,
+        int lifetimeMinutes,
+        CancellationToken cancellationToken = default) =>
+        SendAsync(
+            recipientEmail,
+            $"Riverside Palace · Mã xác nhận thay đổi lịch {bookingCode}",
+            $"""
+            Xin chào {customerName},
+
+            Mã OTP xác nhận yêu cầu thay đổi lịch cho booking {bookingCode} là: {otpCode}
+
+            Mã có hiệu lực trong {lifetimeMinutes} phút và chỉ sử dụng được một lần.
+            Không chia sẻ mã này với bất kỳ ai. Riverside Palace không yêu cầu bạn cung cấp OTP qua điện thoại.
+
+            Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email và liên hệ Riverside Palace.
+
+            Riverside Palace Convention Center
+            """,
+            cancellationToken);
+
     public Task SendFirstPasswordOtpEmailAsync(
         string recipientEmail,
         string otpCode,

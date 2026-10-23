@@ -50,7 +50,7 @@ public class MyBookingController : Controller
             };
             ViewBag.LookupInput = input;
 
-            // Auto-lookup khi query đủ mã + SĐT hợp lệ (deep-link từ Recommendation sau khi giữ chỗ).
+            // Auto-lookup khi query đủ mã + email/SĐT hợp lệ (deep-link từ Recommendation sau khi giữ chỗ).
             if (IsLookupShapeValid(normalizedCode, targetPhone))
             {
                 var result = await _apiClient.LookupPublicBookingAsync(normalizedCode, targetPhone, cancellationToken);
@@ -60,7 +60,7 @@ public class MyBookingController : Controller
                     await LoadScheduleChangeDataAsync(normalizedCode, targetPhone, cancellationToken);
                 }
                 else
-                    ViewBag.LookupError = result.Error ?? "Thông tin mã đặt tiệc hoặc số điện thoại không chính xác.";
+                    ViewBag.LookupError = result.Error ?? "Mã đặt tiệc hoặc email/số điện thoại không chính xác.";
             }
 
             // Danh sách cũ (tương thích): best-effort, lỗi thì list rỗng, không throw.
@@ -105,7 +105,7 @@ public class MyBookingController : Controller
 
             if (!ModelState.IsValid)
             {
-                ViewBag.LookupError = "Vui lòng nhập đúng mã đặt tiệc (DT-yyyyMMdd-XXXX) và SĐT 10 số.";
+                ViewBag.LookupError = "Vui lòng nhập đúng mã đặt tiệc và email hoặc số điện thoại đã đăng ký.";
                 ViewBag.MyBookings = new List<MyBookingViewModel>();
                 return View("Index", input);
             }
@@ -128,7 +128,7 @@ public class MyBookingController : Controller
             }
             else
             {
-                ViewBag.LookupError = result.Error ?? "Thông tin mã đặt tiệc hoặc số điện thoại không chính xác.";
+                ViewBag.LookupError = result.Error ?? "Mã đặt tiệc hoặc email/số điện thoại không chính xác.";
                 if (result.StatusCode == 429)
                     Response.StatusCode = 429;
             }
@@ -272,7 +272,7 @@ public class MyBookingController : Controller
                 targetPhone = User.FindFirstValue(ClaimTypes.MobilePhone) ?? User.FindFirstValue("phone") ?? string.Empty;
 
             if (!IsLookupShapeValid(code, targetPhone))
-                return BadRequest("Thông tin mã đặt tiệc hoặc số điện thoại không hợp lệ.");
+                return BadRequest("Mã đặt tiệc hoặc email/số điện thoại không hợp lệ.");
 
             var result = await _apiClient.DownloadInvoicePdfAsync(code, targetPhone, cancellationToken);
             if (result.Succeeded && result.Value is not null)
@@ -291,8 +291,8 @@ public class MyBookingController : Controller
         }
     }
 
-    private static bool IsLookupShapeValid(string code, string phone) =>
+    private static bool IsLookupShapeValid(string code, string contact) =>
         Regex.IsMatch(code ?? string.Empty, @"^DT-\d{8}-[A-Z0-9]{4,}$")
-        && Regex.IsMatch(phone ?? string.Empty, @"^0\d{9}$");
+        && Regex.IsMatch(contact ?? string.Empty, @"^(0\d{9}|[^\s@]+@[^\s@]+\.[^\s@]+)$", RegexOptions.IgnoreCase);
 }
 

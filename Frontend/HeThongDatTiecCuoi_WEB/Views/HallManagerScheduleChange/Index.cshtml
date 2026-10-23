@@ -1,16 +1,81 @@
 @model HeThongDatTiecCuoi_WEB.Models.ScheduleChange.ScheduleChangeAdminPageViewModel
 @using HeThongDatTiecCuoi_WEB.Models.ScheduleChange
-@{ Layout = "_AdminLayout"; ViewData["Title"] = "Thay đổi lịch"; var selected = Model.Selected; }
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Thay đổi lịch";
+    var selected = Model.Selected;
+    string StatusClass(string status) => status.ToLowerInvariant().Replace('_', '-');
+}
 @section Styles { <link rel="stylesheet" href="~/css/schedule-change-admin.css" asp-append-version="true" /> }
-<main class="sca-page">
-    <header class="sca-header"><div><span>Vận hành sảnh</span><h1>Thay đổi lịch</h1><p>Tiếp nhận, kiểm tra nghiệp vụ và chuyển kết quả cho Manager.</p></div><button class="sca-btn primary" data-open="hmCreate">Tạo yêu cầu thay khách</button></header>
-    @if (ViewBag.Error is string error) { <div class="sca-alert error">@error</div> }
-    <section class="sca-stats">
-        <article><small>Tổng yêu cầu</small><b>@Model.Items.Count</b></article><article><small>Chờ kiểm tra</small><b>@Model.Items.Count(x=>x.Status=="PENDING")</b></article><article><small>Đang xử lý</small><b>@Model.Items.Count(x=>x.Status is "UNDER_REVIEW" or "AWAITING_QUOTE_ACCEPTANCE" or "PAYMENT_PENDING")</b></article><article><small>Hoàn tất</small><b>@Model.Items.Count(x=>x.Status=="APPROVED")</b></article><article><small>Từ chối</small><b>@Model.Items.Count(x=>x.Status=="REJECTED")</b></article>
+
+<main class="sca-page hall-manager-schedule-page">
+    <nav class="sca-breadcrumb" aria-label="Breadcrumb"><span>Vận hành</span><i class="fa-solid fa-chevron-right"></i><strong>Thay đổi lịch</strong></nav>
+    <header class="sca-header">
+        <div><span class="sca-eyebrow">ĐIỀU HÀNH SẢNH</span><h1>Thay đổi lịch tiệc</h1><p>Tiếp nhận, kiểm tra điều kiện vận hành và chuyển yêu cầu cho Quản lý phê duyệt.</p></div>
+        <button type="button" class="sca-primary" data-open="hmCreate"><i class="fa-solid fa-plus"></i><span>Tạo yêu cầu thay khách</span></button>
+    </header>
+    @if (ViewBag.Error is string error) { <div class="sca-alert error"><i class="fa-solid fa-circle-exclamation"></i><span>@error</span></div> }
+
+    <section class="sca-kpis" aria-label="Tổng quan yêu cầu đổi lịch">
+        <article><span class="sca-kpi-icon total"><i class="fa-solid fa-calendar-days"></i></span><div><small>Tổng yêu cầu</small><strong>@Model.Items.Count</strong><span>Trong phạm vi phụ trách</span></div></article>
+        <article><span class="sca-kpi-icon pending"><i class="fa-regular fa-clock"></i></span><div><small>Chờ kiểm tra</small><strong>@Model.Items.Count(x => x.Status == "PENDING")</strong><span>Cần tiếp nhận</span></div></article>
+        <article><span class="sca-kpi-icon processing"><i class="fa-solid fa-arrows-rotate"></i></span><div><small>Đang xử lý</small><strong>@Model.Items.Count(x => x.Status is "UNDER_REVIEW" or "AWAITING_QUOTE_ACCEPTANCE" or "PAYMENT_PENDING")</strong><span>Đang trong quy trình</span></div></article>
+        <article><span class="sca-kpi-icon success"><i class="fa-solid fa-circle-check"></i></span><div><small>Đã hoàn tất</small><strong>@Model.Items.Count(x => x.Status == "APPROVED")</strong><span>Đã chuyển lịch</span></div></article>
+        <article><span class="sca-kpi-icon rejected"><i class="fa-solid fa-circle-xmark"></i></span><div><small>Đã từ chối</small><strong>@Model.Items.Count(x => x.Status == "REJECTED")</strong><span>Không đủ điều kiện</span></div></article>
     </section>
-    <form method="get" class="sca-filter"><input name="search" value="@Model.Search" placeholder="Mã booking hoặc khách hàng"/><select name="status"><option value="">Tất cả trạng thái</option>@foreach(var s in new[]{"PENDING","UNDER_REVIEW","AWAITING_QUOTE_ACCEPTANCE","PAYMENT_PENDING","APPROVED","REJECTED","CANCELLED","EXPIRED"}){<option value="@s" selected="@(Model.FilterStatus==s)">@ScheduleChangeStatusDisplay.Name(s)</option>}</select><button class="sca-btn">Lọc</button></form>
-    <div class="sca-layout"><section class="sca-card table"><table><thead><tr><th>Booking</th><th>Lịch hiện tại</th><th>Lịch đề xuất</th><th>Nguồn</th><th>Trạng thái</th><th></th></tr></thead><tbody>@foreach(var x in Model.Items){<tr><td><b>@x.BookingCode</b><small>@x.CustomerName</small></td><td>@x.OldShift @x.OldDate.ToString("dd/MM/yyyy")<small>@x.OldHallName</small></td><td>@x.NewShift @x.NewDate.ToString("dd/MM/yyyy")<small>@x.NewHallName</small></td><td>@(x.Source=="CUSTOMER"?"Khách hàng":"HallManager")</td><td><span class="sca-status">@x.DisplayStatus</span></td><td><a asp-action="Index" asp-route-id="@x.ScheduleChangeId" asp-route-status="@Model.FilterStatus" asp-route-search="@Model.Search">Chi tiết</a></td></tr>}</tbody></table></section>
-    @if(selected is not null){<aside class="sca-card detail"><h2>Yêu cầu #@selected.ScheduleChangeId</h2><dl><dt>Khách hàng</dt><dd>@selected.CustomerName</dd><dt>Booking</dt><dd>@selected.BookingCode</dd><dt>Lịch cũ</dt><dd>@selected.OldShift, @selected.OldDate.ToString("dd/MM/yyyy") · @selected.OldHallName</dd><dt>Lịch mới</dt><dd>@selected.NewShift, @selected.NewDate.ToString("dd/MM/yyyy") · @selected.NewHallName</dd><dt>Lý do</dt><dd>@selected.Reason</dd><dt>Ngoại lệ</dt><dd>@(selected.ExceptionReason??"Không")</dd><dt>Chính sách</dt><dd>POL-CHG-05 v@selected.PolicyVersion · @selected.AppliedFee.ToString("N0") ₫</dd></dl>@if(selected.Status=="PENDING"){<form class="sca-ajax" asp-action="Review"><input type="hidden" name="id" value="@selected.ScheduleChangeId"/>@Html.AntiForgeryToken()<label>Kết quả kiểm tra<textarea name="reviewResult" minlength="3" maxlength="2000" required placeholder="Khả dụng sảnh, sức chứa, điều phối viên, hợp đồng và nội dung phối hợp..."></textarea></label><button class="sca-btn primary">Chuyển Manager duyệt</button></form>}else{<div class="sca-alert">@(selected.ReviewResult??"Yêu cầu đã qua bước kiểm tra.")</div>}</aside>}</div>
+
+    <section class="sca-panel">
+        <header class="sca-panel-head"><div><h2>Danh sách yêu cầu thay đổi lịch</h2><p>@Model.Items.Count yêu cầu phù hợp với bộ lọc</p></div><span class="sca-scope"><i class="fa-solid fa-lock"></i> Theo phân công sảnh</span></header>
+        <form method="get" class="sca-filters">
+            <label class="sca-search"><i class="fa-solid fa-magnifying-glass"></i><input type="search" name="search" value="@Model.Search" placeholder="Mã booking hoặc tên khách hàng..." /></label>
+            <label><span>Trạng thái</span><select name="status"><option value="">Tất cả trạng thái</option>@foreach (var status in new[] { "PENDING", "UNDER_REVIEW", "AWAITING_QUOTE_ACCEPTANCE", "PAYMENT_PENDING", "APPROVED", "REJECTED", "CANCELLED", "EXPIRED" }) { <option value="@status" selected="@(Model.FilterStatus == status)">@ScheduleChangeStatusDisplay.Name(status)</option> }</select></label>
+            <button type="submit" class="sca-filter-button"><i class="fa-solid fa-filter"></i>Lọc</button><a asp-action="Index" class="sca-reset" title="Xóa bộ lọc"><i class="fa-solid fa-rotate-left"></i></a>
+        </form>
+
+        <div class="sca-content-grid @(selected is null ? "without-detail" : null)">
+            <div class="sca-table-wrap"><table class="sca-table">
+                <thead><tr><th>Mã booking</th><th>Lịch hiện tại</th><th>Lịch đề xuất</th><th>Nguồn</th><th>Ngày gửi</th><th>Trạng thái</th><th class="actions">Thao tác</th></tr></thead>
+                <tbody>
+                @if (Model.Items.Count == 0) { <tr><td colspan="7"><div class="sca-empty"><span><i class="fa-regular fa-calendar-xmark"></i></span><h3>Không có yêu cầu phù hợp</h3><p>Hãy thay đổi bộ lọc hoặc tạo yêu cầu mới thay khách hàng.</p></div></td></tr> }
+                else { @foreach (var item in Model.Items) { <tr class="@(selected?.ScheduleChangeId == item.ScheduleChangeId ? "selected" : null)">
+                    <td><a class="sca-code" asp-action="Index" asp-route-id="@item.ScheduleChangeId" asp-route-status="@Model.FilterStatus" asp-route-search="@Model.Search">@item.BookingCode</a><small>@item.CustomerName</small></td>
+                    <td><strong>@item.OldDate.ToString("dd/MM/yyyy")</strong><small><i class="fa-regular fa-building"></i> @item.OldHallName · @item.OldShift</small></td>
+                    <td><strong>@item.NewDate.ToString("dd/MM/yyyy")</strong><small><i class="fa-solid fa-arrow-right"></i> @item.NewHallName · @item.NewShift</small></td>
+                    <td><span class="sca-source"><i class="fa-regular @(item.Source == "CUSTOMER" ? "fa-user" : "fa-id-badge")"></i> @(item.Source == "CUSTOMER" ? "Khách hàng" : "Quản lý sảnh")</span></td>
+                    <td><time>@item.RequestedAt.ToString("dd/MM/yyyy")<small>@item.RequestedAt.ToString("HH:mm")</small></time></td>
+                    <td><span class="sca-status @StatusClass(item.Status)"><i></i>@item.DisplayStatus</span></td>
+                    <td class="actions"><a class="sca-icon-action" asp-action="Index" asp-route-id="@item.ScheduleChangeId" asp-route-status="@Model.FilterStatus" asp-route-search="@Model.Search" title="Xem chi tiết"><i class="fa-regular fa-eye"></i></a></td>
+                </tr> } }
+                </tbody>
+            </table></div>
+
+            @if (selected is not null)
+            {
+                <aside class="sca-detail">
+                    <header><div><span class="sca-detail-icon"><i class="fa-solid fa-calendar-check"></i></span><div><small>CHI TIẾT YÊU CẦU</small><h2>#DL-@selected.ScheduleChangeId.ToString("D4")</h2></div></div><a asp-action="Index" asp-route-status="@Model.FilterStatus" asp-route-search="@Model.Search" class="sca-detail-close" aria-label="Đóng chi tiết"><i class="fa-solid fa-xmark"></i></a></header>
+                    <div class="sca-detail-body">
+                        <div class="sca-detail-status"><span class="sca-status @StatusClass(selected.Status)"><i></i>@selected.DisplayStatus</span><small>Gửi lúc @selected.RequestedAt.ToString("HH:mm · dd/MM/yyyy")</small></div>
+                        <section class="sca-info-section"><h3><i class="fa-regular fa-user"></i> Khách hàng &amp; booking</h3><dl><dt>Khách hàng</dt><dd>@selected.CustomerName</dd><dt>Mã booking</dt><dd><strong>@selected.BookingCode</strong></dd><dt>Nguồn yêu cầu</dt><dd>@(selected.Source == "CUSTOMER" ? "Khách hàng gửi trực tuyến" : "Quản lý sảnh tạo thay khách")</dd></dl></section>
+                        <section class="sca-route-card"><div><small>LỊCH HIỆN TẠI</small><strong>@selected.OldDate.ToString("dd/MM/yyyy")</strong><span>@selected.OldHallName · @selected.OldShift</span></div><i class="fa-solid fa-arrow-right"></i><div class="new"><small>LỊCH ĐỀ XUẤT</small><strong>@selected.NewDate.ToString("dd/MM/yyyy")</strong><span>@selected.NewHallName · @selected.NewShift</span></div></section>
+                        <section class="sca-info-section"><h3><i class="fa-regular fa-note-sticky"></i> Thông tin nghiệp vụ</h3><dl><dt>Lý do</dt><dd>@selected.Reason</dd><dt>Ngoại lệ</dt><dd>@(selected.ExceptionReason ?? "Không có")</dd><dt>Chính sách</dt><dd>POL-CHG-05 · phiên bản @selected.PolicyVersion</dd><dt>Phụ phí dự kiến</dt><dd><strong>@selected.AppliedFee.ToString("N0") ₫</strong></dd></dl></section>
+                        @if (selected.Status == "PENDING") { <form class="sca-ajax sca-action-form" asp-action="Review"><input type="hidden" name="id" value="@selected.ScheduleChangeId" />@Html.AntiForgeryToken()<label><span>Kết quả kiểm tra nghiệp vụ <b>*</b></span><textarea name="reviewResult" minlength="3" maxlength="2000" required placeholder="Ghi rõ khả dụng sảnh, sức chứa, điều phối viên, hợp đồng và nội dung phối hợp..."></textarea><small>Tối đa 2.000 ký tự</small></label><button type="submit" class="sca-primary full"><i class="fa-solid fa-paper-plane"></i><span>Chuyển Quản lý phê duyệt</span></button></form> }
+                        else { <div class="sca-note"><i class="fa-solid fa-clipboard-check"></i><div><strong>Kết quả kiểm tra</strong><p>@(selected.ReviewResult ?? "Yêu cầu đã qua bước kiểm tra nghiệp vụ.")</p></div></div> }
+                    </div>
+                </aside>
+            }
+        </div>
+        <footer class="sca-panel-footer"><span>Hiển thị @Model.Items.Count yêu cầu</span><span>Dữ liệu theo phạm vi sảnh được phân công</span></footer>
+    </section>
 </main>
-<div class="sca-modal" id="hmCreate" hidden><div><button class="sca-close">×</button><h2>Tạo yêu cầu thay khách</h2><form class="sca-ajax" asp-action="Create">@Html.AntiForgeryToken()<label>Booking ID<input type="number" name="BookingId" min="1" required/></label><label>Sảnh mới ID<input type="number" name="NewHallId" min="1" required/></label><label>Ngày mới<input type="date" name="NewDate" required/></label><label>Ca<select name="NewShift" required><option>Trưa</option><option>Tối</option></select></label><label>Lý do<textarea name="Reason" minlength="3" maxlength="500" required></textarea></label><label>Giải trình ngoại lệ (nếu dưới 7 ngày)<textarea name="ExceptionReason" maxlength="1000"></textarea></label><label>Bằng chứng khách đồng ý<textarea name="CustomerConsentEvidence" minlength="3" maxlength="2000" required></textarea></label><p class="sca-alert">Yêu cầu này vẫn phải được Manager duyệt. HallManager không thể tự phê duyệt.</p><button class="sca-btn primary">Tạo yêu cầu</button></form></div></div>
+
+<div class="sca-modal" id="hmCreate" hidden><button type="button" class="sca-modal-backdrop sca-close" aria-label="Đóng"></button><section class="sca-modal-card" role="dialog" aria-modal="true" aria-labelledby="hmCreateTitle">
+    <header><div><span class="sca-modal-icon"><i class="fa-solid fa-calendar-plus"></i></span><div><h2 id="hmCreateTitle">Tạo yêu cầu thay khách</h2><p>Chỉ tạo cho booking thuộc sảnh đang phụ trách.</p></div></div><button type="button" class="sca-modal-close sca-close" aria-label="Đóng"><i class="fa-solid fa-xmark"></i></button></header>
+    <form class="sca-ajax" asp-action="Create">@Html.AntiForgeryToken()<div class="sca-form-grid">
+        <label><span>Booking ID <b>*</b></span><input type="number" name="BookingId" min="1" required /></label><label><span>Sảnh mới ID <b>*</b></span><input type="number" name="NewHallId" min="1" required /></label>
+        <label><span>Ngày tổ chức mới <b>*</b></span><input type="date" name="NewDate" required /></label><label><span>Ca tổ chức <b>*</b></span><select name="NewShift" required><option value="Ca trưa">Ca trưa</option><option value="Ca tối">Ca tối</option></select></label>
+        <label class="wide"><span>Lý do đổi lịch <b>*</b></span><textarea name="Reason" minlength="3" maxlength="500" required></textarea></label><label class="wide"><span>Giải trình ngoại lệ</span><textarea name="ExceptionReason" maxlength="1000" placeholder="Bắt buộc giải trình nếu còn dưới 7 ngày..."></textarea></label>
+        <label class="wide"><span>Bằng chứng khách hàng đồng ý <b>*</b></span><textarea name="CustomerConsentEvidence" minlength="3" maxlength="2000" required placeholder="Ghi nhận cuộc gọi, email hoặc văn bản xác nhận..."></textarea></label>
+    </div><div class="sca-modal-notice"><i class="fa-solid fa-circle-info"></i><span>Yêu cầu vẫn phải được Quản lý phê duyệt. Quản lý sảnh không thể tự duyệt.</span></div><footer><button type="button" class="sca-secondary sca-close">Hủy</button><button type="submit" class="sca-primary"><i class="fa-solid fa-floppy-disk"></i><span>Tạo yêu cầu</span></button></footer></form>
+</section></div>
+
 @section Scripts { <script src="~/js/schedule-change-admin.js" asp-append-version="true"></script> }
