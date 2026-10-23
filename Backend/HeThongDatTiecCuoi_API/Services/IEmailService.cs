@@ -2,6 +2,14 @@ namespace HeThongDatTiecCuoi_API.Services;
 
 public interface IEmailService
 {
+    Task SendScheduleChangeOtpEmailAsync(
+        string recipientEmail,
+        string customerName,
+        string bookingCode,
+        string otpCode,
+        int lifetimeMinutes,
+        CancellationToken cancellationToken = default);
+
     Task SendPasswordResetOtpEmailAsync(
         string recipientEmail,
         string otpCode,

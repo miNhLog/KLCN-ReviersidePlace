@@ -42,6 +42,14 @@ public sealed class ApplicationDbContext : DbContext
     public DbSet<DecorPackage> DecorPackages { get; set; }
     public DbSet<ServiceItem> ServiceItems { get; set; }
     public DbSet<PaymentTransaction> PaymentTransactions => Set<PaymentTransaction>();
+    public DbSet<ScheduleChangePolicy> ScheduleChangePolicies => Set<ScheduleChangePolicy>();
+    public DbSet<ScheduleChangePolicyTier> ScheduleChangePolicyTiers => Set<ScheduleChangePolicyTier>();
+    public DbSet<ScheduleChangeQuote> ScheduleChangeQuotes => Set<ScheduleChangeQuote>();
+    public DbSet<ScheduleChangeOtp> ScheduleChangeOtps => Set<ScheduleChangeOtp>();
+    public DbSet<ScheduleChangeHold> ScheduleChangeHolds => Set<ScheduleChangeHold>();
+    public DbSet<ScheduleChangeStatusHistory> ScheduleChangeStatusHistory => Set<ScheduleChangeStatusHistory>();
+    public DbSet<ContractAmendment> ContractAmendments => Set<ContractAmendment>();
+    public DbSet<ScheduleChangeRefund> ScheduleChangeRefunds => Set<ScheduleChangeRefund>();
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -457,10 +465,28 @@ public sealed class ApplicationDbContext : DbContext
             entity.Property(x => x.OldHallScheduleId).HasColumnName("LichSanhCuID");
             entity.Property(x => x.NewHallScheduleId).HasColumnName("LichSanhMoiID");
             entity.Property(x => x.Reason).HasColumnName("LyDo").HasMaxLength(500);
+            entity.Property(x => x.RequestSource).HasColumnName("NguonYeuCau").HasColumnType("varchar(20)").HasMaxLength(20).IsRequired();
+            entity.Property(x => x.CreatedByUserId).HasColumnName("NguoiTaoTaiKhoanID");
+            entity.Property(x => x.ReviewedByUserId).HasColumnName("NguoiKiemTraTaiKhoanID");
+            entity.Property(x => x.ApprovedByUserId).HasColumnName("NguoiPheDuyetTaiKhoanID");
+            entity.Property(x => x.ExceptionReason).HasColumnName("LyDoNgoaiLe").HasMaxLength(1000);
+            entity.Property(x => x.CustomerConsentEvidence).HasColumnName("BangChungDongYKhach").HasMaxLength(2000);
+            entity.Property(x => x.ReviewResult).HasColumnName("KetQuaKiemTra").HasMaxLength(2000);
+            entity.Property(x => x.ResolutionReason).HasColumnName("LyDoXuLy").HasMaxLength(1000);
             entity.Property(x => x.StatusId).HasColumnName("TrangThaiID").HasDefaultValue(1301);
             entity.Property(x => x.RequestedAt).HasColumnName("NgayYeuCau").HasPrecision(0)
                 .HasDefaultValueSql("SYSDATETIME()");
+            entity.Property(x => x.ReviewedAt).HasColumnName("NgayKiemTra").HasPrecision(0);
+            entity.Property(x => x.CustomerConfirmedAt).HasColumnName("NgayKhachXacNhan").HasPrecision(0);
+            entity.Property(x => x.PaymentCompletedAt).HasColumnName("NgayThanhToan").HasPrecision(0);
             entity.Property(x => x.ProcessedAt).HasColumnName("NgayXuLy").HasPrecision(0);
+            entity.Property(x => x.PolicyId).HasColumnName("ChinhSachID");
+            entity.Property(x => x.PolicyVersion).HasColumnName("PhienBanChinhSach");
+            entity.Property(x => x.SubmittedDaysBeforeEvent).HasColumnName("SoNgayBaoTruoc");
+            entity.Property(x => x.AppliedFee).HasColumnName("PhiApDung").HasColumnType("decimal(18,2)");
+            entity.Property(x => x.RowVersion).HasColumnName("RowVersion").IsRowVersion();
+            entity.HasIndex(x => x.BookingId, "UX_ThayDoiLichTiec_DatTiec_DangXuLy")
+                .IsUnique().HasFilter("[TrangThaiID] IN (1301,1304,1305,1306,1309)");
             entity.HasOne(x => x.Booking)
                 .WithMany(x => x.ScheduleChanges)
                 .HasForeignKey(x => x.BookingId)
@@ -477,6 +503,164 @@ public sealed class ApplicationDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(x => x.StatusId)
                 .OnDelete(DeleteBehavior.NoAction);
+            entity.HasOne(x => x.Policy)
+                .WithMany(x => x.ScheduleChanges)
+                .HasForeignKey(x => x.PolicyId)
+                .OnDelete(DeleteBehavior.NoAction);
+        });
+
+        modelBuilder.Entity<ScheduleChangePolicy>(entity =>
+        {
+            entity.ToTable("ChinhSachDoiLich");
+            entity.HasKey(x => x.PolicyId);
+            entity.Property(x => x.PolicyId).HasColumnName("ChinhSachID");
+            entity.Property(x => x.PolicyCode).HasColumnName("MaChinhSach").HasColumnType("varchar(30)").HasMaxLength(30).IsRequired();
+            entity.Property(x => x.Version).HasColumnName("PhienBan");
+            entity.Property(x => x.OnlineMinimumDays).HasColumnName("SoNgayToiThieuOnline");
+            entity.Property(x => x.NewDateMinimumDays).HasColumnName("SoNgayToiThieuNgayMoi");
+            entity.Property(x => x.PaymentWindowMinutes).HasColumnName("SoPhutThanhToan");
+            entity.Property(x => x.HoldWindowMinutes).HasColumnName("SoPhutGiuLich");
+            entity.Property(x => x.Status).HasColumnName("TrangThai").HasColumnType("varchar(20)").HasMaxLength(20).IsRequired();
+            entity.Property(x => x.EffectiveFrom).HasColumnName("HieuLucTu").HasPrecision(0);
+            entity.Property(x => x.EffectiveTo).HasColumnName("HieuLucDen").HasPrecision(0);
+            entity.Property(x => x.CreatedByUserId).HasColumnName("NguoiTaoTaiKhoanID");
+            entity.Property(x => x.CreatedAt).HasColumnName("NgayTao").HasPrecision(0);
+            entity.Property(x => x.ChangeNote).HasColumnName("GhiChuThayDoi").HasMaxLength(1000);
+            entity.HasIndex(x => new { x.PolicyCode, x.Version }).IsUnique();
+        });
+
+        modelBuilder.Entity<ScheduleChangePolicyTier>(entity =>
+        {
+            entity.ToTable("MucPhiDoiLich");
+            entity.HasKey(x => x.TierId);
+            entity.Property(x => x.TierId).HasColumnName("MucPhiID");
+            entity.Property(x => x.PolicyId).HasColumnName("ChinhSachID");
+            entity.Property(x => x.MinimumDays).HasColumnName("TuSoNgay");
+            entity.Property(x => x.MaximumDays).HasColumnName("DenSoNgay");
+            entity.Property(x => x.FeeAmount).HasColumnName("MucPhi").HasColumnType("decimal(18,2)");
+            entity.Property(x => x.CustomerOnlineAllowed).HasColumnName("ChoPhepKhachOnline");
+            entity.HasIndex(x => new { x.PolicyId, x.MinimumDays, x.MaximumDays }).IsUnique();
+            entity.HasOne(x => x.Policy).WithMany(x => x.Tiers).HasForeignKey(x => x.PolicyId).OnDelete(DeleteBehavior.NoAction);
+        });
+
+        modelBuilder.Entity<ScheduleChangeQuote>(entity =>
+        {
+            entity.ToTable("BaoGiaDoiLich");
+            entity.HasKey(x => x.QuoteId);
+            entity.Property(x => x.QuoteId).HasColumnName("BaoGiaID");
+            entity.Property(x => x.ScheduleChangeId).HasColumnName("ThayDoiLichID");
+            entity.Property(x => x.Version).HasColumnName("PhienBan");
+            entity.Property(x => x.OldHallPrice).HasColumnName("GiaSanhCu").HasColumnType("decimal(18,2)");
+            entity.Property(x => x.NewHallPrice).HasColumnName("GiaSanhMoi").HasColumnType("decimal(18,2)");
+            entity.Property(x => x.HallPriceDifference).HasColumnName("ChenhLechGiaSanh").HasColumnType("decimal(18,2)");
+            entity.Property(x => x.ScheduleChangeFee).HasColumnName("PhiDoiLich").HasColumnType("decimal(18,2)");
+            entity.Property(x => x.AdjustmentTotal).HasColumnName("TongDieuChinh").HasColumnType("decimal(18,2)");
+            entity.Property(x => x.ContractValueBefore).HasColumnName("GiaTriHopDongTruoc").HasColumnType("decimal(18,2)");
+            entity.Property(x => x.ContractValueAfter).HasColumnName("GiaTriHopDongSau").HasColumnType("decimal(18,2)");
+            entity.Property(x => x.PaidAmountSnapshot).HasColumnName("DaThanhToanSnapshot").HasColumnType("decimal(18,2)");
+            entity.Property(x => x.AmountDue).HasColumnName("SoTienCanThu").HasColumnType("decimal(18,2)");
+            entity.Property(x => x.CreditAmount).HasColumnName("SoTienKhauTru").HasColumnType("decimal(18,2)");
+            entity.Property(x => x.RefundAmount).HasColumnName("SoTienCanHoan").HasColumnType("decimal(18,2)");
+            entity.Property(x => x.Status).HasColumnName("TrangThai").HasColumnType("varchar(30)").HasMaxLength(30);
+            entity.Property(x => x.CreatedByUserId).HasColumnName("NguoiLapTaiKhoanID");
+            entity.Property(x => x.CreatedAt).HasColumnName("NgayLap").HasPrecision(0);
+            entity.Property(x => x.AcceptedAt).HasColumnName("NgayKhachXacNhan").HasPrecision(0);
+            entity.HasIndex(x => new { x.ScheduleChangeId, x.Version }).IsUnique();
+            entity.HasOne(x => x.ScheduleChange).WithMany(x => x.Quotes).HasForeignKey(x => x.ScheduleChangeId).OnDelete(DeleteBehavior.NoAction);
+        });
+
+        modelBuilder.Entity<ScheduleChangeOtp>(entity =>
+        {
+            entity.ToTable("MaOtpDoiLich");
+            entity.HasKey(x => x.OtpId);
+            entity.Property(x => x.OtpId).HasColumnName("OtpID");
+            entity.Property(x => x.BookingId).HasColumnName("DatTiecID");
+            entity.Property(x => x.ScheduleChangeId).HasColumnName("ThayDoiLichID");
+            entity.Property(x => x.Purpose).HasColumnName("MucDich").HasColumnType("varchar(40)").HasMaxLength(40);
+            entity.Property(x => x.PhoneHash).HasColumnName("SoDienThoaiHash").HasColumnType("char(64)").HasMaxLength(64);
+            entity.Property(x => x.IpHash).HasColumnName("IpHash").HasColumnType("char(64)").HasMaxLength(64);
+            entity.Property(x => x.CodeHash).HasColumnName("MaHash").HasMaxLength(255);
+            entity.Property(x => x.VerificationTokenHash).HasColumnName("TokenXacThucHash").HasColumnType("char(64)").HasMaxLength(64);
+            entity.Property(x => x.FailedAttempts).HasColumnName("SoLanNhapSai");
+            entity.Property(x => x.CreatedAt).HasColumnName("NgayTao").HasPrecision(0);
+            entity.Property(x => x.ExpiresAt).HasColumnName("HetHanLuc").HasPrecision(0);
+            entity.Property(x => x.VerifiedAt).HasColumnName("XacThucLuc").HasPrecision(0);
+            entity.Property(x => x.UsedAt).HasColumnName("DaDungLuc").HasPrecision(0);
+            entity.HasIndex(x => new { x.BookingId, x.Purpose, x.CreatedAt });
+            entity.HasIndex(x => x.VerificationTokenHash).IsUnique().HasFilter("[TokenXacThucHash] IS NOT NULL");
+            entity.HasOne(x => x.Booking).WithMany().HasForeignKey(x => x.BookingId).OnDelete(DeleteBehavior.NoAction);
+            entity.HasOne(x => x.ScheduleChange).WithMany(x => x.Otps).HasForeignKey(x => x.ScheduleChangeId).OnDelete(DeleteBehavior.NoAction);
+        });
+
+        modelBuilder.Entity<ScheduleChangeHold>(entity =>
+        {
+            entity.ToTable("GiuChoDoiLich");
+            entity.HasKey(x => x.HoldId);
+            entity.Property(x => x.HoldId).HasColumnName("GiuChoID");
+            entity.Property(x => x.ScheduleChangeId).HasColumnName("ThayDoiLichID");
+            entity.Property(x => x.HallScheduleId).HasColumnName("LichSanhID");
+            entity.Property(x => x.PaymentTransactionId).HasColumnName("GiaoDichID");
+            entity.Property(x => x.Status).HasColumnName("TrangThai").HasColumnType("varchar(20)").HasMaxLength(20);
+            entity.Property(x => x.StartedAt).HasColumnName("BatDauLuc").HasPrecision(0);
+            entity.Property(x => x.ExpiresAt).HasColumnName("HetHanLuc").HasPrecision(0);
+            entity.Property(x => x.ReleasedAt).HasColumnName("GiaiPhongLuc").HasPrecision(0);
+            entity.Property(x => x.RowVersion).HasColumnName("RowVersion").IsRowVersion();
+            entity.HasIndex(x => x.HallScheduleId, "UX_GiuChoDoiLich_LichSanh_Active").IsUnique().HasFilter("[TrangThai] = 'ACTIVE'");
+            entity.HasOne(x => x.ScheduleChange).WithMany(x => x.Holds).HasForeignKey(x => x.ScheduleChangeId).OnDelete(DeleteBehavior.NoAction);
+            entity.HasOne(x => x.HallSchedule).WithMany(x => x.ScheduleChangeHolds).HasForeignKey(x => x.HallScheduleId).OnDelete(DeleteBehavior.NoAction);
+            entity.HasOne(x => x.PaymentTransaction).WithOne(x => x.ScheduleChangeHold).HasForeignKey<ScheduleChangeHold>(x => x.PaymentTransactionId).OnDelete(DeleteBehavior.NoAction);
+        });
+
+        modelBuilder.Entity<ScheduleChangeStatusHistory>(entity =>
+        {
+            entity.ToTable("LichSuTrangThaiDoiLich");
+            entity.HasKey(x => x.HistoryId);
+            entity.Property(x => x.HistoryId).HasColumnName("LichSuID");
+            entity.Property(x => x.ScheduleChangeId).HasColumnName("ThayDoiLichID");
+            entity.Property(x => x.FromStatus).HasColumnName("TuTrangThai").HasMaxLength(40);
+            entity.Property(x => x.ToStatus).HasColumnName("DenTrangThai").HasMaxLength(40);
+            entity.Property(x => x.ActorUserId).HasColumnName("NguoiThucHienTaiKhoanID");
+            entity.Property(x => x.ActorType).HasColumnName("LoaiNguoiThucHien").HasMaxLength(30);
+            entity.Property(x => x.Note).HasColumnName("GhiChu").HasMaxLength(1000);
+            entity.Property(x => x.ChangedAt).HasColumnName("ThayDoiLuc").HasPrecision(0);
+            entity.HasOne(x => x.ScheduleChange).WithMany(x => x.StatusHistory).HasForeignKey(x => x.ScheduleChangeId).OnDelete(DeleteBehavior.NoAction);
+        });
+
+        modelBuilder.Entity<ContractAmendment>(entity =>
+        {
+            entity.ToTable("PhuLucHopDong");
+            entity.HasKey(x => x.AmendmentId);
+            entity.Property(x => x.AmendmentId).HasColumnName("PhuLucID");
+            entity.Property(x => x.ContractId).HasColumnName("HopDongID");
+            entity.Property(x => x.ScheduleChangeId).HasColumnName("ThayDoiLichID");
+            entity.Property(x => x.Version).HasColumnName("PhienBan");
+            entity.Property(x => x.Content).HasColumnName("NoiDungDieuChinh").HasColumnType("nvarchar(max)");
+            entity.Property(x => x.ContractValueBefore).HasColumnName("GiaTriTruoc").HasColumnType("decimal(18,2)");
+            entity.Property(x => x.ContractValueAfter).HasColumnName("GiaTriSau").HasColumnType("decimal(18,2)");
+            entity.Property(x => x.CustomerConfirmedAt).HasColumnName("KhachXacNhanLuc").HasPrecision(0);
+            entity.Property(x => x.ApprovedByUserId).HasColumnName("NguoiPheDuyetTaiKhoanID");
+            entity.Property(x => x.EffectiveAt).HasColumnName("HieuLucLuc").HasPrecision(0);
+            entity.Property(x => x.Status).HasColumnName("TrangThai").HasMaxLength(30);
+            entity.HasIndex(x => x.ScheduleChangeId).IsUnique();
+            entity.HasIndex(x => new { x.ContractId, x.Version }).IsUnique();
+            entity.HasOne(x => x.Contract).WithMany(x => x.Amendments).HasForeignKey(x => x.ContractId).OnDelete(DeleteBehavior.NoAction);
+            entity.HasOne(x => x.ScheduleChange).WithOne(x => x.ContractAmendment).HasForeignKey<ContractAmendment>(x => x.ScheduleChangeId).OnDelete(DeleteBehavior.NoAction);
+        });
+
+        modelBuilder.Entity<ScheduleChangeRefund>(entity =>
+        {
+            entity.ToTable("HoanTienDoiLich");
+            entity.HasKey(x => x.RefundId);
+            entity.Property(x => x.RefundId).HasColumnName("HoanTienID");
+            entity.Property(x => x.ScheduleChangeId).HasColumnName("ThayDoiLichID");
+            entity.Property(x => x.Amount).HasColumnName("SoTien").HasColumnType("decimal(18,2)");
+            entity.Property(x => x.Status).HasColumnName("TrangThai").HasMaxLength(30);
+            entity.Property(x => x.Reason).HasColumnName("LyDo").HasMaxLength(1000);
+            entity.Property(x => x.ProcessedByUserId).HasColumnName("NguoiXuLyTaiKhoanID");
+            entity.Property(x => x.CreatedAt).HasColumnName("NgayTao").HasPrecision(0);
+            entity.Property(x => x.ProcessedAt).HasColumnName("NgayXuLy").HasPrecision(0);
+            entity.Property(x => x.Evidence).HasColumnName("BangChung").HasMaxLength(2000);
+            entity.HasOne(x => x.ScheduleChange).WithMany(x => x.Refunds).HasForeignKey(x => x.ScheduleChangeId).OnDelete(DeleteBehavior.NoAction);
         });
 
         modelBuilder.Entity<ReviewQrCode>(entity =>
@@ -698,7 +882,7 @@ public sealed class ApplicationDbContext : DbContext
             {
                 table.HasCheckConstraint(
                     "CK_ThanhToan_Loai",
-                    "[LoaiThanhToan] IN (N'Đặt cọc', N'Thanh toán đợt', N'Quyết toán')");
+                    "[LoaiThanhToan] IN (N'Đặt cọc', N'Thanh toán đợt', N'Quyết toán', N'Điều chỉnh đổi lịch')");
                 table.HasCheckConstraint("CK_ThanhToan_SoTien", "[SoTien] > 0");
             });
             entity.HasKey(x => x.PaymentId);
@@ -722,6 +906,8 @@ public sealed class ApplicationDbContext : DbContext
             entity.HasKey(x => x.GiaoDichId);
             entity.Property(x => x.GiaoDichId).HasColumnName("GiaoDichID");
             entity.Property(x => x.DatTiecId).HasColumnName("DatTiecID");
+            entity.Property(x => x.ScheduleChangeId).HasColumnName("ThayDoiLichID");
+            entity.Property(x => x.TransactionType).HasColumnName("LoaiGiaoDich").HasColumnType("varchar(30)").HasMaxLength(30).IsRequired();
             entity.Property(x => x.OrderCode).HasColumnName("OrderCode");
             entity.Property(x => x.SoTienGiaoDich).HasColumnName("SoTienGiaoDich").HasColumnType("decimal(18,2)").IsRequired();
             entity.Property(x => x.SoTienGhiNhan).HasColumnName("SoTienGhiNhan").HasColumnType("decimal(18,2)").IsRequired();
@@ -729,11 +915,19 @@ public sealed class ApplicationDbContext : DbContext
             entity.Property(x => x.TrangThai).HasColumnName("TrangThai").HasMaxLength(30).IsRequired();
             entity.Property(x => x.NgayTao).HasColumnName("NgayTao").HasPrecision(0).HasDefaultValueSql("SYSDATETIME()");
             entity.Property(x => x.NgayThanhToan).HasColumnName("NgayThanhToan").HasPrecision(0);
+            entity.Property(x => x.ExpiresAt).HasColumnName("HetHanLuc").HasPrecision(0);
             entity.Property(x => x.PayloadWebhook).HasColumnName("PayloadWebhook").HasColumnType("nvarchar(max)");
+            entity.Property(x => x.ReconciliationData).HasColumnName("DuLieuDoiSoat").HasColumnType("nvarchar(max)");
             entity.HasIndex(x => x.OrderCode).IsUnique();
+            entity.HasIndex(x => new { x.ScheduleChangeId, x.TransactionType }, "UX_GiaoDichThanhToan_DoiLich_HieuLuc")
+                .IsUnique().HasFilter("[ThayDoiLichID] IS NOT NULL AND [LoaiGiaoDich] = 'SCHEDULE_CHANGE' AND [TrangThai] IN ('PENDING','PAID')");
             entity.HasOne(x => x.Booking)
                 .WithMany(x => x.PaymentTransactions)
                 .HasForeignKey(x => x.DatTiecId)
+                .OnDelete(DeleteBehavior.NoAction);
+            entity.HasOne(x => x.ScheduleChange)
+                .WithMany(x => x.PaymentTransactions)
+                .HasForeignKey(x => x.ScheduleChangeId)
                 .OnDelete(DeleteBehavior.NoAction);
         });
 
@@ -942,28 +1136,6 @@ public sealed class ApplicationDbContext : DbContext
                 .OnDelete(DeleteBehavior.NoAction);
         });
 
-        modelBuilder.Entity<PaymentTransaction>(entity =>
-        {
-            entity.ToTable("GiaoDichThanhToan");
-            entity.HasKey(x => x.GiaoDichId);
-            entity.Property(x => x.GiaoDichId).HasColumnName("GiaoDichID");
-            entity.Property(x => x.DatTiecId).HasColumnName("DatTiecID");
-            entity.Property(x => x.OrderCode).HasColumnName("OrderCode").IsRequired();
-            entity.Property(x => x.SoTienGiaoDich).HasColumnName("SoTienGiaoDich").HasColumnType("decimal(18,2)").IsRequired();
-            entity.Property(x => x.SoTienGhiNhan).HasColumnName("SoTienGhiNhan").HasColumnType("decimal(18,2)").IsRequired();
-            entity.Property(x => x.PhuongThuc).HasColumnName("PhuongThuc").HasMaxLength(50).IsRequired();
-            entity.Property(x => x.TrangThai).HasColumnName("TrangThai").HasMaxLength(30).IsRequired();
-            entity.Property(x => x.NgayTao).HasColumnName("NgayTao").HasPrecision(0).HasDefaultValueSql("SYSDATETIME()");
-            entity.Property(x => x.NgayThanhToan).HasColumnName("NgayThanhToan").HasPrecision(0);
-            entity.Property(x => x.PayloadWebhook).HasColumnName("PayloadWebhook").HasColumnType("nvarchar(max)");
-            entity.HasIndex(x => x.OrderCode).IsUnique();
-            entity.HasIndex(x => x.DatTiecId);
-            entity.HasIndex(x => x.TrangThai);
-            entity.HasOne(x => x.Booking)
-                .WithMany(x => x.PaymentTransactions)
-                .HasForeignKey(x => x.DatTiecId)
-                .OnDelete(DeleteBehavior.NoAction);
-        });
     }
 
 }

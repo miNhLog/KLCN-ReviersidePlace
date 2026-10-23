@@ -1,0 +1,95 @@
+@model HeThongDatTiecCuoi_WEB.Models.ScheduleChange.ScheduleChangeAdminPageViewModel
+@using HeThongDatTiecCuoi_WEB.Models.ScheduleChange
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Phê duyệt thay đổi lịch";
+    var selected = Model.Selected;
+    string StatusClass(string status) => status.ToLowerInvariant().Replace('_', '-');
+}
+@section Styles { <link rel="stylesheet" href="~/css/schedule-change-admin.css" asp-append-version="true" /> }
+
+<main class="sca-page manager-schedule-page">
+    <nav class="sca-breadcrumb" aria-label="Breadcrumb"><span>Điều hành sự kiện</span><i class="fa-solid fa-chevron-right"></i><strong>Phê duyệt thay đổi lịch</strong></nav>
+    <header class="sca-header manager">
+        <div><span class="sca-eyebrow">GIÁM SÁT TOÀN HỆ THỐNG</span><h1>Phê duyệt thay đổi lịch</h1><p>Xem xét báo giá, theo dõi thanh toán và xử lý các yêu cầu cần đối soát.</p></div>
+        <span class="sca-header-badge"><i class="fa-solid fa-shield-halved"></i> Quyền Quản lý</span>
+    </header>
+    @if (ViewBag.Error is string error) { <div class="sca-alert error"><i class="fa-solid fa-circle-exclamation"></i><span>@error</span></div> }
+
+    <section class="sca-kpis" aria-label="Tổng quan phê duyệt đổi lịch">
+        <article><span class="sca-kpi-icon pending"><i class="fa-regular fa-clock"></i></span><div><small>Chờ duyệt</small><strong>@Model.Items.Count(x => x.Status == "UNDER_REVIEW")</strong><span>Cần lập báo giá</span></div></article>
+        <article><span class="sca-kpi-icon quote"><i class="fa-solid fa-file-invoice-dollar"></i></span><div><small>Chờ khách xác nhận</small><strong>@Model.Items.Count(x => x.Status == "AWAITING_QUOTE_ACCEPTANCE")</strong><span>Báo giá đã gửi</span></div></article>
+        <article><span class="sca-kpi-icon payment"><i class="fa-solid fa-qrcode"></i></span><div><small>Chờ thanh toán</small><strong>@Model.Items.Count(x => x.Status == "PAYMENT_PENDING")</strong><span>Đang chờ PayOS</span></div></article>
+        <article><span class="sca-kpi-icon success"><i class="fa-solid fa-circle-check"></i></span><div><small>Đã hoàn tất</small><strong>@Model.Items.Count(x => x.Status == "APPROVED")</strong><span>Đã chuyển lịch</span></div></article>
+        <article><span class="sca-kpi-icon reconcile"><i class="fa-solid fa-scale-balanced"></i></span><div><small>Cần đối soát</small><strong>@Model.Items.Count(x => x.Status == "RECONCILIATION_REQUIRED")</strong><span>Cần ưu tiên xử lý</span></div></article>
+    </section>
+
+    <section class="sca-panel">
+        <header class="sca-panel-head"><div><h2>Danh sách yêu cầu toàn hệ thống</h2><p>@Model.Items.Count yêu cầu phù hợp · Ưu tiên yêu cầu chờ duyệt và cần đối soát</p></div><span class="sca-scope manager"><i class="fa-solid fa-eye"></i> Phạm vi toàn hệ thống</span></header>
+        <form method="get" class="sca-filters">
+            <label class="sca-search"><i class="fa-solid fa-magnifying-glass"></i><input type="search" name="search" value="@Model.Search" placeholder="Mã yêu cầu, booking hoặc khách hàng..." /></label>
+            <label><span>Trạng thái</span><select name="status"><option value="">Tất cả trạng thái</option>@foreach (var status in new[] { "UNDER_REVIEW", "AWAITING_QUOTE_ACCEPTANCE", "PAYMENT_PENDING", "APPROVED", "REJECTED", "RECONCILIATION_REQUIRED" }) { <option value="@status" selected="@(Model.FilterStatus == status)">@ScheduleChangeStatusDisplay.Name(status)</option> }</select></label>
+            <button type="submit" class="sca-filter-button"><i class="fa-solid fa-filter"></i>Lọc</button><a asp-action="Index" class="sca-reset" title="Xóa bộ lọc"><i class="fa-solid fa-rotate-left"></i></a>
+        </form>
+
+        <div class="sca-content-grid manager-grid @(selected is null ? "without-detail" : null)">
+            <div class="sca-table-wrap"><table class="sca-table manager-table">
+                <thead><tr><th>Yêu cầu</th><th>Khách hàng</th><th>Lịch thay đổi</th><th>Phụ phí</th><th>Ngày gửi</th><th>Trạng thái</th><th class="actions">Thao tác</th></tr></thead>
+                <tbody>
+                @if (Model.Items.Count == 0) { <tr><td colspan="7"><div class="sca-empty"><span><i class="fa-regular fa-clipboard"></i></span><h3>Không có yêu cầu phù hợp</h3><p>Hãy thay đổi bộ lọc để xem các yêu cầu khác.</p></div></td></tr> }
+                else { @foreach (var item in Model.Items) { <tr class="@(selected?.ScheduleChangeId == item.ScheduleChangeId ? "selected" : null) @(item.Status == "RECONCILIATION_REQUIRED" ? "reconcile-row" : null)">
+                    <td><a class="sca-code" asp-action="Index" asp-route-id="@item.ScheduleChangeId" asp-route-status="@Model.FilterStatus" asp-route-search="@Model.Search">#DL-@item.ScheduleChangeId.ToString("D4")</a><small>@item.BookingCode</small></td>
+                    <td><strong>@item.CustomerName</strong><small>@(item.Source == "CUSTOMER" ? "Khách hàng gửi" : "Quản lý sảnh tạo")</small></td>
+                    <td><div class="sca-table-route"><span>@item.OldDate.ToString("dd/MM") · @item.OldHallName</span><i class="fa-solid fa-arrow-right"></i><span>@item.NewDate.ToString("dd/MM") · @item.NewHallName</span></div><small>@item.OldShift → @item.NewShift</small></td>
+                    <td><strong class="sca-currency">@item.AppliedFee.ToString("N0") ₫</strong><small>POL-CHG-05 v@item.PolicyVersion</small></td>
+                    <td><time>@item.RequestedAt.ToString("dd/MM/yyyy")<small>@item.RequestedAt.ToString("HH:mm")</small></time></td>
+                    <td><span class="sca-status @StatusClass(item.Status)"><i></i>@item.DisplayStatus</span></td>
+                    <td class="actions"><a class="sca-icon-action" asp-action="Index" asp-route-id="@item.ScheduleChangeId" asp-route-status="@Model.FilterStatus" asp-route-search="@Model.Search" title="Xem và xử lý"><i class="fa-regular fa-eye"></i></a></td>
+                </tr> } }
+                </tbody>
+            </table></div>
+
+            @if (selected is not null)
+            {
+                <aside class="sca-detail manager-detail">
+                    <header><div><span class="sca-detail-icon"><i class="fa-solid fa-file-signature"></i></span><div><small>HỒ SƠ PHÊ DUYỆT</small><h2>#DL-@selected.ScheduleChangeId.ToString("D4")</h2></div></div><a asp-action="Index" asp-route-status="@Model.FilterStatus" asp-route-search="@Model.Search" class="sca-detail-close" aria-label="Đóng chi tiết"><i class="fa-solid fa-xmark"></i></a></header>
+                    <div class="sca-detail-body">
+                        <div class="sca-detail-status"><span class="sca-status @StatusClass(selected.Status)"><i></i>@selected.DisplayStatus</span><small>Gửi lúc @selected.RequestedAt.ToString("HH:mm · dd/MM/yyyy")</small></div>
+                        <section class="sca-info-section"><h3><i class="fa-regular fa-user"></i> Booking &amp; khách hàng</h3><dl><dt>Mã booking</dt><dd><strong>@selected.BookingCode</strong></dd><dt>Khách hàng</dt><dd>@selected.CustomerName</dd><dt>Lý do</dt><dd>@selected.Reason</dd><dt>Ngoại lệ</dt><dd>@(selected.ExceptionReason ?? "Không có")</dd></dl></section>
+                        <section class="sca-route-card"><div><small>LỊCH HIỆN TẠI</small><strong>@selected.OldDate.ToString("dd/MM/yyyy")</strong><span>@selected.OldHallName · @selected.OldShift</span></div><i class="fa-solid fa-arrow-right"></i><div class="new"><small>LỊCH ĐỀ XUẤT</small><strong>@selected.NewDate.ToString("dd/MM/yyyy")</strong><span>@selected.NewHallName · @selected.NewShift</span></div></section>
+                        <div class="sca-note"><i class="fa-solid fa-user-check"></i><div><strong>Kết quả kiểm tra của Quản lý sảnh</strong><p>@(selected.ReviewResult ?? "Chưa có kết quả kiểm tra.")</p></div></div>
+                        <section class="sca-info-section"><h3><i class="fa-solid fa-scale-balanced"></i> Chính sách áp dụng</h3><dl><dt>Phiên bản</dt><dd>POL-CHG-05 · v@selected.PolicyVersion</dd><dt>Phụ phí</dt><dd><strong>@selected.AppliedFee.ToString("N0") ₫</strong></dd></dl></section>
+
+                        @if (selected.Quote is not null)
+                        {
+                            <section class="sca-finance"><header><h3><i class="fa-solid fa-file-invoice-dollar"></i> Báo giá điều chỉnh</h3><span>Phiên bản @selected.Quote.Version</span></header><div class="sca-money"><span>Giá sảnh cũ<b>@selected.Quote.OldHallPrice.ToString("N0") ₫</b></span><span>Giá sảnh mới<b>@selected.Quote.NewHallPrice.ToString("N0") ₫</b></span><span>Chênh lệch<b class="@(selected.Quote.HallPriceDifference < 0 ? "negative" : null)">@selected.Quote.HallPriceDifference.ToString("N0") ₫</b></span><span>Phụ phí vận hành<b>@selected.Quote.ScheduleChangeFee.ToString("N0") ₫</b></span><span class="highlight">Phải thu<b>@selected.Quote.AmountDue.ToString("N0") ₫</b></span><span>Hoàn/giảm dự kiến<b>@Math.Max(selected.Quote.RefundAmount, selected.Quote.CreditAmount).ToString("N0") ₫</b></span></div></section>
+                        }
+
+                        @if (selected.Status == "UNDER_REVIEW")
+                        {
+                            <section class="sca-decision-section"><h3>Xử lý yêu cầu</h3><form class="sca-ajax sca-action-form" asp-action="Quote"><input type="hidden" name="id" value="@selected.ScheduleChangeId" />@Html.AntiForgeryToken()<label><span>Ghi chú báo giá</span><textarea name="note" maxlength="1000" placeholder="Ghi chú dành cho khách hàng..."></textarea></label><div class="sca-modal-notice"><i class="fa-solid fa-circle-info"></i><span>Phụ phí và chênh lệch giá do Backend tính theo chính sách, không thể sửa tại đây.</span></div><button type="submit" class="sca-primary full"><i class="fa-solid fa-file-circle-check"></i><span>Lập báo giá &amp; duyệt có điều kiện</span></button></form><form class="sca-ajax sca-action-form reject" asp-action="Reject"><input type="hidden" name="id" value="@selected.ScheduleChangeId" />@Html.AntiForgeryToken()<label><span>Lý do từ chối <b>*</b></span><textarea name="reason" minlength="3" required></textarea></label><button type="submit" class="sca-danger full"><i class="fa-solid fa-ban"></i><span>Từ chối yêu cầu</span></button></form></section>
+                        }
+                        @if (selected.Status == "RECONCILIATION_REQUIRED")
+                        {
+                            <section class="sca-decision-section reconcile"><h3><i class="fa-solid fa-triangle-exclamation"></i> Xử lý đối soát</h3><form class="sca-ajax sca-action-form" asp-action="Reconcile"><input type="hidden" name="id" value="@selected.ScheduleChangeId" />@Html.AntiForgeryToken()<label><span>Hướng xử lý <b>*</b></span><select name="action"><option value="RECHECK">Kiểm tra lại trạng thái</option><option value="REFUND">Lập yêu cầu hoàn tiền</option><option value="COMPLETE">Hoàn tất nếu đủ điều kiện</option></select></label><label><span>Bằng chứng đối soát <b>*</b></span><textarea name="evidence" minlength="3" required></textarea></label><button type="submit" class="sca-primary full"><i class="fa-solid fa-check-double"></i><span>Ghi nhận xử lý</span></button></form></section>
+                        }
+
+                        @if (Model.Financials is not null)
+                        {
+                            <details class="sca-details" open><summary><span><i class="fa-solid fa-wallet"></i> Tài chính &amp; PayOS</span><i class="fa-solid fa-chevron-down"></i></summary><div class="sca-details-body">
+                                @if (Model.Financials.Transactions.Count == 0) { <p class="sca-muted">Chưa phát sinh giao dịch thanh toán.</p> }
+                                @foreach (var transaction in Model.Financials.Transactions) { <article class="sca-transaction"><header><strong>OrderCode @transaction.OrderCode</strong><span>@transaction.Status</span></header><dl><dt>Thực chuyển</dt><dd>@transaction.ActualAmount.ToString("N0") ₫</dd><dt>Giá trị nghiệp vụ</dt><dd>@transaction.BusinessAmount.ToString("N0") ₫</dd><dt>Thanh toán lúc</dt><dd>@(transaction.PaidAt?.ToString("dd/MM/yyyy HH:mm") ?? "Chưa thanh toán")</dd></dl>@if (!string.IsNullOrWhiteSpace(transaction.ReconciliationData)) { <p>@transaction.ReconciliationData</p> }</article> }
+                                @foreach (var refund in Model.Financials.Refunds) { <form class="sca-ajax sca-refund" asp-action="ConfirmRefund"><input type="hidden" name="id" value="@selected.ScheduleChangeId" /><input type="hidden" name="refundId" value="@refund.RefundId" />@Html.AntiForgeryToken()<div><strong>Hoàn tiền #@refund.RefundId</strong><span>@refund.Amount.ToString("N0") ₫ · @refund.Status</span></div>@if (refund.Status != "COMPLETED") { <textarea name="evidence" minlength="3" required placeholder="Nhập chứng từ hoàn tiền thủ công..."></textarea><button type="submit" class="sca-secondary">Xác nhận đã hoàn</button> }</form> }
+                                @if (Model.Financials.Amendment is not null) { <article class="sca-amendment"><i class="fa-solid fa-file-contract"></i><div><strong>Phụ lục hợp đồng #@Model.Financials.Amendment.AmendmentId</strong><span>Hiệu lực @Model.Financials.Amendment.EffectiveAt.ToString("dd/MM/yyyy") · @Model.Financials.Amendment.Status</span><p>@Model.Financials.Amendment.Content</p></div></article> }
+                            </div></details>
+                        }
+                        <details class="sca-details"><summary><span><i class="fa-solid fa-clock-rotate-left"></i> Lịch sử xử lý</span><i class="fa-solid fa-chevron-down"></i></summary><div class="sca-details-body"><ol class="sca-timeline">@foreach (var history in selected.History) { <li><i></i><div><strong>@ScheduleChangeStatusDisplay.Name(history.ToStatus)</strong><time>@history.ChangedAt.ToString("dd/MM/yyyy HH:mm")</time><p>@history.Note</p></div></li> }</ol></div></details>
+                    </div>
+                </aside>
+            }
+        </div>
+        <footer class="sca-panel-footer"><span>Hiển thị @Model.Items.Count yêu cầu</span><span>Dữ liệu toàn hệ thống</span></footer>
+    </section>
+</main>
+
+@section Scripts { <script src="~/js/schedule-change-admin.js" asp-append-version="true"></script> }

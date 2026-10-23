@@ -12,10 +12,11 @@ public class PublicBookingLookupInputViewModel
     [Display(Name = "Mã đặt tiệc")]
     public string BookingCode { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Vui lòng nhập số điện thoại.")]
-    [RegularExpression(@"^0\d{9}$",
-        ErrorMessage = "Số điện thoại phải gồm đúng 10 số và bắt đầu bằng 0.")]
-    [Display(Name = "Số điện thoại")]
+    [Required(ErrorMessage = "Vui lòng nhập email hoặc số điện thoại.")]
+    [RegularExpression(@"^(0\d{9}|[^\s@]+@[^\s@]+\.[^\s@]+)$",
+        ErrorMessage = "Vui lòng nhập số điện thoại 10 số hoặc email hợp lệ.")]
+    [StringLength(320)]
+    [Display(Name = "Email hoặc số điện thoại")]
     public string PhoneNumber { get; set; } = string.Empty;
 
     [MaxLength(500, ErrorMessage = "Lý do hủy không được vượt quá 500 ký tự.")]

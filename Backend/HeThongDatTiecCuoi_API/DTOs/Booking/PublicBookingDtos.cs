@@ -13,9 +13,10 @@ public sealed class PublicBookingLookupRequestDto
         ErrorMessage = "Mã đặt tiệc phải có dạng DT-yyyyMMdd-XXXX (ví dụ DT-20261012-0001).")]
     public string BookingCode { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Vui lòng nhập số điện thoại.")]
-    [RegularExpression(@"^0\d{9}$",
-        ErrorMessage = "Số điện thoại Việt Nam phải gồm đúng 10 số và bắt đầu bằng 0.")]
+    [Required(ErrorMessage = "Vui lòng nhập email hoặc số điện thoại.")]
+    [RegularExpression(@"^(0\d{9}|[^\s@]+@[^\s@]+\.[^\s@]+)$",
+        ErrorMessage = "Vui lòng nhập số điện thoại 10 số hoặc địa chỉ email hợp lệ.")]
+    [MaxLength(320)]
     public string PhoneNumber { get; set; } = string.Empty;
 }
 
@@ -29,9 +30,10 @@ public sealed class PublicBookingCancelHoldRequestDto
         ErrorMessage = "Mã đặt tiệc phải có dạng DT-yyyyMMdd-XXXX (ví dụ DT-20261012-0001).")]
     public string BookingCode { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Vui lòng nhập số điện thoại.")]
-    [RegularExpression(@"^0\d{9}$",
-        ErrorMessage = "Số điện thoại Việt Nam phải gồm đúng 10 số và bắt đầu bằng 0.")]
+    [Required(ErrorMessage = "Vui lòng nhập email hoặc số điện thoại.")]
+    [RegularExpression(@"^(0\d{9}|[^\s@]+@[^\s@]+\.[^\s@]+)$",
+        ErrorMessage = "Vui lòng nhập số điện thoại 10 số hoặc địa chỉ email hợp lệ.")]
+    [MaxLength(320)]
     public string PhoneNumber { get; set; } = string.Empty;
 
     [MaxLength(500, ErrorMessage = "Lý do hủy không được vượt quá 500 ký tự.")]

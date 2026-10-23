@@ -1,5 +1,6 @@
 ﻿@model List<HeThongDatTiecCuoi_WEB.Models.AdminHall.HallDto>
 @{
+    var schedulePolicyPage = ViewBag.ScheduleChangePolicy as HeThongDatTiecCuoi_WEB.Models.ScheduleChange.ScheduleChangePolicyPageViewModel ?? new();
     ViewData["Title"] = "Quản Trị Bảng Giá & Chính Sách";
     Layout = "_AdminLayout";
 }
@@ -152,6 +153,10 @@
                 <span>Bảng Giá Ca &amp; Trạng Thái Vận Hành Sảnh</span>
                 <span class="text-[10px] sm:text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full border border-slate-200">@(Model?.Count ?? 9) sảnh</span>
             </button>
+            <button id="tab-schedule" onclick="switchTab('schedule')" class="py-3 sm:py-4 font-medium text-xs sm:text-sm text-slate-500 hover:text-slate-800 flex items-center gap-2 flex-shrink-0 whitespace-nowrap transition-colors border-b-2 border-transparent focus-ring">
+                <i class="fa-solid fa-calendar-days text-slate-400"></i><span>Chính sách đổi lịch</span>
+                @if(schedulePolicyPage.Active is not null){<span class="text-[10px] bg-slate-100 px-2 py-0.5 rounded-full">v@schedulePolicyPage.Active.Version</span>}
+            </button>
         </div>
     </div>
 
@@ -251,6 +256,11 @@
 
     <!-- ============ 6. HALL LIST (TAB 2) ============ -->
     <div id="container-pricing" class="hidden grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4"></div>
+    <section id="container-schedule" class="hidden space-y-4">
+        @if(ViewBag.ScheduleChangePolicyError is string policyError){<div class="bg-rose-50 text-rose-800 border border-rose-200 rounded-xl p-4">@policyError</div>}
+        @if(schedulePolicyPage.Active is { } policy){<div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm"><div class="flex justify-between flex-wrap gap-3"><div><p class="text-xs text-[#8C6D32] font-bold">@policy.PolicyCode · phiên bản @policy.Version</p><h3 class="font-serif text-xl font-bold">Chính sách thay đổi lịch đang hiệu lực</h3><p class="text-xs text-slate-500">Hiệu lực từ @policy.EffectiveFrom.ToString("dd/MM/yyyy HH:mm") · @policy.Status</p></div><button type="button" onclick="openSchedulePolicyModal()" class="px-4 py-2 bg-[#B89758] text-white rounded-lg text-xs font-bold">Tạo phiên bản mới</button></div><div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-5"><div class="bg-slate-50 p-3 rounded-lg"><small>Gửi online tối thiểu</small><b class="block">@policy.OnlineMinimumDays ngày</b></div><div class="bg-slate-50 p-3 rounded-lg"><small>Ngày mới tối thiểu</small><b class="block">@policy.NewDateMinimumDays ngày</b></div><div class="bg-slate-50 p-3 rounded-lg"><small>Thanh toán</small><b class="block">@policy.PaymentWindowMinutes phút</b></div><div class="bg-slate-50 p-3 rounded-lg"><small>Giữ chỗ tạm</small><b class="block">@policy.HoldWindowMinutes phút</b></div></div><div class="overflow-auto mt-5"><table class="w-full text-xs"><thead><tr class="text-left border-b"><th class="p-3">Khoảng ngày</th><th>Phụ phí</th><th>Khách gửi online</th></tr></thead><tbody>@foreach(var tier in policy.Tiers.OrderBy(x=>x.MinimumDays)){<tr class="border-b"><td class="p-3">@(tier.MaximumDays.HasValue?$"{tier.MinimumDays}–{tier.MaximumDays} ngày":$"Từ {tier.MinimumDays} ngày")</td><td>@tier.FeeAmount.ToString("N0") ₫</td><td>@(tier.CustomerOnlineAllowed?"Cho phép":"Không cho phép")</td></tr>}</tbody></table></div></div>}
+        <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm"><h3 class="font-serif text-lg font-bold mb-3">Lịch sử phiên bản</h3><div class="overflow-auto"><table class="w-full text-xs"><thead><tr class="text-left border-b"><th class="p-3">Phiên bản</th><th>Hiệu lực từ</th><th>Hiệu lực đến</th><th>Trạng thái</th><th>Ghi chú</th></tr></thead><tbody>@foreach(var p in schedulePolicyPage.History.OrderByDescending(x=>x.Version)){<tr class="border-b"><td class="p-3"><b>v@p.Version</b></td><td>@p.EffectiveFrom.ToString("dd/MM/yyyy HH:mm")</td><td>@(p.EffectiveTo?.ToString("dd/MM/yyyy HH:mm")??"—")</td><td>@p.Status</td><td>@p.ChangeNote</td></tr>}</tbody></table></div></div>
+    </section>
 
 </div>
 
@@ -385,6 +395,11 @@
     </div>
 </div>
 
+<div id="schedulePolicyModal" class="fixed inset-0 hidden items-center justify-center bg-slate-950/70 p-4 z-[100001]">
+ <div class="bg-white rounded-2xl w-full max-w-3xl p-5 max-h-[94vh] overflow-auto"><div class="flex justify-between"><h3 class="font-serif text-lg font-bold">Tạo phiên bản chính sách đổi lịch</h3><button type="button" onclick="closeSchedulePolicyModal()">✕</button></div>
+ <form id="schedulePolicyForm" class="space-y-4 mt-4">@Html.AntiForgeryToken()<div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-3"><label class="text-xs font-bold">Online tối thiểu<input class="w-full border rounded p-2" type="number" name="onlineMinimumDays" min="1" max="30" value="@(schedulePolicyPage.Active?.OnlineMinimumDays??7)" required></label><label class="text-xs font-bold">Ngày mới tối thiểu<input class="w-full border rounded p-2" type="number" name="newDateMinimumDays" min="1" max="365" value="@(schedulePolicyPage.Active?.NewDateMinimumDays??14)" required></label><label class="text-xs font-bold">Thanh toán (phút)<input class="w-full border rounded p-2" type="number" name="paymentWindowMinutes" min="1" max="120" value="@(schedulePolicyPage.Active?.PaymentWindowMinutes??15)" required></label><label class="text-xs font-bold">Giữ chỗ (phút)<input class="w-full border rounded p-2" type="number" name="holdWindowMinutes" min="1" max="120" value="@(schedulePolicyPage.Active?.HoldWindowMinutes??20)" required></label></div><label class="text-xs font-bold block">Hiệu lực từ<input class="block w-full border rounded p-2" type="datetime-local" name="effectiveFrom" required></label><label class="text-xs font-bold block">Ghi chú thay đổi<textarea class="block w-full border rounded p-2" name="changeNote" maxlength="1000" required></textarea></label>
+ <div class="overflow-auto"><table class="w-full text-xs" id="scheduleTierTable"><thead><tr><th>Từ ngày</th><th>Đến ngày</th><th>Phí VNĐ</th><th>Online</th></tr></thead><tbody>@{var policyTiers=schedulePolicyPage.Active?.Tiers.OrderBy(x=>x.MinimumDays).ToList()??new List<HeThongDatTiecCuoi_WEB.Models.ScheduleChange.ScheduleChangePolicyTierViewModel>{new(){MinimumDays=0,MaximumDays=6,FeeAmount=5000000,CustomerOnlineAllowed=false},new(){MinimumDays=7,MaximumDays=29,FeeAmount=5000000,CustomerOnlineAllowed=true},new(){MinimumDays=30,MaximumDays=44,FeeAmount=2000000,CustomerOnlineAllowed=true},new(){MinimumDays=45,FeeAmount=0,CustomerOnlineAllowed=true}};}@foreach(var tier in policyTiers){<tr><td><input class="border rounded p-2 w-24" type="number" data-field="minimumDays" min="0" value="@tier.MinimumDays" required></td><td><input class="border rounded p-2 w-28" type="number" data-field="maximumDays" min="0" value="@tier.MaximumDays"></td><td><input class="border rounded p-2 w-36" type="number" data-field="feeAmount" min="0" value="@tier.FeeAmount" required></td><td><input type="checkbox" data-field="customerOnlineAllowed" checked="@tier.CustomerOnlineAllowed"></td></tr>}</tbody></table></div><div id="schedulePolicyMessage" class="text-xs"></div><button type="submit" class="px-5 py-2 bg-[#B89758] text-white rounded-lg text-xs font-bold">Lưu phiên bản mới vào SQL Server</button></form></div></div>
+
 @Html.AntiForgeryToken()
 
 @section Scripts {
@@ -396,8 +411,7 @@
             { id: 1, ma: 'POL-PAY-01', ten: 'Đặt cọc Đợt 1 - Giữ chỗ sảnh tiệc', phanLoai: 'Đặt cọc & Giữ chỗ', dinhMuc: '20% Tổng dự toán', thoiHan: 'Trong 48 giờ', moTa: 'Khách hàng hoàn tất 20% chi phí dự toán để xác lập hợp đồng chính thức. Quá 48 giờ kể từ khi tạo booking nếu chưa nhận cọc, hệ thống tự động hủy giữ chỗ và mở lại lịch sảnh khả dụng.', canCu: 'Quy chuẩn giữ chỗ 48h', trangThai: 'Hiệu lực' },
             { id: 2, ma: 'POL-PAY-02', ten: 'Thanh toán Đợt 2 - Chốt thực đơn & dịch vụ', phanLoai: 'Thanh toán đợt', dinhMuc: '50% Tổng giá trị', thoiHan: 'Trước tiệc 7 – 10 ngày', moTa: 'Khách hàng chốt chính thức số lượng bàn phát sinh, danh mục ẩm thực và hoàn tất thanh toán lũy kế đạt tối thiểu 70% giá trị hợp đồng.', canCu: 'Quy trình thanh toán 3 đợt', trangThai: 'Hiệu lực' },
             { id: 3, ma: 'POL-PAY-03', ten: 'Quyết toán Đợt 3 - Sau sự kiện', phanLoai: 'Quyết toán thanh lý', dinhMuc: '100% Số dư công nợ', thoiHan: 'Ngay khi tan tiệc', moTa: 'Đối soát các chi phí phát sinh thực tế (bàn dự phòng, thức uống gọi thêm, phụ phí dịch vụ) và thanh toán toàn bộ số tiền còn lại ngay sau tiệc.', canCu: 'Thanh lý & quyết toán', trangThai: 'Hiệu lực' },
-            { id: 4, ma: 'POL-CNC-04', ten: 'Chính sách bồi hoàn & hủy tiệc cưới', phanLoai: 'Hủy hợp đồng', dinhMuc: 'Phạt 50% - 100% Cọc', thoiHan: 'Theo mốc ngày hủy', moTa: 'Hủy trước 60 ngày: phạt 50% tiền cọc Đợt 1; Hủy từ 30-59 ngày: phạt 100% cọc Đợt 1; Hủy dưới 30 ngày: bồi hoàn 50% toàn bộ giá trị hợp đồng.', canCu: 'Bồi thường hợp đồng kinh tế', trangThai: 'Hiệu lực' },
-            { id: 5, ma: 'POL-CHG-05', ten: 'Chính sách dời ngày & chuyển sảnh', phanLoai: 'Thay đổi lịch trình', dinhMuc: 'Miễn phí / Phụ thu lệch giá', thoiHan: 'Báo trước 45 ngày', moTa: 'Báo trước từ 45 ngày: miễn phí chuyển ngày/sảnh lần đầu. Báo dưới 30 ngày phụ thu 5.000.000 VNĐ phí vận hành.', canCu: 'Biến động lịch tiệc', trangThai: 'Hiệu lực' }
+            { id: 4, ma: 'POL-CNC-04', ten: 'Chính sách bồi hoàn & hủy tiệc cưới', phanLoai: 'Hủy hợp đồng', dinhMuc: 'Phạt 50% - 100% Cọc', thoiHan: 'Theo mốc ngày hủy', moTa: 'Hủy trước 60 ngày: phạt 50% tiền cọc Đợt 1; Hủy từ 30-59 ngày: phạt 100% cọc Đợt 1; Hủy dưới 30 ngày: bồi hoàn 50% toàn bộ giá trị hợp đồng.', canCu: 'Bồi thường hợp đồng kinh tế', trangThai: 'Hiệu lực' }
         ];
 
         const rawHalls = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model ?? new List<HeThongDatTiecCuoi_WEB.Models.AdminHall.HallDto>()));
@@ -471,6 +485,17 @@
             const cR = document.getElementById('container-pricing');
             const bc = document.getElementById('btnCreate');
             const bcl = document.getElementById('btnCreateLabel');
+            const tS = document.getElementById('tab-schedule');
+            const cS = document.getElementById('container-schedule');
+
+            if (tab === 'schedule') {
+                cP.classList.add('hidden'); cR.classList.add('hidden'); cS.classList.remove('hidden'); bc.classList.add('hidden');
+                [tP, tR].forEach(x => x.className = 'py-3 sm:py-4 font-medium text-xs sm:text-sm text-slate-500 hover:text-slate-800 flex items-center gap-2 flex-shrink-0 whitespace-nowrap transition-colors border-b-2 border-transparent focus-ring');
+                tS.className = 'py-3 sm:py-4 font-bold text-xs sm:text-sm border-b-2 border-[#B89758] text-slate-900 flex items-center gap-2 flex-shrink-0 whitespace-nowrap focus-ring transition-colors';
+                return;
+            }
+            cS.classList.add('hidden');
+            tS.className = 'py-3 sm:py-4 font-medium text-xs sm:text-sm text-slate-500 hover:text-slate-800 flex items-center gap-2 flex-shrink-0 whitespace-nowrap transition-colors border-b-2 border-transparent focus-ring';
 
             if (tab === 'payment') {
                 tP.className = 'py-3 sm:py-4 font-bold text-xs sm:text-sm border-b-2 border-[#B89758] text-slate-900 flex items-center gap-2 flex-shrink-0 whitespace-nowrap focus-ring transition-colors';
@@ -956,6 +981,21 @@
             document.getElementById('confirmModal').classList.remove('flex');
             confirmCallback = null;
         }
+
+        function openSchedulePolicyModal() {
+            const modal = document.getElementById('schedulePolicyModal'); modal.classList.remove('hidden'); modal.classList.add('flex');
+            const input = document.querySelector('#schedulePolicyForm [name="effectiveFrom"]');
+            if (!input.value) { const d = new Date(Date.now() + 86400000); input.value = new Date(d - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16); }
+        }
+        function closeSchedulePolicyModal() { const modal = document.getElementById('schedulePolicyModal'); modal.classList.add('hidden'); modal.classList.remove('flex'); }
+        document.getElementById('schedulePolicyForm')?.addEventListener('submit', async function (event) {
+            event.preventDefault(); const message = document.getElementById('schedulePolicyMessage'); const button = this.querySelector('button[type="submit"]');
+            const tiers = [...document.querySelectorAll('#scheduleTierTable tbody tr')].map(row => { const max = row.querySelector('[data-field="maximumDays"]').value; return { minimumDays: Number(row.querySelector('[data-field="minimumDays"]').value), maximumDays: max === '' ? null : Number(max), feeAmount: Number(row.querySelector('[data-field="feeAmount"]').value), customerOnlineAllowed: row.querySelector('[data-field="customerOnlineAllowed"]').checked }; }).sort((a,b)=>a.minimumDays-b.minimumDays);
+            for (let i=0;i<tiers.length;i++) if (tiers[i].feeAmount<0 || (tiers[i].maximumDays!==null && tiers[i].maximumDays<tiers[i].minimumDays) || (i>0 && (tiers[i-1].maximumDays===null || tiers[i].minimumDays<=tiers[i-1].maximumDays))) { message.className='text-xs text-rose-600'; message.textContent='Khoảng ngày không hợp lệ hoặc bị chồng lấn.'; return; }
+            const form = new FormData(this); const payload = { onlineMinimumDays:Number(form.get('onlineMinimumDays')), newDateMinimumDays:Number(form.get('newDateMinimumDays')), paymentWindowMinutes:Number(form.get('paymentWindowMinutes')), holdWindowMinutes:Number(form.get('holdWindowMinutes')), effectiveFrom:new Date(form.get('effectiveFrom')).toISOString(), changeNote:form.get('changeNote'), tiers };
+            button.disabled=true; message.textContent='Đang lưu vào SQL Server...';
+            try { const response=await fetch('@Url.Action("CreateScheduleChangePolicyVersion","AdminPricingPolicy")',{method:'POST',headers:{'Content-Type':'application/json','RequestVerificationToken':form.get('__RequestVerificationToken')},body:JSON.stringify(payload)}); const result=await response.json(); if(!response.ok||!result.success)throw new Error(result.message||'Không thể lưu chính sách.'); showToast('Đã lưu','Phiên bản chính sách mới đã được tạo.'); location.reload(); } catch(error) { message.className='text-xs text-rose-600'; message.textContent=error.message; } finally { button.disabled=false; }
+        });
 
         function exportExcel() {
             const wb = XLSX.utils.book_new();

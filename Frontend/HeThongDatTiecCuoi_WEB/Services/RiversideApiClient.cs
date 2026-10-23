@@ -22,6 +22,7 @@ using HeThongDatTiecCuoi_WEB.Models.Incident;
 using HeThongDatTiecCuoi_WEB.Models.Coordination;
 using Microsoft.AspNetCore.Mvc;
 using HeThongDatTiecCuoi_WEB.Models.DecorPackages;
+using HeThongDatTiecCuoi_WEB.Models.ScheduleChange;
 using HeThongDatTiecCuoi_WEB.Options;
 using Microsoft.Extensions.Options;
 
@@ -2726,6 +2727,163 @@ public sealed class RiversideApiClient : IRiversideApiClient
         {
             return ApiCallResult<HeThongDatTiecCuoi_WEB.Models.ManagerContractPayment.PdfDownloadViewModel>.Failure($"Lỗi tải hóa đơn điện tử: {ex.Message}");
         }
+    }
+
+    public Task<ApiCallResult<ScheduleChangeEligibilityViewModel>> GetScheduleChangeEligibilityAsync(
+        string bookingCode, string phoneNumber, CancellationToken cancellationToken) =>
+        SendEnvelopeAsync<ScheduleChangeEligibilityViewModel>(HttpMethod.Post, "api/v1/public/schedule-changes/eligibility",
+            new { bookingCode, phoneNumber }, null, cancellationToken);
+
+    public Task<ApiCallResult<List<ScheduleChangeAvailabilityViewModel>>> GetScheduleChangeAvailabilityAsync(
+        string bookingCode, string phoneNumber, DateTime date, string shift, CancellationToken cancellationToken) =>
+        SendEnvelopeAsync<List<ScheduleChangeAvailabilityViewModel>>(HttpMethod.Post, "api/v1/public/schedule-changes/availability",
+            new { bookingCode, phoneNumber, date, shift }, null, cancellationToken);
+
+    public async Task<ApiCallResult<string>> SendScheduleChangeOtpAsync(string bookingCode, string phoneNumber,
+        string purpose, int? scheduleChangeId, CancellationToken cancellationToken)
+    {
+        var result = await SendEnvelopeAsync<JsonElement>(HttpMethod.Post, "api/v1/public/schedule-changes/otp/send",
+            new { bookingCode, phoneNumber, purpose, scheduleChangeId }, null, cancellationToken);
+        return result.Succeeded
+            ? ApiCallResult<string>.Success("Mã OTP đã được gửi qua SMS.")
+            : ApiCallResult<string>.Failure(result.Error ?? "Không thể gửi OTP.", result.StatusCode);
+    }
+
+    public Task<ApiCallResult<OtpVerificationViewModel>> VerifyScheduleChangeOtpAsync(string bookingCode,
+        string phoneNumber, string purpose, int? scheduleChangeId, string code, CancellationToken cancellationToken) =>
+        SendEnvelopeAsync<OtpVerificationViewModel>(HttpMethod.Post, "api/v1/public/schedule-changes/otp/verify",
+            new { bookingCode, phoneNumber, purpose, scheduleChangeId, code }, null, cancellationToken);
+
+    public Task<ApiCallResult<ScheduleChangeViewModel>> CreateScheduleChangeAsync(CreateScheduleChangeInput input,
+        CancellationToken cancellationToken) => SendEnvelopeAsync<ScheduleChangeViewModel>(HttpMethod.Post,
+        "api/v1/public/schedule-changes", input, null, cancellationToken);
+
+    public Task<ApiCallResult<List<ScheduleChangeViewModel>>> LookupScheduleChangesAsync(string bookingCode,
+        string phoneNumber, CancellationToken cancellationToken) => SendEnvelopeAsync<List<ScheduleChangeViewModel>>(
+        HttpMethod.Post, "api/v1/public/schedule-changes/lookup", new { bookingCode, phoneNumber }, null, cancellationToken);
+
+    public Task<ApiCallResult<ScheduleChangeViewModel>> GetPublicScheduleChangeAsync(int id, string bookingCode,
+        string phoneNumber, CancellationToken cancellationToken) => SendEnvelopeAsync<ScheduleChangeViewModel>(
+        HttpMethod.Post, $"api/v1/public/schedule-changes/{id}/detail", new { bookingCode, phoneNumber }, null, cancellationToken);
+
+    public Task<ApiCallResult<QuoteAcceptanceResultViewModel>> AcceptScheduleChangeQuoteAsync(int id,
+        string bookingCode, string phoneNumber, int quoteId, string verificationToken, CancellationToken cancellationToken) =>
+        SendEnvelopeAsync<QuoteAcceptanceResultViewModel>(HttpMethod.Post,
+            $"api/v1/public/schedule-changes/{id}/quote/accept",
+            new { bookingCode, phoneNumber, quoteId, verificationToken }, null, cancellationToken);
+
+    public Task<ApiCallResult<ScheduleChangeViewModel>> WithdrawScheduleChangeAsync(int id, string bookingCode,
+        string phoneNumber, string reason, CancellationToken cancellationToken) =>
+        SendEnvelopeAsync<ScheduleChangeViewModel>(HttpMethod.Post,
+            $"api/v1/public/schedule-changes/{id}/withdraw", new { bookingCode, phoneNumber, reason }, null, cancellationToken);
+
+    public Task<ApiCallResult<ScheduleChangePaymentViewModel>> GetScheduleChangePaymentStatusAsync(int id,
+        string bookingCode, string phoneNumber, CancellationToken cancellationToken) =>
+        SendEnvelopeAsync<ScheduleChangePaymentViewModel>(HttpMethod.Post,
+            $"api/v1/public/schedule-changes/{id}/payment/status", new { bookingCode, phoneNumber }, null, cancellationToken);
+
+    public Task<ApiCallResult<List<ScheduleChangeViewModel>>> GetHallManagerScheduleChangesAsync(string accessToken,
+        string? status, CancellationToken cancellationToken) => SendEnvelopeAsync<List<ScheduleChangeViewModel>>(
+        HttpMethod.Get, $"api/hall-manager/schedule-changes{StatusQuery(status)}", null, accessToken, cancellationToken);
+
+    public Task<ApiCallResult<ScheduleChangeViewModel>> GetHallManagerScheduleChangeAsync(string accessToken, int id,
+        CancellationToken cancellationToken) => SendEnvelopeAsync<ScheduleChangeViewModel>(HttpMethod.Get,
+        $"api/hall-manager/schedule-changes/{id}", null, accessToken, cancellationToken);
+
+    public Task<ApiCallResult<ScheduleChangeViewModel>> CreateHallManagerScheduleChangeAsync(string accessToken,
+        HallManagerCreateScheduleChangeInput input, CancellationToken cancellationToken) =>
+        SendEnvelopeAsync<ScheduleChangeViewModel>(HttpMethod.Post, "api/hall-manager/schedule-changes", input,
+            accessToken, cancellationToken);
+
+    public Task<ApiCallResult<ScheduleChangeViewModel>> ReviewScheduleChangeAsync(string accessToken, int id,
+        string reviewResult, CancellationToken cancellationToken) => SendEnvelopeAsync<ScheduleChangeViewModel>(
+        HttpMethod.Post, $"api/hall-manager/schedule-changes/{id}/review", new { reviewResult }, accessToken, cancellationToken);
+
+    public Task<ApiCallResult<List<ScheduleChangeViewModel>>> GetManagerScheduleChangesAsync(string accessToken,
+        string? status, CancellationToken cancellationToken) => SendEnvelopeAsync<List<ScheduleChangeViewModel>>(
+        HttpMethod.Get, $"api/manager/schedule-changes{StatusQuery(status)}", null, accessToken, cancellationToken);
+
+    public Task<ApiCallResult<ScheduleChangeViewModel>> GetManagerScheduleChangeAsync(string accessToken, int id,
+        CancellationToken cancellationToken) => SendEnvelopeAsync<ScheduleChangeViewModel>(HttpMethod.Get,
+        $"api/manager/schedule-changes/{id}", null, accessToken, cancellationToken);
+
+    public Task<ApiCallResult<ScheduleChangeViewModel>> QuoteScheduleChangeAsync(string accessToken, int id,
+        string? note, CancellationToken cancellationToken) => SendEnvelopeAsync<ScheduleChangeViewModel>(HttpMethod.Post,
+        $"api/manager/schedule-changes/{id}/quote", new { note }, accessToken, cancellationToken);
+
+    public Task<ApiCallResult<ScheduleChangeViewModel>> RejectScheduleChangeAsync(string accessToken, int id,
+        string reason, CancellationToken cancellationToken) => SendEnvelopeAsync<ScheduleChangeViewModel>(HttpMethod.Post,
+        $"api/manager/schedule-changes/{id}/reject", new { reason }, accessToken, cancellationToken);
+
+    public Task<ApiCallResult<ScheduleChangeViewModel>> ReconcileScheduleChangeAsync(string accessToken, int id,
+        string action, string evidence, CancellationToken cancellationToken) => SendEnvelopeAsync<ScheduleChangeViewModel>(
+        HttpMethod.Post, $"api/manager/schedule-changes/{id}/reconcile", new { action, evidence }, accessToken, cancellationToken);
+
+    public Task<ApiCallResult<ScheduleChangeFinancialViewModel>> GetScheduleChangeFinancialsAsync(string accessToken,
+        int id, CancellationToken cancellationToken) => SendEnvelopeAsync<ScheduleChangeFinancialViewModel>(HttpMethod.Get,
+        $"api/manager/schedule-changes/{id}/financials", null, accessToken, cancellationToken);
+
+    public Task<ApiCallResult<ScheduleChangeFinancialViewModel>> ConfirmScheduleChangeRefundAsync(string accessToken,
+        int id, int refundId, string evidence, CancellationToken cancellationToken) =>
+        SendEnvelopeAsync<ScheduleChangeFinancialViewModel>(HttpMethod.Post,
+            $"api/manager/schedule-changes/{id}/refunds/{refundId}/confirm", new { evidence }, accessToken, cancellationToken);
+
+    public Task<ApiCallResult<ScheduleChangePolicyViewModel>> GetActiveScheduleChangePolicyAsync(string accessToken,
+        CancellationToken cancellationToken) => SendEnvelopeAsync<ScheduleChangePolicyViewModel>(HttpMethod.Get,
+        "api/admin/schedule-change-policy/active", null, accessToken, cancellationToken);
+
+    public Task<ApiCallResult<List<ScheduleChangePolicyViewModel>>> GetScheduleChangePolicyHistoryAsync(string accessToken,
+        CancellationToken cancellationToken) => SendEnvelopeAsync<List<ScheduleChangePolicyViewModel>>(HttpMethod.Get,
+        "api/admin/schedule-change-policy/history", null, accessToken, cancellationToken);
+
+    public Task<ApiCallResult<ScheduleChangePolicyViewModel>> CreateScheduleChangePolicyVersionAsync(string accessToken,
+        ScheduleChangePolicyVersionInput input, CancellationToken cancellationToken) =>
+        SendEnvelopeAsync<ScheduleChangePolicyViewModel>(HttpMethod.Post, "api/admin/schedule-change-policy/versions",
+            input, accessToken, cancellationToken);
+
+    private static string StatusQuery(string? status) => string.IsNullOrWhiteSpace(status)
+        ? string.Empty : $"?status={Uri.EscapeDataString(status.Trim())}";
+
+    private async Task<ApiCallResult<T>> SendEnvelopeAsync<T>(HttpMethod method, string uri, object? body,
+        string? accessToken, CancellationToken cancellationToken)
+    {
+        try
+        {
+            using var request = new HttpRequestMessage(method, uri);
+            if (body is not null) request.Content = JsonContent.Create(body);
+            if (!string.IsNullOrWhiteSpace(accessToken))
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+            using var response = await _httpClient.SendAsync(request, cancellationToken);
+            var json = await response.Content.ReadAsStringAsync(cancellationToken);
+            if (response.IsSuccessStatusCode)
+            {
+                var envelope = JsonSerializer.Deserialize<ScheduleChangeEnvelope<T>>(json, JsonOptions);
+                return envelope is not null
+                    ? ApiCallResult<T>.Success(envelope.Data)
+                    : ApiCallResult<T>.Failure("API trả về dữ liệu rỗng.", (int)response.StatusCode);
+            }
+            var error = string.IsNullOrWhiteSpace(json) ? null : JsonSerializer.Deserialize<ApiErrorDto>(json, JsonOptions);
+            return ApiCallResult<T>.Failure(error?.Message ?? $"Yêu cầu không thành công ({(int)response.StatusCode}).",
+                (int)response.StatusCode);
+        }
+        catch (HttpRequestException)
+        {
+            return ApiCallResult<T>.Failure("Không thể kết nối Backend API. Hãy kiểm tra API đã chạy hay chưa.");
+        }
+        catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return ApiCallResult<T>.Failure("Backend API phản hồi quá lâu.");
+        }
+        catch (JsonException)
+        {
+            return ApiCallResult<T>.Failure("Phản hồi từ Backend không đúng định dạng mong đợi.");
+        }
+    }
+
+    private sealed class ScheduleChangeEnvelope<T>
+    {
+        public bool Success { get; set; }
+        public T Data { get; set; } = default!;
     }
 }
 

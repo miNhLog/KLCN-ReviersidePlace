@@ -8,6 +8,8 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using HeThongDatTiecCuoi_WEB.Models.MyBookings;
 using HeThongDatTiecCuoi_WEB.Services;
+using HeThongDatTiecCuoi_WEB.Models.ScheduleChange;
+using HeThongDatTiecCuoi_WEB.Models.Auth;
 
 namespace HeThongDatTiecCuoi_WEB.Controllers;
 
@@ -48,14 +50,17 @@ public class MyBookingController : Controller
             };
             ViewBag.LookupInput = input;
 
-            // Auto-lookup khi query đủ mã + SĐT hợp lệ (deep-link từ Recommendation sau khi giữ chỗ).
+            // Auto-lookup khi query đủ mã + email/SĐT hợp lệ (deep-link từ Recommendation sau khi giữ chỗ).
             if (IsLookupShapeValid(normalizedCode, targetPhone))
             {
                 var result = await _apiClient.LookupPublicBookingAsync(normalizedCode, targetPhone, cancellationToken);
                 if (result.Succeeded && result.Value is not null)
+                {
                     ViewBag.LookupDetail = result.Value;
+                    await LoadScheduleChangeDataAsync(normalizedCode, targetPhone, cancellationToken);
+                }
                 else
-                    ViewBag.LookupError = result.Error ?? "Thông tin mã đặt tiệc hoặc số điện thoại không chính xác.";
+                    ViewBag.LookupError = result.Error ?? "Mã đặt tiệc hoặc email/số điện thoại không chính xác.";
             }
 
             // Danh sách cũ (tương thích): best-effort, lỗi thì list rỗng, không throw.
@@ -100,7 +105,7 @@ public class MyBookingController : Controller
 
             if (!ModelState.IsValid)
             {
-                ViewBag.LookupError = "Vui lòng nhập đúng mã đặt tiệc (DT-yyyyMMdd-XXXX) và SĐT 10 số.";
+                ViewBag.LookupError = "Vui lòng nhập đúng mã đặt tiệc và email hoặc số điện thoại đã đăng ký.";
                 ViewBag.MyBookings = new List<MyBookingViewModel>();
                 return View("Index", input);
             }
@@ -109,6 +114,7 @@ public class MyBookingController : Controller
             if (result.Succeeded && result.Value is not null)
             {
                 ViewBag.LookupDetail = result.Value;
+                await LoadScheduleChangeDataAsync(input.BookingCode, input.PhoneNumber, cancellationToken);
                 Response.Cookies.Append("customer_phone", input.PhoneNumber, new CookieOptions
                 {
                     Expires = DateTimeOffset.Now.AddDays(30),
@@ -122,7 +128,7 @@ public class MyBookingController : Controller
             }
             else
             {
-                ViewBag.LookupError = result.Error ?? "Thông tin mã đặt tiệc hoặc số điện thoại không chính xác.";
+                ViewBag.LookupError = result.Error ?? "Mã đặt tiệc hoặc email/số điện thoại không chính xác.";
                 if (result.StatusCode == 429)
                     Response.StatusCode = 429;
             }
@@ -139,6 +145,86 @@ public class MyBookingController : Controller
             ViewBag.MyBookings = new List<MyBookingViewModel>();
             return View("Index", input);
         }
+    }
+
+    [HttpPost("ScheduleChange/Availability")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ScheduleChangeAvailability(string bookingCode, string phoneNumber,
+        DateTime date, string shift, CancellationToken cancellationToken)
+    {
+        var result = await _apiClient.GetScheduleChangeAvailabilityAsync(bookingCode, phoneNumber, date, shift, cancellationToken);
+        return ToJson(result);
+    }
+
+    [HttpPost("ScheduleChange/Otp/Send")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SendScheduleChangeOtp(string bookingCode, string phoneNumber, string purpose,
+        int? scheduleChangeId, CancellationToken cancellationToken)
+    {
+        var result = await _apiClient.SendScheduleChangeOtpAsync(bookingCode, phoneNumber, purpose, scheduleChangeId, cancellationToken);
+        return ToJson(result);
+    }
+
+    [HttpPost("ScheduleChange/Otp/Verify")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> VerifyScheduleChangeOtp(string bookingCode, string phoneNumber, string purpose,
+        int? scheduleChangeId, string code, CancellationToken cancellationToken)
+    {
+        var result = await _apiClient.VerifyScheduleChangeOtpAsync(bookingCode, phoneNumber, purpose, scheduleChangeId, code, cancellationToken);
+        return ToJson(result);
+    }
+
+    [HttpPost("ScheduleChange/Create")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CreateScheduleChange(CreateScheduleChangeInput input, CancellationToken cancellationToken)
+    {
+        var result = await _apiClient.CreateScheduleChangeAsync(input, cancellationToken);
+        return ToJson(result);
+    }
+
+    [HttpPost("ScheduleChange/AcceptQuote")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AcceptScheduleChangeQuote(int scheduleChangeId, string bookingCode,
+        string phoneNumber, int quoteId, string verificationToken, CancellationToken cancellationToken)
+    {
+        var result = await _apiClient.AcceptScheduleChangeQuoteAsync(scheduleChangeId, bookingCode, phoneNumber,
+            quoteId, verificationToken, cancellationToken);
+        return ToJson(result);
+    }
+
+    [HttpPost("ScheduleChange/Withdraw")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> WithdrawScheduleChange(int scheduleChangeId, string bookingCode,
+        string phoneNumber, string reason, CancellationToken cancellationToken)
+    {
+        var result = await _apiClient.WithdrawScheduleChangeAsync(scheduleChangeId, bookingCode, phoneNumber, reason, cancellationToken);
+        return ToJson(result);
+    }
+
+    [HttpPost("ScheduleChange/PaymentStatus")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ScheduleChangePaymentStatus(int scheduleChangeId, string bookingCode,
+        string phoneNumber, CancellationToken cancellationToken)
+    {
+        var result = await _apiClient.GetScheduleChangePaymentStatusAsync(scheduleChangeId, bookingCode, phoneNumber, cancellationToken);
+        return ToJson(result);
+    }
+
+    private async Task LoadScheduleChangeDataAsync(string bookingCode, string phoneNumber, CancellationToken cancellationToken)
+    {
+        var eligibilityTask = _apiClient.GetScheduleChangeEligibilityAsync(bookingCode, phoneNumber, cancellationToken);
+        var historyTask = _apiClient.LookupScheduleChangesAsync(bookingCode, phoneNumber, cancellationToken);
+        await Task.WhenAll(eligibilityTask, historyTask);
+        ViewBag.ScheduleChangeEligibility = eligibilityTask.Result.Value;
+        ViewBag.ScheduleChangeEligibilityError = eligibilityTask.Result.Error;
+        ViewBag.ScheduleChanges = historyTask.Result.Value ?? [];
+        ViewBag.ScheduleChangeHistoryError = historyTask.Result.Error;
+    }
+
+    private JsonResult ToJson<T>(ApiCallResult<T> result)
+    {
+        if (result.StatusCode.HasValue) Response.StatusCode = result.StatusCode.Value;
+        return Json(new { success = result.Succeeded, data = result.Value, message = result.Error });
     }
 
     // POST /MyBooking/CancelHold — gọi Backend cancel-hold, trả JSON cho modal.
@@ -186,7 +272,7 @@ public class MyBookingController : Controller
                 targetPhone = User.FindFirstValue(ClaimTypes.MobilePhone) ?? User.FindFirstValue("phone") ?? string.Empty;
 
             if (!IsLookupShapeValid(code, targetPhone))
-                return BadRequest("Thông tin mã đặt tiệc hoặc số điện thoại không hợp lệ.");
+                return BadRequest("Mã đặt tiệc hoặc email/số điện thoại không hợp lệ.");
 
             var result = await _apiClient.DownloadInvoicePdfAsync(code, targetPhone, cancellationToken);
             if (result.Succeeded && result.Value is not null)
@@ -205,8 +291,8 @@ public class MyBookingController : Controller
         }
     }
 
-    private static bool IsLookupShapeValid(string code, string phone) =>
+    private static bool IsLookupShapeValid(string code, string contact) =>
         Regex.IsMatch(code ?? string.Empty, @"^DT-\d{8}-[A-Z0-9]{4,}$")
-        && Regex.IsMatch(phone ?? string.Empty, @"^0\d{9}$");
+        && Regex.IsMatch(contact ?? string.Empty, @"^(0\d{9}|[^\s@]+@[^\s@]+\.[^\s@]+)$", RegexOptions.IgnoreCase);
 }
 

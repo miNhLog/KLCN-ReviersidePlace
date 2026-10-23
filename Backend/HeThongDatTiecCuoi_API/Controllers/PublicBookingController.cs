@@ -43,7 +43,7 @@ public sealed class PublicBookingController : ControllerBase
         _coordinationAssignments = coordinationAssignments;
     }
 
-    /// <summary>UC14: POST /api/v1/public/bookings/lookup — tra cứu bằng mã + SĐT.</summary>
+    /// <summary>UC14: POST /api/v1/public/bookings/lookup — tra cứu bằng mã + email hoặc SĐT.</summary>
     [HttpPost("lookup")]
     public async Task<IActionResult> Lookup([FromBody] PublicBookingLookupRequestDto? request)
     {
@@ -65,7 +65,9 @@ public sealed class PublicBookingController : ControllerBase
                 });
 
             var code = request.BookingCode.Trim().ToUpperInvariant();
-            var phone = request.PhoneNumber.Trim();
+            var contact = request.PhoneNumber.Trim();
+            var normalizedEmail = contact.ToLowerInvariant();
+            var lookupByEmail = contact.Contains('@');
             var existingId = await _context.DataStatuses
                 .Where(x => x.DataStatusCode == DataStatusCodes.Existing)
                 .Select(x => x.DataStatusId).SingleAsync();
@@ -83,7 +85,8 @@ public sealed class PublicBookingController : ControllerBase
                 .Include(b => b.CoordinationAssignments).ThenInclude(a => a.Status)
                 .SingleOrDefaultAsync(b =>
                     b.BookingCode == code &&
-                    b.Customer.PhoneNumber == phone &&
+                    (lookupByEmail ? b.Customer.Email != null && b.Customer.Email.ToLower() == normalizedEmail
+                        : b.Customer.PhoneNumber == contact) &&
                     b.Customer.DataStatusId == existingId);
 
             if (booking is null)
@@ -93,7 +96,7 @@ public sealed class PublicBookingController : ControllerBase
                 return NotFound(new
                 {
                     success = false,
-                    message = "Thông tin mã đặt tiệc hoặc số điện thoại không chính xác."
+                    message = "Mã đặt tiệc hoặc email/số điện thoại không chính xác."
                 });
             }
 
@@ -131,7 +134,9 @@ public sealed class PublicBookingController : ControllerBase
                 return BadRequest(new { success = false, message = "Lý do hủy không được vượt quá 500 ký tự." });
 
             var code = request.BookingCode.Trim().ToUpperInvariant();
-            var phone = request.PhoneNumber.Trim();
+            var contact = request.PhoneNumber.Trim();
+            var normalizedEmail = contact.ToLowerInvariant();
+            var lookupByEmail = contact.Contains('@');
             var existingId = await _context.DataStatuses
                 .Where(x => x.DataStatusCode == DataStatusCodes.Existing)
                 .Select(x => x.DataStatusId).SingleAsync();
@@ -143,14 +148,15 @@ public sealed class PublicBookingController : ControllerBase
                 .SingleOrDefaultAsync(b =>
                     b.BookingId == id &&
                     b.BookingCode == code &&
-                    b.Customer.PhoneNumber == phone &&
+                    (lookupByEmail ? b.Customer.Email != null && b.Customer.Email.ToLower() == normalizedEmail
+                        : b.Customer.PhoneNumber == contact) &&
                     b.Customer.DataStatusId == existingId);
 
             if (booking is null)
                 return NotFound(new
                 {
                     success = false,
-                    message = "Thông tin mã đặt tiệc hoặc số điện thoại không chính xác."
+                    message = "Mã đặt tiệc hoặc email/số điện thoại không chính xác."
                 });
 
             if (booking.Status.StatusGroup != StatusGroups.Booking ||

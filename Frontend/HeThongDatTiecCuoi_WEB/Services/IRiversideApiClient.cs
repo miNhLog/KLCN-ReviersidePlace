@@ -19,6 +19,7 @@ using HeThongDatTiecCuoi_WEB.Models.Incident;
 using HeThongDatTiecCuoi_WEB.Models.Coordination;
 using Microsoft.AspNetCore.Mvc;
 using HeThongDatTiecCuoi_WEB.Models.DecorPackages;
+using HeThongDatTiecCuoi_WEB.Models.ScheduleChange;
 
 public interface IRiversideApiClient
 {
@@ -448,4 +449,30 @@ public interface IRiversideApiClient
         string bookingCode,
         string phoneNumber,
         CancellationToken cancellationToken = default);
+
+    // Thay đổi lịch tiệc cưới - public, vận hành, quản lý và chính sách.
+    Task<ApiCallResult<ScheduleChangeEligibilityViewModel>> GetScheduleChangeEligibilityAsync(string bookingCode, string phoneNumber, CancellationToken cancellationToken);
+    Task<ApiCallResult<List<ScheduleChangeAvailabilityViewModel>>> GetScheduleChangeAvailabilityAsync(string bookingCode, string phoneNumber, DateTime date, string shift, CancellationToken cancellationToken);
+    Task<ApiCallResult<string>> SendScheduleChangeOtpAsync(string bookingCode, string phoneNumber, string purpose, int? scheduleChangeId, CancellationToken cancellationToken);
+    Task<ApiCallResult<OtpVerificationViewModel>> VerifyScheduleChangeOtpAsync(string bookingCode, string phoneNumber, string purpose, int? scheduleChangeId, string code, CancellationToken cancellationToken);
+    Task<ApiCallResult<ScheduleChangeViewModel>> CreateScheduleChangeAsync(CreateScheduleChangeInput input, CancellationToken cancellationToken);
+    Task<ApiCallResult<List<ScheduleChangeViewModel>>> LookupScheduleChangesAsync(string bookingCode, string phoneNumber, CancellationToken cancellationToken);
+    Task<ApiCallResult<ScheduleChangeViewModel>> GetPublicScheduleChangeAsync(int id, string bookingCode, string phoneNumber, CancellationToken cancellationToken);
+    Task<ApiCallResult<QuoteAcceptanceResultViewModel>> AcceptScheduleChangeQuoteAsync(int id, string bookingCode, string phoneNumber, int quoteId, string verificationToken, CancellationToken cancellationToken);
+    Task<ApiCallResult<ScheduleChangeViewModel>> WithdrawScheduleChangeAsync(int id, string bookingCode, string phoneNumber, string reason, CancellationToken cancellationToken);
+    Task<ApiCallResult<ScheduleChangePaymentViewModel>> GetScheduleChangePaymentStatusAsync(int id, string bookingCode, string phoneNumber, CancellationToken cancellationToken);
+    Task<ApiCallResult<List<ScheduleChangeViewModel>>> GetHallManagerScheduleChangesAsync(string accessToken, string? status, CancellationToken cancellationToken);
+    Task<ApiCallResult<ScheduleChangeViewModel>> GetHallManagerScheduleChangeAsync(string accessToken, int id, CancellationToken cancellationToken);
+    Task<ApiCallResult<ScheduleChangeViewModel>> CreateHallManagerScheduleChangeAsync(string accessToken, HallManagerCreateScheduleChangeInput input, CancellationToken cancellationToken);
+    Task<ApiCallResult<ScheduleChangeViewModel>> ReviewScheduleChangeAsync(string accessToken, int id, string reviewResult, CancellationToken cancellationToken);
+    Task<ApiCallResult<List<ScheduleChangeViewModel>>> GetManagerScheduleChangesAsync(string accessToken, string? status, CancellationToken cancellationToken);
+    Task<ApiCallResult<ScheduleChangeViewModel>> GetManagerScheduleChangeAsync(string accessToken, int id, CancellationToken cancellationToken);
+    Task<ApiCallResult<ScheduleChangeViewModel>> QuoteScheduleChangeAsync(string accessToken, int id, string? note, CancellationToken cancellationToken);
+    Task<ApiCallResult<ScheduleChangeViewModel>> RejectScheduleChangeAsync(string accessToken, int id, string reason, CancellationToken cancellationToken);
+    Task<ApiCallResult<ScheduleChangeViewModel>> ReconcileScheduleChangeAsync(string accessToken, int id, string action, string evidence, CancellationToken cancellationToken);
+    Task<ApiCallResult<ScheduleChangeFinancialViewModel>> GetScheduleChangeFinancialsAsync(string accessToken, int id, CancellationToken cancellationToken);
+    Task<ApiCallResult<ScheduleChangeFinancialViewModel>> ConfirmScheduleChangeRefundAsync(string accessToken, int id, int refundId, string evidence, CancellationToken cancellationToken);
+    Task<ApiCallResult<ScheduleChangePolicyViewModel>> GetActiveScheduleChangePolicyAsync(string accessToken, CancellationToken cancellationToken);
+    Task<ApiCallResult<List<ScheduleChangePolicyViewModel>>> GetScheduleChangePolicyHistoryAsync(string accessToken, CancellationToken cancellationToken);
+    Task<ApiCallResult<ScheduleChangePolicyViewModel>> CreateScheduleChangePolicyVersionAsync(string accessToken, ScheduleChangePolicyVersionInput input, CancellationToken cancellationToken);
 }
