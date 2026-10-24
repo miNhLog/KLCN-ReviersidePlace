@@ -231,9 +231,15 @@
         } catch (x) { /* prefill lỗi: bỏ qua */ }
     }
 
+    function hideBubble() {
+        var b = $('aiChatBubble');
+        if (b) b.classList.add('hidden');
+    }
+
     function openPanel() {
         var p = $('aiChatPanel');
         if (!p) return;
+        hideBubble();
         p.classList.add('open');
         p.setAttribute('aria-hidden', 'false');
         if ($('aiChatMsgs') && $('aiChatMsgs').children.length === 0) greeting();
@@ -255,6 +261,22 @@
     function init() {
         var fab = $('aiChatFab');
         if (!fab || !$('aiChatPanel')) return;
+
+        var bubble = $('aiChatBubble');
+        var bubbleClose = $('aiBubbleCloseBtn');
+        if (bubble) {
+            bubble.addEventListener('click', function (ev) {
+                if (ev.target === bubbleClose || (bubbleClose && bubbleClose.contains(ev.target))) return;
+                openPanel();
+            });
+        }
+        if (bubbleClose) {
+            bubbleClose.addEventListener('click', function (ev) {
+                ev.stopPropagation();
+                hideBubble();
+            });
+        }
+
         fab.addEventListener('click', function () {
             var p = $('aiChatPanel');
             if (p && p.classList.contains('open')) closePanel(); else openPanel();

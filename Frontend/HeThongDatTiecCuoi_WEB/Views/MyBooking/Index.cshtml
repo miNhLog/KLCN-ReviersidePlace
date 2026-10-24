@@ -40,8 +40,121 @@
     <link rel="stylesheet" href="~/css/schedule-change.css" asp-append-version="true" />
     <style>
         :root { --rp-gold: #B89758; --rp-ink: #111822; --rp-cream: #FDFBF7; }
-        .rp-wrap { background: var(--rp-cream); padding: 96px 20px 80px; font-family: 'Plus Jakarta Sans', sans-serif; color: var(--rp-ink); min-height: 80vh; flex: 1; }
-        .rp-container { max-width: 1140px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
+        .myb-hero {
+            position: relative;
+            min-height: 420px;
+            display: flex;
+            align-items: center;
+            overflow: hidden;
+            padding: 130px 20px 70px 20px;
+            background: #0B1320;
+        }
+        .myb-hero-bg {
+            position: absolute;
+            inset: 0;
+            background-image: url('/images/my-booking/my-booking-banner.jpg');
+            background-size: cover;
+            background-position: center 36%;
+            filter: brightness(0.9) contrast(1.05);
+            transform: scale(1.02);
+            transition: transform 12s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .myb-hero:hover .myb-hero-bg {
+            transform: scale(1.07);
+        }
+        .myb-hero-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(11, 19, 32, 0.88) 0%, rgba(15, 23, 42, 0.72) 45%, rgba(22, 40, 57, 0.86) 100%);
+            backdrop-filter: blur(1.5px);
+        }
+        .myb-hero-inner {
+            position: relative;
+            z-index: 2;
+            max-width: 1140px;
+            margin: 0 auto;
+            width: 100%;
+        }
+        .myb-hero-copy {
+            max-width: 720px;
+            color: #FFFFFF;
+        }
+        .myb-hero-eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 16px;
+            border-radius: 999px;
+            background: rgba(212, 175, 55, 0.14);
+            border: 1px solid rgba(212, 175, 55, 0.35);
+            color: var(--rp-gold, #C5A880);
+            font-family: var(--font-sans-ui, "Plus Jakarta Sans", sans-serif);
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            margin-bottom: 16px;
+            backdrop-filter: blur(8px);
+        }
+        .myb-hero-eyebrow .material-symbols-outlined {
+            color: var(--rp-gold, #C5A880);
+            font-size: 16px;
+        }
+        .myb-hero h1 {
+            font-family: var(--font-serif-display, "Cormorant Garamond", serif);
+            font-size: clamp(32px, 4.2vw, 54px);
+            font-weight: 500;
+            line-height: 1.18;
+            letter-spacing: 0.01em;
+            color: #FFFFFF;
+            margin: 0 0 14px 0;
+            text-shadow: none;
+        }
+        .myb-hero h1 em,
+        .myb-hero h1 strong {
+            font-style: italic;
+            font-weight: 500;
+            color: var(--rp-gold, #C5A880);
+        }
+        .myb-hero-desc {
+            font-family: var(--font-sans-ui, "Plus Jakarta Sans", sans-serif);
+            font-size: 15px;
+            font-weight: 400;
+            line-height: 1.65;
+            color: rgba(255, 255, 255, 0.9);
+            margin: 0 0 24px 0;
+        }
+        .myb-hero-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .myb-hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #F8FAFC;
+            backdrop-filter: blur(12px);
+            transition: all 0.25s ease;
+        }
+        .myb-hero-badge:hover {
+            background: rgba(212, 175, 55, 0.25);
+            border-color: rgba(212, 175, 55, 0.6);
+            transform: translateY(-2px);
+            color: #F7EFCF;
+        }
+        .myb-hero-badge .material-symbols-outlined {
+            font-size: 18px;
+            color: #D4AF37;
+        }
+        .rp-wrap { background: var(--rp-cream); padding: 0 20px 80px; font-family: 'Plus Jakarta Sans', sans-serif; color: var(--rp-ink); min-height: 60vh; flex: 1; }
+        .rp-container { max-width: 1140px; margin: -50px auto 0 auto; position: relative; z-index: 10; display: flex; flex-direction: column; gap: 24px; }
         .rp-card { background: #fff; border-radius: 20px; border: 1px solid #E9E2D3; box-shadow: 0 10px 25px -5px rgba(17,24,34,.06); padding: 28px; }
         .rp-card:hover { border-color: var(--rp-gold); }
         .rp-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--rp-gold); }
@@ -107,15 +220,39 @@
     </style>
 }
 
-<div class="home-page">
+<div class="home-page my-booking-page">
     <partial name="_PublicHeader" />
+
+    <!-- HERO BANNER CỰC ĐẸP CHO TIỆC CỦA TÔI -->
+    <section class="myb-hero" aria-labelledby="myb-hero-title">
+        <div class="myb-hero-bg" aria-hidden="true"></div>
+        <div class="myb-hero-overlay" aria-hidden="true"></div>
+        <div class="home-container myb-hero-inner">
+            <div class="myb-hero-copy">
+                <h1 id="myb-hero-title">Tiệc Cưới <em>Của Tôi</em></h1>
+                <p class="myb-hero-desc">
+                    Đồng hành cùng hai bạn trong từng khoảnh khắc trăm năm. Tra cứu chi tiết hồ sơ đặt tiệc, tiến độ chuẩn bị, thanh toán đặt cọc và gửi yêu cầu thay đổi lịch linh hoạt 24/7.
+                </p>
+                <div class="myb-hero-badges">
+                    <div class="myb-hero-badge">
+                        <span class="material-symbols-outlined">receipt_long</span>
+                        <span>Tra cứu minh bạch</span>
+                    </div>
+                    <div class="myb-hero-badge">
+                        <span class="material-symbols-outlined">payments</span>
+                        <span>Thanh toán tiện lợi</span>
+                    </div>
+                    <div class="myb-hero-badge">
+                        <span class="material-symbols-outlined">edit_calendar</span>
+                        <span>Hỗ trợ đổi lịch 24/7</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <main class="rp-wrap">
         <div class="rp-container">
-            <div>
-                <span class="rp-eyebrow">Tra cứu tiệc cưới trực tuyến </span>
-                <h1 class="rp-h1">Tiệc của tôi</h1>
-                <p class="rp-sub">Nhập mã đặt tiệc cùng email hoặc số điện thoại đã dùng khi giữ chỗ để xem hồ sơ, chi phí và gửi yêu cầu thay đổi lịch.</p>
-            </div>
 
             <!-- PHẦN 1: FORM TRA CỨU -->
             <section class="rp-card" aria-label="Form tra cứu hồ sơ tiệc cưới">

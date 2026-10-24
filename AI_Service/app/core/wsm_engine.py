@@ -86,7 +86,7 @@ def score_candidate(budget: float, table_count: int, desired_style: str,
                     weights: Dict[str, float]) -> Tuple[float, Dict[str, float], float]:
     svc_price_map = {s["service_id"]: s["price"] for s in load_catalog()["services"]}
     menu_total = float(menu_price) * int(table_count)
-    services_price = float(sum(svc_price_map.get(s, 0) for s in included))
+    services_price = float(sum((svc_price_map.get(s, 0) * int(table_count) if s == "DV001" else svc_price_map.get(s, 0)) for s in included))
     total = float(menu_total + hall["base_price"] + decor["price"] + services_price)
     # Diem ngan sach r1: uu tien trong ngan sach, vuot nhe <= Δ diem trung binh,
     # vuot nhieu phat nang de khong lot Top 3. Δ = min(10tr, 5% budget) theo prompt.txt.
@@ -176,7 +176,7 @@ def rank_top3(request) -> Tuple[List[Dict], int]:
                 # Chỉ giữ combo trong ngân sách hoặc vượt tối đa 10tr tuyệt đối
                 # (thay vì 10% tương đối gây vượt tới 20–30tr với budget lớn).
                 svc_map = {s["service_id"]: s["price"] for s in catalog["services"]}
-                est_services = sum(svc_map.get(s, 0) for s in priority)
+                est_services = sum((svc_map.get(s, 0) * table_count if s == "DV001" else svc_map.get(s, 0)) for s in priority)
                 est_total = menu["price_per_table"] * table_count + hall["base_price"] + decor["price"] + est_services
                 if est_total > budget + budget_tolerance(budget):
                     continue

@@ -12,7 +12,7 @@
     /* main (home.css) đã padding-top 80px cho header fixed — wrapper không padding-top nữa
        để hero flush ngay dưới header, tránh dải trống 160px (banner lệch). */
     padding: 0 0 80px 0;
-    font-family: "Plus Jakarta Sans", Arial, sans-serif;
+    font-family: var(--font-sans-ui, "Plus Jakarta Sans", sans-serif);
     color: var(--home-charcoal, #1e242b);
     font-size: 15px;
     line-height: 1.6;
@@ -60,10 +60,11 @@
 }
 
 .home-page .recom-section-title {
-    font-size: 14px;
-    font-weight: 700;
+    font-family: var(--font-sans-ui, "Plus Jakarta Sans", sans-serif);
+    font-size: 13.5px;
+    font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.08em;
     margin: 0;
     display: flex;
     align-items: center;
@@ -76,16 +77,18 @@
     height: 24px;
     border-radius: 999px;
     background: var(--home-gold, #d4af37);
-    color: var(--home-charcoal, #1e242b);
+    color: #FFFFFF;
+    font-family: var(--font-sans-ui, "Plus Jakarta Sans", sans-serif);
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 12px;
-    font-weight: 800;
+    font-size: 11px;
+    font-weight: 700;
     flex: none;
 }
 
 .home-page .recom-hint-inline {
+    font-family: var(--font-sans-ui, "Plus Jakarta Sans", sans-serif);
     font-size: 12px;
     color: var(--home-muted, #59616b);
     font-style: italic;
@@ -93,8 +96,9 @@
 
 .home-page .recom-label {
     display: block;
+    font-family: var(--font-sans-ui, "Plus Jakarta Sans", sans-serif);
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 500;
     color: #334155;
     margin-bottom: 6px;
 }
@@ -181,6 +185,13 @@
     gap: 16px;
 }
 
+.home-page .recom-scale-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1.4fr;
+    align-items: start;
+    gap: 16px;
+}
+
 .home-page .recom-grid-3 {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -194,45 +205,190 @@
     margin-top: 16px;
 }
 
+/* Smart Scale & Budget Visualizer */
+.home-page .recom-scale-visualizer {
+    margin-top: 12px;
+    padding: 10px 14px;
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.12) 0%, rgba(212, 175, 55, 0.04) 100%);
+    border: 1px solid rgba(212, 175, 55, 0.35);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 13px;
+    color: #334155;
+}
+
+.home-page .recom-scale-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 11px;
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #334155;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.home-page .recom-scale-pill .material-symbols-outlined {
+    font-size: 16px;
+    color: #96783E;
+}
+
+.home-page .recom-scale-pill--total {
+    background: #162839;
+    border-color: #162839;
+    color: #F7EFCF;
+    font-weight: 700;
+}
+
+.home-page .recom-scale-pill--total .material-symbols-outlined {
+    color: #F7EFCF;
+}
+
+.home-page .recom-scale-plus,
+.home-page .recom-scale-eq {
+    color: #96783E;
+    font-weight: 800;
+    font-size: 14px;
+}
+
 .home-page .recom-services {
     margin-top: 16px;
-    padding-top: 12px;
+    padding-top: 14px;
     border-top: 1px solid rgba(44, 62, 80, 0.08);
 }
 
 .home-page .recom-services-title {
     display: block;
-    font-size: 13px;
-    font-weight: 600;
+    font-size: 13.5px;
+    font-weight: 700;
     color: #334155;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
 }
 
-.home-page .recom-services-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 16px;
-    font-size: 13px;
+/* Thẻ Dịch Vụ Tương Tác (Selectable Service Cards) */
+.home-page .recom-service-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 12px;
 }
 
-.home-page .recom-services-list label {
+.home-page .recom-service-card {
+    position: relative;
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 12px;
+    padding: 12px 14px;
+    background: #FFFFFF;
+    border: 1.5px solid #E2E8F0;
+    border-radius: 12px;
     cursor: pointer;
-    color: #334155;
+    box-shadow: 0 2px 6px rgba(22, 40, 57, 0.04);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    user-select: none;
 }
 
-.home-page .recom-services-list input[type="checkbox"] {
-    width: 17px;
-    height: 17px;
-    accent-color: var(--home-gold, #d4af37);
+.home-page .recom-service-card * {
+    pointer-events: none;
+}
+
+.home-page .recom-service-card:hover {
+    border-color: #D4AF37;
+    background: #FFFDF9;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(212, 175, 55, 0.14);
+}
+
+.home-page .recom-service-card.is-selected,
+.home-page .recom-service-card:has(input:checked) {
+    border-color: #D4AF37;
+    background: linear-gradient(135deg, #FFFDF7 0%, #FBF6EB 100%);
+    box-shadow: 0 4px 14px rgba(212, 175, 55, 0.22);
+}
+
+.home-page .recom-service-card input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.home-page .recom-service-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: rgba(212, 175, 55, 0.12);
+    color: #96783E;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    transition: all 0.2s ease;
+}
+
+.home-page .recom-service-icon .material-symbols-outlined {
+    font-size: 20px;
+}
+
+.home-page .recom-service-card.is-selected .recom-service-icon,
+.home-page .recom-service-card:has(input:checked) .recom-service-icon {
+    background: #D4AF37;
+    color: #FFFFFF;
+}
+
+.home-page .recom-service-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.home-page .recom-service-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1E293B;
+    line-height: 1.35;
+    display: block;
+}
+
+.home-page .recom-service-price {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #735C00;
+    display: block;
+    margin-top: 2px;
+}
+
+.home-page .recom-service-check {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 1.5px solid #CBD5E1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: transparent;
+    font-size: 13px;
+    flex: none;
+    transition: all 0.2s ease;
+}
+
+.home-page .recom-service-check .material-symbols-outlined {
+    font-size: 14px;
+}
+
+.home-page .recom-service-card.is-selected .recom-service-check,
+.home-page .recom-service-card:has(input:checked) .recom-service-check {
+    background: #D4AF37;
+    border-color: #D4AF37;
+    color: #FFFFFF;
 }
 
 .home-page .recom-form-actions {
     display: flex;
     justify-content: flex-end;
-    padding-top: 10px;
+    padding-top: 14px;
     border-top: 1px solid rgba(44, 62, 80, 0.08);
 }
 
@@ -319,68 +475,144 @@
 .home-page .recom-hero {
     border-radius: 0;
     overflow: hidden;
-    min-height: 0;
+    min-height: 460px;
     width: 100%;
     margin: 0;
     position: relative;
-    background: var(--home-primary, #162839);
+    background: #0f172a;
     color: #fff;
+    display: flex;
+    align-items: center;
 }
 
 .home-page .recom-hero .hero-image {
     position: absolute;
     inset: 0;
+    background-image: url('../images/recommendation/romantic-wedding-banner.jpg');
     background-size: cover;
-    background-position: center;
+    background-position: center 35%;
     background-repeat: no-repeat;
+    transform: scale(1.02);
+    transition: transform 8s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.home-page .recom-hero:hover .hero-image {
+    transform: scale(1.06);
+}
+
+.home-page .recom-hero-overlay {
+    position: absolute;
+    inset: 0;
+    background:
+        linear-gradient(135deg, rgba(15, 23, 42, 0.90) 0%, rgba(15, 23, 42, 0.76) 48%, rgba(22, 40, 57, 0.50) 100%),
+        radial-gradient(ellipse at 80% 30%, rgba(212, 175, 55, 0.25) 0%, transparent 65%);
+    pointer-events: none;
 }
 
 .home-page .recom-hero-inner {
     min-height: 0;
-    padding-top: 56px;
-    padding-bottom: 44px;
+    padding-top: 64px;
+    padding-bottom: 52px;
     position: relative;
+    z-index: 2;
     width: min(100%, 1280px);
     margin-inline: auto;
     padding-inline: 24px;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
-    gap: 28px;
+    gap: 32px;
 }
 
 .home-page .recom-hero h1 {
-    font-size: 40px;
-    line-height: 1.2;
+    font-family: var(--font-serif-display, "Cormorant Garamond", serif);
+    font-size: clamp(32px, 4.2vw, 54px);
+    font-weight: 500;
+    line-height: 1.18;
+    letter-spacing: 0.01em;
+    color: #FFFFFF;
+    text-shadow: none;
+    margin: 12px 0 16px 0;
+}
+
+.home-page .recom-hero h1 em,
+.home-page .recom-hero h1 strong {
+    font-style: italic;
+    font-weight: 500;
+    color: var(--cc-gold, #C5A880);
+}
+
+.home-page .recom-hero-desc {
+    font-family: var(--font-sans-ui, "Plus Jakarta Sans", sans-serif);
+    font-size: 15px;
+    line-height: 1.65;
+    color: rgba(255, 255, 255, 0.92);
+    max-width: 680px;
+    text-shadow: none;
+    margin-bottom: 24px;
 }
 
 .home-page .recom-hero-accent {
-    color: var(--home-gold-light, #f7efcf);
+    color: #F7EFCF;
+    font-weight: 600;
+    text-decoration: underline;
+    text-decoration-color: rgba(212, 175, 55, 0.7);
+    text-underline-offset: 4px;
 }
 
 .home-page .recom-hero-stats {
     display: flex;
     flex-wrap: wrap;
-    gap: 12px;
+    gap: 14px;
 }
 
 .home-page .recom-hero-stat {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: 9px;
     border-radius: 999px;
-    padding: 8px 14px;
-    background: rgba(255, 255, 255, 0.12);
-    border: 1px solid rgba(255, 255, 255, 0.22);
-    color: #fff;
-    font-size: 12px;
+    padding: 9px 18px;
+    background: rgba(15, 23, 42, 0.65);
+    border: 1.5px solid rgba(212, 175, 55, 0.45);
+    color: #FFFFFF;
+    font-size: 13px;
     font-weight: 700;
-    backdrop-filter: blur(8px);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+    transition: all 0.25s ease;
+}
+
+.home-page .recom-hero-stat:hover {
+    background: rgba(212, 175, 55, 0.25);
+    border-color: #D4AF37;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(212, 175, 55, 0.3);
 }
 
 .home-page .recom-hero-stat .material-symbols-outlined {
-    color: var(--home-gold-light, #f7efcf);
-    font-size: 17px;
+    color: #F7EFCF;
+    font-size: 18px;
+}
+
+.home-page .recom-btn-gold--hero {
+    min-height: 54px;
+    padding: 13px 38px;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #DFCA9B 0%, #C5A880 40%, #96783E 100%);
+    color: #FFFFFF;
+    box-shadow: 0 8px 24px rgba(184, 151, 88, 0.45), 0 2px 6px rgba(0, 0, 0, 0.12);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    cursor: pointer;
+}
+
+.home-page .recom-btn-gold--hero:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 14px 34px rgba(184, 151, 88, 0.55), 0 4px 10px rgba(0, 0, 0, 0.15);
+    background: linear-gradient(135deg, #F7EFCF 0%, #D4AF37 50%, #96783E 100%);
+    color: #111827;
 }
 
 /* ---------- Help popover ---------- */
@@ -475,9 +707,9 @@
 }
 
 .home-page .recom-loading-title {
-    font-family: "Playfair Display", Georgia, serif;
+    font-family: var(--font-serif-display, "Cormorant Garamond", serif);
     font-size: 20px;
-    font-weight: 700;
+    font-weight: 500;
     color: #0f172a;
     margin-top: 16px;
 }
@@ -503,9 +735,9 @@
 }
 
 .home-page .recom-results-title {
-    font-family: "Playfair Display", Georgia, serif;
+    font-family: var(--font-serif-display, "Cormorant Garamond", serif);
     font-size: 22px;
-    font-weight: 700;
+    font-weight: 500;
     color: #0f172a;
     margin: 0;
 }
@@ -636,8 +868,8 @@
 
 .home-page .recom-hall-title-row h3 {
     color: var(--home-primary, #162839);
-    font-family: "Playfair Display", Georgia, serif;
-    font-weight: 600;
+    font-family: var(--font-serif-display, "Cormorant Garamond", serif);
+    font-weight: 500;
     font-size: 22px;
     line-height: 1.25;
     margin: 0;
@@ -659,9 +891,9 @@
 }
 
 .home-page .recom-match strong {
-    font-family: "Playfair Display", Georgia, serif;
+    font-family: var(--font-serif-display, "Cormorant Garamond", serif);
     font-size: 20px;
-    font-weight: 800;
+    font-weight: 600;
 }
 
 .home-page .recom-combo-badge {
@@ -973,9 +1205,9 @@
 }
 
 .home-page .recom-modal-title {
-    font-family: "Playfair Display", Georgia, serif;
+    font-family: var(--font-serif-display, "Cormorant Garamond", serif);
     font-size: 20px;
-    font-weight: 700;
+    font-weight: 500;
     color: #0f172a;
     margin: 0;
 }
@@ -1150,9 +1382,9 @@
 }
 
 .home-page .recom-alert-title {
-    font-family: "Playfair Display", Georgia, serif;
+    font-family: var(--font-serif-display, "Cormorant Garamond", serif);
     font-size: 21px;
-    font-weight: 700;
+    font-weight: 500;
     color: #0f172a;
     margin: 0 0 8px 0;
 }
@@ -1679,8 +1911,9 @@
 }
 
 .home-page .recom-grand-value {
-    font-family: "Playfair Display", Georgia, serif;
+    font-family: var(--font-serif-display, "Cormorant Garamond", serif);
     font-size: 22px;
+    font-weight: 500;
     color: #0f172a;
 }
 
@@ -1769,6 +2002,7 @@ body.recom-modal-open {
     }
 
     .home-page .recom-search-grid,
+    .home-page .recom-scale-grid,
     .home-page .recom-grid-3,
     .home-page .recom-grid-2,
     .home-page .recom-combo-grid,
@@ -1964,9 +2198,9 @@ body.recom-modal-open {
     margin-bottom: 2px;
 }
 .recom-custom-modal .recom-modal-title {
-    font-family: "Playfair Display", Georgia, serif;
+    font-family: var(--font-serif-display, "Cormorant Garamond", serif);
     font-size: 21px;
-    font-weight: 700;
+    font-weight: 500;
     color: #0F172A;
     line-height: 1.3;
     margin: 0;
@@ -1985,9 +2219,9 @@ body.recom-modal-open {
     margin-bottom: 16px;
 }
 .recom-custom-modal .recom-price-bar strong {
-    font-family: "Playfair Display", Georgia, serif;
+    font-family: var(--font-serif-display, "Cormorant Garamond", serif);
     font-size: 20px;
-    font-weight: 700;
+    font-weight: 600;
     color: #9A7B38;
 }
 .recom-custom-modal .recom-modal-body { font-size: 13px; color: #475569; display: flex; flex-direction: column; gap: 12px; }
@@ -2055,7 +2289,7 @@ body.recom-modal-open {
     display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
     text-transform: uppercase; padding: 4px 12px; border-radius: 999px; margin-bottom: 8px;
 }
-.recom-custom-modal .recom-alert-title { font-family: "Playfair Display", Georgia, serif; font-size: 21px; font-weight: 700; color: #0f172a; margin: 0 0 8px 0; }
+.recom-custom-modal .recom-alert-title { font-family: var(--font-serif-display, "Cormorant Garamond", serif); font-size: 21px; font-weight: 500; color: #0f172a; margin: 0 0 8px 0; }
 .recom-custom-modal .recom-alert-message { font-size: 13px; color: #475569; margin: 0 0 20px 0; line-height: 1.6; white-space: pre-line; }
 .recom-custom-modal .recom-summary-box {
     background: #fdfbf7; border-radius: 16px; border: 1px solid #e2e8f0; padding: 14px;
@@ -2154,7 +2388,7 @@ body.recom-modal-open {
 }
 .recom-custom-modal .recom-menu-formula { color: #735c00; font-weight: 600; margin-top: 2px; font-size: 13px; }
 .recom-custom-modal .recom-grand-label { font-size: 11px; color: #94a3b8; display: block; }
-.recom-custom-modal .recom-grand-value { font-family: "Playfair Display", Georgia, serif; font-size: 22px; color: #0f172a; }
+.recom-custom-modal .recom-grand-value { font-family: var(--font-serif-display, "Cormorant Garamond", serif); font-size: 22px; font-weight: 500; color: #0f172a; }
 .recom-custom-modal .recom-modal-actions { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
 @media (max-width: 767px) {
     .recom-custom-modal .recom-dialog--lg, .recom-custom-modal .recom-dialog--xl { padding: 18px; }
@@ -2194,3 +2428,155 @@ body.recom-modal-open {
     }
     .recom-custom-modal .recom-popover::before { display: none; }
 }
+
+/* Budget input wrapper & enhancements */
+/* Budget Input Controls */
+.home-page .recom-budget-label-text {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.home-page .recom-budget-readable-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 10px;
+    background: linear-gradient(135deg, rgba(184, 151, 88, 0.16) 0%, rgba(184, 151, 88, 0.06) 100%);
+    border: 1px solid rgba(184, 151, 88, 0.35);
+    border-radius: 999px;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: #8F6D38;
+    letter-spacing: 0.2px;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+}
+
+.home-page .recom-budget-input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.home-page .recom-budget-input-wrap .recom-form-control {
+    padding-right: 64px;
+}
+
+.home-page .recom-budget-unit {
+    position: absolute;
+    right: 32px;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #8F6D38;
+    pointer-events: none;
+    user-select: none;
+    letter-spacing: 0.3px;
+}
+
+.home-page .recom-budget-clear {
+    position: absolute;
+    right: 6px;
+    background: transparent;
+    border: none;
+    color: #94A3B8;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.home-page .recom-budget-clear:hover {
+    color: #EF4444;
+    background: #FEE2E2;
+}
+
+/* Menu Customizer Modern Pricing Card */
+.recom-custom-modal .recom-menu-pricing-card {
+    background: #F8FAFC;
+    border: 1.5px solid #E2E8F0;
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-top: 14px;
+}
+.recom-custom-modal .recom-menu-pricing-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+.recom-custom-modal .recom-menu-pricing-title {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    color: #64748B;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.recom-custom-modal .recom-menu-pricing-row {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    margin-top: 2px;
+    flex-wrap: wrap;
+}
+.recom-custom-modal .recom-menu-price-highlight {
+    font-family: var(--font-serif-display, "Cormorant Garamond", serif);
+    font-size: 20px;
+    font-weight: 600;
+    color: #735C00;
+}
+.recom-custom-modal .recom-menu-pricing-unit {
+    font-size: 12px;
+    font-weight: 600;
+    color: #64748B;
+}
+.recom-custom-modal .recom-delta-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+}
+.recom-custom-modal .recom-delta-badge--up {
+    background: #FEF3C7;
+    color: #B45309;
+    border: 1px solid #FCD34D;
+}
+.recom-custom-modal .recom-delta-badge--down {
+    background: #D1FAE5;
+    color: #047857;
+    border: 1px solid #6EE7B7;
+}
+.recom-custom-modal .recom-dish-counter-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+}
+.recom-custom-modal .recom-dish-counter--ok {
+    background: #DCFCE7;
+    color: #15803D;
+    border: 1px solid #86EFAC;
+}
+.recom-custom-modal .recom-dish-counter--warn {
+    background: #FEF3C7;
+    color: #B45309;
+    border: 1px solid #FCD34D;
+}
+.recom-custom-modal .recom-menu-pricing-sub {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed #E2E8F0;
+    font-size: 12px;
+    color: #475569;
+    font-weight: 500;
+}
+

@@ -120,8 +120,9 @@ public sealed class HallController : ControllerBase
                 RentalPrice = hall.RentalPrice,
                 Description = hall.Description,
                 ImageUrl = hall.Images
-                    .Where(image => image.IsPrimary &&
-                        image.DataStatus.DataStatusCode == DataStatusCodes.Existing)
+                    .Where(image => image.DataStatus.DataStatusCode == DataStatusCodes.Existing)
+                    .OrderByDescending(image => image.IsPrimary)
+                    .ThenBy(image => image.SortOrder)
                     .Select(image => image.ImagePath)
                     .FirstOrDefault()
             })
@@ -193,7 +194,7 @@ public sealed class HallController : ControllerBase
                 hall.Status.StatusGroup == StatusGroups.Hall &&
                 hall.Status.StatusCode == HallStatusCodes.Active)
             .OrderBy(hall => hall.HallId)
-            .Take(3)
+            .Take(12)
             .Select(hall => new HallDto
             {
                 HallId = hall.HallId,
@@ -208,8 +209,9 @@ public sealed class HallController : ControllerBase
                 RentalPrice = hall.RentalPrice,
                 Description = hall.Description,
                 ImageUrl = hall.Images
-                    .Where(image => image.IsPrimary &&
-                        image.DataStatus.DataStatusCode == DataStatusCodes.Existing)
+                    .Where(image => image.DataStatus.DataStatusCode == DataStatusCodes.Existing)
+                    .OrderByDescending(image => image.IsPrimary)
+                    .ThenBy(image => image.SortOrder)
                     .Select(image => image.ImagePath)
                     .FirstOrDefault(),
                 Status = hall.Status.StatusCode,

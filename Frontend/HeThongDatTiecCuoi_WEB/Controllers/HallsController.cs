@@ -74,6 +74,16 @@ public sealed class HallsController : Controller
         }
 
         var hall = result.Value;
+        var dbImages = hall.ImageUrls
+            .Where(url => !string.IsNullOrWhiteSpace(url))
+            .ToList();
+
+        var galleryImages = dbImages.Count > 0
+            ? dbImages
+            : HallGalleryCatalog.GetImages(hall.HallName, _environment.WebRootPath)
+                .Where(url => !string.IsNullOrWhiteSpace(url))
+                .ToList();
+
         return View(new HallDetailViewModel
         {
             HallId = hall.HallId,
@@ -84,9 +94,7 @@ public sealed class HallsController : Controller
             RentalPrice = hall.RentalPrice,
             Description = hall.Description,
             ImageUrl = hall.ImageUrl,
-            ImageUrls = hall.ImageUrls
-                .Concat(HallGalleryCatalog.GetImages(hall.HallName, _environment.WebRootPath))
-                .Where(url => !string.IsNullOrWhiteSpace(url))
+            ImageUrls = galleryImages
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToArray(),
             Status = hall.Status,

@@ -1,23 +1,63 @@
 :root {
     color-scheme: light;
-    --gold: #d3a613;
-    --gold-dark: #b58908;
-    --ink: #20252c;
-    --muted: #7f8999;
-    --cream: #fbfaf7;
+
+    /* Carats & Cake Design Tokens */
+    --cc-bg-primary: #FAF9F8;       /* Warm Linen White canvas */
+    --cc-bg-surface: #FFFFFF;       /* Pure clean card surface */
+    --cc-bg-warm: #F6F5F3;          /* Warm soft grey-ivory for alternating sections */
+    --cc-bg-accent: #ECEAE6;        /* Subtle pill / tag background */
+
+    --cc-text-primary: #111111;     /* Deep charcoal heading */
+    --cc-text-secondary: #4A4A4A;   /* Neutral body text */
+    --cc-text-muted: #868686;       /* Editorial kicker / metadata */
+    --cc-text-light: #A6A6A6;       /* Subtle captions */
+
+    --cc-hairline: #E4E1DC;         /* 1px elegant divider */
+    --cc-hairline-subtle: #ECEAE6;  /* Soft divider */
+
+    --cc-gold: #C5A880;             /* Champagne Gold (matte, luxury) */
+    --cc-gold-dark: #A98A5F;        /* Deep Champagne Gold */
+    --cc-blush: #DBD1CC;            /* Bridal blush accent */
+
+    --font-serif-display: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-serif-italic: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-sans-ui: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+    --radius-pill: 9999px;
+    --radius-card: 4px;
+    --transition-smooth: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+
+    /* Legacy compatibility variables */
+    --gold: var(--cc-gold);
+    --gold-dark: var(--cc-gold-dark);
+    --ink: var(--cc-text-primary);
+    --muted: var(--cc-text-muted);
+    --cream: var(--cc-bg-primary);
 }
 
 * { box-sizing: border-box; }
 
-html, body { margin: 0; min-height: 100%; }
-
-body {
-    color: var(--ink);
-    background: var(--cream);
-    font-family: "Times New Roman", Times, serif;
+html, body {
+    margin: 0;
+    min-height: 100%;
 }
 
-button, input { font: inherit; }
+body {
+    color: var(--cc-text-secondary);
+    background: var(--cc-bg-primary);
+    font-family: var(--font-sans-ui);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+button, input, select, textarea {
+    font-family: inherit;
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
 
 .dashboard {
     min-height: 100vh;
@@ -25,20 +65,65 @@ button, input { font: inherit; }
     place-items: center;
     padding: 32px;
     background:
-        radial-gradient(circle at 15% 15%, rgba(211,166,19,.22), transparent 30%),
-        linear-gradient(135deg, #161411, #403624);
+        radial-gradient(circle at 15% 15%, rgba(197, 168, 128, 0.18), transparent 30%),
+        linear-gradient(135deg, #1A1A1A, #2C261F);
 }
 
 .dashboard-card {
     width: min(680px, 100%);
     padding: 48px;
-    border-radius: 24px;
-    background: rgba(255,255,255,.96);
-    box-shadow: 0 24px 70px rgba(0,0,0,.35);
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.98);
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.12);
 }
 
-.dashboard-card h1 { font-size: 42px; margin: 14px 0; }
-.dashboard-card p { font-family: Arial, sans-serif; line-height: 1.7; color: #555d68; }
-.eyebrow { letter-spacing: .22em; color: var(--gold-dark); font: 700 12px Arial, sans-serif; }
-.success-banner { padding: 12px 16px; margin-bottom: 20px; border-radius: 10px; background: #e8f8ef; color: #187244; font-family: Arial, sans-serif; }
-.logout-button, .link-button { display: inline-block; border: 0; border-radius: 10px; padding: 12px 22px; background: var(--gold); color: #171717; text-decoration: none; cursor: pointer; font-weight: 700; }
+.dashboard-card h1 {
+    font-family: var(--font-serif-display);
+    font-size: 42px;
+    margin: 14px 0;
+    color: var(--cc-text-primary);
+}
+
+.dashboard-card p {
+    font-family: var(--font-sans-ui);
+    line-height: 1.7;
+    color: var(--cc-text-secondary);
+}
+
+.eyebrow {
+    letter-spacing: 0.18em;
+    color: var(--cc-gold-dark);
+    font: 600 11px var(--font-sans-ui);
+    text-transform: uppercase;
+}
+
+.success-banner {
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    border-radius: 9999px;
+    background: #E8F5E9;
+    color: #2E7D32;
+    font-family: var(--font-sans-ui);
+    font-size: 13px;
+}
+
+.logout-button, .link-button {
+    display: inline-block;
+    border: 0;
+    border-radius: var(--radius-pill);
+    padding: 12px 24px;
+    background: var(--cc-text-primary);
+    color: #FFFFFF;
+    text-decoration: none;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.logout-button:hover, .link-button:hover {
+    background: var(--cc-gold-dark);
+    color: #FFFFFF;
+    transform: translateY(-1px);
+}
