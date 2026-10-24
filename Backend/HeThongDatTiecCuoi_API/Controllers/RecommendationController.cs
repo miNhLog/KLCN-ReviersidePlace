@@ -598,9 +598,9 @@ public sealed class RecommendationController : ControllerBase
             .ToDictionaryAsync(x => x.HallId, x => x.ImagePath);
 
         // Dịch vụ ưu tiên (ServiceNeeds "DV001,DV002..."): query trực tiếp bảng DichVu
-        // (chỉ lấy ACTIVE) để cộng vào dự toán trọn gói, khớp từng đồng với thẻ hiển thị.
+        // (DV001 tính theo bàn: đơn giá × số bàn; các DV khác tính theo tiệc) để khớp từng đồng với thẻ hiển thị.
         var priorityServices = await ResolvePriorityServicesAsync(request.ServiceNeeds, existingDataStatusId);
-        var servicesTotalFallback = priorityServices.Sum(s => s.Price);
+        var servicesTotalFallback = priorityServices.Sum(s => string.Equals(s.ServiceCode, "DV001", StringComparison.OrdinalIgnoreCase) ? s.Price * tableCount : s.Price);
 
         var priorityCodes = (request.ServiceNeeds ?? string.Empty)
             .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
@@ -1002,9 +1002,9 @@ public sealed class RecommendationController : ControllerBase
                 ? request.OfficialTableCount + request.SpareTableCount
                 : (int)Math.Ceiling(request.GuestCount / 10m);
         // Dịch vụ ưu tiên (ServiceNeeds "DV001,DV002..."): query trực tiếp bảng DichVu
-        // (chỉ lấy ACTIVE) để cộng vào dự toán trọn gói, khớp từng đồng với thẻ hiển thị.
+        // (DV001 tính theo bàn: đơn giá × số bàn; các DV khác tính theo tiệc) để khớp từng đồng với thẻ hiển thị.
         var priorityServices = await ResolvePriorityServicesAsync(request.ServiceNeeds, existingDataStatusId);
-        var servicesTotal = priorityServices.Sum(s => s.Price);
+        var servicesTotal = priorityServices.Sum(s => string.Equals(s.ServiceCode, "DV001", StringComparison.OrdinalIgnoreCase) ? s.Price * estimatedTableCount : s.Price);
         var scoredCombos = new List<ComboSuggestionDto>();
 
         foreach (var schedule in candidateSchedules)
@@ -1690,8 +1690,8 @@ public sealed class RecommendationController : ControllerBase
                     Price = svc.Gia,
                     Note = svc.MoTa ?? string.Empty
                 }).ToList();
-            servicesTotalBooking = bookingServices.Sum(s => s.Price);
-            var svcText = string.Join("; ", bookingServices.Select(s => $"{s.ServiceName} ({s.Price:N0} đ)"));
+            servicesTotalBooking = bookingServices.Sum(s => string.Equals(s.ServiceCode, "DV001", StringComparison.OrdinalIgnoreCase) ? s.Price * estimatedTableCount : s.Price);
+            var svcText = string.Join("; ", bookingServices.Select(s => string.Equals(s.ServiceCode, "DV001", StringComparison.OrdinalIgnoreCase) ? $"{s.ServiceName} ({s.Price:N0} đ/bàn × {estimatedTableCount} bàn)" : $"{s.ServiceName} ({s.Price:N0} đ)"));
             if (!string.IsNullOrWhiteSpace(svcText))
             {
                 var svcMarker = $"[Dịch vụ đi kèm: {svcText}]";
@@ -1722,11 +1722,12 @@ public sealed class RecommendationController : ControllerBase
         {
             foreach (var svc in serviceEntities)
             {
+                var isPerTableSvc = string.Equals(svc.MaDichVu, "DV001", StringComparison.OrdinalIgnoreCase);
                 _context.WeddingBookingServices.Add(new WeddingBookingService
                 {
                     BookingId = booking.BookingId,
                     ServiceId = svc.DichVuID,
-                    Quantity = 1,
+                    Quantity = isPerTableSvc ? estimatedTableCount : 1,
                     FinalUnitPrice = svc.Gia,
                     DataStatusId = existingDataStatus.DataStatusId
                 });

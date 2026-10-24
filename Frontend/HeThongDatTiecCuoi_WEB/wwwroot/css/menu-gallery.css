@@ -1,80 +1,549 @@
-.menu-gallery-page { --mg-white: #fff; --mg-cream: #faf9e9; --mg-brown: #684a40; --mg-muted: #8b8179; --mg-line: rgba(104,74,64,.18); }
-.menu-gallery-page main { padding-top: 62px; background: var(--mg-white); color: var(--mg-brown); }
-.menu-gallery-page .home-header { background: rgba(10,16,23,.96); }
-.menu-gallery-page [hidden] { display: none !important; }
-.menu-gallery-page :is(.mg-hero,.mg-set-banner) { position: relative; isolation: isolate; display: grid; place-items: center; overflow: hidden; color: #fff; }
-.menu-gallery-page .mg-hero { min-height: clamp(250px,30vw,440px); }
-.menu-gallery-page :is(.mg-hero,.mg-set-banner) > img { position: absolute; z-index: -2; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.menu-gallery-page :is(.mg-hero,.mg-set-banner)::before { content: ""; position: absolute; z-index: -1; inset: 0; background: rgba(20,13,9,.4); }
-.menu-gallery-page .mg-hero h1 { padding: 24px; font: 400 clamp(26px,3.3vw,44px)/1.4 "Sora",sans-serif; text-align: center; }
-.menu-gallery-page .mg-hero h1 strong { font-weight: 600; }
-.menu-gallery-page .mg-section-title { padding: 24px 20px 45px; background: var(--mg-cream); color: var(--mg-brown); text-align: center; font: 400 22px/1.5 "Sora",sans-serif; }
-.menu-gallery-page :is(.mg-custom,.mg-sets) { scroll-margin-top: 75px; padding-bottom: 65px; }
-.menu-gallery-page .mg-tabs { position: relative; display: flex; flex-wrap: wrap; justify-content: center; min-height: 85px; margin-top: -22px; padding: 18px 12px; border-bottom: 1px solid var(--mg-line); background: var(--mg-white); }
-.menu-gallery-page .mg-tabs button { position: relative; min-height: 44px; border: 0; padding: 10px 24px; background: transparent; color: var(--mg-muted); font-size: 12px; text-transform: uppercase; }
-.menu-gallery-page .mg-tabs button + button::before { content: ""; position: absolute; inset: 16px auto 16px 0; width: 1px; background: var(--mg-line); }
-.menu-gallery-page .mg-tabs button[aria-pressed="true"] { color: var(--mg-brown); font-weight: 500; }
-.menu-gallery-page :is(.mg-tabs button,.mg-groups button):hover { color: var(--rp-gold-dark); }
-.menu-gallery-page .mg-category-heading { margin: 30px 0 0; font: 500 22px/1.5 "Sora",sans-serif; }
-.menu-gallery-page .mg-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 32px 28px; padding-top: 35px; }
-.menu-gallery-page .mg-food { min-width: 0; margin: 0; }
-.menu-gallery-page .mg-food img { display: block; width: 100%; aspect-ratio: 1.5; object-fit: cover; background: var(--mg-cream); }
-.menu-gallery-page .mg-food figcaption { padding: 11px 3px 0; color: var(--mg-brown); text-align: center; font-size: 15px; line-height: 1.7; overflow-wrap: anywhere; }
-.menu-gallery-page .mg-zoom-trigger { display: block; position: relative; cursor: zoom-in; }
-.menu-gallery-page .mg-zoom-icon { position: absolute; right: 10px; bottom: 10px; display: grid; width: 32px; height: 32px; place-items: center; border: 1px solid rgba(255,255,255,.65); border-radius: 50%; background: rgba(10,12,14,.45); color: #fff; font-size: 21px; }
-.menu-gallery-page .mg-zoom-trigger:is(:hover,:focus-visible) .mg-zoom-icon { border-color: var(--rp-gold); color: var(--rp-gold); }
-.menu-gallery-page .mg-zoom-dialog { width: min(1000px,calc(100% - 32px)); max-width: none; max-height: 90vh; max-height: 90dvh; border: 1px solid rgba(242,237,228,.2); border-radius: 4px; padding: 52px 18px 18px; overflow: auto; background: var(--rp-night); color: var(--rp-bone); }
-.menu-gallery-page .mg-zoom-dialog::backdrop { background: rgba(0,0,0,.83); }
-.menu-gallery-page .mg-zoom-image { display: block; width: 100%; height: auto; max-height: calc(90vh - 150px); max-height: calc(90dvh - 150px); object-fit: contain; }
-.menu-gallery-page .mg-zoom-dialog p { margin: 15px 15px 0; color: var(--rp-bone); text-align: center; font-size: 14px; line-height: 1.6; overflow-wrap: anywhere; }
-.menu-gallery-page .mg-zoom-close { position: absolute; top: 4px; right: 6px; display: grid; width: 44px; height: 44px; place-items: center; border: 0; padding: 0; background: transparent; color: var(--rp-bone); font-size: 30px; line-height: 1; }
-.menu-gallery-page .mg-zoom-close:hover { color: var(--rp-gold); }
-body.menu-image-open { overflow: hidden; }
-.menu-gallery-page .mg-expand { display: block; min-height: 44px; margin: 28px auto 0; border: 1px solid var(--mg-line); padding: 10px 22px; background: transparent; color: var(--mg-brown); font-size: 12px; }
-.menu-gallery-page .mg-expand:hover { border-color: var(--rp-gold); color: var(--rp-gold-dark); }
-.menu-gallery-page .mg-set-banner { height: clamp(220px,25vw,330px); }
-.menu-gallery-page .mg-set-banner h2 { padding: 24px; font: 400 28px/1.4 "Sora",sans-serif; text-align: center; }
-.menu-gallery-page .mg-selector { position: relative; max-width: 950px; margin: -22px auto 0; padding: 0 22px 12px; background: var(--mg-white); }
-.menu-gallery-page .mg-collection-label { padding: 24px 0 16px; color: var(--mg-muted); text-align: center; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; }
-.menu-gallery-page .mg-groups { display: flex; justify-content: space-between; gap: 8px; border-bottom: 1px solid var(--mg-line); }
-.menu-gallery-page .mg-groups button { min-height: 45px; border: 0; border-bottom: 2px solid transparent; padding: 10px 20px; background: transparent; color: var(--mg-muted); font-size: 12px; }
-.menu-gallery-page .mg-groups button[aria-pressed="true"] { border-bottom-color: var(--rp-gold); color: var(--mg-brown); }
-.menu-gallery-page .mg-menu-choices { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 0 22px; margin-top: 16px; }
-.menu-gallery-page .mg-choice { display: flex; min-width: 0; min-height: 88px; align-items: center; gap: 15px; border: 0; border-bottom: 1px solid var(--mg-line); padding: 15px 12px; background: var(--mg-white); color: var(--mg-brown); text-align: left; }
-.menu-gallery-page .mg-number { color: var(--mg-muted); font: 600 32px/1.2 "Syne",sans-serif; }
-.menu-gallery-page .mg-choice strong { display: block; font-size: 12px; font-weight: 500; }
-.menu-gallery-page .mg-choice small { display: block; margin-top: 3px; color: var(--mg-muted); font-size: 11px; }
-.menu-gallery-page .mg-choice:hover { background: var(--mg-cream); }
-.menu-gallery-page .mg-choice[aria-pressed="true"] { border-bottom: 2px solid var(--rp-gold); background: var(--mg-cream); }
-.menu-gallery-page .mg-choice[aria-pressed="true"] .mg-number { color: var(--rp-gold-dark); }
-.menu-gallery-page [data-menu-panel] { scroll-margin-top: 80px; }
-.menu-gallery-page .mg-set-summary { padding-top: 32px; text-align: center; }
-.menu-gallery-page .mg-set-summary h3 { color: var(--mg-brown); font: 500 26px/1.5 "Sora",sans-serif; }
-.menu-gallery-page .mg-set-summary p { max-width: 70ch; margin: 12px auto 0; color: var(--mg-muted); font-size: 13px; }
-.menu-gallery-page .mg-set-price { display: block; margin-top: 14px; color: var(--rp-gold-dark); font-size: 12px; }
-.menu-gallery-page .mg-empty { padding: 40px 15px; color: var(--mg-muted); text-align: center; }
-.menu-gallery-page .mg-empty a { display: inline-block; margin-top: 16px; border-bottom: 1px solid var(--mg-line); color: var(--rp-gold-dark); }
-.menu-gallery-page .mg-sr-only, .menu-gallery-page.mg-ready .mg-category-heading { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+/* Carats & Cake Editorial Wedding Menu Styling */
+.menu-gallery-page {
+    --mg-bg: #FAF9F8;
+    --mg-surface: #FFFFFF;
+    --mg-warm: #F6F5F3;
+    --mg-charcoal: #111111;
+    --mg-body: #4A4A4A;
+    --mg-muted: #868686;
+    --mg-hairline: #E4E1DC;
+    --mg-gold: #C5A880;
+    --mg-gold-dark: #A98A5F;
+}
+
+.menu-gallery-page main {
+    padding-top: 68px;
+    background: var(--mg-bg);
+    color: var(--mg-body);
+}
+
+.menu-gallery-page .home-header {
+    background: rgba(250, 249, 248, 0.95);
+    border-bottom: 1px solid var(--mg-hairline);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+.menu-gallery-page [hidden] {
+    display: none !important;
+}
+
+/* Hero & Set Banners */
+.menu-gallery-page :is(.mg-hero, .mg-set-banner) {
+    position: relative;
+    isolation: isolate;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    color: #FFFFFF;
+}
+
+.menu-gallery-page .mg-hero {
+    min-height: clamp(280px, 32vw, 440px);
+}
+
+.menu-gallery-page :is(.mg-hero, .mg-set-banner) > img {
+    position: absolute;
+    z-index: -2;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: brightness(0.82);
+}
+
+.menu-gallery-page :is(.mg-hero, .mg-set-banner)::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(17, 17, 17, 0.48) 0%, rgba(17, 17, 17, 0.72) 100%);
+}
+
+.menu-gallery-page .mg-hero h1 {
+    padding: 24px;
+    font-family: var(--font-serif-display, "Cormorant Garamond", serif);
+    font-size: clamp(32px, 4.2vw, 54px);
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    text-align: center;
+}
+
+.menu-gallery-page .mg-hero h1 strong {
+    font-weight: 600;
+    font-style: italic;
+    color: var(--mg-gold);
+}
+
+.menu-gallery-page .mg-section-title {
+    padding: 40px 20px 24px;
+    background: var(--mg-bg);
+    color: var(--mg-charcoal);
+    text-align: center;
+    font-family: var(--font-serif-display, "Cormorant Garamond", serif);
+    font-size: clamp(26px, 2.8vw, 36px);
+    font-weight: 500;
+    letter-spacing: 0.04em;
+}
+
+.menu-gallery-page :is(.mg-custom, .mg-sets) {
+    scroll-margin-top: 80px;
+    padding-bottom: 75px;
+}
+
+/* Category Filter Tabs (Pill style) */
+.menu-gallery-page .mg-tabs {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px 12px;
+    margin-top: 10px;
+    padding: 16px 12px 24px;
+    border-bottom: 1px solid var(--mg-hairline);
+    background: transparent;
+}
+
+.menu-gallery-page .mg-tabs button {
+    position: relative;
+    min-height: 40px;
+    border: 1px solid var(--mg-hairline);
+    border-radius: 9999px;
+    padding: 8px 22px;
+    background: var(--mg-surface);
+    color: var(--mg-muted);
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.menu-gallery-page .mg-tabs button[aria-pressed="true"] {
+    background: var(--mg-charcoal);
+    border-color: var(--mg-charcoal);
+    color: #FFFFFF;
+}
+
+.menu-gallery-page .mg-tabs button:hover:not([aria-pressed="true"]) {
+    border-color: var(--mg-charcoal);
+    color: var(--mg-charcoal);
+}
+
+.menu-gallery-page .mg-category-heading {
+    margin: 40px 0 10px;
+    color: var(--mg-charcoal);
+    font-family: var(--font-serif-display, "Cormorant Garamond", serif);
+    font-size: 26px;
+    font-weight: 500;
+    text-align: center;
+}
+
+/* Food Items Grid (3 Columns) */
+.menu-gallery-page .mg-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 34px 28px;
+    padding-top: 30px;
+}
+
+.menu-gallery-page .mg-food {
+    min-width: 0;
+    margin: 0;
+    overflow: hidden;
+    border-radius: 4px;
+    background: var(--mg-surface);
+    border: 1px solid var(--mg-hairline);
+    box-shadow: 0 6px 20px rgba(17, 17, 17, 0.04);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.menu-gallery-page .mg-food:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 30px rgba(17, 17, 17, 0.08);
+}
+
+.menu-gallery-page .mg-food img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 1.45;
+    object-fit: cover;
+    background: var(--mg-warm);
+    transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.menu-gallery-page .mg-food:hover img {
+    transform: scale(1.045);
+}
+
+.menu-gallery-page .mg-food figcaption {
+    padding: 16px 14px 18px;
+    color: var(--mg-charcoal);
+    text-align: center;
+    font-size: 14.5px;
+    font-weight: 500;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
+.menu-gallery-page .mg-zoom-trigger {
+    display: block;
+    position: relative;
+    cursor: zoom-in;
+    overflow: hidden;
+}
+
+.menu-gallery-page .mg-zoom-icon {
+    position: absolute;
+    right: 12px;
+    bottom: 12px;
+    display: grid;
+    width: 34px;
+    height: 34px;
+    place-items: center;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 50%;
+    background: rgba(17, 17, 17, 0.55);
+    color: #FFFFFF;
+    font-size: 18px;
+    backdrop-filter: blur(4px);
+    transition: all 0.2s ease;
+}
+
+.menu-gallery-page .mg-zoom-trigger:is(:hover, :focus-visible) .mg-zoom-icon {
+    background: var(--mg-charcoal);
+    border-color: #FFFFFF;
+    transform: scale(1.08);
+}
+
+/* Zoom Dialog Modal */
+.menu-gallery-page .mg-zoom-dialog {
+    width: min(960px, calc(100% - 32px));
+    max-width: none;
+    max-height: 90vh;
+    border: 1px solid var(--mg-hairline);
+    border-radius: 4px;
+    padding: 48px 24px 24px;
+    overflow: auto;
+    background: rgba(17, 17, 17, 0.96);
+    color: #FFFFFF;
+    backdrop-filter: blur(16px);
+}
+
+.menu-gallery-page .mg-zoom-dialog::backdrop {
+    background: rgba(0, 0, 0, 0.85);
+}
+
+.menu-gallery-page .mg-zoom-image {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: calc(90vh - 140px);
+    object-fit: contain;
+    border-radius: 2px;
+}
+
+.menu-gallery-page .mg-zoom-dialog p {
+    margin: 16px 15px 0;
+    color: #FFFFFF;
+    text-align: center;
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+}
+
+.menu-gallery-page .mg-zoom-close {
+    position: absolute;
+    top: 8px;
+    right: 12px;
+    display: grid;
+    width: 44px;
+    height: 44px;
+    place-items: center;
+    border: 0;
+    padding: 0;
+    background: transparent;
+    color: #FFFFFF;
+    font-size: 32px;
+    line-height: 1;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.menu-gallery-page .mg-zoom-close:hover {
+    color: var(--mg-gold);
+}
+
+body.menu-image-open {
+    overflow: hidden;
+}
+
+.menu-gallery-page .mg-expand {
+    display: block;
+    min-height: 44px;
+    margin: 32px auto 0;
+    border: 1px solid var(--mg-charcoal);
+    border-radius: 9999px;
+    padding: 10px 28px;
+    background: transparent;
+    color: var(--mg-charcoal);
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.menu-gallery-page .mg-expand:hover {
+    background: var(--mg-charcoal);
+    color: #FFFFFF;
+}
+
+/* Set Menu Banner & Selector */
+.menu-gallery-page .mg-set-banner {
+    height: clamp(240px, 26vw, 340px);
+    margin-top: 40px;
+}
+
+.menu-gallery-page .mg-set-banner h2 {
+    padding: 24px;
+    font-family: var(--font-serif-display, "Cormorant Garamond", serif);
+    font-size: clamp(28px, 3.5vw, 44px);
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-align: center;
+}
+
+.menu-gallery-page .mg-selector {
+    position: relative;
+    max-width: 1000px;
+    margin: -30px auto 0;
+    padding: 24px 28px;
+    background: var(--mg-surface);
+    border-radius: 4px;
+    border: 1px solid var(--mg-hairline);
+    box-shadow: 0 12px 40px rgba(17, 17, 17, 0.06);
+}
+
+.menu-gallery-page .mg-collection-label {
+    padding: 0 0 18px;
+    color: var(--mg-muted);
+    text-align: center;
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.menu-gallery-page .mg-groups {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    border-bottom: 1px solid var(--mg-hairline);
+    padding-bottom: 14px;
+}
+
+.menu-gallery-page .mg-groups button {
+    min-height: 38px;
+    border: 1px solid var(--mg-hairline);
+    border-radius: 9999px;
+    padding: 8px 18px;
+    background: var(--mg-surface);
+    color: var(--mg-muted);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.menu-gallery-page .mg-groups button[aria-pressed="true"] {
+    background: var(--mg-charcoal);
+    border-color: var(--mg-charcoal);
+    color: #FFFFFF;
+}
+
+.menu-gallery-page .mg-menu-choices {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px 18px;
+    margin-top: 20px;
+}
+
+.menu-gallery-page .mg-choice {
+    display: flex;
+    min-width: 0;
+    min-height: 80px;
+    align-items: center;
+    gap: 14px;
+    border: 1px solid var(--mg-hairline);
+    border-radius: 4px;
+    padding: 14px 16px;
+    background: var(--mg-surface);
+    color: var(--mg-charcoal);
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.menu-gallery-page .mg-choice:hover {
+    border-color: var(--mg-charcoal);
+    background: var(--mg-warm);
+    transform: translateY(-2px);
+}
+
+.menu-gallery-page .mg-choice[aria-pressed="true"] {
+    border-color: var(--mg-charcoal);
+    background: var(--mg-charcoal);
+    color: #FFFFFF;
+    box-shadow: 0 4px 15px rgba(17, 17, 17, 0.15);
+}
+
+.menu-gallery-page .mg-number {
+    color: var(--mg-gold);
+    font-family: var(--font-serif-display, "Cormorant Garamond", serif);
+    font-size: 32px;
+    font-weight: 600;
+    line-height: 1;
+}
+
+.menu-gallery-page .mg-choice[aria-pressed="true"] .mg-number {
+    color: var(--mg-gold);
+}
+
+.menu-gallery-page .mg-choice strong {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.menu-gallery-page .mg-choice small {
+    display: block;
+    margin-top: 3px;
+    color: var(--mg-muted);
+    font-size: 11px;
+}
+
+.menu-gallery-page .mg-choice[aria-pressed="true"] small {
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.menu-gallery-page [data-menu-panel] {
+    scroll-margin-top: 80px;
+}
+
+.menu-gallery-page .mg-set-summary {
+    padding-top: 45px;
+    text-align: center;
+}
+
+.menu-gallery-page .mg-set-summary h3 {
+    color: var(--mg-charcoal);
+    font-family: var(--font-serif-display, "Cormorant Garamond", serif);
+    font-size: clamp(26px, 2.8vw, 36px);
+    font-weight: 500;
+}
+
+.menu-gallery-page .mg-set-summary p {
+    max-width: 65ch;
+    margin: 12px auto 0;
+    color: var(--mg-body);
+    font-size: 14px;
+    line-height: 1.7;
+}
+
+.menu-gallery-page .mg-set-price {
+    display: inline-block;
+    margin-top: 16px;
+    padding: 6px 16px;
+    border-radius: 9999px;
+    background: var(--mg-surface);
+    border: 1px solid var(--mg-hairline);
+    color: var(--mg-charcoal);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.menu-gallery-page .mg-empty {
+    padding: 50px 15px;
+    color: var(--mg-muted);
+    text-align: center;
+}
+
+.menu-gallery-page .mg-empty a {
+    display: inline-block;
+    margin-top: 16px;
+    border-bottom: 1px solid var(--mg-charcoal);
+    color: var(--mg-charcoal);
+    font-weight: 600;
+}
+
+.menu-gallery-page .mg-sr-only,
+.menu-gallery-page.mg-ready .mg-category-heading {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+    .menu-gallery-page .mg-menu-choices {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
 @media (max-width: 767px) {
-    .menu-gallery-page .mg-zoom-dialog { width: calc(100% - 20px); padding-inline: 10px; }
-    .menu-gallery-page .mg-zoom-dialog p { margin-inline: 5px; font-size: 13px; }
-    .menu-gallery-page .mg-hero { min-height: 230px; }
-    .menu-gallery-page .mg-section-title { font-size: 20px; }
-    .menu-gallery-page .mg-tabs { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); padding: 10px 0; }
-    .menu-gallery-page .mg-tabs button { padding-inline: 6px; font-size: 11px; }
-    .menu-gallery-page .mg-tabs button:nth-child(odd)::before { display: none; }
-    .menu-gallery-page .mg-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 24px 15px; padding-top: 26px; }
-    .menu-gallery-page .mg-food figcaption { font-size: 12px; }
-    .menu-gallery-page .mg-set-banner { height: 200px; }
-    .menu-gallery-page .mg-set-banner h2 { font-size: 23px; }
-    .menu-gallery-page .mg-selector { padding-inline: 0; }
-    .menu-gallery-page .mg-groups { gap: 2px; }
-    .menu-gallery-page .mg-groups button { padding-inline: 5px; font-size: 11px; }
-    .menu-gallery-page .mg-menu-choices { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 0 12px; }
-    .menu-gallery-page .mg-choice { gap: 9px; min-height: 83px; padding: 12px 6px; }
-    .menu-gallery-page .mg-number { font-size: 26px; }
-    .menu-gallery-page .mg-choice strong { font-size: 10px; }
-    .menu-gallery-page .mg-choice small { font-size: 9px; }
-    .menu-gallery-page .mg-set-summary h3 { font-size: 21px; }
-    .menu-gallery-page .mg-set-summary p { font-size: 12px; }
+    .menu-gallery-page main {
+        padding-top: 60px;
+    }
+
+    .menu-gallery-page .mg-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 20px 14px;
+    }
+
+    .menu-gallery-page .mg-hero {
+        min-height: 240px;
+    }
+
+    .menu-gallery-page .mg-hero h1 {
+        font-size: 28px;
+    }
+
+    .menu-gallery-page .mg-section-title {
+        font-size: 24px;
+        padding-block: 30px 16px;
+    }
+
+    .menu-gallery-page .mg-set-banner {
+        height: 220px;
+    }
+
+    .menu-gallery-page .mg-set-banner h2 {
+        font-size: 26px;
+    }
+
+    .menu-gallery-page .mg-selector {
+        margin-inline: 10px;
+        padding: 16px;
+    }
+
+    .menu-gallery-page .mg-menu-choices {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    .menu-gallery-page .mg-grid {
+        grid-template-columns: 1fr;
+    }
 }

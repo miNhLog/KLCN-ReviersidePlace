@@ -1050,15 +1050,25 @@ public sealed class RiversideApiClient : IRiversideApiClient
 
     private string? ResolvePublicImageUrl(string? imageUrl)
     {
-        if (string.IsNullOrWhiteSpace(imageUrl) || _httpClient.BaseAddress is null)
+        if (string.IsNullOrWhiteSpace(imageUrl))
             return null;
 
         if (Uri.TryCreate(imageUrl, UriKind.Absolute, out var absoluteImageUrl))
             return absoluteImageUrl.Scheme is "http" or "https" ? absoluteImageUrl.ToString() : null;
 
-        return Uri.TryCreate(_httpClient.BaseAddress, imageUrl.TrimStart('/'), out var resolvedImageUrl)
+        var normalized = imageUrl.Trim();
+        if (normalized.StartsWith("~/"))
+            normalized = normalized.Substring(1);
+        if (!normalized.StartsWith('/'))
+            normalized = "/" + normalized;
+
+        if (normalized.StartsWith("/images/", StringComparison.OrdinalIgnoreCase))
+            return normalized;
+
+        return _httpClient.BaseAddress is not null &&
+            Uri.TryCreate(_httpClient.BaseAddress, normalized.TrimStart('/'), out var resolvedImageUrl)
             ? resolvedImageUrl.ToString()
-            : null;
+            : normalized;
     }
 
     private string? ResolveUploadedImageUrl(string? imageUrl)
