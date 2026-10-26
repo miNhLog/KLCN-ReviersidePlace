@@ -1,4 +1,4 @@
-﻿USE IRiversidePalaceDB;
+USE IRiversidePalaceDB;
 GO
 
 SET XACT_ABORT ON;
@@ -75,8 +75,8 @@ INSERT INTO TrangThai (TrangThaiID, MaTrangThai, TenTrangThai, NhomTrangThai, Mo
 GO
 
 -- 04. TaiKhoan
-INSERT INTO TaiKhoan (VaiTroID, Email, MatKhauHash, TrangThaiID, NgayTao, TrangThaiDuLieuID) VALUES
-(1, N'adminriverside@gmail.com', N'AQAAAAIAAYagAAAAEMLXqqxpcc3Ydg1JgAL92fbuGs44ame+FFih44Ifc3+HlDrvTBatGmudGFhDjcraXw==', 101, '2026-09-01 08:00:00', 1)
+INSERT INTO TaiKhoan (VaiTroID, Email, MatKhauHash, TrangThaiID, BatBuocDoiMatKhau, NgayTao, TrangThaiDuLieuID) VALUES
+(1, N'adminriverside@gmail.com', N'AQAAAAIAAYagAAAAEMLXqqxpcc3Ydg1JgAL92fbuGs44ame+FFih44Ifc3+HlDrvTBatGmudGFhDjcraXw==', 101, 0, '2026-09-01 08:00:00', 1);
 GO
 
 
