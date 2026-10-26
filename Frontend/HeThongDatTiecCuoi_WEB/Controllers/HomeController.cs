@@ -66,6 +66,36 @@ public sealed class HomeController : Controller
             });
         }
 
+        if (User.IsInRole(RoleNames.Coordinator))
+        {
+            if (!TryGetAccessToken(out var coordinatorToken)) return RedirectToAction("Login", "Auth");
+            var partiesTask = _apiClient.GetCoordinatorAssignedPartiesAsync(coordinatorToken, cancellationToken);
+            var incidentsTask = _apiClient.GetIncidentsAsync(coordinatorToken, null, null, null,
+                null, null, null, 1, 1, cancellationToken);
+            var checklistTask = _apiClient.GetChecklistSummaryAsync(coordinatorToken, cancellationToken);
+            await Task.WhenAll(partiesTask, incidentsTask, checklistTask);
+            var parties = await partiesTask;
+            var incidents = await incidentsTask;
+            var now = VietnamTime.Now;
+            var model = new CoordinatorDashboardViewModel { GeneratedAt = now };
+            if (parties.Succeeded && parties.Value is not null)
+            {
+                model.TodayParties = parties.Value.Where(p => p.EventDate.Date == now.Date)
+                    .OrderBy(p => p.Shift).ThenBy(p => p.HallName).ToList();
+                model.TodayCount = model.TodayParties.Count;
+                model.UpcomingCount = parties.Value.Count(p => p.EventDate.Date > now.Date);
+            }
+            else model.PartiesError = "Không thể tải tiệc được phân công. Vui lòng thử lại.";
+            if (incidents.Succeeded && incidents.Value is not null)
+                model.OpenIncidentCount = incidents.Value.Kpi.Pending + incidents.Value.Kpi.Processing;
+            else model.IncidentsError = "Không thể tải số liệu sự cố. Vui lòng thử lại.";
+            var checklist = await checklistTask;
+            if (checklist.Succeeded && checklist.Value is not null)
+                model.IncompleteWorkCount = checklist.Value.IncompleteWorkCount;
+            else model.ChecklistError = "Không thể tải công việc checklist. Vui lòng thử lại.";
+            return View("CoordinatorDashboard", model);
+        }
+
         if (!User.IsInRole(RoleNames.Manager))
         {
             return View(new ManagerDashboardViewModel());
@@ -199,6 +229,26 @@ public sealed class HomeController : Controller
         if (!TryGetAccessToken(out var token)) return Unauthorized(new { message = "Phiên đăng nhập đã hết hạn." });
         var result = await _apiClient.CancelCoordinatorAssignmentAsync(token, model.BookingId, model.Reason, cancellationToken);
         return result.Succeeded ? Json(result.Value) : StatusCode(result.StatusCode ?? 502, new { message = result.Error });
+    }
+
+    [Authorize(Roles = RoleNames.Coordinator)]
+    public Task<IActionResult> WorkSchedule(CancellationToken cancellationToken) =>
+        CoordinatorWorkspace("schedule", cancellationToken);
+
+    [Authorize(Roles = RoleNames.Coordinator)]
+    public Task<IActionResult> WorkProgress(CancellationToken cancellationToken) =>
+        Task.FromResult<IActionResult>(RedirectToAction("Index", "Checklist"));
+
+    private async Task<IActionResult> CoordinatorWorkspace(string page, CancellationToken cancellationToken)
+    {
+        if (!TryGetAccessToken(out var token)) return RedirectToAction("Login", "Auth");
+        var parties = await _apiClient.GetCoordinatorAssignedPartiesAsync(token, cancellationToken);
+        return View("CoordinatorWorkspace", new CoordinatorWorkspaceViewModel
+        {
+            Page = page, Today = VietnamTime.Now.Date,
+            Parties = parties.Succeeded ? parties.Value ?? [] : [],
+            ErrorMessage = parties.Succeeded ? null : "Không tải được danh sách tiệc. Vui lòng thử lại."
+        });
     }
 
     [Authorize(Roles = RoleNames.Coordinator)]

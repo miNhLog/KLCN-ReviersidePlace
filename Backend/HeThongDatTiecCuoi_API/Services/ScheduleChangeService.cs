@@ -751,6 +751,10 @@ public sealed class ScheduleChangeService : IScheduleChangeService
             booking.FinalHallPrice, booking.EstimatedTotal };
         booking.HallScheduleId = newSchedule.HallScheduleId;
         booking.HallSchedule = newSchedule;
+        await ChecklistLifecycle.RecordAsync(_context, booking.BookingId, change.ApprovedByUserId,
+            "Hệ thống đổi lịch", "RESCHEDULED",
+            $"Đổi lịch {oldSchedule.Date:dd/MM/yyyy} {oldSchedule.Shift} → {newSchedule.Date:dd/MM/yyyy} {newSchedule.Shift}. Hạn công việc được dời tương ứng; giữ nguyên tiến độ.",
+            null, cancellationToken);
         booking.FinalHallPrice = quote.NewHallPrice;
         booking.EstimatedTotal = quote.ContractValueAfter;
         newSchedule.StatusId = await _statuses.GetStatusIdAsync(StatusGroups.HallSchedule, HallScheduleStatusCodes.Booked, cancellationToken);

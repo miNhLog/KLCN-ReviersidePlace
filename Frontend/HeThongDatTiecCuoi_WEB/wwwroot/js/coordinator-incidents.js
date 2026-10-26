@@ -90,4 +90,8 @@
 
     const requestedId = page.dataset.openIncident;
     if (requestedId && /^\d+$/.test(requestedId)) openDetail(requestedId);
+    else if (page.dataset.bookingId && Array.from(booking.options).some(option => option.value === page.dataset.bookingId)) {
+        openForm();
+        booking.value = page.dataset.bookingId;
+    }
 })();

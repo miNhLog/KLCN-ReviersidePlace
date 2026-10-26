@@ -1,0 +1,53 @@
+@model HeThongDatTiecCuoi_WEB.Models.Home.CoordinatorDashboardViewModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Công việc hôm nay";
+}
+@section Styles { <link rel="stylesheet" href="~/css/coordinator-dashboard.css" asp-append-version="true" /> }
+<header class="top-header"><div><div class="breadcrumb">Điều phối tiệc <span>›</span> <strong>Hôm nay</strong></div><h2>Công việc hôm nay</h2></div></header>
+<section class="content coordinator-dashboard">
+    <div class="manager-dashboard-intro">
+        <div><span class="eyebrow">ĐIỀU PHỐI TIỆC</span><h1>Chào mừng, @User.Identity?.Name</h1><p>Các tiệc được phân công và tình hình công việc của bạn.</p></div>
+        <div class="coordinator-refresh"><small>Cập nhật @Model.GeneratedAt.ToString("HH:mm, dd/MM/yyyy") · Giờ Việt Nam</small><a class="cd-button" asp-action="Dashboard"><i class="fa-solid fa-rotate" aria-hidden="true"></i> Làm mới</a></div>
+    </div>
+    @if (Model.PartiesError is not null || Model.IncidentsError is not null || Model.ChecklistError is not null)
+    {
+        <div class="cd-alert" role="alert">
+            @if (Model.PartiesError is not null) { <p>@Model.PartiesError</p> }
+            @if (Model.IncidentsError is not null) { <p>@Model.IncidentsError</p> }
+            @if (Model.ChecklistError is not null) { <p>@Model.ChecklistError</p> }
+            <a asp-action="Dashboard">Thử lại</a>
+        </div>
+    }
+    <div class="coordinator-kpi-grid" aria-label="Chỉ số công việc điều phối">
+        <article class="manager-kpi-card"><span class="manager-kpi-icon"><i class="fa-solid fa-calendar-day" aria-hidden="true"></i></span><div><small>Tiệc hôm nay</small><strong>@(Model.TodayCount?.ToString() ?? "—")</strong><em>@Model.GeneratedAt.ToString("dd/MM/yyyy") · Được phân công cho bạn</em></div></article>
+        <article class="manager-kpi-card"><span class="manager-kpi-icon"><i class="fa-solid fa-champagne-glasses" aria-hidden="true"></i></span><div><small>Tiệc sắp tới</small><strong>@(Model.UpcomingCount?.ToString() ?? "—")</strong><em>Từ ngày mai · Phân công còn hiệu lực</em></div></article>
+        <a class="manager-kpi-card cd-kpi-link" asp-controller="Checklist" asp-action="Index"><span class="manager-kpi-icon"><i class="fa-solid fa-list-check" aria-hidden="true"></i></span><div><small>Công việc chưa hoàn thành</small><strong>@(Model.IncompleteWorkCount?.ToString() ?? "—")</strong><em>Đầu việc checklist cần thực hiện · Xem →</em></div></a>
+        <a class="manager-kpi-card cd-kpi-link" asp-controller="CoordinatorIncident" asp-action="Index"><span class="manager-kpi-icon"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i></span><div><small>Sự cố đang mở</small><strong>@(Model.OpenIncidentCount?.ToString() ?? "—")</strong><em>Chờ xử lý + Đang xử lý · Xem sự cố →</em></div></a>
+    </div>
+    <div class="section-header cd-section-header"><div><h3>Lịch làm việc hôm nay <span class="cd-date">@Model.GeneratedAt.ToString("dd/MM/yyyy")</span></h3><p>Chỉ hiển thị các tiệc được phân công cho tài khoản đang đăng nhập.</p></div><a class="cd-button" asp-action="AssignedParties">Tất cả tiệc được giao <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a></div>
+    <div class="hall-schedule-table-wrap">
+        <table class="hall-schedule-table coordinator-work-table">
+            <thead><tr><th>Ca</th><th>Sảnh</th><th>Tiệc</th><th>Quy mô</th><th>Trạng thái tiệc</th><th>Thao tác</th></tr></thead>
+            <tbody>
+                @if (Model.PartiesError is not null)
+                {
+                    <tr><td colspan="6" class="table-empty-state">Không thể tải lịch hôm nay. <a asp-action="Dashboard">Thử lại</a></td></tr>
+                }
+                else if (Model.TodayParties.Count == 0)
+                {
+                    <tr><td colspan="6" class="table-empty-state cd-empty"><i class="fa-regular fa-calendar-check" aria-hidden="true"></i><strong>Hôm nay bạn chưa có tiệc được phân công</strong><span>Bạn có thể xem các tiệc sắp tới trong danh sách tiệc được giao.</span><a asp-action="AssignedParties">Xem tiệc được phân công →</a></td></tr>
+                }
+                @foreach (var party in Model.TodayParties)
+                {
+                    <tr>
+                        <td><span class="cd-shift">@party.Shift</span></td><td>@party.HallName</td>
+                        <td><a asp-action="AssignedPartyDetail" asp-route-bookingId="@party.BookingId"><strong>@party.BookingCode</strong></a><small class="cd-customer">@party.CustomerName</small></td>
+                        <td>@party.TableCount bàn</td><td><span class="cd-status">@party.BookingStatusName</span></td>
+                        <td><a class="cd-detail" asp-action="AssignedPartyDetail" asp-route-bookingId="@party.BookingId">Xem chi tiết <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</section>

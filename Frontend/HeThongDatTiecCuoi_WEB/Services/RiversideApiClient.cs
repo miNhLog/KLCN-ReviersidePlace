@@ -28,6 +28,12 @@ using Microsoft.Extensions.Options;
 
 public sealed class RiversideApiClient : IRiversideApiClient
 {
+    public Task<ApiCallResult<JsonElement>> GetChecklistsAsync(string token, CancellationToken ct) =>
+        SendAsync<JsonElement>(HttpMethod.Get, "api/checklists", null, token, ct);
+    public Task<ApiCallResult<JsonElement>> ExecuteChecklistAsync(string token, int bookingId, string action, JsonElement command, CancellationToken ct) =>
+        SendAsync<JsonElement>(HttpMethod.Post, $"api/checklists/{bookingId}/{Uri.EscapeDataString(action)}", command, token, ct);
+    public Task<ApiCallResult<ChecklistSummaryViewModel>> GetChecklistSummaryAsync(string token, CancellationToken ct) =>
+        SendAsync<ChecklistSummaryViewModel>(HttpMethod.Get, "api/checklists/summary", null, token, ct);
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
     {
         PropertyNameCaseInsensitive = true
