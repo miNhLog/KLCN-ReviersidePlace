@@ -36,6 +36,21 @@ public sealed class ScheduleChangeAuthorizationIntegrationTests : IClassFixture<
         Assert.Equal(expected, response.StatusCode);
     }
 
+    [Theory]
+    [InlineData("create-options", null, HttpStatusCode.Unauthorized)]
+    [InlineData("availability?bookingId=1&date=2026-12-01&shift=Ca%20tr%C6%B0a", null, HttpStatusCode.Unauthorized)]
+    [InlineData("create-options", RoleNames.Coordinator, HttpStatusCode.Forbidden)]
+    [InlineData("availability?bookingId=1&date=2026-12-01&shift=Ca%20tr%C6%B0a", RoleNames.Coordinator, HttpStatusCode.Forbidden)]
+    [InlineData("create-options", RoleNames.Manager, HttpStatusCode.Forbidden)]
+    [InlineData("create-options", RoleNames.Admin, HttpStatusCode.Forbidden)]
+    [InlineData("availability?bookingId=1&date=2026-12-01&shift=Ca%20tr%C6%B0a", RoleNames.HallManager, HttpStatusCode.NotFound)]
+    public async Task LookupEndpoints_EnforceRoleAndBookingScope(string path, string? role, HttpStatusCode expected)
+    {
+        using var client = Client(role);
+        using var response = await client.GetAsync("/api/hall-manager/schedule-changes/" + path);
+        Assert.Equal(expected, response.StatusCode);
+    }
+
     private HttpClient Client(string? role)
     {
         var client = _factory.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions

@@ -2805,6 +2805,14 @@ public sealed class RiversideApiClient : IRiversideApiClient
         SendEnvelopeAsync<ScheduleChangePaymentViewModel>(HttpMethod.Post,
             $"api/v1/public/schedule-changes/{id}/payment/status", new { bookingCode, phoneNumber }, null, cancellationToken);
 
+    public Task<ApiCallResult<HallManagerScheduleChangeOptionsViewModel>> GetHallManagerScheduleChangeOptionsAsync(string accessToken,
+        CancellationToken cancellationToken) => SendEnvelopeAsync<HallManagerScheduleChangeOptionsViewModel>(HttpMethod.Get,
+        "api/hall-manager/schedule-changes/create-options", null, accessToken, cancellationToken);
+
+    public Task<ApiCallResult<List<ScheduleChangeAvailabilityViewModel>>> GetHallManagerScheduleChangeAvailabilityAsync(string accessToken,
+        int bookingId, DateTime date, string shift, CancellationToken cancellationToken) => SendEnvelopeAsync<List<ScheduleChangeAvailabilityViewModel>>(HttpMethod.Get,
+        $"api/hall-manager/schedule-changes/availability?bookingId={bookingId}&date={date:yyyy-MM-dd}&shift={Uri.EscapeDataString(shift)}", null, accessToken, cancellationToken);
+
     public Task<ApiCallResult<List<ScheduleChangeViewModel>>> GetHallManagerScheduleChangesAsync(string accessToken,
         string? status, CancellationToken cancellationToken) => SendEnvelopeAsync<List<ScheduleChangeViewModel>>(
         HttpMethod.Get, $"api/hall-manager/schedule-changes{StatusQuery(status)}", null, accessToken, cancellationToken);

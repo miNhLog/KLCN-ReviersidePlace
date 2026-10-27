@@ -36,12 +36,18 @@ public sealed class ChecklistPartyDto
     public int Version { get; set; }
     public bool CanEdit { get; set; }
     public bool CanManage { get; set; }
+    public bool CanRepairTiming { get; set; }
+    public bool NeedsTimingRepair { get; set; }
+    public bool CanHandover { get; set; }
+    public string? TimingMessage { get; set; }
+    public string? ShiftHours { get; set; }
     public string? ReturnReason { get; set; }
     public List<ChecklistTaskDto> Tasks { get; set; } = [];
     public List<ChecklistHistoryDto> History { get; set; } = [];
     public List<ChecklistIssueDto> Issues { get; set; } = [];
 }
 public sealed record ChecklistTaskDto(int Id, string Name, string Group, string Due, bool Required,
-    string Status, string? Note, string? By, DateTime? UpdatedAt);
+    string Status, string? Note, string? By, DateTime? UpdatedAt,
+    bool CanStart = true, bool CanComplete = true, string? TimingMessage = null, DateTime? CompletedAt = null, bool CompletionValid = false);
 public sealed record ChecklistHistoryDto(long Id, string Text, string By, DateTime Time);
 public sealed record ChecklistIssueDto(int Id, string Code, string Title, string Description, bool Resolved);

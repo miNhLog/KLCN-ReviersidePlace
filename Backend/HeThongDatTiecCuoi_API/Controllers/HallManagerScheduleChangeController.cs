@@ -16,6 +16,14 @@ public sealed class HallManagerScheduleChangeController : ControllerBase
     private readonly IScheduleChangeService _service;
     public HallManagerScheduleChangeController(IScheduleChangeService service) => _service = service;
 
+    [HttpGet("create-options")]
+    public Task<IActionResult> CreateOptions() => ExecuteAsync(() =>
+        _service.GetHallManagerCreateOptionsAsync(UserId(), HttpContext.RequestAborted));
+
+    [HttpGet("availability")]
+    public Task<IActionResult> Availability([FromQuery] int bookingId, [FromQuery] DateTime date, [FromQuery] string shift) =>
+        ExecuteAsync(() => _service.GetHallManagerAvailabilityAsync(UserId(), bookingId, date, shift, HttpContext.RequestAborted));
+
     [HttpGet]
     public Task<IActionResult> List([FromQuery] string? status) => ExecuteAsync(() =>
         _service.GetHallManagerRequestsAsync(UserId(), status, HttpContext.RequestAborted));

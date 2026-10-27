@@ -69,12 +69,18 @@
 
 <div class="sca-modal" id="hmCreate" hidden><button type="button" class="sca-modal-backdrop sca-close" aria-label="Đóng"></button><section class="sca-modal-card" role="dialog" aria-modal="true" aria-labelledby="hmCreateTitle">
     <header><div><span class="sca-modal-icon"><i class="fa-solid fa-calendar-plus"></i></span><div><h2 id="hmCreateTitle">Tạo yêu cầu thay khách</h2><p>Chỉ tạo cho booking thuộc sảnh đang phụ trách.</p></div></div><button type="button" class="sca-modal-close sca-close" aria-label="Đóng"><i class="fa-solid fa-xmark"></i></button></header>
-    <form class="sca-ajax" asp-action="Create">@Html.AntiForgeryToken()<div class="sca-form-grid">
-        <label><span>Booking ID <b>*</b></span><input type="number" name="BookingId" min="1" required /></label><label><span>Sảnh mới ID <b>*</b></span><input type="number" name="NewHallId" min="1" required /></label>
-        <label><span>Ngày tổ chức mới <b>*</b></span><input type="date" name="NewDate" required /></label><label><span>Ca tổ chức <b>*</b></span><select name="NewShift" required><option value="Ca trưa">Ca trưa</option><option value="Ca tối">Ca tối</option></select></label>
+    <form id="hmCreateForm" class="sca-ajax" asp-action="Create" data-schedule-lookup="true" data-options-url="@Url.Action("CreateOptions")" data-availability-url="@Url.Action("Availability")">@Html.AntiForgeryToken()<div class="sca-form-grid">
+        <label class="wide"><span>Tìm tiệc</span><input id="hmBookingSearch" type="search" placeholder="Nhập mã tiệc DT-... hoặc tên khách hàng" autocomplete="off" /></label>
+        <label class="wide"><span>Tiệc cần đổi lịch <b>*</b></span><select id="hmBooking" name="BookingId" required disabled><option value="">Đang tải danh sách tiệc…</option></select></label>
+        <div id="hmBookingSummary" class="wide hm-selection-summary" hidden></div>
+        <label><span>Ngày tổ chức mới <b>*</b></span><input id="hmNewDate" type="date" name="NewDate" required /></label><label><span>Ca tổ chức <b>*</b></span><select id="hmNewShift" name="NewShift" required><option value="Ca trưa">Ca trưa (10:30–14:00)</option><option value="Ca tối">Ca tối (17:30–21:30)</option></select></label>
+        <label class="wide"><span>Sảnh mới <b>*</b></span><select id="hmNewHall" name="NewHallId" required disabled><option value="">Chọn tiệc, ngày và ca để xem sảnh trống</option></select></label>
+        <div id="hmAvailabilityStatus" class="wide hm-selection-summary" role="status" aria-live="polite">Chọn tiệc, ngày và ca để kiểm tra lịch trống.</div>
+        <div id="hmUnavailableHalls" class="wide hm-selection-summary" hidden></div>
+        <div class="wide"><button id="hmCheckAvailability" type="button" class="sca-secondary">Kiểm tra lại lịch trống</button><button id="hmRetryOptions" type="button" class="sca-secondary" hidden>Tải lại danh sách tiệc</button></div>
         <label class="wide"><span>Lý do đổi lịch <b>*</b></span><textarea name="Reason" minlength="3" maxlength="500" required></textarea></label><label class="wide"><span>Giải trình ngoại lệ</span><textarea name="ExceptionReason" maxlength="1000" placeholder="Bắt buộc giải trình nếu còn dưới 7 ngày..."></textarea></label>
         <label class="wide"><span>Bằng chứng khách hàng đồng ý <b>*</b></span><textarea name="CustomerConsentEvidence" minlength="3" maxlength="2000" required placeholder="Ghi nhận cuộc gọi, email hoặc văn bản xác nhận..."></textarea></label>
-    </div><div class="sca-modal-notice"><i class="fa-solid fa-circle-info"></i><span>Yêu cầu vẫn phải được Quản lý phê duyệt. Quản lý sảnh không thể tự duyệt.</span></div><footer><button type="button" class="sca-secondary sca-close">Hủy</button><button type="submit" class="sca-primary"><i class="fa-solid fa-floppy-disk"></i><span>Tạo yêu cầu</span></button></footer></form>
+    </div><div class="sca-modal-notice"><i class="fa-solid fa-circle-info"></i><span>Yêu cầu vẫn phải được Quản lý phê duyệt. Quản lý sảnh không thể tự duyệt. Kết quả lịch trống chưa giữ chỗ và sẽ được kiểm tra lại khi gửi.</span></div><footer><button type="button" class="sca-secondary sca-close">Hủy</button><button id="hmCreateSubmit" type="submit" class="sca-primary" disabled><i class="fa-solid fa-floppy-disk"></i><span>Tạo yêu cầu</span></button></footer></form>
 </section></div>
 
-@section Scripts { <script src="~/js/schedule-change-admin.js" asp-append-version="true"></script> }
+@section Scripts { <script src="~/js/schedule-change-admin.js" asp-append-version="true"></script><script src="~/js/hall-manager-schedule-create.js" asp-append-version="true"></script> }

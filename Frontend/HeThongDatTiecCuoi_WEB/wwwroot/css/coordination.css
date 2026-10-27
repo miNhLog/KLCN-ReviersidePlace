@@ -93,6 +93,10 @@
 .coord-state.assigned { color: #197647; background: #e6f7ec; }
 .coord-state.unassigned { color: #9b6812; background: #fff3d9; }
 .coord-state.conflict { color: #ae3732; background: #fdebea; }
+.coord-state.cancelled { color: #a04440; background: #fff0ee; }
+.coord-state.completed, .coord-state.ineligible { color: #64748b; background: #eef1f5; }
+.coord-table .coord-ineligibility { display: block; max-width: 240px; margin-top: 6px; white-space: normal; color: #738095; font-size: 9px; line-height: 1.6; }
+.coord-ineligibility-notice { padding: 12px; border: 1px solid #e1e5eb; border-radius: 8px; background: #f3f5f8; color: #526277; font-size: 11px; line-height: 1.7; }
 .coord-table td.actions { text-align: right; }
 .coord-row-actions { display: flex; align-items: center; justify-content: flex-end; gap: 5px; }
 .coord-action { display: inline-flex; height: 31px; align-items: center; justify-content: center; gap: 6px; border: 1px solid #d8dee6; border-radius: 7px; color: #315273; background: #fff; font: inherit; font-size: 9px; font-weight: 750; cursor: pointer; transition: .15s ease; }
@@ -120,6 +124,7 @@
 
 .coord-modal { position: fixed; inset: 0; z-index: 1200; display: grid; place-items: center; padding: 18px; }
 .coord-modal[hidden] { display: none; }
+.coord-modal [hidden] { display: none !important; }
 .coord-modal-backdrop { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: rgba(11, 29, 51, .58); backdrop-filter: blur(2px); cursor: default; }
 .coord-modal-card { position: relative; width: min(620px, 100%); max-height: calc(100vh - 36px); overflow: auto; border-radius: 16px; background: #fff; box-shadow: 0 24px 70px rgba(7, 23, 42, .28); animation: coord-modal-in .18s ease; }
 .coord-modal-card.cancel { width: min(520px, 100%); }

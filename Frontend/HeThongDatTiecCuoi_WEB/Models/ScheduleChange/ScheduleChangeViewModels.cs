@@ -2,6 +2,11 @@ using System.ComponentModel.DataAnnotations;
 
 namespace HeThongDatTiecCuoi_WEB.Models.ScheduleChange;
 
+public sealed record HallManagerScheduleChangeBookingViewModel(int BookingId, string BookingCode, string CustomerName,
+    DateTime CurrentDate, string CurrentShift, string CurrentHallName, int GuestCount);
+public sealed record HallManagerScheduleChangeOptionsViewModel(DateTime MinimumNewDate, int ExceptionThresholdDays,
+    DateTime Today, List<HallManagerScheduleChangeBookingViewModel> Bookings);
+
 public static class ScheduleChangeStatusDisplay
 {
     public static string Name(string? status) => status switch
@@ -49,6 +54,7 @@ public sealed class ScheduleChangeAvailabilityViewModel
     public DateTime Date { get; set; }
     public string Shift { get; set; } = string.Empty;
     public decimal HallPrice { get; set; }
+    public int? MinimumCapacity { get; set; }
     public int MaximumCapacity { get; set; }
     public bool Available { get; set; }
     public string? UnavailableReason { get; set; }

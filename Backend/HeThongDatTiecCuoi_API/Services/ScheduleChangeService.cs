@@ -27,6 +27,8 @@ public sealed class ScheduleChangeException : Exception
 
 public interface IScheduleChangeService
 {
+    Task<HallManagerScheduleChangeOptionsDto> GetHallManagerCreateOptionsAsync(int userId, CancellationToken cancellationToken);
+    Task<List<ScheduleChangeAvailabilityDto>> GetHallManagerAvailabilityAsync(int userId, int bookingId, DateTime date, string shift, CancellationToken cancellationToken);
     Task<ScheduleChangeEligibilityDto> GetEligibilityAsync(ScheduleChangeLookupRequest request, CancellationToken cancellationToken);
     Task<List<ScheduleChangeAvailabilityDto>> GetAvailabilityAsync(ScheduleChangeAvailabilityRequest request, CancellationToken cancellationToken);
     Task SendOtpAsync(SendScheduleChangeOtpRequest request, string clientIp, CancellationToken cancellationToken);
@@ -103,9 +105,42 @@ public sealed class ScheduleChangeService : IScheduleChangeService
         CancellationToken cancellationToken)
     {
         var booking = await FindBookingAsync(request.BookingCode, request.PhoneNumber, cancellationToken);
+        return await GetAvailabilityForBookingAsync(booking, request.Date, request.Shift, cancellationToken);
+    }
+
+    public async Task<HallManagerScheduleChangeOptionsDto> GetHallManagerCreateOptionsAsync(int userId, CancellationToken cancellationToken)
+    {
+        var today = RiversideBusinessClock.Today;
+        var hallIds = HallManagerQueryScope.CurrentHallIds(_context, userId, today);
+        var bookings = await _context.WeddingBookings.AsNoTracking()
+            .Where(b => hallIds.Contains(b.HallSchedule.HallId) && b.HallSchedule.Date > today &&
+                (b.Status.StatusCode == BookingStatusCodes.Confirmed || b.Status.StatusCode == BookingStatusCodes.Preparing) &&
+                !_context.WeddingScheduleChanges.Any(c => c.BookingId == b.BookingId && ScheduleChangeStatusCodes.Open.Contains(c.Status.StatusCode)))
+            .OrderBy(b => b.HallSchedule.Date).ThenBy(b => b.BookingCode)
+            .Select(b => new HallManagerScheduleChangeBookingDto(b.BookingId, b.BookingCode, b.Customer.FullName,
+                b.HallSchedule.Date, b.HallSchedule.Shift, b.HallSchedule.Hall.HallName, b.GuestCount)).ToListAsync(cancellationToken);
         var policy = await _policies.GetActiveAsync(RiversideBusinessClock.Now, cancellationToken);
-        var date = request.Date.Date;
-        var shift = NormalizeShift(request.Shift);
+        return new(today.AddDays(policy.NewDateMinimumDays), policy.OnlineMinimumDays, today, bookings);
+    }
+
+    public async Task<List<ScheduleChangeAvailabilityDto>> GetHallManagerAvailabilityAsync(int userId, int bookingId,
+        DateTime date, string shift, CancellationToken cancellationToken)
+    {
+        if (!await HallManagerOwnsBookingAsync(userId, bookingId, cancellationToken))
+            throw new ScheduleChangeException("Không tìm thấy tiệc trong phạm vi sảnh phụ trách.", StatusCodes.Status404NotFound);
+        var booking = await BookingQuery(false).SingleAsync(b => b.BookingId == bookingId, cancellationToken);
+        if (!ScheduleChangeBusinessRules.IsBookingEligible(booking.Status.StatusCode) || booking.HallSchedule.Date.Date <= RiversideBusinessClock.Today ||
+            await HasOpenRequestAsync(bookingId, null, cancellationToken))
+            throw new ScheduleChangeException("Tiệc không còn đủ điều kiện tạo yêu cầu đổi lịch. Vui lòng tải lại danh sách.", StatusCodes.Status409Conflict);
+        return await GetAvailabilityForBookingAsync(booking, date, shift, cancellationToken);
+    }
+
+    private async Task<List<ScheduleChangeAvailabilityDto>> GetAvailabilityForBookingAsync(WeddingBooking booking,
+        DateTime requestedDate, string requestedShift, CancellationToken cancellationToken)
+    {
+        var policy = await _policies.GetActiveAsync(RiversideBusinessClock.Now, cancellationToken);
+        var date = requestedDate.Date;
+        var shift = NormalizeShift(requestedShift);
         if (date < RiversideBusinessClock.Today.AddDays(policy.NewDateMinimumDays))
             throw new ScheduleChangeException($"Ngày mới phải cách hôm nay ít nhất {policy.NewDateMinimumDays} ngày.");
 
@@ -127,17 +162,18 @@ public sealed class ScheduleChangeService : IScheduleChangeService
         return halls.Select(hall =>
         {
             var schedule = schedules.SingleOrDefault(x => x.HallId == hall.HallId);
-            string? unavailable = null;
-            if (booking.GuestCount > hall.MaximumCapacity || (hall.MinimumCapacity.HasValue && booking.GuestCount < hall.MinimumCapacity))
-                unavailable = "Sảnh không phù hợp sức chứa.";
-            else if (schedule?.Status.StatusCode == HallScheduleStatusCodes.Locked) unavailable = "Lịch sảnh đang bị khóa.";
-            else if (schedule is not null && occupied.Contains(schedule.HallScheduleId)) unavailable = "Lịch đã có booking khác.";
-            else if (schedule is not null && held.Contains(schedule.HallScheduleId)) unavailable = "Lịch đang được một yêu cầu khác giữ tạm.";
-            else if (schedule?.HallScheduleId == booking.HallScheduleId) unavailable = "Lịch mới trùng hoàn toàn lịch hiện tại.";
+            string? unavailable = CapacityUnavailableReason(booking, hall);
+            if (unavailable is null)
+            {
+                if (schedule?.Status.StatusCode == HallScheduleStatusCodes.Locked) unavailable = "Lịch sảnh đang bị khóa.";
+                else if (schedule is not null && occupied.Contains(schedule.HallScheduleId)) unavailable = "Lịch đã có booking khác.";
+                else if (schedule is not null && held.Contains(schedule.HallScheduleId)) unavailable = "Lịch đang được một yêu cầu khác giữ tạm.";
+                else if (schedule?.HallScheduleId == booking.HallScheduleId) unavailable = "Lịch mới trùng hoàn toàn lịch hiện tại.";
+            }
             return new ScheduleChangeAvailabilityDto
             {
                 HallId = hall.HallId, HallName = hall.HallName, Date = date, Shift = shift,
-                HallPrice = hall.RentalPrice, MaximumCapacity = hall.MaximumCapacity,
+                HallPrice = hall.RentalPrice, MinimumCapacity = hall.MinimumCapacity, MaximumCapacity = hall.MaximumCapacity,
                 Available = unavailable is null, UnavailableReason = unavailable
             };
         }).ToList();
@@ -809,8 +845,8 @@ public sealed class ScheduleChangeService : IScheduleChangeService
         var hall = await _context.Halls.Include(x => x.Status).SingleOrDefaultAsync(x => x.HallId == hallId &&
             x.DataStatusId == existingId && x.Status.StatusCode == BusinessStatusCodes.Active, cancellationToken)
             ?? throw new ScheduleChangeException("Sảnh mới không tồn tại hoặc không hoạt động.");
-        if (booking.GuestCount > hall.MaximumCapacity || (hall.MinimumCapacity.HasValue && booking.GuestCount < hall.MinimumCapacity))
-            throw new ScheduleChangeException("Sảnh mới không phù hợp sức chứa.");
+        if (CapacityUnavailableReason(booking, hall) is { } capacityReason)
+            throw new ScheduleChangeException(capacityReason);
         var schedule = await _context.HallSchedules.Include(x => x.Status).Include(x => x.Hall)
             .SingleOrDefaultAsync(x => x.HallId == hallId && x.Date == date && x.Shift == shift && x.DataStatusId == existingId, cancellationToken);
         if (schedule is null)
@@ -835,6 +871,15 @@ public sealed class ScheduleChangeService : IScheduleChangeService
         return schedule;
     }
 
+    private static string? CapacityUnavailableReason(WeddingBooking booking, Hall hall)
+    {
+        if (booking.GuestCount > hall.MaximumCapacity)
+            return $"Tiệc có {booking.GuestCount} khách, vượt sức chứa tối đa {hall.MaximumCapacity} khách của sảnh.";
+        if (hall.MinimumCapacity.HasValue && booking.GuestCount < hall.MinimumCapacity.Value)
+            return $"Tiệc có {booking.GuestCount} khách, chưa đạt sức chứa tối thiểu {hall.MinimumCapacity.Value} khách của sảnh.";
+        return null;
+    }
+
     private async Task EnsureTargetAvailableAsync(WeddingScheduleChange change, bool allowOwnHold,
         CancellationToken cancellationToken)
     {
@@ -842,9 +887,8 @@ public sealed class ScheduleChangeService : IScheduleChangeService
             throw new ScheduleChangeException("Sảnh mới không còn hoạt động.", StatusCodes.Status409Conflict);
         if (change.NewHallSchedule.Status.StatusCode == HallScheduleStatusCodes.Locked)
             throw new ScheduleChangeException("Lịch sảnh mới đang bị khóa.", StatusCodes.Status409Conflict);
-        if (change.Booking.GuestCount > change.NewHallSchedule.Hall.MaximumCapacity ||
-            (change.NewHallSchedule.Hall.MinimumCapacity.HasValue && change.Booking.GuestCount < change.NewHallSchedule.Hall.MinimumCapacity))
-            throw new ScheduleChangeException("Sảnh mới không còn phù hợp sức chứa.", StatusCodes.Status409Conflict);
+        if (CapacityUnavailableReason(change.Booking, change.NewHallSchedule.Hall) is { } capacityReason)
+            throw new ScheduleChangeException(capacityReason, StatusCodes.Status409Conflict);
         if (await _context.WeddingBookings.AnyAsync(x => x.BookingId != change.BookingId &&
             x.HallScheduleId == change.NewHallScheduleId && BookingStatusCodes.OccupyingSchedule.Contains(x.Status.StatusCode), cancellationToken))
             throw new ScheduleChangeException("Lịch sảnh mới đã có booking khác.", StatusCodes.Status409Conflict);

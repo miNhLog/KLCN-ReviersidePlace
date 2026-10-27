@@ -23,6 +23,22 @@ public sealed class PartyChecklistTask
     public string? Note { get; set; }
     public string? UpdatedBy { get; set; }
     public DateTime? UpdatedAt { get; set; }
+    // Derived from the existing audit history; never requires a new database column.
+    [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+    public DateTime? CompletedAt
+    {
+        get
+        {
+            if (Status != "done" || Checklist is null) return null;
+            var uniqueName = Checklist.Tasks.Count(t => t.Name == Name) == 1;
+            var prefix = $"Công việc “{Name}”: ";
+            var latest = Checklist.History.Where(h =>
+                    (h.Action == $"TASK:{Id}" || uniqueName && h.Action == "TASK" && h.Text.StartsWith(prefix, StringComparison.Ordinal)) &&
+                    !h.Text.EndsWith(": Hoàn thành → Hoàn thành.", StringComparison.Ordinal))
+                .OrderByDescending(h => h.Id).FirstOrDefault();
+            return latest?.Text.EndsWith(" → Hoàn thành.", StringComparison.Ordinal) == true ? latest.Timestamp : null;
+        }
+    }
     public PartyChecklist Checklist { get; set; } = null!;
 }
 

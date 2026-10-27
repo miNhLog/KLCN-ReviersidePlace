@@ -66,9 +66,12 @@ public sealed class CoordinationAssignmentSqlServerTests
             var assigned = await verify.CoordinationAssignments.Include(a => a.Coordinator).SingleAsync();
             var checklist = await verify.PartyChecklists.Include(c => c.Tasks).SingleAsync();
             Assert.Equal(8, checklist.Tasks.Count);
-            var checklistService = new ChecklistService(verify);
+            var checklistService = new ChecklistService(verify, new ChecklistTestClock(DateTime.Today.AddDays(2).AddHours(14)));
             var initialVersion = checklist.Version;
             var coordinatorUserId = assigned.Coordinator.UserId;
+            Assert.Equal(8, (await checklistService.IncompleteCountAsync(coordinatorUserId, RoleNames.Coordinator, default)).Value);
+            var workspace = await checklistService.GetAsync(coordinatorUserId, RoleNames.Coordinator, default);
+            Assert.Equal("10:30–14:00", Assert.Single(workspace.Value!.Parties).ShiftHours);
             Assert.Equal(409, (await checklistService.ExecuteAsync(coordinatorUserId, RoleNames.Coordinator,
                 assigned.BookingId, "submit", new() { Version = checklist.Version }, default)).StatusCode);
             foreach (var task in checklist.Tasks)
@@ -80,6 +83,7 @@ public sealed class CoordinationAssignmentSqlServerTests
                 assigned.BookingId, "submit", new() { Version = checklist.Version }, default)).Succeeded);
             Assert.True((await checklistService.ExecuteAsync(managerUserId, RoleNames.HallManager,
                 assigned.BookingId, "approve", new() { Version = checklist.Version }, default)).Succeeded);
+            Assert.Equal(0, (await checklistService.IncompleteCountAsync(coordinatorUserId, RoleNames.Coordinator, default)).Value);
             verify.ChangeTracker.Clear();
             Assert.Equal("approved", (await verify.PartyChecklists.SingleAsync()).State);
             Assert.Equal(8, await verify.PartyChecklistTasks.CountAsync(t => t.Status == "done"));
@@ -168,6 +172,11 @@ public sealed class CoordinationAssignmentSqlServerTests
     }
     private sealed record SqlSeed(User Manager, Employee Coordinator, Employee SecondCoordinator,
         WeddingBooking FirstBooking, WeddingBooking SecondBooking);
+
+    private sealed class ChecklistTestClock(DateTime localNow) : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() => new DateTimeOffset(localNow, TimeSpan.FromHours(7)).ToUniversalTime();
+    }
 
     private sealed class ThrowingNotificationService : INotificationService
     {
