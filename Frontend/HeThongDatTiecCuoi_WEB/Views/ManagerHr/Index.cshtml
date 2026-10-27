@@ -11,7 +11,6 @@
  <header class="hr-header manager-section-header"><div><span class="backoffice-hero__eyebrow"><i class="fa-solid fa-users-gear"></i> QUẢN LÝ NHÂN SỰ</span><h1>Quản lý nhân sự</h1><p>Quản lý đội ngũ nhân sự, phân công phụ trách sảnh và gửi yêu cầu thay đổi vai trò.</p></div></header>
  @Html.AntiForgeryToken()
  @if(!string.IsNullOrWhiteSpace(Model.ErrorMessage)){<div class="hr-alert error">@Model.ErrorMessage</div>}
- <div id="hrToast" class="hr-toast" hidden></div>
  <section class="hr-kpis">
   <article><span><i class="fa-solid fa-users"></i></span><div><small>Tổng nhân sự</small><strong>@Model.TotalEmployees</strong></div></article>
   <article><span><i class="fa-solid fa-people-roof"></i></span><div><small>Quản lý sảnh</small><strong>@Model.HallManagerCount</strong></div></article>

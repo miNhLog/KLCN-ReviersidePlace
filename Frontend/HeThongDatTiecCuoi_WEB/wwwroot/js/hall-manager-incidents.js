@@ -6,7 +6,6 @@
     const form = document.getElementById('hmIncidentForm');
     const detailBody = document.getElementById('hmDetailBody');
     const errorBox = document.getElementById('hmFormError');
-    const toast = document.getElementById('hmIncidentToast');
     const idInput = document.getElementById('hmIncidentId');
     const booking = document.getElementById('hmBooking');
     const type = document.getElementById('hmType');
@@ -14,12 +13,11 @@
     const occurred = document.getElementById('hmOccurred');
     const description = document.getElementById('hmDescription');
     const formTitle = document.getElementById('hmFormTitle');
-    let toastTimer;
 
     const csrf = () => form.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
     const setBodyState = () => document.body.classList.toggle('incident-modal-open', !formModal.hidden || !detailModal.hidden);
     const localNow = () => { const d=new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset()); return d.toISOString().slice(0,16); };
-    const notify = (message, error=false) => { clearTimeout(toastTimer); toast.textContent=message; toast.classList.toggle('error',error); toast.classList.add('show'); toastTimer=setTimeout(()=>toast.classList.remove('show'),3500); };
+    const notify = (message, error=false) => error ? window.RiversideToast?.error(message) : window.RiversideToast?.success(message);
     const messageOf = async response => { try { const body=await response.json(); return body.message || 'Yêu cầu không thành công.'; } catch { return 'Không thể kết nối đến hệ thống.'; } };
     const closeForm = () => { formModal.hidden=true; setBodyState(); };
     const closeDetail = () => { detailModal.hidden=true; setBodyState(); };

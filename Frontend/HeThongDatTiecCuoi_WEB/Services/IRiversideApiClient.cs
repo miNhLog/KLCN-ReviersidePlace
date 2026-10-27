@@ -20,9 +20,11 @@ using HeThongDatTiecCuoi_WEB.Models.Coordination;
 using Microsoft.AspNetCore.Mvc;
 using HeThongDatTiecCuoi_WEB.Models.DecorPackages;
 using HeThongDatTiecCuoi_WEB.Models.ScheduleChange;
+using HeThongDatTiecCuoi_WEB.Models.Banners;
 
 public interface IRiversideApiClient
 {
+    Task<ApiCallResult<List<BannerViewModel>>> GetPublicBannersAsync(CancellationToken cancellationToken);
     Task<ApiCallResult<System.Text.Json.JsonElement>> GetChecklistsAsync(string token, CancellationToken ct);
     Task<ApiCallResult<System.Text.Json.JsonElement>> ExecuteChecklistAsync(string token, int bookingId, string action, System.Text.Json.JsonElement command, CancellationToken ct);
     Task<ApiCallResult<ChecklistSummaryViewModel>> GetChecklistSummaryAsync(string token, CancellationToken ct);

@@ -23,11 +23,14 @@ using HeThongDatTiecCuoi_WEB.Models.Coordination;
 using Microsoft.AspNetCore.Mvc;
 using HeThongDatTiecCuoi_WEB.Models.DecorPackages;
 using HeThongDatTiecCuoi_WEB.Models.ScheduleChange;
+using HeThongDatTiecCuoi_WEB.Models.Banners;
 using HeThongDatTiecCuoi_WEB.Options;
 using Microsoft.Extensions.Options;
 
 public sealed class RiversideApiClient : IRiversideApiClient
 {
+    public Task<ApiCallResult<List<BannerViewModel>>> GetPublicBannersAsync(CancellationToken cancellationToken) =>
+        SendAsync<List<BannerViewModel>>(HttpMethod.Get, "api/banners/public", null, null, cancellationToken);
     public Task<ApiCallResult<JsonElement>> GetChecklistsAsync(string token, CancellationToken ct) =>
         SendAsync<JsonElement>(HttpMethod.Get, "api/checklists", null, token, ct);
     public Task<ApiCallResult<JsonElement>> ExecuteChecklistAsync(string token, int bookingId, string action, JsonElement command, CancellationToken ct) =>
@@ -1045,6 +1048,10 @@ public sealed class RiversideApiClient : IRiversideApiClient
         catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
             return ApiCallResult<T>.Failure("Backend API phản hồi quá lâu.");
+        }
+        catch (JsonException)
+        {
+            return ApiCallResult<T>.Failure("Phản hồi từ Backend không đúng định dạng mong đợi.");
         }
     }
 

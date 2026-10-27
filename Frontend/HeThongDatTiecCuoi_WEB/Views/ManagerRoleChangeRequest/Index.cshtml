@@ -17,9 +17,7 @@
         </div>
     </header>
 
-    @if (TempData["RoleChangeSuccess"] is string success) { <div class="role-alert success"><i class="fa-solid fa-circle-check"></i> @success</div> }
-    @if (TempData["RoleChangeError"] is string error) { <div class="role-alert error"><i class="fa-solid fa-circle-exclamation"></i> @error</div> }
-    @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage)) { <div class="role-alert error">@Model.ErrorMessage</div> }
+    @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage)) { <div class="role-alert error" data-persistent>@Model.ErrorMessage</div> }
 
     <section class="role-change-card">
         <div class="role-card-heading"><div><h2>Gửi yêu cầu mới</h2><p>Chọn nhân viên để hệ thống xác định vai trò đề xuất phù hợp.</p></div></div>

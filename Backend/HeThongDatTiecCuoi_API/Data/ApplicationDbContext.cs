@@ -53,9 +53,37 @@ public sealed class ApplicationDbContext : DbContext
     public DbSet<ScheduleChangeStatusHistory> ScheduleChangeStatusHistory => Set<ScheduleChangeStatusHistory>();
     public DbSet<ContractAmendment> ContractAmendments => Set<ContractAmendment>();
     public DbSet<ScheduleChangeRefund> ScheduleChangeRefunds => Set<ScheduleChangeRefund>();
+    public DbSet<HomeBanner> HomeBanners => Set<HomeBanner>();
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<HomeBanner>(e =>
+        {
+            e.ToTable("BannerTrangChu", t => t.HasCheckConstraint("CK_BannerTrangChu_ThuTu", "[ThuTu] > 0"));
+            e.HasKey(x => x.BannerId);
+            e.Property(x => x.BannerId).HasColumnName("BannerID");
+            e.Property(x => x.Title).HasColumnName("TieuDe").HasMaxLength(150).IsRequired();
+            e.Property(x => x.Subtitle).HasColumnName("TieuDePhu").HasMaxLength(150).IsRequired();
+            e.Property(x => x.Description).HasColumnName("MoTa").HasMaxLength(500).IsRequired();
+            e.Property(x => x.NavigationLabel).HasColumnName("NhanDieuHuong").HasMaxLength(100).IsRequired();
+            e.Property(x => x.ImagePath).HasColumnName("DuongDanAnh").HasMaxLength(300);
+            e.Property(x => x.ImageAlt).HasColumnName("MoTaAnh").HasMaxLength(250).IsRequired();
+            e.Property(x => x.PrimaryActionType).HasColumnName("LoaiHanhDongChinh").HasMaxLength(20).IsRequired();
+            e.Property(x => x.PrimaryButtonLabel).HasColumnName("NhanNutChinh").HasMaxLength(80);
+            e.Property(x => x.PrimaryLink).HasColumnName("LienKetChinh").HasMaxLength(300);
+            e.Property(x => x.SecondaryActionType).HasColumnName("LoaiHanhDongPhu").HasMaxLength(20).IsRequired();
+            e.Property(x => x.SecondaryButtonLabel).HasColumnName("NhanNutPhu").HasMaxLength(80);
+            e.Property(x => x.SecondaryLink).HasColumnName("LienKetPhu").HasMaxLength(300);
+            e.Property(x => x.SortOrder).HasColumnName("ThuTu");
+            e.Property(x => x.IsVisible).HasColumnName("DangHienThi");
+            e.Property(x => x.CreatedAt).HasColumnName("NgayTao").HasPrecision(0).HasDefaultValueSql("SYSDATETIME()");
+            e.Property(x => x.UpdatedAt).HasColumnName("NgayCapNhat").HasPrecision(0);
+            e.Property(x => x.CreatedByUserId).HasColumnName("NguoiTaoID");
+            e.Property(x => x.UpdatedByUserId).HasColumnName("NguoiCapNhatID");
+            e.Property(x => x.RowVersion).HasColumnName("RowVersion").IsRowVersion();
+            e.HasIndex(x => x.SortOrder).HasDatabaseName("IX_BannerTrangChu_ThuTu");
+        });
 
         modelBuilder.Entity<PartyChecklist>(e =>
         {

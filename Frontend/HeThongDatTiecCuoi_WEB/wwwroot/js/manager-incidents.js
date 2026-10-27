@@ -6,7 +6,6 @@
     const form = document.getElementById('mgIncidentForm');
     const detailBody = document.getElementById('mgDetailBody');
     const errorBox = document.getElementById('mgFormError');
-    const toast = document.getElementById('mgIncidentToast');
     const idInput = document.getElementById('mgIncidentId');
     const booking = document.getElementById('mgBooking');
     const type = document.getElementById('mgType');
@@ -14,12 +13,11 @@
     const occurred = document.getElementById('mgOccurred');
     const description = document.getElementById('mgDescription');
     const formTitle = document.getElementById('mgFormTitle');
-    let toastTimer;
 
     const csrf = () => form.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
     const setBodyState = () => document.body.classList.toggle('incident-modal-open', !formModal.hidden || !detailModal.hidden);
     const localNow = () => { const date = new Date(); date.setMinutes(date.getMinutes() - date.getTimezoneOffset()); return date.toISOString().slice(0, 16); };
-    const notify = (message, error = false) => { clearTimeout(toastTimer); toast.textContent = message; toast.classList.toggle('error', error); toast.classList.add('show'); toastTimer = setTimeout(() => toast.classList.remove('show'), 3500); };
+    const notify = (message, error = false) => error ? window.RiversideToast?.error(message) : window.RiversideToast?.success(message);
     const messageOf = async response => { try { const body = await response.json(); return body.message || 'Yêu cầu không thành công.'; } catch { return 'Không thể kết nối đến hệ thống.'; } };
     const closeForm = () => { formModal.hidden = true; setBodyState(); };
     const closeDetail = () => { detailModal.hidden = true; setBodyState(); };

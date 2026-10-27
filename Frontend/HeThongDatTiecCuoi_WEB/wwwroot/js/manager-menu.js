@@ -3,7 +3,7 @@
   const token = page.querySelector('input[name="__RequestVerificationToken"]').value;
   const esc = value => String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
   const money = value => new Intl.NumberFormat('vi-VN').format(value) + ' đ';
-  const toast = (message, error=false) => { const el=document.createElement('div'); el.className='mm-toast'+(error?' error':''); el.textContent=message; document.body.append(el); setTimeout(()=>el.remove(),3000); };
+  const toast = (message, error=false) => error ? window.RiversideToast?.error(message) : window.RiversideToast?.success(message);
   const open = id => document.getElementById(id).hidden=false;
   const close = modal => modal.hidden=true;
   document.querySelectorAll('[data-modal-open]').forEach(b=>b.onclick=()=>open(b.dataset.modalOpen));

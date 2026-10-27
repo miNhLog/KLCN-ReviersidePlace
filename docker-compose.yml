@@ -62,6 +62,8 @@ services:
         condition: service_healthy
       ai:
         condition: service_healthy
+    volumes:
+      - banner-images:/app/wwwroot/uploads/banners
 
   web:
     build:
@@ -78,3 +80,4 @@ services:
 volumes:
   riverside-sql:
   chroma-data:
+  banner-images:

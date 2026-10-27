@@ -1,0 +1,60 @@
+/* Control-specific overrides for the Banner editor dialog. */
+.banner-upload {
+    min-width: 0;
+}
+
+.banner-upload input[type="file"] {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 44px;
+    padding: 5px;
+    border: 1px solid #d7dee7;
+    border-radius: 10px;
+    background: #fff;
+    color: #5d6b80;
+    font: inherit;
+    font-size: 13px;
+    line-height: 32px;
+    cursor: pointer;
+}
+
+.banner-upload input[type="file"]::file-selector-button,
+.banner-upload input[type="file"]::-webkit-file-upload-button {
+    height: 32px;
+    margin: 0 10px 0 0;
+    padding: 0 13px;
+    border: 0;
+    border-radius: 7px;
+    background: #eef2f6;
+    color: #263950;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.banner-fields .banner-switch {
+    align-self: end;
+    justify-self: start;
+    min-height: 44px;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: flex-start;
+    gap: 9px !important;
+    white-space: nowrap;
+}
+
+.banner-fields .banner-switch input[type="checkbox"] {
+    flex: 0 0 auto;
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    padding: 0;
+    accent-color: #bd8628;
+    cursor: pointer;
+}
+
+@media (max-width: 600px) {
+    .banner-fields .banner-switch {
+        align-self: start;
+    }
+}

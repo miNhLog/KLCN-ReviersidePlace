@@ -17,12 +17,10 @@
   const coordinatorList = document.getElementById('coordinatorList');
   const historyDrawer = document.getElementById('historyDrawer');
   const historyOverlay = document.getElementById('historyDrawerOverlay');
-  const toast = document.getElementById('coordinationToast');
   let mode = 'assign';
   let activeTrigger = null;
   let currentCoordinatorId = null;
   let quickBookings = new Map();
-  let toastTimer = null;
 
   const escapeHtml = value => String(value ?? '')
     .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
@@ -33,12 +31,8 @@
 
   const showToast = (message, isError = false) => {
     if (!message) return;
-    clearTimeout(toastTimer);
-    toast.classList.toggle('error', isError);
-    toast.querySelector('i').className = isError ? 'fa-solid fa-circle-exclamation' : 'fa-solid fa-circle-check';
-    toast.querySelector('span').textContent = message;
-    toast.hidden = false;
-    toastTimer = window.setTimeout(() => { toast.hidden = true; }, 4500);
+    if (isError) window.RiversideToast?.error(message);
+    else window.RiversideToast?.success(message);
   };
 
   const flash = sessionStorage.getItem('coordinationFlash');
@@ -46,7 +40,6 @@
     sessionStorage.removeItem('coordinationFlash');
     try { const value = JSON.parse(flash); showToast(value.message, value.error); } catch { showToast(flash); }
   }
-  toast.querySelector('button')?.addEventListener('click', () => { toast.hidden = true; });
 
   const readMessage = async response => {
     try {

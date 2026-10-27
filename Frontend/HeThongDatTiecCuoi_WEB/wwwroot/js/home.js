@@ -77,7 +77,7 @@
         const scenes = $$('.cinema-scene', hero);
         const stories = $$('.cinema-story', hero);
         const tabs = $$('.cinema-nav-tab', hero);
-        const count = Math.min(scenes.length, stories.length, tabs.length);
+        const count = Math.min(scenes.length, stories.length);
         if (count === 0) return;
 
         let currentIndex = 0;
@@ -144,6 +144,7 @@
         });
 
         goToScene(0);
+        if (count === 1) return;
         if (!reducedMotion.matches) {
             animFrameId = requestAnimationFrame(tick);
         }

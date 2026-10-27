@@ -4,7 +4,7 @@
  const $=id=>root.querySelector('#'+id);
  const e=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const format=value=>value.split('-').reverse().join('/');
- let role='coordinator',today='',selected=Number(new URLSearchParams(location.search).get('bookingId'))||null,tab='tasks',parties=[],busy=false,notifyTimer,saveDialog;
+ let role='coordinator',today='',selected=Number(new URLSearchParams(location.search).get('bookingId'))||null,tab='tasks',parties=[],busy=false,saveDialog;
  const stateNames={missing:'Chưa tạo checklist',unassigned:'Chưa phân công',active:'Đang thực hiện',review:'Chờ kiểm tra',approved:'Đã bàn giao',cancelled:'Đã hủy',closed:'Tiệc đã kết thúc'};
  const taskNames={todo:'Chưa làm',doing:'Đang thực hiện',done:'Hoàn thành'};
  const party=()=>parties.find(p=>p.id===selected);
@@ -15,7 +15,7 @@
  const canEdit=p=>p.canEdit;
  const hasMissing=p=>p.tasks.some(t=>t.required&&t.status!=='done');
  const badge=p=>`<span class="pill ${p.state}">${stateNames[p.state]||e(p.state)}</span>`;
- function toast(text){$('toast').textContent=text;$('toast').hidden=false;clearTimeout(notifyTimer);notifyTimer=setTimeout(()=>$('toast').hidden=true,5500);}
+ function toast(text,type='success'){window.RiversideToast?.[type]?.(text);}
  function modal(title,body,label,callback){$('dialogTitle').textContent=title;$('dialogBody').innerHTML=body;$('dialogSubmit').textContent=label;saveDialog=callback;$('modal').showModal();}
  const field=(label,name,value='',type='text',extra='')=>`<label>${label}<input name="${name}" type="${type}" value="${e(value)}" ${extra}></label>`;
  const reason=label=>`<label>${label}<textarea name="reason" required minlength="3" maxlength="500" placeholder="Nhập nội dung cụ thể..."></textarea></label>`;
@@ -108,8 +108,8 @@
   if(btn.dataset.action){action(btn.dataset.action);return;}
   const p=party();if(btn.dataset.note&&p.canEdit){const t=p.tasks.find(t=>t.id===Number(btn.dataset.note));modal('Ghi chú công việc',`<p>${e(t.name)}</p><label>Ghi chú<textarea name="note" maxlength="500">${e(t.note)}</textarea></label>`,'Lưu ghi chú',f=>command('note',{taskId:t.id,note:f.get('note')}));}
  };
- $('detail').onchange=async event=>{const select=event.target.closest('[data-task]'),p=party();if(!select||!p?.canEdit||busy)return;try{await command('task',{taskId:Number(select.dataset.task),status:select.value});}catch(error){toast(error.message);}};
- $('dialogForm').onsubmit=async event=>{event.preventDefault();if(busy)return;const form=event.target;const f=new FormData(form);for(const name of ['name','reason'])if(f.has(name)&&!String(f.get(name)).trim()){toast('Vui lòng nhập nội dung hợp lệ.');return;}$('dialogSubmit').disabled=true;try{await saveDialog(f);$('modal').close();}catch(error){toast(error.message);}finally{$('dialogSubmit').disabled=false;}};
+ $('detail').onchange=async event=>{const select=event.target.closest('[data-task]'),p=party();if(!select||!p?.canEdit||busy)return;try{await command('task',{taskId:Number(select.dataset.task),status:select.value});}catch(error){toast(error.message,'error');}};
+ $('dialogForm').onsubmit=async event=>{event.preventDefault();if(busy)return;const form=event.target;const f=new FormData(form);for(const name of ['name','reason'])if(f.has(name)&&!String(f.get(name)).trim()){toast('Vui lòng nhập nội dung hợp lệ.','warning');return;}$('dialogSubmit').disabled=true;try{await saveDialog(f);$('modal').close();}catch(error){toast(error.message,'error');}finally{$('dialogSubmit').disabled=false;}};
  $('close').onclick=$('back').onclick=()=>{if(!busy)$('modal').close();};
  $('detail').innerHTML=empty('Đang tải checklist...','Vui lòng chờ trong giây lát.');
  load().catch(error=>{$('loadError').textContent=error.message;$('loadError').hidden=false;$('detail').innerHTML=empty('Không tải được checklist','Chọn Làm mới để thử lại.');});

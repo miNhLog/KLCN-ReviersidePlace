@@ -25,17 +25,15 @@
     <main>
         <!-- CINEMATIC LUXURY HERO BANNER (8K EDITORIAL EXPERIENCE) -->
         <section class="cinema-hero" aria-label="Trung tâm Hội nghị Tiệc cưới Riverside Palace">
-            <!-- 8K Background Imagery with smooth cross-fade & Ken Burns slow zoom -->
             <div class="cinema-scenes" id="cinemaHeroScenes">
-                <div class="cinema-scene is-active" data-scene="0">
-                    <img src="~/images/home/hero-ballroom-8k.jpg" alt="Đại sảnh tiệc cưới hoàng gia Riverside Palace" class="cinema-img" fetchpriority="high" />
-                </div>
-                <div class="cinema-scene" data-scene="1">
-                    <img src="~/images/home/hero-riverfront-8k.jpg" alt="Lễ đường cưới ven sông lãng mạn hoàng hôn Riverside Palace" class="cinema-img" loading="lazy" />
-                </div>
-                <div class="cinema-scene" data-scene="2">
-                    <img src="~/images/home/hero-cuisine-8k.jpg" alt="Đỉnh cao ẩm thực yến tiệc 5 sao Riverside Palace" class="cinema-img" loading="lazy" />
-                </div>
+                @for (var i = 0; i < Model.Banners.Count; i++)
+                {
+                    var banner = Model.Banners[i];
+                    <div class="cinema-scene @(i == 0 ? "is-active" : null)" data-scene="@i">
+                        <img src="@banner.ImageUrl" alt="@banner.ImageAlt" class="cinema-img"
+                             fetchpriority="@(i == 0 ? "high" : null)" loading="@(i == 0 ? null : "lazy")" />
+                    </div>
+                }
             </div>
 
             <!-- Gradient & Vignette Overlay to ensure text readability & luxury glow -->
@@ -44,94 +42,40 @@
             <!-- Foreground Content: Editorial Copy, Badges, CTAs -->
             <div class="home-container cinema-content-wrap">
                 <div class="cinema-stories" id="cinemaHeroStories">
-                    <!-- Story 0: Ballroom -->
-                    <article class="cinema-story is-active" data-story="0">
-                        <h1 class="cinema-title">
-                            Kiệt Tác Sảnh Tiệc Hoàng Gia<br />
-                            <em>Khởi Đầu Trăm Năm Viên Mãn</em>
-                        </h1>
-                        <p class="cinema-desc">
-                            9 đại sảnh phong cách châu Âu ven sông Bến Vân Đồn, mang đến ngày cưới trọn vẹn và đẳng cấp.
-                        </p>
-                        <div class="cinema-actions">
-                            <a class="cinema-btn cinema-btn--gold" href="#danh-sach-sanh">
-                                Khám phá 9 sảnh tiệc
-                                <span class="material-symbols-outlined" aria-hidden="true">south</span>
-                            </a>
-                            <button class="cinema-btn cinema-btn--glass" type="button" data-open-ai-new>
-                                <span class="material-symbols-outlined" aria-hidden="true">smart_toy</span>
-                                Tư vấn AI Concierge
-                            </button>
-                        </div>
-                    </article>
-
-                    <!-- Story 1: Riverfront Ceremony -->
-                    <article class="cinema-story" data-story="1">
-                        <h2 class="cinema-title">
-                            Thề Nguyện Lãng Mạn Ven Sông<br />
-                            <em>Hoàng Hôn Sài Gòn Độc Bản</em>
-                        </h2>
-                        <p class="cinema-desc">
-                            Không gian lãng mạn cùng ánh hoàng hôn thi vị, tôn vinh khoảnh khắc hẹn ước trăm năm thiêng liêng.
-                        </p>
-                        <div class="cinema-actions">
-                            <a class="cinema-btn cinema-btn--gold" asp-controller="Recommendation" asp-action="Index">
-                                Thiết kế tiệc trong mơ
-                                <span class="material-symbols-outlined" aria-hidden="true">auto_awesome</span>
-                            </a>
-                            <a class="cinema-btn cinema-btn--glass" href="#danh-sach-sanh">
-                                Xem danh sách sảnh
-                                <span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
-                            </a>
-                        </div>
-                    </article>
-
-                    <!-- Story 2: 5-Star Cuisine -->
-                    <article class="cinema-story" data-story="2">
-                        <h2 class="cinema-title">
-                            Mỹ Vị Yến Tiệc Đỉnh Cao<br />
-                            <em>Thăng Hoa Cùng Vị Giác</em>
-                        </h2>
-                        <p class="cinema-desc">
-                            Hơn 300 món Fusion Á - Âu thượng hạng được chế tác tinh tế bởi đội ngũ bếp trưởng chuyên nghiệp.
-                        </p>
-                        <div class="cinema-actions">
-                            <a class="cinema-btn cinema-btn--gold" asp-controller="Menus" asp-action="Index">
-                                Khám phá thực đơn
-                                <span class="material-symbols-outlined" aria-hidden="true">restaurant_menu</span>
-                            </a>
-                            <button class="cinema-btn cinema-btn--glass" type="button" data-open-ai-new>
-                                <span class="material-symbols-outlined" aria-hidden="true">smart_toy</span>
-                                Gợi ý thực đơn cùng AI
-                            </button>
-                        </div>
-                    </article>
+                    @for (var i = 0; i < Model.Banners.Count; i++)
+                    {
+                        var banner = Model.Banners[i];
+                        <article class="cinema-story @(i == 0 ? "is-active" : null)" data-story="@i">
+                            @if (i == 0)
+                            { <h1 class="cinema-title">@banner.Title<br /><em>@banner.Subtitle</em></h1> }
+                            else
+                            { <h2 class="cinema-title">@banner.Title<br /><em>@banner.Subtitle</em></h2> }
+                            <p class="cinema-desc">@banner.Description</p>
+                            <div class="cinema-actions">
+                                @foreach (var action in new[] { (banner.PrimaryActionType, banner.PrimaryButtonLabel, banner.PrimaryLink, "cinema-btn--gold"), (banner.SecondaryActionType, banner.SecondaryButtonLabel, banner.SecondaryLink, "cinema-btn--glass") })
+                                {
+                                    if (action.Item1 == "AI" && !string.IsNullOrWhiteSpace(action.Item2))
+                                    { <button class="cinema-btn @action.Item4" type="button" data-open-ai-new><span class="material-symbols-outlined" aria-hidden="true">smart_toy</span>@action.Item2</button> }
+                                    else if ((action.Item1 == "INTERNAL" || action.Item1 == "SECTION") && !string.IsNullOrWhiteSpace(action.Item2) && !string.IsNullOrWhiteSpace(action.Item3))
+                                    { <a class="cinema-btn @action.Item4" href="@action.Item3">@action.Item2<span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span></a> }
+                                }
+                            </div>
+                        </article>
+                    }
                 </div>
 
                 <!-- Interactive Story Tabs with Real-time Progress Bar -->
-                <div class="cinema-nav" role="tablist" aria-label="Bộ chọn chủ đề trải nghiệm">
-                    <button class="cinema-nav-tab is-active" type="button" role="tab" data-nav-target="0" aria-selected="true">
-                        <span class="cinema-tab-num">01</span>
-                        <div class="cinema-tab-info">
-                            <strong class="cinema-tab-label">09 Đại Sảnh Hoàng Gia</strong>
-                        </div>
-                        <div class="cinema-tab-progress"><div class="cinema-progress-fill"></div></div>
-                    </button>
-                    <button class="cinema-nav-tab" type="button" role="tab" data-nav-target="1" aria-selected="false">
-                        <span class="cinema-tab-num">02</span>
-                        <div class="cinema-tab-info">
-                            <strong class="cinema-tab-label">Lễ Đường Ven Sông</strong>
-                        </div>
-                        <div class="cinema-tab-progress"><div class="cinema-progress-fill"></div></div>
-                    </button>
-                    <button class="cinema-nav-tab" type="button" role="tab" data-nav-target="2" aria-selected="false">
-                        <span class="cinema-tab-num">03</span>
-                        <div class="cinema-tab-info">
-                            <strong class="cinema-tab-label">Ẩm Thực Chuẩn 5 Sao</strong>
-                        </div>
-                        <div class="cinema-tab-progress"><div class="cinema-progress-fill"></div></div>
-                    </button>
-                </div>
+                @if (Model.Banners.Count > 1)
+                {
+                    <div class="cinema-nav" role="tablist" aria-label="Bộ chọn chủ đề trải nghiệm">
+                        @for (var i = 0; i < Model.Banners.Count; i++)
+                        {
+                            <button class="cinema-nav-tab @(i == 0 ? "is-active" : null)" type="button" role="tab" data-nav-target="@i" aria-selected="@(i == 0 ? "true" : "false")">
+                                <span class="cinema-tab-num">@((i + 1).ToString("00"))</span><span class="cinema-tab-info"><strong class="cinema-tab-label">@Model.Banners[i].NavigationLabel</strong></span><span class="cinema-tab-progress"><span class="cinema-progress-fill"></span></span>
+                            </button>
+                        }
+                    </div>
+                }
             </div>
 
             <!-- Floating Key Metrics Bar (Bottom Ticker) -->

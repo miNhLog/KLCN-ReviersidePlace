@@ -185,17 +185,6 @@
     }
 </style>
 
-<!-- TOAST THÔNG BÁO TỰ ĐỘNG -->
-<div id="bookingToast" class="fixed top-5 right-5 z-[999999] transform translate-x-full transition-transform duration-300 flex items-center gap-3 bg-white border border-[#E5D5B8] shadow-2xl px-4 py-3 rounded-xl">
-    <div class="w-7 h-7 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-xs" id="toastIcon">
-        <i class="fa-solid fa-circle-check"></i>
-    </div>
-    <div>
-        <p class="text-xs font-bold text-slate-900" id="toastTitle">Thông báo</p>
-        <p class="text-[11px] text-slate-500" id="toastMsg">Nội dung</p>
-    </div>
-</div>
-
 <!-- CONTAINER CHÍNH: Căn chỉnh padding và căn giữa đồng bộ với các trang khác -->
 <div class="booking-page-wrapper p-6 lg:p-8 space-y-6 w-full max-w-[1600px] mx-auto" data-can-manage-contracts="@isManager.ToString().ToLowerInvariant()">
 
@@ -799,21 +788,8 @@
         }
 
         function showToast(title, msg, isSuccess = true) {
-            const toast = document.getElementById('bookingToast');
-            const icon = document.getElementById('toastIcon');
-            document.getElementById('toastTitle').innerText = title;
-            document.getElementById('toastMsg').innerText = msg;
-
-            if (isSuccess) {
-                icon.className = "w-7 h-7 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-xs";
-                icon.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
-            } else {
-                icon.className = "w-7 h-7 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center text-xs";
-                icon.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
-            }
-
-            toast.classList.remove('translate-x-full');
-            setTimeout(() => toast.classList.add('translate-x-full'), 3000);
+            if (isSuccess) window.RiversideToast?.success(msg, { title });
+            else window.RiversideToast?.error(msg, { title });
         }
 
         function escapeHtml(value) {

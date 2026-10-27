@@ -611,3 +611,33 @@ CREATE TABLE ThongBao (
 GO
 CREATE INDEX IX_ThongBao_NguoiNhan_DaDoc_NgayTao ON ThongBao(TaiKhoanNhanID, DaDoc, NgayTao DESC);
 GO
+
+CREATE TABLE BannerTrangChu
+(
+    BannerID INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_BannerTrangChu PRIMARY KEY,
+    TieuDe NVARCHAR(150) NOT NULL,
+    TieuDePhu NVARCHAR(150) NOT NULL,
+    MoTa NVARCHAR(500) NOT NULL,
+    NhanDieuHuong NVARCHAR(100) NOT NULL,
+    DuongDanAnh NVARCHAR(300) NULL,
+    MoTaAnh NVARCHAR(250) NOT NULL,
+    LoaiHanhDongChinh VARCHAR(20) NOT NULL CONSTRAINT DF_BannerTrangChu_LoaiChinh DEFAULT 'NONE',
+    NhanNutChinh NVARCHAR(80) NULL,
+    LienKetChinh NVARCHAR(300) NULL,
+    LoaiHanhDongPhu VARCHAR(20) NOT NULL CONSTRAINT DF_BannerTrangChu_LoaiPhu DEFAULT 'NONE',
+    NhanNutPhu NVARCHAR(80) NULL,
+    LienKetPhu NVARCHAR(300) NULL,
+    ThuTu INT NOT NULL,
+    DangHienThi BIT NOT NULL CONSTRAINT DF_BannerTrangChu_HienThi DEFAULT 0,
+    NgayTao DATETIME2(0) NOT NULL CONSTRAINT DF_BannerTrangChu_NgayTao DEFAULT SYSDATETIME(),
+    NgayCapNhat DATETIME2(0) NULL,
+    NguoiTaoID INT NULL CONSTRAINT FK_BannerTrangChu_NguoiTao REFERENCES TaiKhoan(TaiKhoanID),
+    NguoiCapNhatID INT NULL CONSTRAINT FK_BannerTrangChu_NguoiCapNhat REFERENCES TaiKhoan(TaiKhoanID),
+    RowVersion ROWVERSION NOT NULL,
+    CONSTRAINT CK_BannerTrangChu_ThuTu CHECK (ThuTu > 0),
+    CONSTRAINT CK_BannerTrangChu_LoaiChinh CHECK (LoaiHanhDongChinh IN ('NONE','INTERNAL','SECTION','AI')),
+    CONSTRAINT CK_BannerTrangChu_LoaiPhu CHECK (LoaiHanhDongPhu IN ('NONE','INTERNAL','SECTION','AI'))
+);
+GO
+CREATE INDEX IX_BannerTrangChu_ThuTu ON BannerTrangChu(ThuTu, BannerID);
+GO

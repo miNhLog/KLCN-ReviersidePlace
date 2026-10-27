@@ -97,34 +97,6 @@
     <!-- =========================
          THÔNG BÁO
          ========================= -->
-    @if (TempData["Success"] is string successMessage)
-    {
-        <div class="food-alert success">
-
-            <i class="fa-solid fa-circle-check"></i>
-
-            <span>
-                @successMessage
-            </span>
-
-        </div>
-    }
-
-
-    @if (TempData["Error"] is string errorMessage)
-    {
-        <div class="food-alert error">
-
-            <i class="fa-solid fa-circle-exclamation"></i>
-
-            <span>
-                @errorMessage
-            </span>
-
-        </div>
-    }
-
-
     @if (!ViewData.ModelState.IsValid)
     {
         <div class="food-alert error">

@@ -28,12 +28,8 @@
     }
 
     function showToast(message, isError = false) {
-        const toast = byId('cpToast');
-        toast.textContent = message;
-        toast.classList.toggle('error', isError);
-        toast.classList.add('open');
-        clearTimeout(showToast.timer);
-        showToast.timer = setTimeout(() => toast.classList.remove('open'), 3500);
+        if (isError) window.RiversideToast?.error(message);
+        else window.RiversideToast?.success(message);
     }
 
     function statusBadge(code, name) {

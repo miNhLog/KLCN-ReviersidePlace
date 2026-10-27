@@ -103,17 +103,6 @@
     }
 </style>
 
-<!-- ==================== TOAST (RESPONSIVE) ==================== -->
-<div id="toast" class="fixed top-4 right-4 left-4 sm:left-auto sm:top-5 sm:right-5 z-[100000] transform translate-x-full transition-transform duration-300 flex items-center gap-3 bg-white border border-[#E5D5B8] shadow-2xl px-4 py-3 rounded-xl max-w-[calc(100vw-2rem)] sm:max-w-sm">
-    <div id="toastIcon" class="w-7 h-7 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-xs flex-shrink-0">
-        <i class="fa-solid fa-circle-check"></i>
-    </div>
-    <div class="min-w-0">
-        <p id="toastTitle" class="text-xs font-bold text-slate-900 truncate">Thông báo</p>
-        <p id="toastMsg" class="text-[11px] text-slate-500 truncate">Nội dung</p>
-    </div>
-</div>
-
 <!-- ==================== CONTAINER ==================== -->
 <div class="policy-page p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6 w-full max-w-[1600px] mx-auto">
 
@@ -445,16 +434,8 @@
         });
 
         function showToast(title, msg, ok = true) {
-            const t = document.getElementById('toast');
-            const ic = document.getElementById('toastIcon');
-            document.getElementById('toastTitle').innerText = title;
-            document.getElementById('toastMsg').innerText = msg;
-            ic.className = ok
-                ? 'w-7 h-7 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-xs flex-shrink-0'
-                : 'w-7 h-7 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center text-xs flex-shrink-0';
-            ic.innerHTML = `<i class="fa-solid ${ok ? 'fa-circle-check' : 'fa-triangle-exclamation'}"></i>`;
-            t.classList.remove('translate-x-full');
-            setTimeout(() => t.classList.add('translate-x-full'), 3000);
+            if (ok) window.RiversideToast?.success(msg, { title });
+            else window.RiversideToast?.error(msg, { title });
         }
 
         function updateStats() {

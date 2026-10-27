@@ -17,7 +17,20 @@
     var vietnameseCulture = CultureInfo.GetCultureInfo("vi-VN");
     var currentDateText = HeThongDatTiecCuoi_WEB.Services.VietnamTime.Now.ToString("dddd, dd 'tháng' MM 'năm' yyyy", vietnameseCulture);
     currentDateText = char.ToUpper(currentDateText[0], vietnameseCulture) + currentDateText[1..];
-    var passwordChangeSuccess = TempData["PasswordChangeSuccess"] as string;
+    var toastMessages = new List<(string Type, string Key, string Message)>();
+    var toastKeys = new (string Key, string Type)[]
+    {
+        ("Success", "success"), ("SuccessMessage", "success"), ("ProfileSuccess", "success"),
+        ("RoleAdminSuccess", "success"), ("RoleChangeSuccess", "success"),
+        ("PasswordChangeSuccess", "success"), ("Error", "error"), ("ErrorMessage", "error"),
+        ("ProfileError", "error"), ("RoleAdminError", "error"), ("RoleChangeError", "error"),
+        ("PaymentWarning", "warning"), ("PaymentNotification", "info")
+    };
+    foreach (var toastKey in toastKeys)
+    {
+        if (TempData[toastKey.Key] is string message && !string.IsNullOrWhiteSpace(message))
+            toastMessages.Add((toastKey.Type, toastKey.Key, message));
+    }
 
     bool IsActive(string controller, string action = "Index") =>
         string.Equals(currentController, controller, StringComparison.OrdinalIgnoreCase) &&
@@ -65,6 +78,7 @@
     @await RenderSectionAsync("Styles", required: false)
     <link rel="stylesheet" href="~/css/backoffice-theme.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/backoffice-page-header.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/backoffice-toast.css" asp-append-version="true" />
 </head>
 <body class="backoffice-app @(isManager ? "manager-theme" : string.Empty)">
     <div class="admin-layout backoffice-shell @(isManager ? "manager-theme-shell" : string.Empty)">
@@ -248,6 +262,18 @@
                         </a>
                     </nav>
                 </section>
+                <section class="sidebar-section" aria-labelledby="managerContentMenuTitle">
+                    <h2 class="sidebar-section-title" id="managerContentMenuTitle">Nội dung website</h2>
+                    <nav class="sidebar-menu" aria-label="Quản lý nội dung website">
+                        <a asp-controller="ManagerBanner" asp-action="Index"
+                           class="sidebar-item @(IsActive("ManagerBanner") ? "active" : string.Empty)"
+                           aria-current="@(IsActive("ManagerBanner") ? "page" : null)"
+                           data-sidebar-tooltip="Quản lý Banner">
+                            <span class="sidebar-icon" aria-hidden="true"><i class="fa-regular fa-images"></i></span>
+                            <span class="sidebar-label">Quản lý Banner</span>
+                        </a>
+                    </nav>
+                </section>
                 }
                 else if (isHallManager)
                 {
@@ -417,18 +443,15 @@
     </div>
 
     <div class="sidebar-tooltip" id="sidebarTooltip" role="tooltip"></div>
-    <div class="sidebar-toast" id="globalToast" role="status" aria-live="polite">
-        Chức năng đang được phát triển. Vui lòng quay lại sau.
+    <div class="rp-toast-container" id="rpToastContainer" aria-label="Thông báo kết quả thao tác"></div>
+    <div id="rpFlashMessages" hidden>
+        @foreach (var toastMessage in toastMessages)
+        {
+            <span data-toast-message data-toast-type="@toastMessage.Type" data-toast-id="@toastMessage.Key">@toastMessage.Message</span>
+        }
     </div>
-    @if (!string.IsNullOrWhiteSpace(passwordChangeSuccess))
-    {
-        <div class="sidebar-toast flash-toast is-success" id="flashToast" role="status" aria-live="polite" data-auto-show>
-            <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
-            <span>@passwordChangeSuccess</span>
-            <button type="button" aria-label="Đóng thông báo"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
-        </div>
-    }
 
+    <script src="~/js/backoffice-toast.js" asp-append-version="true"></script>
     <script src="~/js/admin-sidebar.js" asp-append-version="true"></script>
     <script src="~/js/ui-format.js" asp-append-version="true"></script>
     @if (isAdmin || isManager || isHallManager || isCoordinator) { <script src="~/js/notifications.js" asp-append-version="true"></script> }

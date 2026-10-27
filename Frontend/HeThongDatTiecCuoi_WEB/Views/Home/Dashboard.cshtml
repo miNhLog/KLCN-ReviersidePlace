@@ -26,11 +26,6 @@
             </div>
         </header>
 
-        @if (TempData["Success"] is string message)
-        {
-            <div class="success-banner">@message</div>
-        }
-
         @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
         {
             <div class="manager-data-alert" role="alert"><i class="fa-solid fa-circle-exclamation"></i><span>@Model.ErrorMessage</span></div>

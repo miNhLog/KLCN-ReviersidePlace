@@ -509,3 +509,5 @@ INSERT INTO DichVu (MaDichVu, TenDichVu, LoaiDichVu, MoTa, Gia, TrangThaiID, Tra
 GO
 COMMIT TRANSACTION;
 GO
+-- Banner trang chủ (idempotent; có thể chạy lại an toàn)
+:r .\Updates\20261027_HomeBanners.sql

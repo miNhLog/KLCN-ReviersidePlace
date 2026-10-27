@@ -5,7 +5,6 @@
     const detailModal = document.getElementById('incidentDetailModal');
     const form = document.getElementById('incidentForm');
     const errorBox = document.getElementById('incidentFormError');
-    const toast = document.getElementById('incidentToast');
     const idInput = document.getElementById('incidentId');
     const title = document.getElementById('incidentFormTitle');
     const booking = document.getElementById('incidentBooking');
@@ -13,7 +12,6 @@
     const severity = document.getElementById('incidentSeverity');
     const occurred = document.getElementById('incidentOccurredAt');
     const description = document.getElementById('incidentDescription');
-    let toastTimer;
 
     const localDateTime = () => {
         const date = new Date();
@@ -35,10 +33,9 @@
     };
     const closeForm = () => { formModal.hidden = true; setOpenState(); };
     const closeDetail = () => { detailModal.hidden = true; setOpenState(); };
-    const notify = (message, isError = false) => {
-        clearTimeout(toastTimer); toast.textContent = message; toast.classList.toggle('error', isError);
-        toast.classList.add('show'); toastTimer = setTimeout(() => toast.classList.remove('show'), 3500);
-    };
+    const notify = (message, isError = false) => isError
+        ? window.RiversideToast?.error(message)
+        : window.RiversideToast?.success(message);
     const readMessage = async response => {
         try { const body = await response.json(); return body.message || 'Yêu cầu không thành công.'; }
         catch { return 'Không thể kết nối đến hệ thống.'; }
