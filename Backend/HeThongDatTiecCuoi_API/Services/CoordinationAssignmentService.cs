@@ -192,6 +192,8 @@ public sealed class CoordinationAssignmentService : ICoordinationAssignmentServi
                 return ServiceResult<CoordinationMutationResultDto>.Failure("Tiệc chưa có phân công đang hiệu lực.", StatusCodes.Status409Conflict);
             var cancelledId = await StatusIdAsync(CoordinationAssignmentStatusCodes.Cancelled, cancellationToken);
             active.StatusId = cancelledId;
+            await ChecklistLifecycle.RecordAsync(_context, bookingId, userId, actor!.FullName,
+                "ASSIGNMENT_CANCELLED", $"Hủy phân công điều phối. Giữ lại checklist và lịch sử. Lý do: {reason}", null, cancellationToken);
             var oldEmployeeId = active.CoordinatorEmployeeId;
             AddAudit(userId, bookingId, AuditActions.CoordinationCancelled,
                 new { CoordinatorEmployeeId = oldEmployeeId, Status = CoordinationAssignmentStatusCodes.Assigned },
@@ -243,6 +245,9 @@ public sealed class CoordinationAssignmentService : ICoordinationAssignmentServi
             ? CoordinationAssignmentStatusCodes.Cancelled
             : bookingStatusCode == BookingStatusCodes.Completed ? CoordinationAssignmentStatusCodes.Completed : null;
         if (target is null) return;
+        await ChecklistLifecycle.RecordAsync(_context, bookingId, actorUserId, "Hệ thống",
+            "BOOKING_STATUS", $"Đồng bộ trạng thái tiệc: {bookingStatusCode}. {reason}",
+            bookingStatusCode == BookingStatusCodes.Cancelled ? "cancelled" : null, cancellationToken);
         var assignments = await _context.CoordinationAssignments
             .Include(a => a.Coordinator).Include(a => a.Status)
             .Where(a => a.BookingId == bookingId && a.Status.StatusCode == CoordinationAssignmentStatusCodes.Assigned)
@@ -339,6 +344,12 @@ public sealed class CoordinationAssignmentService : ICoordinationAssignmentServi
                 AssignedAt = DateTime.Now
             };
             _context.CoordinationAssignments.Add(assignment);
+            await ChecklistLifecycle.EnsureAsync(_context, bookingId, userId, actor!.FullName, cancellationToken);
+            await ChecklistLifecycle.RecordAsync(_context, bookingId, userId, actor.FullName,
+                active is null ? "ASSIGNED" : "REASSIGNED",
+                active is null ? $"Phân công {coordinator.FullName} phụ trách tiệc." :
+                    $"Đổi điều phối viên {oldCoordinatorName} → {coordinator.FullName}. Giữ nguyên checklist và tiến độ. Lý do: {reason}",
+                null, cancellationToken);
             AddAudit(userId, bookingId, active is null ? AuditActions.CoordinationAssigned : AuditActions.CoordinationChanged,
                 active is null ? null : new { CoordinatorEmployeeId = oldCoordinatorId, CoordinatorName = oldCoordinatorName, Status = CoordinationAssignmentStatusCodes.Assigned },
                 new { CoordinatorEmployeeId = coordinatorEmployeeId, CoordinatorName = coordinator.FullName, Status = CoordinationAssignmentStatusCodes.Assigned },

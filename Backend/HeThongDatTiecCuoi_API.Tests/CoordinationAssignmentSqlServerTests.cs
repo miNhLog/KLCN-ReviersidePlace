@@ -62,6 +62,29 @@ public sealed class CoordinationAssignmentSqlServerTests
             Assert.Single(results, result => !result.Succeeded && result.StatusCode == StatusCodes.Status409Conflict);
             await using var verify = new ApplicationDbContext(options);
             Assert.Equal(1, await verify.CoordinationAssignments.CountAsync());
+            // Exercise checklist writes against SQL Server too (transaction locks and version checks).
+            var assigned = await verify.CoordinationAssignments.Include(a => a.Coordinator).SingleAsync();
+            var checklist = await verify.PartyChecklists.Include(c => c.Tasks).SingleAsync();
+            Assert.Equal(8, checklist.Tasks.Count);
+            var checklistService = new ChecklistService(verify);
+            var initialVersion = checklist.Version;
+            var coordinatorUserId = assigned.Coordinator.UserId;
+            Assert.Equal(409, (await checklistService.ExecuteAsync(coordinatorUserId, RoleNames.Coordinator,
+                assigned.BookingId, "submit", new() { Version = checklist.Version }, default)).StatusCode);
+            foreach (var task in checklist.Tasks)
+                Assert.True((await checklistService.ExecuteAsync(coordinatorUserId, RoleNames.Coordinator,
+                    assigned.BookingId, "task", new() { Version = checklist.Version, TaskId = task.Id, Status = "done" }, default)).Succeeded);
+            Assert.Equal(409, (await checklistService.ExecuteAsync(coordinatorUserId, RoleNames.Coordinator,
+                assigned.BookingId, "submit", new() { Version = initialVersion }, default)).StatusCode);
+            Assert.True((await checklistService.ExecuteAsync(coordinatorUserId, RoleNames.Coordinator,
+                assigned.BookingId, "submit", new() { Version = checklist.Version }, default)).Succeeded);
+            Assert.True((await checklistService.ExecuteAsync(managerUserId, RoleNames.HallManager,
+                assigned.BookingId, "approve", new() { Version = checklist.Version }, default)).Succeeded);
+            verify.ChangeTracker.Clear();
+            Assert.Equal("approved", (await verify.PartyChecklists.SingleAsync()).State);
+            Assert.Equal(8, await verify.PartyChecklistTasks.CountAsync(t => t.Status == "done"));
+            Assert.Equal(BookingStatusCodes.Confirmed, (await verify.WeddingBookings.Include(b => b.Status)
+                .SingleAsync(b => b.BookingId == assigned.BookingId)).Status.StatusCode);
         }
         finally
         {
