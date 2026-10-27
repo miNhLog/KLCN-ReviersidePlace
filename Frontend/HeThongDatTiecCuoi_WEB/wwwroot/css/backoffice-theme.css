@@ -90,22 +90,6 @@
     color:var(--rp-text) !important;font-size:clamp(28px,2.2vw,32px) !important;font-weight:800 !important;letter-spacing:-.02em !important;line-height:1.2 !important;
 }
 .backoffice-app :is(.account-management-header,.dashboard-page-header,.account-page-header,.audit-page-header,.food-header,.role-change-header,.cp-page-head,.md-header,.mm-header,.hr-header,.event-header,.profile-page-header) p { color:var(--rp-text-muted);font-size:13px;line-height:1.55; }
-.backoffice-app :is(.breadcrumb,.md-breadcrumb,.mm-breadcrumb,.role-change-breadcrumb,.audit-page-header .breadcrumb) { color:var(--rp-gold-700) !important;font-size:11px !important;font-weight:700 !important;letter-spacing:.04em; }
-.backoffice-app #adminMainContent :is(.breadcrumb,nav[aria-label="Breadcrumb"]) {
-    min-height:20px;display:flex;align-items:center;gap:9px;margin:0 0 8px !important;
-    color:#69778b !important;font-size:12px !important;font-weight:600 !important;letter-spacing:0 !important;line-height:1.45 !important;text-transform:none !important;
-}
-.backoffice-app #adminMainContent :is(.breadcrumb,nav[aria-label="Breadcrumb"]) > i,
-.backoffice-app #adminMainContent .breadcrumb > span { color:#a2acb9 !important;font-size:9px !important; }
-.backoffice-app #adminMainContent :is(.breadcrumb,nav[aria-label="Breadcrumb"]) > strong,
-.backoffice-app #adminMainContent nav[aria-label="Breadcrumb"] > :last-child:not(i) { color:var(--rp-gold-700) !important;font-size:12px !important;font-weight:700 !important; }
-.backoffice-app #adminMainContent :is(.breadcrumb,nav[aria-label="Breadcrumb"]) > .breadcrumb-root {
-    color:#69778b !important;font-size:12px !important;font-weight:600 !important;letter-spacing:0 !important;
-}
-.backoffice-app #adminMainContent :is(.breadcrumb,nav[aria-label="Breadcrumb"]) > .breadcrumb-current {
-    color:var(--rp-gold-700) !important;font-size:12px !important;font-weight:700 !important;letter-spacing:0 !important;
-}
-
 /* Shared cards and KPI */
 .backoffice-app :is(.summary-card,.dashboard-stat-card,.system-summary-card,.audit-summary-card,.food-stat-card,.cp-kpi,.md-kpis article,.mm-kpis article,.hr-kpis article,.event-kpis article,.manager-kpi-card,.coordinator-kpi-card) {
     min-height:124px;box-sizing:border-box;padding:20px;border:1px solid var(--rp-border);border-radius:22px;background:#fff;box-shadow:var(--rp-shadow-sm);transition:transform var(--rp-transition),box-shadow var(--rp-transition),border-color var(--rp-transition);

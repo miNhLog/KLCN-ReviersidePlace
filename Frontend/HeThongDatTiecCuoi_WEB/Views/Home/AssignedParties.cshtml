@@ -1,7 +1,7 @@
 @model List<HeThongDatTiecCuoi_WEB.Models.Coordination.CoordinatorAssignedPartyViewModel>
 @{ Layout = "_AdminLayout"; ViewData["Title"] = "Tiệc được phân công"; }
 @section Styles { <link rel="stylesheet" href="~/css/coordination.css" asp-append-version="true" /> }
-<header class="top-header"><div><div class="breadcrumb">Quản trị hệ thống <span>›</span> <strong>Tiệc được phân công</strong></div><h2>Tiệc được phân công</h2></div></header>
+<header class="top-header"><div><h2>Tiệc được phân công</h2></div></header>
 <section class="content coordinator-page">
     @if (ViewData["ErrorMessage"] is string error && !string.IsNullOrWhiteSpace(error)) { <div class="coord-alert error">@error</div> }
     <div class="assignment-hero"><div><span class="eyebrow">ĐIỀU PHỐI TIỆC</span><h1>Danh sách tiệc của tôi</h1><p>Chỉ hiển thị phân công đang hiệu lực của tài khoản đang đăng nhập.</p></div></div>

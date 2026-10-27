@@ -75,12 +75,9 @@
 .user-dropdown i { width: 16px; color: #697586; text-align: center; }
 .user-dropdown-divider { height: 1px; margin: 6px 2px; background: #ebe8e3; }
 
-/* Page header thống nhất: breadcrumb / tiêu đề / mô tả. */
+/* Page header thống nhất: tiêu đề / mô tả. */
 #adminMainContent .top-header { min-height: 0; box-sizing: border-box; display: flex; align-items: center; gap: 20px; padding: 16px 46px; background: #fbfaf8; border-bottom: 0; box-shadow: none; position: static; }
 #adminMainContent .top-header > :first-child { min-width: 0; }
-#adminMainContent .top-header .breadcrumb { margin: 0 0 5px; color: #637186; font-size: 14px; font-weight: 500; line-height: 1.35; }
-#adminMainContent .top-header .breadcrumb span { padding: 0 8px; color: #a3acb8; }
-#adminMainContent .top-header .breadcrumb strong { color: #a77b28; font-weight: 600; }
 #adminMainContent .top-header h2,
 #adminMainContent .top-header :is(.account-page-subtitle, .page-subtitle) { display: none; }
 
@@ -148,9 +145,6 @@
 /* Tổng quan Quản lý: dữ liệu vận hành thời gian thực, tách biệt với màn hình Báo cáo/BI. */
 .manager-overview-page { min-height: calc(100vh - 70px); box-sizing: border-box; padding: 0 30px 38px; background: #f8f7f4; }
 .manager-page-header { display: flex; align-items: end; justify-content: space-between; gap: 22px; padding: 23px 0 18px; }
-.manager-page-header .breadcrumb { margin: 0 0 7px; color: #637186; font-size: 14px; font-weight: 500; }
-.manager-page-header .breadcrumb span { padding: 0 8px; color: #a3acb8; }
-.manager-page-header .breadcrumb strong { color: #a77b28; font-weight: 600; }
 .manager-page-header h1 { margin: 0; color: #142033; font-size: 26px; font-weight: 700; line-height: 1.2; }
 .manager-page-header p { margin: 5px 0 0; color: #728096; font-size: 14px; }
 .manager-page-header-actions { display: flex; align-items: flex-end; flex-direction: column; gap: 9px; }
@@ -165,24 +159,6 @@
     align-items: flex-end;
     justify-content: space-between;
     gap: 22px;
-}
-.manager-section-header .breadcrumb,
-.manager-section-header nav[aria-label="Breadcrumb"] {
-    margin: 0 0 7px !important;
-    color: #637186 !important;
-    font-family: "Be Vietnam Pro", sans-serif !important;
-    font-size: 14px !important;
-    font-weight: 500 !important;
-    line-height: 1.45 !important;
-}
-.manager-section-header .breadcrumb span,
-.manager-section-header nav[aria-label="Breadcrumb"] i {
-    color: #a3acb8 !important;
-}
-.manager-section-header .breadcrumb strong,
-.manager-section-header nav[aria-label="Breadcrumb"] > :last-child {
-    color: #a77b28 !important;
-    font-weight: 600 !important;
 }
 .manager-section-header h1,
 .manager-section-header h2 {

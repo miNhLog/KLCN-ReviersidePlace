@@ -10,7 +10,9 @@
     const shiftOrder = shift => ({'Sáng':0,'Trưa':1,'Chiều':2,'Tối':3}[shift] ?? 4);
     const today = date(config.today);
     const monday = value => add(value, -((value.getUTCDay() + 6) % 7));
-    let week = monday(today), demo = config.standalone === true, mode = 'week', page = config.page, selected = null;
+    const queryParams = new URLSearchParams(location.search);
+    let week = monday(today), demo = config.standalone === true, mode = 'week', scope = queryParams.get('scope') === 'all' ? 'all' : 'week', page = config.page, selected = null;
+    const requestedBookingId = Number(queryParams.get('bookingId')) || null;
     const work = new Map();
     const sample = [
         {bookingId:-1, bookingCode:'MH-261001', customerName:'Minh Anh & Hoàng Nam', eventDate:key(today), shift:'Trưa', hallName:'Sảnh Riverside', tableCount:35, menuName:'Thực đơn Hạnh Phúc', decorationName:'Elegant Gold', services:['Âm thanh, ánh sáng','MC tiệc cưới'], specialRequests:'Chuẩn bị 2 bàn chay và kiểm tra micro trước khi đón khách.', bookingStatusName:'Đã xác nhận'},
@@ -40,7 +42,7 @@
         page = next;
         $('cwSchedule').hidden = page !== 'schedule'; $('cwProgress').hidden = page !== 'progress';
         const title = page === 'schedule' ? 'Lịch làm việc' : 'Theo dõi tiến độ';
-        $('cwTitle').textContent = title; $('cwCrumb').textContent = title;
+        $('cwTitle').textContent = title;
         $('cwSubtitle').textContent = page === 'schedule' ? 'Sắp xếp lịch tiệc, chủ động chuẩn bị từng ca làm việc.' : 'Theo dõi từng đầu việc để mỗi buổi tiệc diễn ra trọn vẹn.';
         document.querySelectorAll('[data-cw-page]').forEach(el => { el.classList.toggle('active', el.dataset.cwPage === page); });
         if (config.standalone) history.replaceState(null, '', '#' + page);
@@ -60,20 +62,25 @@
         if (page === 'schedule') renderSchedule(); else renderProgress();
     }
     function renderSchedule() {
-        const all = items(), end = add(week,7), base = all.filter(p=>p.eventDate.slice(0,10)>=key(week) && p.eventDate.slice(0,10)<key(end));
+        const all = items(), end = add(week,7), inWeek = all.filter(p=>p.eventDate.slice(0,10)>=key(week) && p.eventDate.slice(0,10)<key(end)), base = scope === 'all' ? all : inWeek;
         const query = $('cwSearch').value.trim().toLocaleLowerCase('vi');
         const visible = base.filter(p=>(!$('cwHall').value || p.hallName===$('cwHall').value) && (!$('cwShift').value || p.shift===$('cwShift').value) && `${p.bookingCode} ${p.customerName} ${p.hallName}`.toLocaleLowerCase('vi').includes(query));
         const failed = !demo && config.error;
-        $('cwScheduleStats').innerHTML = stat('fa-calendar-week','Tiệc trong tuần',failed?'—':base.length,'Theo tuần đang xem') + stat('fa-calendar-day','Tiệc hôm nay',failed?'—':all.filter(p=>p.eventDate.slice(0,10)===key(today)).length,fmt(key(today))+' · Được phân công') + stat('fa-champagne-glasses','Tiệc sắp tới',failed?'—':all.filter(p=>p.eventDate.slice(0,10)>key(today)).length,'Từ ngày mai','blue') + stat('fa-building','Sảnh trong tuần',failed?'—':new Set(base.map(p=>p.hallName)).size,'Có tiệc được giao','green');
+        $('cwScheduleStats').innerHTML = stat(scope === 'all' ? 'fa-list' : 'fa-calendar-week',scope === 'all' ? 'Tổng tiệc được giao' : 'Tiệc trong tuần',failed?'—':base.length,scope === 'all' ? 'Toàn bộ phân công còn hiệu lực' : 'Theo tuần đang xem') + stat('fa-calendar-day','Tiệc hôm nay',failed?'—':all.filter(p=>p.eventDate.slice(0,10)===key(today)).length,fmt(key(today))+' · Được phân công') + stat('fa-champagne-glasses','Tiệc sắp tới',failed?'—':all.filter(p=>p.eventDate.slice(0,10)>key(today)).length,'Từ ngày mai','blue') + stat('fa-building',scope === 'all' ? 'Tổng sảnh' : 'Sảnh trong tuần',failed?'—':new Set(base.map(p=>p.hallName)).size,'Có tiệc được giao','green');
         $('cwDateRange').textContent = `${fmt(key(week))} – ${fmt(key(add(week,6)))} / ${week.getUTCFullYear()}`;
         $('cwResult').textContent = failed ? 'Chưa tải được dữ liệu' : `${visible.length} tiệc phù hợp`;
-        const shifts = [...new Set([...['Trưa','Tối'],...base.map(p=>p.shift)])];
+        $('cwToolbar').hidden = scope === 'all';
+        $('cwScopeWeek').classList.toggle('active', scope === 'week');
+        $('cwScopeAll').classList.toggle('active', scope === 'all');
+        $('cwScopeWeek').setAttribute('aria-pressed', String(scope === 'week'));
+        $('cwScopeAll').setAttribute('aria-pressed', String(scope === 'all'));
+        const shifts = [...new Set([...['Trưa','Tối'],...inWeek.map(p=>p.shift)])];
         let html = '<div class="cw-week"><div class="cw-day-heading">CA TIỆC</div>';
         for(let i=0;i<7;i++) { const day=add(week,i); html+=`<div class="cw-day-heading ${key(day)===key(today)?'today':''}">${['Thứ hai','Thứ ba','Thứ tư','Thứ năm','Thứ sáu','Thứ bảy','Chủ nhật'][i]}<strong>${day.getUTCDate()}</strong></div>`; }
         for(const shift of shifts) { html+=`<div class="cw-shift-label">${esc(shift)}</div>`; for(let i=0;i<7;i++) { const d=key(add(week,i)), events=visible.filter(p=>p.eventDate.slice(0,10)===d&&p.shift===shift); html+=`<div class="cw-slot ${d===key(today)?'today':''}">${events.length ? events.map(p=>`<button class="cw-event" type="button" data-detail="${p.bookingId}"><strong>${esc(p.bookingCode)}</strong><span>${esc(p.customerName)}</span><small><i class="fa-solid fa-location-dot"></i> ${esc(p.hallName)} · ${p.tableCount} bàn</small></button>`).join('') : '<span class="cw-slot-empty">—</span>'}</div>`; }}
         $('cwCalendar').innerHTML = failed ? empty('Không tải được lịch','Vui lòng thử lại ở thông báo phía trên.') : html+'</div>';
-        $('cwCalendar').hidden = mode !== 'week'; $('cwScheduleList').hidden = mode !== 'list';
-        $('cwScheduleList').innerHTML = failed ? empty('Không tải được lịch','Vui lòng thử lại.') : !visible.length ? empty('Không có tiệc phù hợp trong tuần này','Thử chọn tuần khác hoặc thay đổi bộ lọc.') : `<div class="cw-table-wrap"><table class="cw-table"><thead><tr><th>Ngày / Ca</th><th>Tiệc / Khách hàng</th><th>Sảnh</th><th>Số bàn</th><th></th></tr></thead><tbody>${visible.sort((a,b)=>a.eventDate.localeCompare(b.eventDate)).map(p=>`<tr><td>${fmt(p.eventDate)} · ${esc(p.shift)}</td><td><strong>${esc(p.bookingCode)}</strong><br>${esc(p.customerName)}</td><td>${esc(p.hallName)}</td><td>${p.tableCount}</td><td><button type="button" data-detail="${p.bookingId}">Chi tiết →</button></td></tr>`).join('')}</tbody></table></div>`;
+        $('cwCalendar').hidden = scope === 'all' || mode !== 'week'; $('cwScheduleList').hidden = scope === 'week' && mode !== 'list';
+        $('cwScheduleList').innerHTML = failed ? empty('Không tải được lịch','Vui lòng thử lại.') : !visible.length ? empty(scope === 'all' ? 'Chưa có tiệc được phân công' : 'Không có tiệc phù hợp trong tuần này',scope === 'all' ? 'Các tiệc được giao cho bạn sẽ xuất hiện tại đây.' : 'Thử chọn tuần khác hoặc thay đổi bộ lọc.') : `<div class="cw-table-wrap"><table class="cw-table"><thead><tr><th>Ngày / Ca</th><th>Tiệc / Khách hàng</th><th>Sảnh</th><th>Số bàn</th><th>Trạng thái</th><th></th></tr></thead><tbody>${visible.sort((a,b)=>a.eventDate.localeCompare(b.eventDate)||shiftOrder(a.shift)-shiftOrder(b.shift)).map(p=>`<tr><td>${fmt(p.eventDate)} · ${esc(p.shift)}</td><td><strong>${esc(p.bookingCode)}</strong><br>${esc(p.customerName)}</td><td>${esc(p.hallName)}</td><td>${p.tableCount}</td><td><span class="cw-status">${esc(p.bookingStatusName)}</span></td><td><button type="button" data-detail="${p.bookingId}">Chi tiết →</button></td></tr>`).join('')}</tbody></table></div>`;
         const next = all.filter(p=>p.eventDate.slice(0,10)>=key(today)).sort((a,b)=>a.eventDate.localeCompare(b.eventDate)||shiftOrder(a.shift)-shiftOrder(b.shift))[0];
         $('cwNextParty').innerHTML = failed ? '<p>Chưa tải được dữ liệu tiệc.</p>' : next ? `<h3>${esc(next.customerName)}</h3><p>${esc(next.bookingCode)} · ${fmt(next.eventDate)} · Ca ${esc(next.shift)}<br>${esc(next.hallName)} · ${next.tableCount} bàn</p><button class="cw-button" type="button" data-detail="${next.bookingId}">Xem thông tin tiệc →</button>` : '<p>Chưa có tiệc sắp tới được phân công cho bạn.</p>';
     }
@@ -92,7 +99,7 @@
     }
     function detail(id) {
         const p=items().find(p=>p.bookingId===id); if(!p) return;
-        $('cwDetailBody').innerHTML=`<h2>${esc(p.bookingCode)}</h2><p>${esc(p.customerName)}</p><dl><dt>Ngày / Ca</dt><dd>${fmt(p.eventDate)} · ${esc(p.shift)}</dd><dt>Sảnh / Quy mô</dt><dd>${esc(p.hallName)} · ${p.tableCount} bàn</dd><dt>Thực đơn</dt><dd>${esc(p.menuName||'Chưa chọn')}</dd><dt>Trang trí</dt><dd>${esc(p.decorationName||'Chưa chọn')}</dd><dt>Dịch vụ</dt><dd>${esc(p.services?.join(', ')||'Chưa có')}</dd><dt>Yêu cầu</dt><dd>${esc(p.specialRequests||'Không có yêu cầu đặc biệt')}</dd><dt>Trạng thái</dt><dd>${esc(p.bookingStatusName)}</dd></dl>${demo?'<p>Dữ liệu minh họa · Không phải thông tin tiệc thực tế.</p>':`<a class="cw-button cw-primary" href="/Home/AssignedPartyDetail?bookingId=${p.bookingId}">Mở chi tiết tiệc →</a>`}`;
+        $('cwDetailBody').innerHTML=`<h2>${esc(p.bookingCode)}</h2><p>${esc(p.customerName)}</p><dl><dt>Ngày / Ca</dt><dd>${fmt(p.eventDate)} · ${esc(p.shift)}</dd><dt>Sảnh / Quy mô</dt><dd>${esc(p.hallName)} · ${p.tableCount} bàn</dd><dt>Thực đơn</dt><dd>${esc(p.menuName||'Chưa chọn')}</dd><dt>Trang trí</dt><dd>${esc(p.decorationName||'Chưa chọn')}</dd><dt>Dịch vụ</dt><dd>${esc(p.services?.join(', ')||'Chưa có')}</dd><dt>Yêu cầu đặc biệt</dt><dd>${esc(p.specialRequests||'Không có yêu cầu đặc biệt')}</dd><dt>Trạng thái</dt><dd>${esc(p.bookingStatusName)}</dd></dl>${demo?'<p>Dữ liệu minh họa · Không phải thông tin tiệc thực tế.</p>':`<div class="cw-dialog-actions"><a class="cw-button" href="/dieu-phoi/checklist?bookingId=${p.bookingId}"><i class="fa-solid fa-list-check"></i> Theo dõi tiến độ</a><a class="cw-button cw-primary" href="/dieu-phoi/su-co?bookingId=${p.bookingId}"><i class="fa-solid fa-triangle-exclamation"></i> Báo cáo sự cố</a></div>`}`;
         $('cwDetail').showModal();
     }
     $('cwClose').onclick=()=>$('cwDetail').close();
@@ -100,9 +107,12 @@
     $('cwChecklist').addEventListener('change',event=>{if(!event.target.matches('[data-task]')||!demo)return;const party=items().find(p=>p.bookingId===selected);const t=tasks(party).find(t=>t.id===Number(event.target.dataset.task));t.done=event.target.checked;renderProgress(); const input=$('cwChecklist').querySelector(`[data-task="${t.id}"]`); input?.focus();});
     if (config.standalone && $('cwDemo')) $('cwDemo').onclick=()=>{selected=null;week=monday(today);work.clear();filters();render();};
     $('cwPrev').onclick=()=>{week=add(week,-7);renderSchedule();};$('cwNext').onclick=()=>{week=add(week,7);renderSchedule();};$('cwToday').onclick=()=>{week=monday(today);renderSchedule();};
+    $('cwScopeWeek').onclick=()=>{scope='week';renderSchedule();};
+    $('cwScopeAll').onclick=()=>{scope='all';renderSchedule();};
     for(const id of ['cwWeek','cwList']) $(id).onclick=()=>{mode=id==='cwWeek'?'week':'list';$('cwWeek').classList.toggle('active',mode==='week');$('cwList').classList.toggle('active',mode==='list');$('cwWeek').setAttribute('aria-pressed',String(mode==='week'));$('cwList').setAttribute('aria-pressed',String(mode==='list'));renderSchedule();};
     for(const id of ['cwSearch','cwHall','cwShift']) $(id).addEventListener(id==='cwSearch'?'input':'change',renderSchedule);
     $('cwProgressSearch').oninput=renderProgress;
     document.querySelectorAll('[data-cw-page]').forEach(el=>el.addEventListener('click',event=>{event.preventDefault();setPage(el.dataset.cwPage);}));
     filters();setPage(config.standalone && location.hash==='#progress'?'progress':page);
+    if (requestedBookingId && items().some(p=>p.bookingId===requestedBookingId)) detail(requestedBookingId);
 })();

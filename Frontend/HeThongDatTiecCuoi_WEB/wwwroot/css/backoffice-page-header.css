@@ -1,73 +1,198 @@
-/*
- * Riverside Palace back-office page heading system.
- * Loaded after every module stylesheet so legacy page spacing cannot offset headings.
- */
+/* Riverside Palace back-office hero system. Loaded last by _AdminLayout. */
 .backoffice-app {
     --rp-page-inline: 32px;
     --rp-page-top: 22px;
     --rp-page-bottom: 44px;
     --rp-heading-gap: 22px;
+    --rp-hero-navy: #102b4e;
+    --rp-hero-gold: #8b681f;
+    --rp-hero-border: #e3dfd6;
+    --rp-hero-muted: #64748b;
 }
 
-/* Pages whose heading lives inside the page wrapper. */
 .backoffice-app #adminMainContent > :is(
-    .manager-overview-page,
-    .admin-dashboard-page,
-    .account-management-page,
-    .audit-page,
-    .role-change-page,
-    .contract-payment-page,
-    .md-page,
-    .mm-page,
-    .hr-page,
-    .event-page,
-    .notifications-page,
-    .profile-page,
-    .booking-page-wrapper,
-    .policy-page,
-    .bi-page-wrapper
+    .manager-overview-page, .admin-dashboard-page, .account-management-page,
+    .audit-page, .role-change-page, .contract-payment-page, .md-page,
+    .mm-page, .hr-page, .event-page, .notifications-page, .profile-page,
+    .booking-page-wrapper, .policy-page, .bi-page-wrapper, .incident-page,
+    .sca-page, .hm-dashboard, .coordination-page
 ) {
-    padding-top: var(--rp-page-top) !important;
-    padding-right: var(--rp-page-inline) !important;
-    padding-bottom: var(--rp-page-bottom) !important;
-    padding-left: var(--rp-page-inline) !important;
+    box-sizing: border-box;
+    padding: var(--rp-page-top) var(--rp-page-inline) var(--rp-page-bottom) !important;
+}
+
+/* New reusable class plus every page-level legacy class still in use. */
+.backoffice-app #adminMainContent :is(
+    .backoffice-hero, .manager-page-header, .dashboard-page-header,
+    .account-management-header, .audit-page-header, .role-change-header,
+    .cp-page-head, .md-header, .mm-header, .hr-header, .event-header,
+    .profile-page-header, .notifications-page > header, .manager-section-header,
+    .coord-hero, .hm-hero, .incident-header, .sca-header, .heading,
+    .cw-heading, .assignment-hero
+) {
+    position: relative !important;
+    isolation: isolate;
+    display: flex !important;
+    width: 100%;
+    min-height: 142px !important;
+    box-sizing: border-box;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 24px !important;
+    margin: 0 0 var(--rp-heading-gap) !important;
+    padding: 24px 28px !important;
+    overflow: hidden !important;
+    border: 1px solid var(--rp-hero-border) !important;
+    border-radius: 20px !important;
+    background: linear-gradient(120deg, #fff 52%, #fbf5e7) !important;
+    box-shadow: 0 12px 30px rgba(16, 43, 78, .065) !important;
 }
 
 .backoffice-app #adminMainContent :is(
-    .manager-page-header,
-    .dashboard-page-header,
-    .account-management-header,
-    .audit-page-header,
-    .role-change-header,
-    .cp-page-head,
-    .md-header,
-    .mm-header,
-    .hr-header,
-    .event-header,
-    .profile-page-header,
-    .notifications-page > header,
-    .booking-page-wrapper > .manager-section-header,
-    .policy-page > .manager-section-header,
-    .bi-page-wrapper > .manager-section-header
-) {
-    min-height: 0 !important;
-    margin: 0 0 var(--rp-heading-gap) !important;
-    padding: 0 !important;
+    .backoffice-hero, .manager-page-header, .dashboard-page-header,
+    .account-management-header, .audit-page-header, .role-change-header,
+    .cp-page-head, .md-header, .mm-header, .hr-header, .event-header,
+    .profile-page-header, .notifications-page > header, .manager-section-header,
+    .coord-hero, .hm-hero, .incident-header, .sca-header, .heading,
+    .cw-heading, .assignment-hero
+)::after {
+    position: absolute;
+    top: 50%;
+    right: -82px;
+    z-index: -1;
+    width: 230px;
+    height: 230px;
+    border: 38px solid rgba(189, 147, 73, .09);
+    border-radius: 50%;
+    content: "";
+    pointer-events: none;
+    transform: translateY(-50%);
 }
 
-/* Pages with a legacy header outside their content wrapper. */
-.backoffice-app #adminMainContent > .top-header {
+.backoffice-app #adminMainContent :is(
+    .backoffice-hero, .manager-page-header, .dashboard-page-header,
+    .account-management-header, .audit-page-header, .role-change-header,
+    .cp-page-head, .md-header, .mm-header, .hr-header, .event-header,
+    .profile-page-header, .notifications-page > header, .manager-section-header,
+    .coord-hero, .hm-hero, .incident-header, .sca-header, .heading,
+    .cw-heading, .assignment-hero
+) > * { position: relative; z-index: 1; }
+
+.backoffice-app #adminMainContent .backoffice-hero__content {
+    min-width: 0;
+    max-width: 820px;
+}
+
+.backoffice-app #adminMainContent :is(
+    .backoffice-hero, .manager-page-header, .dashboard-page-header,
+    .account-management-header, .audit-page-header, .role-change-header,
+    .cp-page-head, .md-header, .mm-header, .hr-header, .event-header,
+    .profile-page-header, .notifications-page > header, .manager-section-header,
+    .coord-hero, .hm-hero, .incident-header, .sca-header, .heading,
+    .cw-heading, .assignment-hero
+) :is(h1, h2) {
+    margin: 5px 0 0 !important;
+    color: var(--rp-hero-navy) !important;
+    font-family: "Plus Jakarta Sans", "Be Vietnam Pro", sans-serif !important;
+    font-size: clamp(25px, 2.15vw, 32px) !important;
+    font-weight: 800 !important;
+    letter-spacing: -.025em !important;
+    line-height: 1.2 !important;
+    text-transform: none !important;
+}
+
+.backoffice-app #adminMainContent :is(
+    .backoffice-hero, .manager-page-header, .dashboard-page-header,
+    .account-management-header, .audit-page-header, .role-change-header,
+    .cp-page-head, .md-header, .mm-header, .hr-header, .event-header,
+    .profile-page-header, .notifications-page > header, .manager-section-header,
+    .coord-hero, .hm-hero, .incident-header, .sca-header, .heading,
+    .cw-heading, .assignment-hero
+) p {
+    max-width: 760px;
+    margin: 7px 0 0 !important;
+    color: var(--rp-hero-muted) !important;
+    font-size: 14px !important;
+    font-weight: 400 !important;
+    line-height: 1.55 !important;
+}
+
+.backoffice-app #adminMainContent :is(
+    .backoffice-hero__eyebrow, .coord-eyebrow, .incident-eyebrow,
+    .sca-eyebrow, .eyebrow, .cw-eyebrow, .hm-eyebrow,
+    .manager-header-eyebrow, .dashboard-eyebrow
+) {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    color: var(--rp-hero-gold) !important;
+    font-size: 11px !important;
+    font-weight: 800 !important;
+    letter-spacing: .075em !important;
+    line-height: 1.35;
+    text-transform: uppercase !important;
+}
+
+.backoffice-app #adminMainContent :is(
+    .backoffice-hero__primary-btn, .coord-primary, .incident-primary,
+    .sca-primary, .admin-create-button, .md-btn.gold, .mm-btn.gold,
+    .cp-btn.primary, .manager-primary-action, #pageMarkAllRead
+) {
+    display: inline-flex !important;
+    min-height: 44px;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 17px !important;
+    border: 0 !important;
+    border-radius: 11px !important;
+    color: #fff !important;
+    background: linear-gradient(135deg, #bd9349, #a87824) !important;
+    box-shadow: 0 8px 18px rgba(168, 120, 36, .2) !important;
+    font: inherit;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    text-decoration: none !important;
+    cursor: pointer;
+    transition: transform .16s ease, box-shadow .16s ease, filter .16s ease;
+}
+.backoffice-app #adminMainContent :is(
+    .backoffice-hero__primary-btn, .coord-primary, .incident-primary,
+    .sca-primary, .admin-create-button, .md-btn.gold, .mm-btn.gold,
+    .cp-btn.primary, .manager-primary-action, #pageMarkAllRead
+):hover { filter: brightness(1.04); transform: translateY(-1px); }
+.backoffice-app #adminMainContent :is(
+    .backoffice-hero__primary-btn, .coord-primary, .incident-primary,
+    .sca-primary, .admin-create-button, .md-btn.gold, .mm-btn.gold,
+    .cp-btn.primary, .manager-primary-action, #pageMarkAllRead
+):focus-visible { outline: 3px solid rgba(189, 147, 73, .3); outline-offset: 3px; }
+.backoffice-app #adminMainContent :is(
+    .backoffice-hero__primary-btn, .coord-primary, .incident-primary,
+    .sca-primary, .admin-create-button, .md-btn.gold, .mm-btn.gold,
+    .cp-btn.primary, .manager-primary-action, #pageMarkAllRead
+):disabled { cursor: not-allowed; filter: grayscale(.35); opacity: .62; transform: none; }
+
+/* Legacy top bars remain spacing containers, not duplicate hero cards. */
+.backoffice-app #adminMainContent > .top-header:not(.backoffice-hero) {
     min-height: 0 !important;
     margin: 0 !important;
     padding: var(--rp-page-top) var(--rp-page-inline) 0 !important;
     border: 0 !important;
     background: var(--rp-bg) !important;
+    box-shadow: none !important;
+}
+.backoffice-app #adminMainContent > .top-header.backoffice-hero {
+    width: calc(100% - (var(--rp-page-inline) * 2));
+    margin: var(--rp-page-top) var(--rp-page-inline) 0 !important;
 }
 .backoffice-app #adminMainContent > .top-header + .content {
     padding: var(--rp-heading-gap) var(--rp-page-inline) var(--rp-page-bottom) !important;
 }
+.backoffice-app #adminMainContent > .top-header:has(+ .content .assignment-hero) { display: none !important; }
+.backoffice-app #adminMainContent > .top-header:has(+ .content .assignment-hero) + .content { padding-top: var(--rp-page-top) !important; }
+.backoffice-app #adminMainContent > .top-header.backoffice-hero + .content { padding-top: var(--rp-heading-gap) !important; }
+.backoffice-app #adminMainContent > .top-header.backoffice-hero + .coordinator-dashboard > .manager-dashboard-intro { display: none; }
 
-/* Legacy sticky title wrappers should not look like a card around the page heading. */
 .backoffice-app #adminMainContent .backoffice-function-header-shell {
     position: static !important;
     margin: 0 !important;
@@ -75,26 +200,15 @@
     background: transparent !important;
     box-shadow: none !important;
 }
-.backoffice-app #adminMainContent .backoffice-function-header-shell > .manager-section-header {
-    margin: 0 0 var(--rp-heading-gap) !important;
-    padding: var(--rp-page-top) var(--rp-page-inline) 0 !important;
-    border: 0 !important;
-    background: transparent !important;
-}
-
-/* Decor/service catalog follows the same centered workspace as other modules. */
+.backoffice-app #adminMainContent .backoffice-function-header-shell > .manager-section-header { margin-bottom: var(--rp-heading-gap) !important; }
 .backoffice-app #adminMainContent > .decor-page-wrapper {
-    min-height: calc(100vh - 76px) !important;
-    box-sizing: border-box;
     display: block !important;
     max-width: 1600px;
+    min-height: calc(100vh - 76px) !important;
+    box-sizing: border-box;
     margin: 0 auto;
     padding: var(--rp-page-top) var(--rp-page-inline) var(--rp-page-bottom) !important;
     background: var(--rp-bg);
-}
-.backoffice-app #adminMainContent .decor-page-wrapper .backoffice-function-header-shell > .manager-section-header {
-    margin-bottom: var(--rp-heading-gap) !important;
-    padding: 0 !important;
 }
 .backoffice-app #adminMainContent .decor-page-wrapper .backoffice-function-header-shell > div:last-child {
     margin: 0 0 var(--rp-heading-gap);
@@ -111,64 +225,63 @@
     padding: 0 !important;
 }
 
-/* One typography rhythm for every functional heading. */
-.backoffice-app #adminMainContent :is(
-    .manager-page-header,
-    .dashboard-page-header,
-    .account-management-header,
-    .audit-page-header,
-    .role-change-header,
-    .cp-page-head,
-    .md-header,
-    .mm-header,
-    .hr-header,
-    .event-header,
-    .profile-page-header,
-    .notifications-page > header,
-    .manager-section-header
-) :is(h1,h2) {
-    margin: 0 !important;
-    color: var(--rp-text) !important;
-    font-size: clamp(28px,2.15vw,32px) !important;
-    font-weight: 800 !important;
-    letter-spacing: -.025em !important;
-    line-height: 1.2 !important;
-    text-transform: none !important;
-}
-.backoffice-app #adminMainContent :is(
-    .manager-page-header,
-    .dashboard-page-header,
-    .account-management-header,
-    .audit-page-header,
-    .role-change-header,
-    .cp-page-head,
-    .md-header,
-    .mm-header,
-    .hr-header,
-    .event-header,
-    .profile-page-header,
-    .notifications-page > header,
-    .manager-section-header
-) p {
-    margin: 7px 0 0 !important;
-    color: var(--rp-text-muted) !important;
-    font-size: 14px !important;
-    font-weight: 400 !important;
-    line-height: 1.55 !important;
-}
-
-@media (max-width: 850px) {
-    .backoffice-app { --rp-page-inline: 18px; --rp-page-top: 18px; --rp-page-bottom: 32px; --rp-heading-gap: 18px; }
-}
-
-@media (max-width: 680px) {
+@media (max-width: 1024px) {
+    .backoffice-app { --rp-page-inline: 24px; --rp-heading-gap: 20px; }
     .backoffice-app #adminMainContent :is(
-        .manager-page-header,.dashboard-page-header,.account-management-header,.audit-page-header,
-        .role-change-header,.cp-page-head,.md-header,.mm-header,.hr-header,.event-header,
-        .profile-page-header,.notifications-page > header,.manager-section-header
+        .backoffice-hero, .manager-page-header, .dashboard-page-header,
+        .account-management-header, .audit-page-header, .role-change-header,
+        .cp-page-head, .md-header, .mm-header, .hr-header, .event-header,
+        .profile-page-header, .notifications-page > header, .manager-section-header,
+        .coord-hero, .hm-hero, .incident-header, .sca-header, .heading,
+        .cw-heading, .assignment-hero
+    ) { min-height: 132px !important; padding: 22px 24px !important; }
+}
+@media (max-width: 768px) {
+    .backoffice-app { --rp-page-inline: 18px; --rp-page-top: 18px; --rp-page-bottom: 32px; --rp-heading-gap: 18px; }
+    .backoffice-app #adminMainContent :is(
+        .backoffice-hero, .manager-page-header, .dashboard-page-header,
+        .account-management-header, .audit-page-header, .role-change-header,
+        .cp-page-head, .md-header, .mm-header, .hr-header, .event-header,
+        .profile-page-header, .notifications-page > header, .manager-section-header,
+        .coord-hero, .hm-hero, .incident-header, .sca-header, .heading,
+        .cw-heading, .assignment-hero
     ) {
+        min-height: 0 !important;
         align-items: stretch !important;
         flex-direction: column !important;
-        gap: 14px !important;
+        gap: 16px !important;
+        padding: 21px !important;
     }
+    .backoffice-app #adminMainContent :is(
+        .backoffice-hero, .manager-page-header, .dashboard-page-header,
+        .account-management-header, .audit-page-header, .role-change-header,
+        .cp-page-head, .md-header, .mm-header, .hr-header, .event-header,
+        .profile-page-header, .notifications-page > header, .manager-section-header,
+        .coord-hero, .hm-hero, .incident-header, .sca-header, .heading,
+        .cw-heading, .assignment-hero
+    )::after { right: -105px; width: 210px; height: 210px; }
+}
+@media (max-width: 480px) {
+    .backoffice-app { --rp-page-inline: 12px; --rp-page-top: 14px; --rp-page-bottom: 26px; }
+    .backoffice-app #adminMainContent :is(
+        .backoffice-hero, .manager-page-header, .dashboard-page-header,
+        .account-management-header, .audit-page-header, .role-change-header,
+        .cp-page-head, .md-header, .mm-header, .hr-header, .event-header,
+        .profile-page-header, .notifications-page > header, .manager-section-header,
+        .coord-hero, .hm-hero, .incident-header, .sca-header, .heading,
+        .cw-heading, .assignment-hero
+    ) { padding: 18px !important; border-radius: 16px !important; }
+    .backoffice-app #adminMainContent :is(
+        .backoffice-hero, .manager-page-header, .dashboard-page-header,
+        .account-management-header, .audit-page-header, .role-change-header,
+        .cp-page-head, .md-header, .mm-header, .hr-header, .event-header,
+        .profile-page-header, .notifications-page > header, .manager-section-header,
+        .coord-hero, .hm-hero, .incident-header, .sca-header, .heading,
+        .cw-heading, .assignment-hero
+    ) :is(h1, h2) { font-size: 23px !important; }
+    .backoffice-app #adminMainContent :is(
+        .backoffice-hero__primary-btn, .coord-primary, .incident-primary,
+        .sca-primary, .admin-create-button, .md-btn.gold, .mm-btn.gold,
+        .cp-btn.primary, .manager-primary-action, #pageMarkAllRead
+    ) { width: 100%; }
 }

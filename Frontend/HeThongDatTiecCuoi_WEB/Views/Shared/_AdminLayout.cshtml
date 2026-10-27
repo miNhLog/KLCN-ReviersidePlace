@@ -304,13 +304,6 @@
                 <section class="sidebar-section" aria-labelledby="coordinatorMyWorkMenuTitle">
                     <h2 class="sidebar-section-title" id="coordinatorMyWorkMenuTitle">Công việc của tôi</h2>
                     <nav class="sidebar-menu" aria-label="Công việc được giao">
-                        <a asp-controller="Home" asp-action="AssignedParties"
-                           class="sidebar-item @(IsActive("Home", "AssignedParties") ? "active" : string.Empty)"
-                           aria-current="@(IsActive("Home", "AssignedParties") ? "page" : null)"
-                           data-sidebar-tooltip="Tiệc được phân công">
-                            <span class="sidebar-icon" aria-hidden="true"><i class="fa-solid fa-champagne-glasses"></i></span>
-                            <span class="sidebar-label">Tiệc được phân công</span>
-                        </a>
                         <a asp-controller="Home" asp-action="WorkSchedule" class="sidebar-item @(IsActive("Home", "WorkSchedule") ? "active" : string.Empty)" data-sidebar-tooltip="Lịch làm việc">
                             <span class="sidebar-icon" aria-hidden="true"><i class="fa-solid fa-calendar-days"></i></span>
                             <span class="sidebar-label">Lịch làm việc</span>

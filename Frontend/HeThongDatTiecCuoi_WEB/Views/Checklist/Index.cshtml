@@ -2,9 +2,8 @@
 @{ Layout = "_AdminLayout"; ViewData["Title"] = "Checklist theo từng tiệc"; }
 @section Styles { <link rel="stylesheet" href="~/css/party-checklist.css" asp-append-version="true" /> }
 <div id="checklistApp" data-url="@Url.Action("Data", "Checklist")" data-command-url="@Url.Action("Index", "Checklist")">
-<form id="checklistToken" hidden>@Html.AntiForgeryToken()</form><div class="page"><div class="breadcrumb">Điều phối tiệc <span>›</span> Theo dõi tiến độ</div><header class="heading"><div><div class="eyebrow">CHUẨN BỊ CHU ĐÁO · BÀN GIAO RÕ RÀNG</div><h1>Checklist theo từng tiệc</h1><p>Từng đầu việc rõ ràng, mỗi buổi tiệc trọn vẹn.</p></div><button id="refresh" class="btn">↻ Làm mới</button></header>
+<form id="checklistToken" hidden>@Html.AntiForgeryToken()</form><div class="page"><header class="heading"><div><div class="eyebrow">CHUẨN BỊ CHU ĐÁO · BÀN GIAO RÕ RÀNG</div><h1>Checklist theo từng tiệc</h1><p>Từng đầu việc rõ ràng, mỗi buổi tiệc trọn vẹn.</p></div><button id="refresh" class="btn">↻ Làm mới</button></header>
 <div id="loadError" class="callout gold" role="alert" hidden></div>
-<section class="flow" aria-label="Luồng thực hiện"><span>1 <b>Phân công & tạo checklist</b></span><i>→</i><span>2 <b>Thực hiện & ghi chú</b></span><i>→</i><span>3 <b>Gửi bàn giao</b></span><i>→</i><span>4 <b>Quản lý kiểm tra</b></span></section>
 <div class="stats" id="stats"></div>
 <div class="workspace"><section class="panel party-panel"><div class="panel-title"><h2 id="listTitle">Tiệc của tôi</h2><span class="count" id="partyCount"></span></div><label class="search"><span>⌕</span><input id="search" placeholder="Tìm mã tiệc, khách hàng..." aria-label="Tìm tiệc"></label><div id="partyList"></div><div class="list-tip" id="roleTip"></div></section>
 <section class="panel detail-panel"><div id="detail"></div></section></div>

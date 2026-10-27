@@ -13,7 +13,7 @@
     <section class="manager-dashboard manager-overview-page">
         <header class="manager-page-header">
             <div>
-                <div class="breadcrumb">Quản trị hệ thống <span>›</span> <strong>Tổng quan quản lý</strong></div>
+                <span class="backoffice-hero__eyebrow"><i class="fa-solid fa-chart-pie" aria-hidden="true"></i> TỔNG QUAN ĐIỀU HÀNH</span>
                 <h1>Tổng quan quản lý</h1>
                 <p>Theo dõi hoạt động kinh doanh và vận hành trên toàn hệ thống</p>
             </div>
@@ -114,9 +114,8 @@
 }
 else if (role == RoleNames.HallManager)
 {
-    <header class="top-header">
+    <header class="top-header backoffice-hero">
         <div>
-            <div class="breadcrumb">Quản trị hệ thống <span>›</span> <strong>Dashboard sảnh</strong></div>
             <h2>Dashboard sảnh</h2>
         </div>
     </header>
@@ -150,9 +149,8 @@ else if (role == RoleNames.HallManager)
 }
 else if (role == RoleNames.Coordinator)
 {
-    <header class="top-header">
+    <header class="top-header backoffice-hero">
         <div>
-            <div class="breadcrumb">Quản trị hệ thống <span>›</span> <strong>Hôm nay</strong></div>
             <h2>Công việc hôm nay</h2>
         </div>
     </header>

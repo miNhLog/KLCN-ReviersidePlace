@@ -11,7 +11,6 @@
 }
 
 <main class="incident-page hall-incident-page" data-open-incident="@Context.Request.Query["incidentId"]">
-    <nav class="breadcrumb" aria-label="Breadcrumb"><span>Vận hành</span><i class="fa-solid fa-chevron-right"></i><strong>Sự cố</strong></nav>
     <header class="incident-header">
         <div><span class="incident-eyebrow">ĐIỀU HÀNH SẢNH</span><h1>Tiếp nhận &amp; xử lý sự cố</h1><p>Theo dõi và xử lý sự cố tại các sảnh thuộc phạm vi bạn đang phụ trách.</p></div>
         <button type="button" class="incident-primary" id="hmOpenCreate" @(Model.BookingOptions.Count == 0 ? "disabled" : null)><i class="fa-solid fa-plus"></i><span>Ghi nhận sự cố</span></button>

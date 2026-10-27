@@ -2,3 +2,184 @@
 @media(min-width:1450px){.workspace{grid-template-columns:325px minmax(0,1fr)}}@media(max-width:1150px){.sidebar{width:210px}main{margin-left:210px}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.workspace{grid-template-columns:255px minmax(0,1fr)}.top-label{min-width:0}.task{flex-wrap:wrap}.task-buttons{margin-left:33px}.flow{flex-wrap:wrap;justify-content:flex-start}.role-area label{font-size:0}}@media(max-width:950px){.workspace{grid-template-columns:1fr}.party-panel #partyList{display:flex;overflow:auto}.party{min-width:245px;border-left:0;border-bottom:3px solid transparent}.party.selected{border-bottom-color:#b48c36}.party-panel .list-tip{display:none}.top-label{display:none}.topbar{justify-content:flex-end}.task{flex-wrap:nowrap}.task-buttons{margin-left:0}}@media(max-width:650px){.sidebar{display:none}main{margin:0}.page{padding:20px 15px}.topbar{padding:0 15px;height:65px}.role-area{gap:8px}.heading{align-items:flex-start;flex-direction:column;gap:15px}.heading h1{font-size:25px}.heading .btn{padding:8px 10px}.preview-banner{align-items:flex-start;flex-direction:column;gap:4px}.flow{gap:10px;padding:15px}.flow i{display:none}.flow>span{flex:0 0 100%;font-size:10px}.stats{gap:10px}.stat{padding:14px;gap:10px}.stat-icon{height:33px;width:33px}.stat strong{font-size:23px}.stat small{font-size:9px}.detail-head{padding:20px}.tabs{padding:0 20px;gap:20px}.checklist{padding:0 18px 18px}.task{flex-wrap:wrap}.task-buttons{margin-left:33px}.handover{align-items:flex-start;flex-direction:column;padding:18px}.detail-meta{line-height:2}.callout{margin:15px 18px 0}.timeline{padding:20px}#toast{left:50%}.top-label{display:none}.role-area label{font-size:0}.role-area select{font-size:11px}}
 .role-area select{font-size:11px;max-width:200px}
 }#checklistApp{display:block;padding:0;min-height:calc(100vh - 78px);background:#f5f7fa;color:#172d47;font:12px "Be Vietnam Pro",sans-serif} #checklistApp .loading{padding:40px;text-align:center;color:#8390a2}#checklistApp .search input{border:0!important;box-shadow:none!important;border-radius:0!important;background:transparent!important;padding:0!important;height:auto!important;min-height:0!important}
+
+/* Back-office alignment: presentation only; behavior and DOM hooks stay unchanged. */
+@scope (#checklistApp) {
+    :scope {
+        --navy: #102b4e;
+        --gold: #a87824;
+        --muted: #64748b;
+        --border: #e3e7ec;
+        --bg: #f6f7f9;
+        background: var(--bg);
+        color: var(--navy);
+        font-size: 14px;
+    }
+
+    .page {
+        width: 100%;
+        max-width: 1600px;
+        margin: 0 auto;
+        padding: 22px 32px 44px;
+    }
+
+    .heading { margin-bottom: 22px; }
+    .heading .eyebrow { font-size: 11px; letter-spacing: .075em; }
+    .heading h1 { margin: 5px 0 0; font-size: clamp(25px, 2.15vw, 32px); }
+    .heading p { margin-top: 7px; color: var(--muted); font-size: 14px; line-height: 1.55; }
+    #refresh {
+        min-height: 44px;
+        padding: 10px 17px;
+        border: 0;
+        border-radius: 11px;
+        color: #fff;
+        background: linear-gradient(135deg, #bd9349, #a87824);
+        box-shadow: 0 8px 18px rgba(168, 120, 36, .2);
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    .flow {
+        min-height: 64px;
+        margin-bottom: 20px;
+        padding: 15px 20px;
+        border-color: var(--border);
+        border-radius: 14px;
+        box-shadow: 0 5px 16px rgba(16, 43, 78, .045);
+        font-size: 13px;
+    }
+    .flow > span { display: inline-flex; align-items: center; gap: 7px; }
+    .flow b { margin-left: 0; color: #53657b; font-size: 12px; font-weight: 600; }
+
+    .stats { gap: 16px; margin-bottom: 22px; }
+    .stat {
+        min-height: 112px;
+        padding: 18px;
+        border-color: var(--border);
+        border-radius: 14px;
+        box-shadow: 0 7px 20px rgba(16, 43, 78, .045);
+    }
+    .stat-icon { width: 46px; height: 46px; border-radius: 12px; font-size: 20px; }
+    .stat small { color: var(--muted); font-size: 12px; font-weight: 600; }
+    .stat strong { margin: 5px 0 3px; color: var(--navy); font-size: 27px; }
+    .stat em { color: #8b97a8; font-size: 11px; line-height: 1.45; }
+
+    .workspace { grid-template-columns: 320px minmax(0, 1fr); gap: 18px; }
+    .panel {
+        border-color: var(--border);
+        border-radius: 16px;
+        box-shadow: 0 9px 26px rgba(16, 43, 78, .055);
+    }
+    .panel-title { min-height: 65px; padding: 18px 20px; border-bottom: 1px solid #edf0f3; }
+    .panel-title h2 { color: var(--navy); font-size: 16px; font-weight: 800; }
+    .count { padding: 5px 9px; border-radius: 99px; font-size: 11px; font-weight: 700; }
+    .search { min-height: 43px; margin: 14px 15px; padding: 9px 12px; border-radius: 10px; }
+    .search:focus-within { border-color: #c5a159; box-shadow: 0 0 0 3px rgba(189, 147, 73, .12); }
+    .search input { color: #34475e; font-size: 12px; }
+    .party { padding: 17px 16px; }
+    .party:hover { background: #fffdf8; }
+    .party.selected { background: #fffaf0; border-left-color: #b88a36; }
+    .party strong { color: var(--navy); font-size: 13px; }
+    .party p { margin: 6px 0; font-size: 13px; }
+    .party small, .party-bottom > span:last-child { font-size: 11px; }
+    .list-tip { padding: 16px; font-size: 11px; line-height: 1.65; }
+
+    .pill { padding: 5px 9px; border-radius: 99px; font-size: 10px; font-weight: 700; }
+    .bar { height: 7px; border-radius: 99px; }
+    .bar span { background: linear-gradient(90deg, #c49b4d, #a87824); }
+
+    .detail-head { padding: 22px 24px; }
+    .detail-head h2 { margin: 10px 0 7px; color: var(--navy); font-size: 23px; font-weight: 800; }
+    .detail-top .eyebrow { font-size: 10px; }
+    .detail-meta { color: #718096; font-size: 12px; line-height: 1.75; }
+    .detail-meta b { color: #40556d; font-weight: 700; }
+    .detail-actions { gap: 9px; margin-top: 16px; }
+    .progress-caption { font-size: 11px; }
+    .tabs { gap: 26px; padding: 0 24px; }
+    .tab { padding: 15px 0 13px; font-size: 12px; font-weight: 600; }
+    .tab.active { border-color: #b88a36; color: #8b681f; }
+    .tab span { font-size: 10px; }
+
+    .btn {
+        min-height: 39px;
+        padding: 9px 13px;
+        border-radius: 9px;
+        color: #43556b;
+        font-size: 12px;
+        font-weight: 700;
+    }
+    .btn.primary {
+        border-color: #a87824;
+        color: #fff;
+        background: linear-gradient(135deg, #bd9349, #a87824);
+        box-shadow: 0 6px 14px rgba(168, 120, 36, .16);
+    }
+    .btn:hover:not(:disabled) { transform: translateY(-1px); }
+
+    .checklist { padding: 4px 24px 22px; }
+    .task-group { margin-top: 22px; }
+    .task-group h3 { color: var(--navy); font-size: 13px; }
+    .task-group h3 span { font-size: 11px; }
+    .task { padding: 15px 0; }
+    .task-mark { width: 24px; height: 24px; font-size: 11px; }
+    .task-name { color: #34475d; font-size: 13px; }
+    .task-meta { font-size: 10px; }
+    .task-note { padding: 9px 11px; font-size: 11px; }
+    .task select { min-height: 34px; border-radius: 8px; font-size: 11px; }
+    .icon-btn { width: 34px; height: 34px; border-radius: 8px; }
+    .handover { padding: 18px 24px; }
+    .handover p { font-size: 11px; }
+    .handover strong { color: #344b63; font-size: 13px; }
+
+    .callout { padding: 13px 15px; border-radius: 10px; font-size: 12px; }
+    .empty { padding: 48px 24px; font-size: 12px; }
+    .empty strong { color: var(--navy); font-size: 15px; }
+    .footnote { margin-top: 24px; font-size: 11px; }
+
+    dialog { border-radius: 16px; box-shadow: 0 28px 80px rgba(10, 29, 50, .25); }
+    .modal-head { padding: 20px 22px; background: linear-gradient(120deg, #fff 52%, #fbf5e7); }
+    .modal-head h2 { color: var(--navy); font-size: 19px; }
+    #dialogBody { padding: 22px; }
+    #dialogBody p, #dialogBody label { font-size: 12px; }
+    #dialogBody input:not([type=checkbox]), #dialogBody select, #dialogBody textarea {
+        min-height: 42px;
+        border-radius: 9px;
+        font-size: 12px;
+    }
+    .modal-foot { padding: 15px 22px; }
+    #toast { z-index: 1300; border-radius: 10px; font-size: 12px; }
+}
+
+@media (max-width: 1024px) {
+    @scope (#checklistApp) {
+        .page { padding: 20px 24px 36px; }
+        .workspace { grid-template-columns: 280px minmax(0, 1fr); }
+        .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+}
+
+@media (max-width: 768px) {
+    @scope (#checklistApp) {
+        .page { padding: 18px 18px 32px; }
+        .workspace { grid-template-columns: 1fr; }
+        .party-panel #partyList { display: flex; overflow-x: auto; }
+        .party { min-width: 260px; border-left: 0; border-bottom: 3px solid transparent; }
+        .party.selected { border-bottom-color: #b88a36; }
+        .flow { align-items: stretch; flex-direction: column; }
+        .flow i { display: none; }
+    }
+}
+
+@media (max-width: 480px) {
+    @scope (#checklistApp) {
+        .page { padding: 14px 12px 26px; }
+        .stats { grid-template-columns: 1fr; }
+        .stat { min-height: 96px; }
+        .detail-head, .checklist { padding-right: 18px; padding-left: 18px; }
+        .tabs { gap: 18px; padding: 0 18px; overflow-x: auto; }
+        .task { flex-wrap: wrap; }
+        .task-buttons { width: 100%; margin-left: 36px; }
+        .handover { align-items: stretch; flex-direction: column; }
+        .handover .btn, .detail-actions .btn { flex: 1 1 auto; }
+    }
+}

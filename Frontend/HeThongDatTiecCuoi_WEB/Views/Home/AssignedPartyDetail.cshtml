@@ -1,7 +1,7 @@
 @model HeThongDatTiecCuoi_WEB.Models.Coordination.CoordinatorAssignedPartyViewModel
 @{ Layout = "_AdminLayout"; ViewData["Title"] = $"Chi tiết {Model.BookingCode}"; }
 @section Styles { <link rel="stylesheet" href="~/css/coordination.css" asp-append-version="true" /> }
-<header class="top-header"><div><div class="breadcrumb">Quản trị hệ thống <span>›</span> Tiệc được phân công <span>›</span> <strong>@Model.BookingCode</strong></div><h2>Chi tiết tiệc</h2></div></header>
+<header class="top-header"><div><h2>Chi tiết tiệc</h2></div></header>
 <section class="content coordinator-detail-page">
     <div class="assignment-hero"><div><span class="eyebrow">ĐIỀU PHỐI TIỆC</span><h1>@Model.BookingCode — @Model.CustomerName</h1><p>@Model.HallName · @Model.EventDate.ToString("dd/MM/yyyy") · @Model.Shift</p></div><div class="coordinator-action-buttons"><a class="coord-btn secondary" asp-action="AssignedParties">Quay lại</a><a class="coord-btn secondary" asp-controller="Checklist" asp-action="Index" asp-route-bookingId="@Model.BookingId">Theo dõi tiến độ</a><a class="coord-btn primary" asp-controller="CoordinatorIncident" asp-action="Index" asp-route-bookingId="@Model.BookingId">Báo cáo sự cố</a></div></div>
     <div class="coordinator-detail-grid">

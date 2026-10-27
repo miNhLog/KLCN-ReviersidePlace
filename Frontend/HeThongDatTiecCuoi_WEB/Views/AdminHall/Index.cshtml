@@ -10,15 +10,14 @@
 }
 
 <!-- HEADER -->
-<header class="top-header manager-section-header">
+<header class="top-header manager-section-header backoffice-hero">
 
     <div>
 
-        <div class="breadcrumb">
-            Quản trị hệ thống
-            <span>›</span>
-            <strong>Quản lý Sảnh & Lịch Sảnh</strong>
-        </div>
+        <span class="backoffice-hero__eyebrow">
+            <i class="fa-solid fa-building" aria-hidden="true"></i>
+            QUẢN LÝ SẢNH &amp; LỊCH
+        </span>
 
         <h1>
             Quản Trị Sảnh Tiệc & Lịch Phân Bổ Theo Ca
@@ -27,6 +26,13 @@
         <p>Quản lý thông tin sảnh, bảng giá và lịch phân bổ theo ca.</p>
 
     </div>
+
+    <button type="button"
+            class="btn-add admin-create-button"
+            id="openAddHallModal">
+        <i class="fa-solid fa-plus" aria-hidden="true"></i>
+        Thêm sảnh tiệc mới
+    </button>
 
 </header>
 
@@ -106,17 +112,6 @@
             </button>
 
         </form>
-
-
-        <button type="button"
-                class="btn-add admin-create-button"
-                id="openAddHallModal">
-
-            <i class="fa-solid fa-plus"></i>
-
-            Thêm sảnh tiệc mới
-
-        </button>
 
     </div>
 

@@ -252,23 +252,12 @@ public sealed class HomeController : Controller
     }
 
     [Authorize(Roles = RoleNames.Coordinator)]
-    public async Task<IActionResult> AssignedParties(CancellationToken cancellationToken)
-    {
-        if (!TryGetAccessToken(out var token)) return RedirectToAction("Login", "Auth");
-        var result = await _apiClient.GetCoordinatorAssignedPartiesAsync(token, cancellationToken);
-        ViewData["ErrorMessage"] = result.Succeeded ? null : result.Error;
-        return View(result.Value ?? []);
-    }
+    public IActionResult AssignedParties() =>
+        RedirectToAction(nameof(WorkSchedule), new { scope = "all" });
 
     [Authorize(Roles = RoleNames.Coordinator)]
-    public async Task<IActionResult> AssignedPartyDetail(int bookingId, CancellationToken cancellationToken)
-    {
-        if (!TryGetAccessToken(out var token)) return RedirectToAction("Login", "Auth");
-        var result = await _apiClient.GetCoordinatorAssignedPartiesAsync(token, cancellationToken);
-        if (!result.Succeeded) return StatusCode(result.StatusCode ?? 502, result.Error);
-        var booking = result.Value?.SingleOrDefault(item => item.BookingId == bookingId);
-        return booking is null ? NotFound() : View(booking);
-    }
+    public IActionResult AssignedPartyDetail(int bookingId) =>
+        RedirectToAction(nameof(WorkSchedule), new { scope = "all", bookingId });
 
 
     [HttpGet("khong-co-quyen")]
