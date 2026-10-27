@@ -143,6 +143,7 @@ builder.Services.AddScoped<IEmployeeCodeGenerator, EmployeeCodeGenerator>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IIncidentService, IncidentService>();
 builder.Services.AddScoped<ICoordinationAssignmentService, CoordinationAssignmentService>();
+builder.Services.AddScoped<ChecklistService>();
 builder.Services.AddScoped<IHallManagerDashboardService, HallManagerDashboardService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();

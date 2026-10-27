@@ -326,12 +326,36 @@
         render();
     }
 
+    function initFaq() {
+        const section = $('[data-home-faq]');
+        if (!section) return;
+        const extra = $('#home-faq-extra', section);
+        const button = $('[data-faq-toggle]', section);
+        const label = $('[data-faq-toggle-label]', section);
+        const symbol = $('.home-faq-toggle-symbol', section);
+        if (!extra || !button || !label || !symbol) return;
+
+        extra.hidden = true;
+        button.hidden = false;
+        button.addEventListener('click', () => {
+            const expanded = extra.hidden;
+            if (!expanded) {
+                $$('details', extra).forEach(item => { item.open = false; });
+            }
+            extra.hidden = !expanded;
+            button.setAttribute('aria-expanded', String(expanded));
+            label.textContent = expanded ? 'Thu gọn' : 'Xem thêm';
+            symbol.textContent = expanded ? '−' : '+';
+        });
+    }
+
     const showToast = initToast();
     const closeMobileMenu = initMobileNav();
     initCinemaHero();
     initReveals();
     initImageFallback();
     initHallDeck();
+    initFaq();
 
     $$('[data-coming-soon]').forEach(element => {
         element.addEventListener('click', event => {

@@ -15,7 +15,7 @@
     var isCoordinator = User.IsInRole(RoleNames.Coordinator);
     var dashboardController = isAdmin ? "AdminAccount" : "Home";
     var vietnameseCulture = CultureInfo.GetCultureInfo("vi-VN");
-    var currentDateText = DateTime.Today.ToString("dddd, dd 'tháng' MM 'năm' yyyy", vietnameseCulture);
+    var currentDateText = HeThongDatTiecCuoi_WEB.Services.VietnamTime.Now.ToString("dddd, dd 'tháng' MM 'năm' yyyy", vietnameseCulture);
     currentDateText = char.ToUpper(currentDateText[0], vietnameseCulture) + currentDateText[1..];
     var passwordChangeSuccess = TempData["PasswordChangeSuccess"] as string;
 
@@ -273,7 +273,7 @@
                             <span class="sidebar-icon" aria-hidden="true"><i class="fa-solid fa-user-check"></i></span>
                             <span class="sidebar-label">Phân công nhân viên điều phối</span>
                         </a>
-                        <button type="button" class="sidebar-item developing" data-sidebar-tooltip="Theo dõi điều phối"><span class="sidebar-icon" aria-hidden="true"><i class="fa-solid fa-people-arrows"></i></span><span class="sidebar-label">Theo dõi điều phối</span></button>
+                        <a asp-controller="Checklist" asp-action="Index" class="sidebar-item @(IsActive("Checklist") ? "active" : string.Empty)" data-sidebar-tooltip="Theo dõi điều phối"><span class="sidebar-icon" aria-hidden="true"><i class="fa-solid fa-people-arrows"></i></span><span class="sidebar-label">Theo dõi điều phối</span></a>
                     </nav>
                 </section>
                 <section class="sidebar-section" aria-labelledby="hallManagerOperationsMenuTitle">
@@ -311,16 +311,16 @@
                             <span class="sidebar-icon" aria-hidden="true"><i class="fa-solid fa-champagne-glasses"></i></span>
                             <span class="sidebar-label">Tiệc được phân công</span>
                         </a>
-                        <button type="button" class="sidebar-item developing" data-sidebar-tooltip="Lịch làm việc">
+                        <a asp-controller="Home" asp-action="WorkSchedule" class="sidebar-item @(IsActive("Home", "WorkSchedule") ? "active" : string.Empty)" data-sidebar-tooltip="Lịch làm việc">
                             <span class="sidebar-icon" aria-hidden="true"><i class="fa-solid fa-calendar-days"></i></span>
                             <span class="sidebar-label">Lịch làm việc</span>
-                        </button>
+                        </a>
                     </nav>
                 </section>
                 <section class="sidebar-section" aria-labelledby="coordinatorOperationsMenuTitle">
                     <h2 class="sidebar-section-title" id="coordinatorOperationsMenuTitle">Vận hành tiệc</h2>
                     <nav class="sidebar-menu" aria-label="Vận hành tiệc">
-                        <button type="button" class="sidebar-item developing" data-sidebar-tooltip="Theo dõi tiến độ"><span class="sidebar-icon" aria-hidden="true"><i class="fa-solid fa-list-check"></i></span><span class="sidebar-label">Theo dõi tiến độ</span></button>
+                        <a asp-controller="Checklist" asp-action="Index" class="sidebar-item @(IsActive("Checklist") ? "active" : string.Empty)" data-sidebar-tooltip="Theo dõi tiến độ"><span class="sidebar-icon" aria-hidden="true"><i class="fa-solid fa-list-check"></i></span><span class="sidebar-label">Theo dõi tiến độ</span></a>
                         <a asp-controller="CoordinatorIncident" asp-action="Index"
                            class="sidebar-item @(IsActive("CoordinatorIncident") ? "active" : string.Empty)"
                            aria-current="@(IsActive("CoordinatorIncident") ? "page" : null)"

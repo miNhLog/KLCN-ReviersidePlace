@@ -23,6 +23,9 @@ using HeThongDatTiecCuoi_WEB.Models.ScheduleChange;
 
 public interface IRiversideApiClient
 {
+    Task<ApiCallResult<System.Text.Json.JsonElement>> GetChecklistsAsync(string token, CancellationToken ct);
+    Task<ApiCallResult<System.Text.Json.JsonElement>> ExecuteChecklistAsync(string token, int bookingId, string action, System.Text.Json.JsonElement command, CancellationToken ct);
+    Task<ApiCallResult<ChecklistSummaryViewModel>> GetChecklistSummaryAsync(string token, CancellationToken ct);
     Task<ApiCallResult<IncidentListResponseViewModel>> GetIncidentsAsync(string accessToken, string? search, string? status, string? severity, int? hallId, DateTime? fromDate, DateTime? toDate, int page, int pageSize, CancellationToken cancellationToken);
     Task<ApiCallResult<List<IncidentBookingOptionViewModel>>> GetIncidentBookingOptionsAsync(string accessToken, CancellationToken cancellationToken);
     Task<ApiCallResult<IncidentDetailViewModel>> GetIncidentAsync(string accessToken, int id, CancellationToken cancellationToken);

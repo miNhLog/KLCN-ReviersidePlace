@@ -22,6 +22,9 @@ public sealed class ApplicationDbContext : DbContext
     public DbSet<HallManagerAssignment> HallManagerAssignments => Set<HallManagerAssignment>();
     public DbSet<CoordinationAssignment> CoordinationAssignments => Set<CoordinationAssignment>();
     public DbSet<Incident> Incidents => Set<Incident>();
+    public DbSet<PartyChecklist> PartyChecklists => Set<PartyChecklist>();
+    public DbSet<PartyChecklistTask> PartyChecklistTasks => Set<PartyChecklistTask>();
+    public DbSet<PartyChecklistHistory> PartyChecklistHistory => Set<PartyChecklistHistory>();
     public DbSet<WeddingScheduleChange> WeddingScheduleChanges => Set<WeddingScheduleChange>();
     public DbSet<ReviewQrCode> ReviewQrCodes => Set<ReviewQrCode>();
     public DbSet<WeddingReview> WeddingReviews => Set<WeddingReview>();
@@ -53,6 +56,51 @@ public sealed class ApplicationDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<PartyChecklist>(e =>
+        {
+            e.ToTable("DanhSachCongViecTiec");
+            e.HasKey(x => x.BookingId).HasName("PK_DanhSachCongViecTiec");
+            e.Property(x => x.BookingId).HasColumnName("DatTiecID").ValueGeneratedNever();
+            e.Property(x => x.State).HasColumnName("TrangThai").HasMaxLength(20).IsRequired();
+            e.Property(x => x.ReturnReason).HasColumnName("LyDoYeuCauLamLai").HasMaxLength(500);
+            e.Property(x => x.Version).HasColumnName("PhienBan").IsConcurrencyToken();
+            e.HasOne(x => x.Booking).WithOne().HasForeignKey<PartyChecklist>(x => x.BookingId)
+                .HasConstraintName("FK_DanhSachCongViecTiec_DatTiec").OnDelete(DeleteBehavior.NoAction);
+        });
+        modelBuilder.Entity<PartyChecklistTask>(e =>
+        {
+            e.ToTable("CongViecDieuPhoi");
+            e.HasKey(x => x.Id).HasName("PK_CongViecDieuPhoi");
+            e.Property(x => x.Id).HasColumnName("CongViecID");
+            e.Property(x => x.BookingId).HasColumnName("DatTiecID");
+            e.Property(x => x.Name).HasColumnName("TenCongViec").HasMaxLength(180).IsRequired();
+            e.Property(x => x.Group).HasColumnName("GiaiDoan").HasMaxLength(30).IsRequired();
+            e.Property(x => x.DueOffsetDays).HasColumnName("SoNgaySoVoiNgayTiec");
+            e.Property(x => x.Required).HasColumnName("BatBuoc");
+            e.Property(x => x.Status).HasColumnName("TrangThai").HasMaxLength(20).IsRequired();
+            e.Property(x => x.Note).HasColumnName("GhiChu").HasMaxLength(500);
+            e.Property(x => x.UpdatedBy).HasColumnName("NguoiCapNhat").HasMaxLength(100);
+            e.Property(x => x.UpdatedAt).HasColumnName("NgayCapNhat");
+            e.HasIndex(x => x.BookingId).HasDatabaseName("IX_CongViecDieuPhoi_DatTiecID");
+            e.HasOne(x => x.Checklist).WithMany(x => x.Tasks).HasForeignKey(x => x.BookingId)
+                .HasConstraintName("FK_CongViecDieuPhoi_DanhSach").OnDelete(DeleteBehavior.NoAction);
+        });
+        modelBuilder.Entity<PartyChecklistHistory>(e =>
+        {
+            e.ToTable("LichSuCongViecTiec");
+            e.HasKey(x => x.Id).HasName("PK_LichSuCongViecTiec");
+            e.Property(x => x.Id).HasColumnName("LichSuID");
+            e.Property(x => x.BookingId).HasColumnName("DatTiecID");
+            e.Property(x => x.ActorUserId).HasColumnName("TaiKhoanThucHienID");
+            e.Property(x => x.ActorName).HasColumnName("NguoiThucHien").HasMaxLength(100).IsRequired();
+            e.Property(x => x.Action).HasColumnName("HanhDong").HasMaxLength(40).IsRequired();
+            e.Property(x => x.Text).HasColumnName("NoiDung").HasMaxLength(2000).IsRequired();
+            e.Property(x => x.Timestamp).HasColumnName("ThoiDiem");
+            e.HasIndex(x => new { x.BookingId, x.Timestamp }).HasDatabaseName("IX_LichSuCongViecTiec_DatTiecID_ThoiDiem");
+            e.HasOne(x => x.Checklist).WithMany(x => x.History).HasForeignKey(x => x.BookingId)
+                .HasConstraintName("FK_LichSuCongViecTiec_DanhSach").OnDelete(DeleteBehavior.NoAction);
+        });
 
         modelBuilder.Entity<Status>(entity =>
         {

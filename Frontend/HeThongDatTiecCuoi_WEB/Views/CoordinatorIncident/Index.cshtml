@@ -7,7 +7,7 @@
 }
 @section Styles { <link rel="stylesheet" href="~/css/coordinator-incidents.css" asp-append-version="true" /> }
 
-<main class="incident-page" data-open-incident="@Context.Request.Query["incidentId"]">
+<main class="incident-page" data-open-incident="@Context.Request.Query["incidentId"]" data-booking-id="@Context.Request.Query["bookingId"]">
     <nav class="breadcrumb" aria-label="Breadcrumb"><span>Vận hành tiệc</span><i class="fa-solid fa-chevron-right"></i><strong>Sự cố</strong></nav>
     <header class="incident-header">
         <div><span class="incident-eyebrow">TRUNG TÂM VẬN HÀNH</span><h1>Quản lý sự cố</h1><p>Ghi nhận và theo dõi tình trạng xử lý sự cố tại những tiệc bạn được phân công.</p></div>
