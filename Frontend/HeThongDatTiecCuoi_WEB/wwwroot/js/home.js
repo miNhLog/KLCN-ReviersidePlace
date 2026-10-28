@@ -111,7 +111,7 @@
         };
 
         const tick = (now) => {
-            if (!reducedMotion.matches && !isHovered) {
+            if (!isHovered) {
                 if (!startTime) startTime = now;
                 const elapsed = now - startTime;
                 const progress = Math.min(elapsed / duration, 1);
@@ -137,17 +137,18 @@
             });
         });
 
-        hero.addEventListener('mouseenter', () => { isHovered = true; });
-        hero.addEventListener('mouseleave', () => {
-            isHovered = false;
-            startTime = performance.now();
+        const interactiveAreas = $$('.cinema-nav, .cinema-actions', hero);
+        interactiveAreas.forEach(area => {
+            area.addEventListener('mouseenter', () => { isHovered = true; });
+            area.addEventListener('mouseleave', () => {
+                isHovered = false;
+                startTime = performance.now();
+            });
         });
 
         goToScene(0);
         if (count === 1) return;
-        if (!reducedMotion.matches) {
-            animFrameId = requestAnimationFrame(tick);
-        }
+        animFrameId = requestAnimationFrame(tick);
     }
 
     function initReveals() {
