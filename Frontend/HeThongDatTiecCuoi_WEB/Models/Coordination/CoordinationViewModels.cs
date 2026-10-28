@@ -46,6 +46,7 @@ public sealed class HallManagerCoordinationItemViewModel
     public int? CoordinatorEmployeeId { get; set; }
     public string? CoordinatorName { get; set; }
     public string CoordinationState { get; set; } = string.Empty;
+    public string? IneligibilityReason { get; set; }
     public bool HasConflict { get; set; }
     public bool CanAssign { get; set; }
     public bool CanChangeOrCancel { get; set; }

@@ -30,6 +30,7 @@
     document.querySelectorAll('.sca-ajax').forEach(form => {
         form.addEventListener('submit', async event => {
             event.preventDefault();
+            if (form.dataset.scheduleLookup === 'true' && form.dataset.scheduleReady !== 'true') return;
             if (!form.reportValidity()) return;
             if (form.querySelector('.danger, .sca-danger') && !confirm('Xác nhận từ chối yêu cầu này?')) return;
 

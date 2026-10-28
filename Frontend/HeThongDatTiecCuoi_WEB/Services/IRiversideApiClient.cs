@@ -473,6 +473,8 @@ public interface IRiversideApiClient
     Task<ApiCallResult<ScheduleChangeViewModel>> WithdrawScheduleChangeAsync(int id, string bookingCode, string phoneNumber, string reason, CancellationToken cancellationToken);
     Task<ApiCallResult<ScheduleChangePaymentViewModel>> GetScheduleChangePaymentStatusAsync(int id, string bookingCode, string phoneNumber, CancellationToken cancellationToken);
     Task<ApiCallResult<List<ScheduleChangeViewModel>>> GetHallManagerScheduleChangesAsync(string accessToken, string? status, CancellationToken cancellationToken);
+    Task<ApiCallResult<HallManagerScheduleChangeOptionsViewModel>> GetHallManagerScheduleChangeOptionsAsync(string accessToken, CancellationToken cancellationToken);
+    Task<ApiCallResult<List<ScheduleChangeAvailabilityViewModel>>> GetHallManagerScheduleChangeAvailabilityAsync(string accessToken, int bookingId, DateTime date, string shift, CancellationToken cancellationToken);
     Task<ApiCallResult<ScheduleChangeViewModel>> GetHallManagerScheduleChangeAsync(string accessToken, int id, CancellationToken cancellationToken);
     Task<ApiCallResult<ScheduleChangeViewModel>> CreateHallManagerScheduleChangeAsync(string accessToken, HallManagerCreateScheduleChangeInput input, CancellationToken cancellationToken);
     Task<ApiCallResult<ScheduleChangeViewModel>> ReviewScheduleChangeAsync(string accessToken, int id, string reviewResult, CancellationToken cancellationToken);

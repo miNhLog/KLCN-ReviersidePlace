@@ -33,6 +33,7 @@ public sealed class HallManagerCoordinationKpiDto
 
 public sealed class HallManagerCoordinationItemDto : EventCoordinationListItemDto
 {
+    public string? IneligibilityReason { get; set; }
     public int TableCount { get; set; }
     public bool CanAssign { get; set; }
     public bool CanChangeOrCancel { get; set; }

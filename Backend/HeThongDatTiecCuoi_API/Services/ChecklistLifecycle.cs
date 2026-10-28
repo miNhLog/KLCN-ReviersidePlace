@@ -19,11 +19,11 @@ public static class ChecklistLifecycle
         ("Sau tiệc", "Ghi nhận tổng kết ca điều phối", 1)
     ];
 
-    public static void AddHistory(PartyChecklist checklist, int? userId, string actor, string action, string text) =>
+    public static void AddHistory(PartyChecklist checklist, int? userId, string actor, string action, string text, DateTime? timestamp = null) =>
         checklist.History.Add(new PartyChecklistHistory
         {
             ActorUserId = userId, ActorName = actor, Action = action, Text = text,
-            Timestamp = RiversideBusinessClock.Now
+            Timestamp = timestamp ?? RiversideBusinessClock.Now
         });
 
     public static async Task<PartyChecklist> EnsureAsync(ApplicationDbContext db, int bookingId,

@@ -69,7 +69,11 @@ public sealed class NotificationService : INotificationService
         NotificationId = item.NotificationId, Type = item.Type, Title = item.Title, Message = item.Message,
         RelatedEntityType = item.RelatedEntityType, RelatedEntityId = item.RelatedEntityId, IsRead = item.IsRead,
         ReadAt = item.ReadAt, CreatedAt = item.CreatedAt,
-        NavigationUrl = item.Type == NotificationTypeCodes.IncidentCreated || item.Type == NotificationTypeCodes.IncidentUpdated
+        NavigationUrl = (item.Type == NotificationTypeCodes.CoordinationAssigned || item.Type == NotificationTypeCodes.CoordinationChanged || item.Type == NotificationTypeCodes.CoordinationCancelled) &&
+            item.RelatedEntityType == AuditEntityNames.CoordinationAssignment && item.RelatedEntityId > 0 &&
+            (item.RecipientUser.Role.RoleName == RoleNames.Coordinator || item.RecipientUser.Role.RoleName == RoleNames.HallManager)
+            ? "/dieu-phoi/checklist?bookingId=" + item.RelatedEntityId + (item.Type == NotificationTypeCodes.CoordinationCancelled ? "&tab=history" : "") :
+            item.Type == NotificationTypeCodes.IncidentCreated || item.Type == NotificationTypeCodes.IncidentUpdated
             ? (item.RecipientUser.Role.RoleName == RoleNames.Coordinator ? "/dieu-phoi/su-co?incidentId=" + item.RelatedEntityId :
                 item.RecipientUser.Role.RoleName == RoleNames.HallManager ? "/quan-ly-sanh/su-co?incidentId=" + item.RelatedEntityId :
                 "/quan-ly/su-co?incidentId=" + item.RelatedEntityId) :

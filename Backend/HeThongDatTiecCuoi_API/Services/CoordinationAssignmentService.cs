@@ -18,11 +18,14 @@ public sealed class CoordinationAssignmentService : ICoordinationAssignmentServi
     private const string StateConflict = "CONFLICT";
     private readonly ApplicationDbContext _context;
     private readonly INotificationService _notifications;
+    private readonly ILogger<CoordinationAssignmentService>? _logger;
 
-    public CoordinationAssignmentService(ApplicationDbContext context, INotificationService notifications)
+    public CoordinationAssignmentService(ApplicationDbContext context, INotificationService notifications,
+        ILogger<CoordinationAssignmentService>? logger = null)
     {
         _context = context;
         _notifications = notifications;
+        _logger = logger;
     }
 
     public async Task<ServiceResult<HallManagerCoordinationListDto>> GetHallManagerListAsync(int userId,
@@ -48,6 +51,8 @@ public sealed class CoordinationAssignmentService : ICoordinationAssignmentServi
 
         var conflicts = HallManagerQueryScope.ConflictBookingIds(_context);
         var state = filter.CoordinationStatus?.Trim().ToUpperInvariant();
+        if (state is StateAssigned or StateUnassigned or StateConflict)
+            query = query.Where(b => b.Status.StatusCode == BookingStatusCodes.Confirmed || b.Status.StatusCode == BookingStatusCodes.Preparing);
         if (state == StateAssigned)
             query = query.Where(b => b.CoordinationAssignments.Any(a => a.Status.StatusCode == CoordinationAssignmentStatusCodes.Assigned) &&
                 !conflicts.Contains(b.BookingId));
@@ -55,6 +60,10 @@ public sealed class CoordinationAssignmentService : ICoordinationAssignmentServi
             query = query.Where(b => !b.CoordinationAssignments.Any(a => a.Status.StatusCode == CoordinationAssignmentStatusCodes.Assigned));
         else if (state == StateConflict)
             query = query.Where(b => conflicts.Contains(b.BookingId));
+        else if (state == "CANCELLED") query = query.Where(b => b.Status.StatusCode == BookingStatusCodes.Cancelled);
+        else if (state == "COMPLETED") query = query.Where(b => b.Status.StatusCode == BookingStatusCodes.Completed);
+        else if (state == "INELIGIBLE") query = query.Where(b => b.Status.StatusCode != BookingStatusCodes.Confirmed &&
+            b.Status.StatusCode != BookingStatusCodes.Preparing && b.Status.StatusCode != BookingStatusCodes.Cancelled && b.Status.StatusCode != BookingStatusCodes.Completed);
 
         var page = Math.Max(1, filter.Page);
         var pageSize = Math.Clamp(filter.PageSize, 1, 50);
@@ -83,8 +92,9 @@ public sealed class CoordinationAssignmentService : ICoordinationAssignmentServi
                 HallId = x.HallId, HallName = x.HallName, CustomerName = x.CustomerName,
                 TableCount = (int)Math.Ceiling(x.GuestCount / 10m), BookingStatusCode = x.BookingStatusCode,
                 BookingStatusName = x.BookingStatusName, CoordinatorEmployeeId = x.Coordinator?.Id,
-                CoordinatorName = x.Coordinator?.Name, HasConflict = x.HasConflict,
-                CoordinationState = x.HasConflict ? StateConflict : x.Coordinator is null ? StateUnassigned : StateAssigned,
+                CoordinatorName = x.Coordinator?.Name, HasConflict = IsEligible(x.BookingStatusCode, x.EventDate) && x.HasConflict,
+                CoordinationState = DisplayState(x.BookingStatusCode, x.EventDate, x.Coordinator?.Id, x.HasConflict),
+                IneligibilityReason = IneligibilityReason(x.BookingStatusCode, x.EventDate),
                 CanAssign = IsEligible(x.BookingStatusCode, x.EventDate) && x.Coordinator is null,
                 CanChangeOrCancel = IsEligible(x.BookingStatusCode, x.EventDate) && x.Coordinator is not null
             }).ToList(),
@@ -250,6 +260,7 @@ public sealed class CoordinationAssignmentService : ICoordinationAssignmentServi
             bookingStatusCode == BookingStatusCodes.Cancelled ? "cancelled" : null, cancellationToken);
         var assignments = await _context.CoordinationAssignments
             .Include(a => a.Coordinator).Include(a => a.Status)
+            .Include(a => a.Booking).ThenInclude(b => b.HallSchedule).ThenInclude(s => s.Hall)
             .Where(a => a.BookingId == bookingId && a.Status.StatusCode == CoordinationAssignmentStatusCodes.Assigned)
             .ToListAsync(cancellationToken);
         if (assignments.Count == 0) return;
@@ -261,12 +272,15 @@ public sealed class CoordinationAssignmentService : ICoordinationAssignmentServi
                 target == CoordinationAssignmentStatusCodes.Completed ? AuditActions.CoordinationCompleted : AuditActions.CoordinationCancelled,
                 new { assignment.CoordinatorEmployeeId, Status = CoordinationAssignmentStatusCodes.Assigned },
                 new { assignment.CoordinatorEmployeeId, Status = target }, reason ?? $"Đồng bộ theo trạng thái tiệc {bookingStatusCode}.");
+            var booking = assignment.Booking;
+            var partyDescription = $"{booking.BookingCode} · {booking.HallSchedule.Date:dd/MM/yyyy} · {booking.HallSchedule.Shift} · {booking.HallSchedule.Hall.HallName}";
+            var outcome = target == CoordinationAssignmentStatusCodes.Completed
+                ? "Nhiệm vụ điều phối đã hoàn tất." : "Dừng thực hiện nhiệm vụ điều phối do tiệc đã bị hủy.";
+            var reasonText = string.IsNullOrWhiteSpace(reason) ? "" : $" Lý do: {reason.Trim()}";
             await _notifications.AddAsync(assignment.Coordinator.UserId, actorUserId,
                 NotificationTypeCodes.CoordinationCancelled,
                 target == CoordinationAssignmentStatusCodes.Completed ? "Tiệc đã hoàn tất" : "Tiệc đã bị hủy",
-                target == CoordinationAssignmentStatusCodes.Completed
-                    ? "Nhiệm vụ điều phối đã được chuyển sang hoàn tất."
-                    : "Nhiệm vụ điều phối đã bị hủy theo trạng thái tiệc.",
+                $"{partyDescription}. {outcome}{reasonText} Mở checklist để xem lịch sử.",
                 AuditEntityNames.CoordinationAssignment, bookingId, cancellationToken);
         }
     }
@@ -366,9 +380,18 @@ public sealed class CoordinationAssignmentService : ICoordinationAssignmentServi
                 Message = active is null ? "Phân công điều phối viên thành công." : "Thay đổi điều phối viên thành công." },
                 active is null ? StatusCodes.Status201Created : StatusCodes.Status200OK);
         }
-        catch (DbUpdateException)
+        catch (DbUpdateConcurrencyException)
+        {
+            return ServiceResult<CoordinationMutationResultDto>.Failure("Phân công vừa được người khác cập nhật. Vui lòng tải lại.", StatusCodes.Status409Conflict);
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is Microsoft.Data.SqlClient.SqlException { Number: 2601 or 2627 })
         {
             return ServiceResult<CoordinationMutationResultDto>.Failure("Phân công bị xung đột hoặc dữ liệu vừa được thay đổi. Vui lòng tải lại.", StatusCodes.Status409Conflict);
+        }
+        catch (DbUpdateException ex)
+        {
+            _logger?.LogError(ex, "Không lưu được phân công cho tiệc {BookingId}.", bookingId);
+            return ServiceResult<CoordinationMutationResultDto>.Failure("Không thể lưu phân công do lỗi dữ liệu hệ thống. Vui lòng liên hệ quản trị viên để kiểm tra nhật ký lỗi.", StatusCodes.Status500InternalServerError);
         }
         catch (DBConcurrencyException)
         {
@@ -456,14 +479,32 @@ public sealed class CoordinationAssignmentService : ICoordinationAssignmentServi
     private static bool IsEligible(string status, DateTime eventDate) => eventDate.Date >= DateTime.Today &&
         status is BookingStatusCodes.Confirmed or BookingStatusCodes.Preparing;
 
+    private static string DisplayState(string status, DateTime date, int? coordinatorId, bool conflict) =>
+        !IsEligible(status, date) ? status switch
+        {
+            BookingStatusCodes.Cancelled => "CANCELLED",
+            BookingStatusCodes.Completed => "COMPLETED",
+            _ => "INELIGIBLE"
+        } : conflict ? StateConflict : coordinatorId.HasValue ? StateAssigned : StateUnassigned;
+
+    private static string? IneligibilityReason(string status, DateTime date) => status switch
+    {
+        BookingStatusCodes.Cancelled => "Tiệc đã hủy, không cần phân công và không tính vào KPI điều phối.",
+        BookingStatusCodes.Completed => "Tiệc đã hoàn tất, không cần phân công và không tính vào KPI điều phối.",
+        _ when date.Date < DateTime.Today => "Đã qua ngày tổ chức, chỉ xem lịch sử và không tính vào KPI điều phối.",
+        _ when !IsEligible(status, date) => "Tiệc chưa đủ điều kiện phân công. Chỉ tiệc đã xác nhận hoặc đang chuẩn bị mới được tính vào KPI điều phối.",
+        _ => null
+    };
+
     private static HallManagerCoordinationItemDto ToItem(BookingSnapshot x, int? coordinatorId, string? coordinatorName) => new()
     {
         BookingId = x.BookingId, BookingCode = x.BookingCode, CustomerName = x.CustomerName,
         EventDate = x.EventDate, Shift = x.Shift, HallId = x.HallId, HallName = x.HallName,
         TableCount = (int)Math.Ceiling(x.GuestCount / 10m), BookingStatusCode = x.BookingStatusCode,
         BookingStatusName = x.BookingStatusName, CoordinatorEmployeeId = coordinatorId,
-        CoordinatorName = coordinatorName, HasConflict = x.HasConflict,
-        CoordinationState = x.HasConflict ? StateConflict : coordinatorId.HasValue ? StateAssigned : StateUnassigned,
+        CoordinatorName = coordinatorName, HasConflict = IsEligible(x.BookingStatusCode, x.EventDate) && x.HasConflict,
+        CoordinationState = DisplayState(x.BookingStatusCode, x.EventDate, coordinatorId, x.HasConflict),
+        IneligibilityReason = IneligibilityReason(x.BookingStatusCode, x.EventDate),
         CanAssign = IsEligible(x.BookingStatusCode, x.EventDate) && !coordinatorId.HasValue,
         CanChangeOrCancel = IsEligible(x.BookingStatusCode, x.EventDate) && coordinatorId.HasValue
     };

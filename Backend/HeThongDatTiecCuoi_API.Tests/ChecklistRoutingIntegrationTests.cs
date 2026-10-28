@@ -14,10 +14,12 @@ public sealed class ChecklistRoutingIntegrationTests(EventCoordinationApiFactory
     [InlineData("task")]
     [InlineData("note")]
     [InlineData("add")]
+    [InlineData("delete")]
     [InlineData("submit")]
     [InlineData("approve")]
     [InlineData("return")]
     [InlineData("initialize")]
+    [InlineData("repair-timing")]
     public async Task OperationUrls_ReachAuthorization_InsteadOfRouting404(string operation)
     {
         using var client = factory.CreateClient(new WebApplicationFactoryClientOptions

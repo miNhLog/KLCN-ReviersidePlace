@@ -52,7 +52,7 @@ public sealed class ChecklistServiceTests
     {
         await using var f = await Fixture.Create();
         var c = await f.Db.PartyChecklists.Include(x => x.Tasks).SingleAsync();
-        foreach (var t in c.Tasks) t.Status = "done";
+        foreach (var t in c.Tasks) { t.Status = "done"; ChecklistLifecycle.AddHistory(c, 200, "Điều phối", $"TASK:{t.Id}", $"Công việc “{t.Name}”: Chưa làm → Hoàn thành.", f.Clock.LocalNow); }
         c.State = "review"; await f.Db.SaveChangesAsync();
         var result = await f.Run(100, "return", new() { Version = c.Version, TaskId = c.Tasks.First().Id, Note = "Kiểm tra lại thiết bị" });
         Assert.True(result.Succeeded, result.Error);
@@ -106,7 +106,7 @@ public sealed class ChecklistServiceTests
     {
         await using var f = await Fixture.Create();
         var c = await f.Db.PartyChecklists.Include(x => x.Tasks).SingleAsync();
-        foreach (var t in c.Tasks) t.Status = "done";
+        foreach (var t in c.Tasks) { t.Status = "done"; ChecklistLifecycle.AddHistory(c, 200, "Điều phối", $"TASK:{t.Id}", $"Công việc “{t.Name}”: Chưa làm → Hoàn thành.", f.Clock.LocalNow); }
         c.State = "review"; await f.Db.SaveChangesAsync();
         var due = RiversideBusinessClock.Today.AddDays(3);
         var added = await f.Run(100, "add", new() { Version = c.Version, Name = "Chuẩn bị thêm bàn chay", Group = "Trước tiệc", DueDate = due, Required = false });
@@ -133,13 +133,210 @@ public sealed class ChecklistServiceTests
         Assert.Equal("done", (await verify.PartyChecklistTasks.SingleAsync(t => t.Id == taskId)).Status);
     }
 
+    [Theory]
+    [InlineData("Ca trưa", "Trong tiệc", 10, 30)]
+    [InlineData("Ca tối", "Trong tiệc", 17, 30)]
+    [InlineData("Ca trưa", "Sau tiệc", 14, 0)]
+    [InlineData("Ca tối", "Sau tiệc", 21, 30)]
+    public async Task TaskTiming_RejectsEarlyRequests_AndOpensAtExactVietnamTime(string shift, string group, int hour, int minute)
+    {
+        await using var f = await Fixture.Create();
+        var schedule = await f.Db.HallSchedules.SingleAsync(); schedule.Shift = shift;
+        var c = await f.Db.PartyChecklists.Include(x => x.Tasks).SingleAsync();
+        var task = c.Tasks.First(t => t.Group == group);
+        f.Clock.LocalNow = schedule.Date.Date.AddHours(hour).AddMinutes(minute).AddSeconds(-1);
+        await f.Db.SaveChangesAsync();
+        var version = c.Version; var histories = await f.Db.PartyChecklistHistory.CountAsync();
+        foreach (var status in new[] { "doing", "done" })
+            Assert.Equal(409, (await f.Run(200, "task", new() { Version = version, TaskId = task.Id, Status = status })).StatusCode);
+        Assert.Equal(version, c.Version); Assert.Equal(histories, await f.Db.PartyChecklistHistory.CountAsync());
+        var dto = Assert.Single((await f.Service.GetAsync(200, RoleNames.Coordinator, default)).Value!.Parties);
+        Assert.False(dto.Tasks.Single(t => t.Id == task.Id).CanComplete);
+        Assert.False(dto.CanHandover); Assert.NotNull(dto.ShiftHours);
+        f.Clock.LocalNow = f.Clock.LocalNow.AddSeconds(1);
+        Assert.True((await f.Run(200, "task", new() { Version = c.Version, TaskId = task.Id, Status = "doing" })).Succeeded);
+        Assert.True((await f.Run(200, "task", new() { Version = c.Version, TaskId = task.Id, Status = "done" })).Succeeded);
+        Assert.Equal(f.Clock.LocalNow, task.CompletedAt);
+    }
+
+    [Fact]
+    public async Task Preparation_ConfirmationMayFinishEarly_PhysicalChecksOpenPreviousDay()
+    {
+        await using var f = await Fixture.Create();
+        var schedule = await f.Db.HallSchedules.SingleAsync();
+        var c = await f.Db.PartyChecklists.Include(x => x.Tasks).SingleAsync();
+        f.Clock.LocalNow = schedule.Date.AddMonths(-1);
+        foreach (var task in c.Tasks.Where(t => t.Name is "Xác nhận thực đơn và số bàn với bếp" or "Đối chiếu yêu cầu đặc biệt của khách"))
+            Assert.True((await f.Run(200, "task", new() { Version = c.Version, TaskId = task.Id, Status = "done" })).Succeeded);
+        var physical = c.Tasks.First(t => t.Name == "Kiểm tra bố trí bàn và sơ đồ sảnh");
+        Assert.Equal(409, (await f.Run(200, "task", new() { Version = c.Version, TaskId = physical.Id, Status = "done" })).StatusCode);
+        f.Clock.LocalNow = schedule.Date.Date.AddDays(-1);
+        Assert.True((await f.Run(200, "task", new() { Version = c.Version, TaskId = physical.Id, Status = "done" })).Succeeded);
+    }
+
+    [Fact]
+    public async Task Handover_BlocksPrematureSubmitAndApproval_EvenWithAllTasksDone()
+    {
+        await using var f = await Fixture.Create();
+        var schedule = await f.Db.HallSchedules.SingleAsync();
+        var c = await f.Db.PartyChecklists.Include(x => x.Tasks).SingleAsync();
+        f.Clock.LocalNow = schedule.Date.Date.AddHours(21.5).AddSeconds(-1);
+        foreach (var task in c.Tasks) { task.Status = "done"; ChecklistLifecycle.AddHistory(c, 200, "Điều phối", $"TASK:{task.Id}", $"Công việc “{task.Name}”: Chưa làm → Hoàn thành.", f.Clock.LocalNow); }
+        await f.Db.SaveChangesAsync();
+        Assert.Equal(409, (await f.Run(200, "submit", new() { Version = c.Version })).StatusCode);
+        c.State = "review"; await f.Db.SaveChangesAsync();
+        Assert.Equal(409, (await f.Run(100, "approve", new() { Version = c.Version })).StatusCode);
+        f.Clock.LocalNow = schedule.Date.Date.AddHours(22);
+        // Elapsed time alone must not make the previous invalid completions legitimate.
+        Assert.Equal(409, (await f.Run(100, "approve", new() { Version = c.Version })).StatusCode);
+    }
+
+    [Fact]
+    public async Task TimingRepair_PreservesHistoryAndValidWork_RestoresKpi_AndIsManagerScoped()
+    {
+        await using var f = await Fixture.Create();
+        var schedule = await f.Db.HallSchedules.SingleAsync();
+        var c = await f.Db.PartyChecklists.Include(x => x.Tasks).Include(x => x.History).SingleAsync();
+        f.Clock.LocalNow = schedule.Date.AddMonths(-1);
+        foreach (var t in c.Tasks) { t.Status = "done"; ChecklistLifecycle.AddHistory(c, 200, "Điều phối", $"TASK:{t.Id}", $"Công việc “{t.Name}”: Chưa làm → Hoàn thành.", f.Clock.LocalNow); }
+        c.State = "approved";
+        ChecklistLifecycle.AddHistory(c, 100, "Quản lý", "APPROVE", "Bàn giao cũ", f.Clock.LocalNow);
+        await f.Db.SaveChangesAsync(); var historyCount = c.History.Count;
+        Assert.Equal(6, (await f.Service.IncompleteCountAsync(200, RoleNames.Coordinator, default)).Value);
+        Assert.Equal(403, (await f.Run(200, "repair-timing", new() { Version = c.Version, Note = "L01" })).StatusCode);
+        Assert.Equal(404, (await f.Service.ExecuteAsync(101, RoleNames.HallManager, 1, "repair-timing", new() { Version = c.Version, Note = "L01" }, default)).StatusCode);
+        Assert.True((await f.Run(100, "repair-timing", new() { Version = c.Version, Note = "L01: mở lại kết quả sớm" })).Succeeded);
+        Assert.Equal("active", c.State); Assert.Equal(2, c.Tasks.Count(t => t.Status == "done"));
+        Assert.Equal(historyCount + 7, c.History.Count); Assert.Contains(c.History, h => h.Text == "Bàn giao cũ");
+        Assert.Equal(6, (await f.Service.IncompleteCountAsync(200, RoleNames.Coordinator, default)).Value);
+        f.Clock.LocalNow = schedule.Date.AddHours(22);
+        foreach (var task in c.Tasks.Where(t => t.Status != "done"))
+            Assert.True((await f.Run(200, "task", new() { Version = c.Version, TaskId = task.Id, Status = "done" })).Succeeded);
+        Assert.True((await f.Run(200, "submit", new() { Version = c.Version })).Succeeded);
+        Assert.True((await f.Run(100, "approve", new() { Version = c.Version })).Succeeded);
+        Assert.False(Assert.Single((await f.Service.GetAsync(100, RoleNames.HallManager, default)).Value!.Parties).CanRepairTiming);
+    }
+
+    [Fact]
+    public async Task NotesAndRepeatedDone_DoNotRewriteCompletionEvidence()
+    {
+        await using var f = await Fixture.Create();
+        var c = await f.Db.PartyChecklists.Include(x => x.Tasks).SingleAsync(); var task = c.Tasks.First();
+        Assert.True((await f.Run(200, "task", new() { Version = c.Version, TaskId = task.Id, Status = "done" })).Succeeded);
+        var completed = task.CompletedAt; f.Clock.LocalNow = f.Clock.LocalNow.AddDays(1);
+        Assert.True((await f.Run(200, "note", new() { Version = c.Version, TaskId = task.Id, Note = "Ghi chú bổ sung" })).Succeeded);
+        Assert.True((await f.Run(200, "task", new() { Version = c.Version, TaskId = task.Id, Status = "done" })).Succeeded);
+        Assert.Equal(completed, task.CompletedAt);
+        Assert.True((await f.Run(200, "task", new() { Version = c.Version, TaskId = task.Id, Status = "todo" })).Succeeded);
+        Assert.Null(task.CompletedAt);
+    }
+
+    [Fact]
+    public async Task CompletionEvidence_SurvivesFreshContext_WithoutCompletionColumn()
+    {
+        await using var f = await Fixture.Create();
+        var c = await f.Db.PartyChecklists.Include(x => x.Tasks).SingleAsync(); var task = c.Tasks.First();
+        Assert.True((await f.Run(200, "task", new() { Version = c.Version, TaskId = task.Id, Status = "done" })).Succeeded);
+        var completed = f.Clock.LocalNow;
+        f.Clock.LocalNow = completed.AddDays(1);
+        Assert.True((await f.Run(200, "note", new() { Version = c.Version, TaskId = task.Id, Note = "Ghi chú sau khi hoàn thành" })).Succeeded);
+        await using var fresh = new ApplicationDbContext(f.Options);
+        var service = new ChecklistService(fresh, f.Clock);
+        var dto = Assert.Single((await service.GetAsync(200, RoleNames.Coordinator, default)).Value!.Parties);
+        Assert.Equal(completed, dto.Tasks.Single(t => t.Id == task.Id).CompletedAt);
+        Assert.True(dto.Tasks.Single(t => t.Id == task.Id).CompletionValid);
+        Assert.Equal(7, (await service.IncompleteCountAsync(200, RoleNames.Coordinator, default)).Value);
+    }
+
+    [Fact]
+    public async Task Delete_RemovesTask_RecalculatesProgress_AndKeepsAuditAndBookingState()
+    {
+        await using var f = await Fixture.Create();
+        var c = await f.Db.PartyChecklists.Include(x => x.Tasks).Include(x => x.History).SingleAsync();
+        var task = c.Tasks.First();
+        Assert.True((await f.Run(200, "task", new() { Version = c.Version, TaskId = task.Id, Status = "done" })).Succeeded);
+        Assert.True((await f.Run(200, "note", new() { Version = c.Version, TaskId = task.Id, Note = "Ghi chú cần giữ trong lịch sử" })).Succeeded);
+        var id = task.Id; var name = task.Name; var oldVersion = c.Version; var histories = c.History.Select(h => h.Id).ToArray();
+        Assert.True((await f.Run(100, "delete", new() { Version = oldVersion, TaskId = id, Note = "Công việc trùng, bỏ khỏi checklist" })).Succeeded);
+        Assert.False(await f.Db.PartyChecklistTasks.AnyAsync(t => t.Id == id));
+        Assert.Equal(7, c.Tasks.Count); Assert.Equal(oldVersion + 1, c.Version);
+        var deletion = Assert.Single(c.History, h => h.Action == "DELETE");
+        Assert.Contains(name, deletion.Text); Assert.Contains("Ghi chú cần giữ", deletion.Text);
+        Assert.Contains("Công việc trùng", deletion.Text); Assert.Contains("Hoàn thành", deletion.Text);
+        Assert.All(histories, id => Assert.Contains(c.History, h => h.Id == id));
+        var dto = Assert.Single((await f.Service.GetAsync(100, RoleNames.HallManager, default)).Value!.Parties);
+        Assert.Equal(7, dto.Tasks.Count); Assert.DoesNotContain(dto.Tasks, t => t.Id == id);
+        Assert.Equal(BookingStatusCodes.Confirmed, (await f.Db.WeddingBookings.Include(b => b.Status).SingleAsync()).Status.StatusCode);
+    }
+
+    [Fact]
+    public async Task Delete_PendingWork_ReducesOutstandingCount_AndReopensReview()
+    {
+        await using var f = await Fixture.Create();
+        var c = await f.Db.PartyChecklists.Include(x => x.Tasks).SingleAsync(); var task = c.Tasks.First();
+        Assert.Equal(8, (await f.Service.IncompleteCountAsync(200, RoleNames.Coordinator, default)).Value);
+        Assert.True((await f.Run(100, "delete", new() { Version = c.Version, TaskId = task.Id, Note = "Không áp dụng cho tiệc này" })).Succeeded);
+        Assert.Equal(7, (await f.Service.IncompleteCountAsync(200, RoleNames.Coordinator, default)).Value);
+        foreach (var t in c.Tasks)
+            Assert.True((await f.Run(200, "task", new() { Version = c.Version, TaskId = t.Id, Status = "done" })).Succeeded);
+        Assert.True((await f.Run(200, "submit", new() { Version = c.Version })).Succeeded);
+        var deleted = c.Tasks.First().Id;
+        Assert.True((await f.Run(100, "delete", new() { Version = c.Version, TaskId = deleted, Note = "Loại bỏ công việc đã gộp" })).Succeeded);
+        Assert.Equal("active", c.State); Assert.Equal(6, c.Tasks.Count);
+        Assert.True((await f.Run(200, "submit", new() { Version = c.Version })).Succeeded);
+    }
+
+    [Fact]
+    public async Task Delete_RequiresManagerScopeReasonTaskAndCurrentVersion()
+    {
+        await using var f = await Fixture.Create();
+        var c = await f.Db.PartyChecklists.Include(x => x.Tasks).SingleAsync(); var id = c.Tasks.First().Id;
+        Assert.Equal(403, (await f.Run(200, "delete", new() { Version = c.Version, TaskId = id, Note = "Không được xóa" })).StatusCode);
+        Assert.Equal(404, (await f.Service.ExecuteAsync(101, RoleNames.HallManager, 1, "delete", new() { Version = c.Version, TaskId = id, Note = "Ngoài phạm vi" }, default)).StatusCode);
+        Assert.Equal(400, (await f.Run(100, "delete", new() { Version = c.Version, TaskId = id, Note = " " })).StatusCode);
+        Assert.Equal(409, (await f.Run(100, "delete", new() { Version = c.Version - 1, TaskId = id, Note = "Dữ liệu cũ" })).StatusCode);
+        Assert.Equal(409, (await f.Run(100, "delete", new() { Version = c.Version, TaskId = int.MaxValue, Note = "Công việc khác" })).StatusCode);
+        Assert.Equal(8, await f.Db.PartyChecklistTasks.CountAsync());
+        Assert.DoesNotContain(await f.Db.PartyChecklistHistory.ToListAsync(), h => h.Action == "DELETE");
+    }
+
+    [Theory]
+    [InlineData("approved")]
+    [InlineData("cancelled")]
+    public async Task Delete_CannotChangeLockedChecklist(string state)
+    {
+        await using var f = await Fixture.Create();
+        var c = await f.Db.PartyChecklists.Include(x => x.Tasks).SingleAsync(); c.State = state;
+        await f.Db.SaveChangesAsync();
+        Assert.Equal(409, (await f.Run(100, "delete", new() { Version = c.Version, TaskId = c.Tasks.First().Id, Note = "Thử xóa checklist đã khóa" })).StatusCode);
+        Assert.Equal(8, await f.Db.PartyChecklistTasks.CountAsync());
+    }
+
+    [Fact]
+    public async Task Delete_LastTask_DoesNotPermitEmptyHandover()
+    {
+        await using var f = await Fixture.Create();
+        var c = await f.Db.PartyChecklists.Include(x => x.Tasks).SingleAsync();
+        foreach (var task in c.Tasks.ToList())
+            Assert.True((await f.Run(100, "delete", new() { Version = c.Version, TaskId = task.Id, Note = "Không áp dụng" })).Succeeded);
+        Assert.Empty(c.Tasks);
+        Assert.Equal(409, (await f.Run(200, "submit", new() { Version = c.Version })).StatusCode);
+    }
+
+    private sealed class TestClock(DateTime localNow) : TimeProvider
+    {
+        public DateTime LocalNow { get; set; } = localNow;
+        public override DateTimeOffset GetUtcNow() => new DateTimeOffset(LocalNow, TimeSpan.FromHours(7)).ToUniversalTime();
+    }
+
     private sealed class Fixture : IAsyncDisposable
     {
         public DbContextOptions<ApplicationDbContext> Options { get; } = new DbContextOptionsBuilder<ApplicationDbContext>().UseInMemoryDatabase(Guid.NewGuid().ToString()).Options;
         public ApplicationDbContext Db { get; }
         public ChecklistService Service { get; }
+        public TestClock Clock { get; } = new(RiversideBusinessClock.Today.AddDays(3).AddHours(22));
         public CoordinationAssignmentService Assignments { get; }
-        private Fixture() { Db = new(Options); Service = new(Db); Assignments = new(Db, new NotificationService(Db)); }
+        private Fixture() { Db = new(Options); Service = new(Db, Clock); Assignments = new(Db, new NotificationService(Db)); }
         public Task<ServiceResult<string>> Run(int user, string action, ChecklistCommand command) => Service.ExecuteAsync(user, user == 100 ? RoleNames.HallManager : RoleNames.Coordinator, 1, action, command, default);
         public static async Task<Fixture> Create()
         {

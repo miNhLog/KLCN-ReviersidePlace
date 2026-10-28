@@ -8,6 +8,7 @@ using HeThongDatTiecCuoi_API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Xunit;
 
 namespace HeThongDatTiecCuoi_API.Tests;
@@ -117,8 +118,82 @@ public sealed class CoordinationAssignmentWriteTests
         Assert.Equal(RoleNames.HallManager, hall.Roles); Assert.Equal(RoleNames.Coordinator, coordinator.Roles);
     }
 
-    private static ApplicationDbContext CreateContext() => new(new DbContextOptionsBuilder<ApplicationDbContext>()
-        .UseInMemoryDatabase(Guid.NewGuid().ToString()).Options);
+    [Fact]
+    public async Task IneligibleParties_RemainVisible_WithExplicitStates_AndDoNotAppearInActionFiltersOrKpi()
+    {
+        await using var db = CreateContext(); Seed(db);
+        for (var id = 1; id <= 3; id++) AddBooking(db, id, 1, DateTime.Today.AddDays(id + 1), "Ca trưa");
+        AddBooking(db, 4, 1, DateTime.Today.AddDays(5), "Ca trưa", BookingStatusCodes.Pending);
+        AddBooking(db, 5, 1, DateTime.Today.AddDays(6), "Ca trưa", BookingStatusCodes.Completed);
+        await db.SaveChangesAsync(); var service = Service(db);
+        for (var id = 1; id <= 3; id++) Assert.True((await service.AssignAsync(100, id, new() { CoordinatorEmployeeId = 20 }, default)).Succeeded);
+        (await db.WeddingBookings.SingleAsync(b => b.BookingId == 3)).StatusId = 805;
+        await service.SynchronizeBookingAssignmentsAsync(3, BookingStatusCodes.Cancelled, 100, "Khách hủy", default);
+        await db.SaveChangesAsync();
+        var all = (await service.GetHallManagerListAsync(100, new(), default)).Value!;
+        Assert.Equal(5, all.TotalItems); Assert.Equal(2, all.Kpi.TotalRequired); Assert.Equal(2, all.Kpi.Assigned); Assert.Equal(0, all.Kpi.Unassigned);
+        var cancelled = all.Items.Single(b => b.BookingId == 3);
+        Assert.Equal("CANCELLED", cancelled.CoordinationState); Assert.Contains("không tính vào KPI", cancelled.IneligibilityReason!);
+        Assert.False(cancelled.CanAssign); Assert.False(cancelled.CanChangeOrCancel); Assert.False(cancelled.HasConflict);
+        Assert.Equal("INELIGIBLE", all.Items.Single(b => b.BookingId == 4).CoordinationState);
+        Assert.Equal("COMPLETED", all.Items.Single(b => b.BookingId == 5).CoordinationState);
+        var detail = (await service.GetHallManagerDetailAsync(100, 3, default)).Value!;
+        Assert.Equal("CANCELLED", detail.Booking.CoordinationState); Assert.Equal(cancelled.IneligibilityReason, detail.Booking.IneligibilityReason);
+        Assert.Contains(detail.History, h => h.StatusCode == CoordinationAssignmentStatusCodes.Cancelled);
+        Assert.Empty((await service.GetHallManagerListAsync(100, new() { CoordinationStatus = "UNASSIGNED" }, default)).Value!.Items);
+        Assert.Equal(2, (await service.GetHallManagerListAsync(100, new() { CoordinationStatus = "ASSIGNED" }, default)).Value!.Items.Count);
+        Assert.Equal(3, Assert.Single((await service.GetHallManagerListAsync(100, new() { CoordinationStatus = "CANCELLED" }, default)).Value!.Items).BookingId);
+        Assert.Equal(4, Assert.Single((await service.GetHallManagerListAsync(100, new() { CoordinationStatus = "INELIGIBLE" }, default)).Value!.Items).BookingId);
+    }
+
+    [Fact]
+    public async Task BookingCancellation_NotificationIdentifiesParty_AndOpensItsCancelledChecklistHistory()
+    {
+        await using var db = CreateContext(); Seed(db); var date = DateTime.Today.AddDays(2);
+        AddBooking(db, 1, 1, date, "Ca trưa"); await db.SaveChangesAsync(); var service = Service(db);
+        Assert.True((await service.AssignAsync(100, 1, new() { CoordinatorEmployeeId = 20 }, default)).Succeeded);
+        var booking = await db.WeddingBookings.SingleAsync(); booking.StatusId = 805;
+        await service.SynchronizeBookingAssignmentsAsync(1, BookingStatusCodes.Cancelled, 100, "Khách hủy tiệc", default);
+        await db.SaveChangesAsync();
+        var stored = await db.Notifications.SingleAsync(n => n.Title == "Tiệc đã bị hủy");
+        Assert.Contains("DT-1", stored.Message); Assert.Contains(date.ToString("dd/MM/yyyy"), stored.Message);
+        Assert.Contains("Ca trưa", stored.Message); Assert.Contains("Sảnh 1", stored.Message);
+        Assert.Contains("Dừng thực hiện", stored.Message); Assert.Contains("Khách hủy tiệc", stored.Message);
+        var notification = Assert.Single((await new NotificationService(db).GetRecentAsync(200, 5, default)), n => n.NotificationId == stored.NotificationId);
+        Assert.Equal("/dieu-phoi/checklist?bookingId=1&tab=history", notification.NavigationUrl);
+        var checklist = Assert.Single((await new ChecklistService(db).GetAsync(200, RoleNames.Coordinator, default)).Value!.Parties);
+        Assert.Equal(1, checklist.Id); Assert.Equal("cancelled", checklist.State); Assert.False(checklist.CanEdit);
+        Assert.Contains(checklist.History, h => h.Text.Contains("Khách hủy tiệc"));
+    }
+
+    [Theory]
+    [InlineData(false, StatusCodes.Status500InternalServerError)]
+    [InlineData(true, StatusCodes.Status409Conflict)]
+    public async Task SaveFailure_DistinguishesStorageErrorsFromConcurrentUpdates(bool concurrent, int expected)
+    {
+        var interceptor = new SaveFailureInterceptor();
+        await using var db = CreateContext(interceptor); Seed(db); AddBooking(db, 1, 1, DateTime.Today.AddDays(2), "Ca trưa");
+        await db.SaveChangesAsync();
+        interceptor.Failure = concurrent ? new DbUpdateConcurrencyException("simulated concurrency") : new DbUpdateException("simulated storage failure");
+        var result = await Service(db).AssignAsync(100, 1, new() { CoordinatorEmployeeId = 20 }, default);
+        Assert.Equal(expected, result.StatusCode);
+        if (!concurrent) Assert.DoesNotContain("xung đột", result.Error!);
+        Assert.Empty(await db.CoordinationAssignments.AsNoTracking().ToListAsync());
+    }
+
+    private sealed class SaveFailureInterceptor : SaveChangesInterceptor
+    {
+        public Exception? Failure { get; set; }
+        public override ValueTask<InterceptionResult<int>> SavingChangesAsync(DbContextEventData eventData,
+            InterceptionResult<int> result, CancellationToken cancellationToken = default)
+        {
+            if (Failure is not null) throw Failure;
+            return ValueTask.FromResult(result);
+        }
+    }
+
+    private static ApplicationDbContext CreateContext(SaveChangesInterceptor? interceptor = null) => new(new DbContextOptionsBuilder<ApplicationDbContext>()
+        .UseInMemoryDatabase(Guid.NewGuid().ToString()).AddInterceptors(interceptor is null ? [] : new[] { interceptor }).Options);
     private static CoordinationAssignmentService Service(ApplicationDbContext db) => new(db, new NotificationService(db));
 
     private static void Seed(ApplicationDbContext db, bool manageSecondHall = false)

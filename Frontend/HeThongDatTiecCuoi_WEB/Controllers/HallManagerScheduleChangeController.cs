@@ -14,6 +14,22 @@ public sealed class HallManagerScheduleChangeController : Controller
     public HallManagerScheduleChangeController(IRiversideApiClient api) => _api = api;
 
     [HttpGet]
+    public async Task<IActionResult> CreateOptions(CancellationToken cancellationToken)
+    {
+        var token = Request.Cookies["rp_api_token"];
+        if (string.IsNullOrWhiteSpace(token)) return Unauthorized(new { success = false, message = "Phiên đăng nhập đã hết hạn." });
+        return Result(await _api.GetHallManagerScheduleChangeOptionsAsync(token, cancellationToken));
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Availability(int bookingId, DateTime date, string shift, CancellationToken cancellationToken)
+    {
+        var token = Request.Cookies["rp_api_token"];
+        if (string.IsNullOrWhiteSpace(token)) return Unauthorized(new { success = false, message = "Phiên đăng nhập đã hết hạn." });
+        return Result(await _api.GetHallManagerScheduleChangeAvailabilityAsync(token, bookingId, date, shift, cancellationToken));
+    }
+
+    [HttpGet]
     public async Task<IActionResult> Index(string? status, string? search, int? id, CancellationToken cancellationToken)
     {
         var token = Request.Cookies["rp_api_token"];

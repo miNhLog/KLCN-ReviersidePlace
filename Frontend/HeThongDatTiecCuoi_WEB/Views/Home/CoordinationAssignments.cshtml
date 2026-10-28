@@ -2,7 +2,7 @@
 @{
     Layout = "_AdminLayout";
     ViewData["Title"] = "Phân công nhân viên điều phối";
-    string StateLabel(string state) => state switch { "ASSIGNED" => "Đã phân công", "CONFLICT" => "Xung đột lịch", _ => "Chưa phân công" };
+    string StateLabel(string state) => state switch { "ASSIGNED" => "Đã phân công", "CONFLICT" => "Xung đột lịch", "CANCELLED" => "Đã hủy", "COMPLETED" => "Đã hoàn tất", "INELIGIBLE" => "Chưa đủ điều kiện", _ => "Chưa phân công" };
     var filterCount = (string.IsNullOrWhiteSpace(Model.Search) ? 0 : 1) + (Model.HallId.HasValue ? 1 : 0) +
         (Model.EventDate.HasValue ? 1 : 0) + (string.IsNullOrWhiteSpace(Model.CoordinationStatus) ? 0 : 1);
 }
@@ -34,7 +34,7 @@
 
     <section class="coord-panel">
         <header class="coord-panel-header">
-            <div><h2>Danh sách tiệc cần điều phối</h2><p>@Model.Data.TotalItems tiệc phù hợp trong các sảnh bạn đang phụ trách</p></div>
+            <div><h2>Danh sách tiệc trong sảnh phụ trách</h2><p>@Model.Data.TotalItems tiệc phù hợp trong các sảnh bạn đang phụ trách. KPI chỉ tính tiệc đủ điều kiện cần điều phối; tiệc đã hủy/hoàn tất được giữ để tra cứu.</p></div>
             <span class="coord-scope-pill"><i class="fa-solid fa-lock"></i> Dữ liệu theo quyền sảnh</span>
         </header>
 
@@ -42,7 +42,7 @@
             <label class="coord-search"><span class="visually-hidden">Tìm kiếm</span><i class="fa-solid fa-magnifying-glass"></i><input type="search" name="search" value="@Model.Search" placeholder="Mã tiệc, khách hàng, điều phối viên..." autocomplete="off" /></label>
             <label><span>Sảnh</span><select name="hallId"><option value="">Tất cả sảnh phụ trách</option>@foreach (var hall in Model.Data.Halls) { <option value="@hall.Value" selected="@(Model.HallId?.ToString() == hall.Value ? "selected" : null)">@hall.Label</option> }</select></label>
             <label><span>Ngày tổ chức</span><input type="date" name="eventDate" value="@(Model.EventDate?.ToString("yyyy-MM-dd"))" /></label>
-            <label><span>Trạng thái</span><select name="coordinationStatus"><option value="">Tất cả trạng thái</option><option value="UNASSIGNED" selected="@(Model.CoordinationStatus == "UNASSIGNED" ? "selected" : null)">Chưa phân công</option><option value="ASSIGNED" selected="@(Model.CoordinationStatus == "ASSIGNED" ? "selected" : null)">Đã phân công</option><option value="CONFLICT" selected="@(Model.CoordinationStatus == "CONFLICT" ? "selected" : null)">Xung đột lịch</option></select></label>
+            <label><span>Trạng thái</span><select name="coordinationStatus"><option value="">Tất cả trạng thái</option><option value="UNASSIGNED" selected="@(Model.CoordinationStatus == "UNASSIGNED" ? "selected" : null)">Chưa phân công</option><option value="ASSIGNED" selected="@(Model.CoordinationStatus == "ASSIGNED" ? "selected" : null)">Đã phân công</option><option value="CONFLICT" selected="@(Model.CoordinationStatus == "CONFLICT" ? "selected" : null)">Xung đột lịch</option><option value="CANCELLED" selected="@(Model.CoordinationStatus == "CANCELLED" ? "selected" : null)">Tiệc đã hủy</option><option value="COMPLETED" selected="@(Model.CoordinationStatus == "COMPLETED" ? "selected" : null)">Tiệc đã hoàn tất</option><option value="INELIGIBLE" selected="@(Model.CoordinationStatus == "INELIGIBLE" ? "selected" : null)">Chưa đủ điều kiện</option></select></label>
             <button class="coord-filter-submit" type="submit"><i class="fa-solid fa-filter"></i><span>Lọc</span>@if (filterCount > 0) { <b>@filterCount</b> }</button>
             <a class="coord-filter-reset" asp-action="CoordinationAssignments" title="Xóa bộ lọc" aria-label="Xóa bộ lọc"><i class="fa-solid fa-rotate-left"></i></a>
         </form>
@@ -63,8 +63,8 @@
                         <td data-label="Ngày"><time datetime="@item.EventDate.ToString("yyyy-MM-dd")"><strong>@item.EventDate.ToString("dd/MM/yyyy")</strong><small>@item.EventDate.ToString("dddd", System.Globalization.CultureInfo.GetCultureInfo("vi-VN"))</small></time></td>
                         <td data-label="Ca"><span class="coord-shift"><i class="fa-regular @(item.Shift.Contains("tối", StringComparison.OrdinalIgnoreCase) ? "fa-moon" : "fa-sun")"></i>@item.Shift</span></td>
                         <td data-label="Số bàn"><strong>@item.TableCount</strong></td>
-                        <td data-label="Điều phối viên">@if (item.CoordinatorName is null) { <span class="coord-unassigned-person"><i class="fa-regular fa-user"></i> Chưa có</span> } else { <span class="coord-person"><span>@string.Concat(item.CoordinatorName.Split(' ', StringSplitOptions.RemoveEmptyEntries).TakeLast(2).Select(part => part[0])).ToUpperInvariant()</span><strong>@item.CoordinatorName</strong></span> }</td>
-                        <td data-label="Trạng thái"><span class="coord-state @item.CoordinationState.ToLowerInvariant()"><i></i>@StateLabel(item.CoordinationState)</span></td>
+                        <td data-label="Điều phối viên">@if (item.CoordinatorName is null) { <span class="coord-unassigned-person"><i class="fa-regular fa-user"></i> @(item.IneligibilityReason is null ? "Chưa có" : "Không áp dụng")</span> } else { <span class="coord-person"><span>@string.Concat(item.CoordinatorName.Split(' ', StringSplitOptions.RemoveEmptyEntries).TakeLast(2).Select(part => part[0])).ToUpperInvariant()</span><strong>@item.CoordinatorName</strong></span> }</td>
+                        <td data-label="Trạng thái"><span class="coord-state @item.CoordinationState.ToLowerInvariant()"><i></i>@StateLabel(item.CoordinationState)</span>@if (item.CoordinationState == "INELIGIBLE") { <small>@item.BookingStatusName</small> }@if (!string.IsNullOrWhiteSpace(item.IneligibilityReason)) { <small class="coord-ineligibility">@item.IneligibilityReason</small> }</td>
                         <td data-label="Thao tác" class="actions"><div class="coord-row-actions">
                             @if (item.CanAssign) { <button type="button" class="coord-action primary js-open-assignment" data-mode="assign" data-booking-id="@item.BookingId" data-booking-code="@item.BookingCode" data-customer="@item.CustomerName" data-hall="@item.HallName" data-date="@item.EventDate.ToString("dd/MM/yyyy")" data-shift="@item.Shift" data-tables="@item.TableCount"><i class="fa-solid fa-user-plus"></i><span>Phân công</span></button> }
                             @if (item.CanChangeOrCancel) { <button type="button" class="coord-action icon js-open-assignment" data-mode="change" data-booking-id="@item.BookingId" data-booking-code="@item.BookingCode" data-customer="@item.CustomerName" data-hall="@item.HallName" data-date="@item.EventDate.ToString("dd/MM/yyyy")" data-shift="@item.Shift" data-tables="@item.TableCount" data-current-coordinator-id="@item.CoordinatorEmployeeId" title="Thay đổi điều phối viên" aria-label="Thay đổi điều phối viên"><i class="fa-solid fa-user-pen"></i></button><button type="button" class="coord-action icon danger js-open-cancel" data-booking-id="@item.BookingId" data-booking-code="@item.BookingCode" data-coordinator="@item.CoordinatorName" title="Hủy phân công" aria-label="Hủy phân công"><i class="fa-solid fa-user-xmark"></i></button> }

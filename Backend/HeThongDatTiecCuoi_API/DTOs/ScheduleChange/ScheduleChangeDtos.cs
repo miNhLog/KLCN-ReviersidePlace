@@ -2,6 +2,11 @@ using System.ComponentModel.DataAnnotations;
 
 namespace HeThongDatTiecCuoi_API.DTOs.ScheduleChange;
 
+public sealed record HallManagerScheduleChangeBookingDto(int BookingId, string BookingCode, string CustomerName,
+    DateTime CurrentDate, string CurrentShift, string CurrentHallName, int GuestCount);
+public sealed record HallManagerScheduleChangeOptionsDto(DateTime MinimumNewDate, int ExceptionThresholdDays,
+    DateTime Today, List<HallManagerScheduleChangeBookingDto> Bookings);
+
 public class ScheduleChangeLookupRequest
 {
     [Required, StringLength(50)] public string BookingCode { get; init; } = string.Empty;
@@ -127,6 +132,7 @@ public sealed class ScheduleChangeAvailabilityDto
     public DateTime Date { get; init; }
     public string Shift { get; init; } = string.Empty;
     public decimal HallPrice { get; init; }
+    public int? MinimumCapacity { get; init; }
     public int MaximumCapacity { get; init; }
     public bool Available { get; init; }
     public string? UnavailableReason { get; init; }
