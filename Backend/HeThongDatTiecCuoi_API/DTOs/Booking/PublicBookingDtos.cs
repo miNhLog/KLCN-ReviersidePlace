@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace HeThongDatTiecCuoi_API.DTOs.Booking;
 
@@ -119,4 +119,14 @@ public sealed class PublicBookingDetailDto
 
     public string? ConsultantName { get; set; }
     public string? ConsultantPhone { get; set; }
+
+    public int? ContractId { get; set; }
+    public string? ContractCode { get; set; }
+    public string? ContractStatusCode { get; set; }
+    public string? ContractStatusName { get; set; }
+    public string? ContractContent { get; set; }
+    public string? PaymentTerms { get; set; }
+    public decimal? ContractTotalValue { get; set; }
+    public decimal? ContractPaidAmount { get; set; }
+    public bool HasContract => ContractId.HasValue;
 }

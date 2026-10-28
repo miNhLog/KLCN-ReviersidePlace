@@ -20,13 +20,16 @@ public sealed class AdminBookingController : ControllerBase
     private readonly ApplicationDbContext _context;
     private readonly IStatusService _statusService;
     private readonly ICoordinationAssignmentService _coordinationAssignments;
+    private readonly IHallPricingPolicyService _hallPricing;
 
     public AdminBookingController(ApplicationDbContext context, IStatusService statusService,
-        ICoordinationAssignmentService coordinationAssignments)
+        ICoordinationAssignmentService coordinationAssignments,
+        IHallPricingPolicyService? hallPricing = null)
     {
         _context = context;
         _statusService = statusService;
         _coordinationAssignments = coordinationAssignments;
+        _hallPricing = hallPricing ?? new HallPricingPolicyService();
     }
 
     [HttpGet]
@@ -283,7 +286,7 @@ public sealed class AdminBookingController : ControllerBase
         var bookedId = await _statusService.GetStatusIdAsync(StatusGroups.HallSchedule, HallScheduleStatusCodes.Booked);
         var tableCount = request.TableCount + request.SpareTableCount;
         var menuPrice = menu?.PricePerTable;
-        var hallPrice = hall.RentalPrice;
+        var hallPrice = _hallPricing.CalculateHallPrice(hall.RentalPrice, shift, resolvedSchedule.Date);
         var decorPrice = decor?.Gia;
 
         var serviceIds = request.Services.Select(x => x.ServiceId).ToList();

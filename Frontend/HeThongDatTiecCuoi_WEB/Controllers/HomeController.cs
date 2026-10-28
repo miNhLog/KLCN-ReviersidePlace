@@ -38,7 +38,7 @@ public sealed class HomeController : Controller
         await Task.WhenAll(hallsTask, bannersTask);
         var result = await hallsTask;
         var bannerResult = await bannersTask;
-        var banners = bannerResult.Succeeded && bannerResult.Value is { Count: > 0 }
+        var banners = (bannerResult.Succeeded && bannerResult.Value is not null)
             ? bannerResult.Value
             : DefaultBanners();
         foreach (var banner in banners) banner.ImageUrl = BannerImageUrl(banner.ImagePath, banner.UpdatedAt);

@@ -92,11 +92,12 @@
 
     <section class="employee-account-panel" aria-labelledby="employeeAccountTitle">
         <form method="get" asp-action="Index" class="employee-account-toolbar" id="accountFilterForm">
-            <label class="employee-search">
-                <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
-                <span class="visually-hidden">Tìm kiếm tài khoản</span>
-                <input type="search" name="keyword" value="@Model.Keyword" placeholder="Tìm theo tên, email hoặc mã tài khoản" autocomplete="off" />
-            </label>
+            <div class="employee-search">
+                <button type="submit" title="Tìm kiếm" aria-label="Tìm kiếm">
+                    <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                </button>
+                <input type="search" id="accountSearchInput" name="keyword" value="@Model.Keyword" placeholder="Tìm theo tên, email hoặc mã tài khoản" autocomplete="off" />
+            </div>
             <label class="employee-filter">
                 <span>Vai trò</span>
                 <select name="roleId" aria-label="Lọc theo vai trò">
@@ -446,6 +447,14 @@
     }));
 
     document.querySelectorAll('#accountFilterForm select').forEach(select => select.addEventListener('change', () => document.getElementById('accountFilterForm').submit()));
+    let searchDebounceTimer;
+    const accountSearchInput = document.getElementById('accountSearchInput');
+    accountSearchInput?.addEventListener('input', () => {
+        clearTimeout(searchDebounceTimer);
+        searchDebounceTimer = setTimeout(() => {
+            document.getElementById('accountFilterForm').submit();
+        }, 500);
+    });
     document.addEventListener('keydown', event => {
         if (event.key === 'Escape') document.querySelectorAll('.account-modal-overlay.show').forEach(closeModal);
     });

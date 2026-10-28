@@ -27,16 +27,16 @@ public sealed class BannerViewModel
 
 public sealed class BannerFormViewModel
 {
-    public int BannerId { get; set; }
-    [Required, StringLength(150)] public string Title { get; set; } = string.Empty;
-    [Required, StringLength(150)] public string Subtitle { get; set; } = string.Empty;
-    [Required, StringLength(500)] public string Description { get; set; } = string.Empty;
-    [Required, StringLength(100)] public string NavigationLabel { get; set; } = string.Empty;
-    [Required, StringLength(250)] public string ImageAlt { get; set; } = string.Empty;
-    [Required] public string PrimaryActionType { get; set; } = "NONE";
+    public int? BannerId { get; set; }
+    [Required(ErrorMessage = "Vui lòng nhập tiêu đề chính."), StringLength(150)] public string Title { get; set; } = string.Empty;
+    [Required(ErrorMessage = "Vui lòng nhập tiêu đề phụ."), StringLength(150)] public string Subtitle { get; set; } = string.Empty;
+    [Required(ErrorMessage = "Vui lòng nhập mô tả."), StringLength(500)] public string Description { get; set; } = string.Empty;
+    [Required(ErrorMessage = "Vui lòng nhập nhãn điều hướng."), StringLength(100)] public string NavigationLabel { get; set; } = string.Empty;
+    [Required(ErrorMessage = "Vui lòng nhập văn bản thay thế cho ảnh."), StringLength(250)] public string ImageAlt { get; set; } = string.Empty;
+    public string PrimaryActionType { get; set; } = "NONE";
     public string? PrimaryButtonLabel { get; set; }
     public string? PrimaryLink { get; set; }
-    [Required] public string SecondaryActionType { get; set; } = "NONE";
+    public string SecondaryActionType { get; set; } = "NONE";
     public string? SecondaryButtonLabel { get; set; }
     public string? SecondaryLink { get; set; }
     [Range(1, int.MaxValue)] public int SortOrder { get; set; } = 1;

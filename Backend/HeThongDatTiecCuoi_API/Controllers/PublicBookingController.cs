@@ -1,3 +1,4 @@
+﻿using HeThongDatTiecCuoi_API.DTOs.Contract;
 using HeThongDatTiecCuoi_API.Constants;
 using HeThongDatTiecCuoi_API.Constants.StatusCodes;
 using HeThongDatTiecCuoi_API.Data;
@@ -28,19 +29,21 @@ public sealed class PublicBookingController : ControllerBase
     private readonly IMemoryCache _cache;
     private readonly ILogger<PublicBookingController> _logger;
     private readonly ICoordinationAssignmentService _coordinationAssignments;
+    private readonly IContractPdfGenerator _contractPdfGenerator;
 
     public PublicBookingController(
         ApplicationDbContext context,
         IStatusService statusService,
         IMemoryCache cache,
         ILogger<PublicBookingController> logger,
-        ICoordinationAssignmentService coordinationAssignments)
+        ICoordinationAssignmentService coordinationAssignments, IContractPdfGenerator contractPdfGenerator)
     {
         _context = context;
         _statusService = statusService;
         _cache = cache;
         _logger = logger;
         _coordinationAssignments = coordinationAssignments;
+        _contractPdfGenerator = contractPdfGenerator;
     }
 
     /// <summary>UC14: POST /api/v1/public/bookings/lookup — tra cứu bằng mã + email hoặc SĐT.</summary>
@@ -73,6 +76,7 @@ public sealed class PublicBookingController : ControllerBase
                 .Select(x => x.DataStatusId).SingleAsync();
 
             var booking = await _context.WeddingBookings.AsNoTracking()
+                .AsSplitQuery()
                 .Include(b => b.Customer)
                 .Include(b => b.Status)
                 .Include(b => b.HallSchedule).ThenInclude(s => s.Hall)
@@ -81,6 +85,7 @@ public sealed class PublicBookingController : ControllerBase
                 .Include(b => b.DecorationPackage)
                 .Include(b => b.BookingServices).ThenInclude(bs => bs.ServiceItem)
                 .Include(b => b.Contract!).ThenInclude(c => c!.Payments).ThenInclude(p => p.Status)
+                .Include(b => b.Contract!).ThenInclude(c => c!.Status)
                 .Include(b => b.CoordinationAssignments).ThenInclude(a => a.Coordinator)
                 .Include(b => b.CoordinationAssignments).ThenInclude(a => a.Status)
                 .SingleOrDefaultAsync(b =>
@@ -313,8 +318,16 @@ public sealed class PublicBookingController : ControllerBase
             CancellationReason = booking.CancellationReason,
             SpecialRequests = booking.SpecialRequests,
             ConsultantName = consultant?.Coordinator.FullName,
-            ConsultantPhone = consultant?.Coordinator.PhoneNumber
-        };
+            ConsultantPhone = consultant?.Coordinator.PhoneNumber,
+            ContractId = booking.Contract?.ContractId,
+            ContractCode = booking.Contract?.ContractCode,
+            ContractStatusCode = booking.Contract?.Status?.StatusCode,
+            ContractStatusName = booking.Contract?.Status?.StatusName,
+            ContractContent = booking.Contract?.ContractContent,
+            PaymentTerms = booking.Contract?.PaymentTerms,
+            ContractTotalValue = booking.Contract?.TotalValue,
+            ContractPaidAmount = deposit,
+                    };
     }
 
     private static int TryParseSpareTables(string? specialRequests)
@@ -328,4 +341,96 @@ public sealed class PublicBookingController : ControllerBase
             return v;
         return 0;
     }
+    /// <summary>
+    /// Tải PDF hợp đồng tiệc cưới chính thức cho khách hàng.
+    /// </summary>
+    [HttpGet("{bookingCode}/contract/pdf")]
+    public async Task<IActionResult> DownloadContractPdf(string bookingCode, [FromQuery] string phone, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(bookingCode) || string.IsNullOrWhiteSpace(phone))
+            return BadRequest(new { success = false, message = "Thiếu mã đặt tiệc hoặc số điện thoại." });
+
+        var code = bookingCode.Trim().ToUpperInvariant();
+        var contact = phone.Trim();
+        var normalizedEmail = contact.ToLowerInvariant();
+        var lookupByEmail = contact.Contains('@');
+
+        var booking = await _context.WeddingBookings.AsNoTracking()
+                .AsSplitQuery()
+                .Include(b => b.Customer)
+            .Include(b => b.Contract)
+            .SingleOrDefaultAsync(b => b.BookingCode == code &&
+                (lookupByEmail ? b.Customer.Email != null && b.Customer.Email.ToLower() == normalizedEmail
+                    : b.Customer.PhoneNumber == contact), cancellationToken);
+
+        if (booking == null)
+            return NotFound(new { success = false, message = "Không tìm thấy thông tin đơn tiệc." });
+
+        if (booking.Contract == null)
+            return NotFound(new { success = false, message = "Đơn tiệc này chưa được lập hợp đồng." });
+
+        var detail = await BuildContractDetailAsync(booking.Contract.ContractId, cancellationToken);
+        if (detail == null)
+            return NotFound(new { success = false, message = "Không tìm thấy chi tiết hợp đồng." });
+
+        var bytes = _contractPdfGenerator.Generate(detail);
+        return File(bytes, "application/pdf", $"HopDong_{detail.ContractCode}.pdf");
+    }
+
+    private async Task<ManagerContractDetailDto?> BuildContractDetailAsync(int contractId, CancellationToken cancellationToken)
+    {
+        return await _context.Contracts.AsNoTracking().Where(contract => contract.ContractId == contractId)
+            .Select(contract => new ManagerContractDetailDto
+            {
+                ContractId = contract.ContractId,
+                ContractCode = contract.ContractCode,
+                CreatedDate = contract.CreatedDate,
+                TotalValue = contract.TotalValue,
+                ContractContent = contract.ContractContent ?? string.Empty,
+                PaymentTerms = contract.PaymentTerms ?? string.Empty,
+                StatusCode = contract.Status.StatusCode,
+                StatusName = contract.Status.StatusName,
+                PaidAmount = contract.Payments.Where(payment => payment.Status.StatusCode == PaymentStatusCodes.Success)
+                    .Sum(payment => (decimal?)payment.Amount) ?? 0m,
+                Booking = new ManagerContractBookingDto
+                {
+                    BookingId = contract.BookingId,
+                    BookingCode = contract.Booking.BookingCode,
+                    CustomerName = contract.Booking.Customer.FullName,
+                    CustomerPhone = contract.Booking.Customer.PhoneNumber,
+                    CustomerEmail = contract.Booking.Customer.Email,
+                    EventDate = contract.Booking.HallSchedule.Date,
+                    Shift = contract.Booking.HallSchedule.Shift,
+                    HallName = contract.Booking.HallSchedule.Hall.HallName,
+                    GuestCount = contract.Booking.GuestCount,
+                    MenuName = contract.Booking.Menu != null ? contract.Booking.Menu.MenuName : null,
+                    DecorationPackageName = contract.Booking.DecorationPackage != null ? contract.Booking.DecorationPackage.TenGoi : null,
+                    Services = contract.Booking.BookingServices
+                        .Where(item => item.DataStatus.DataStatusCode == DataStatusCodes.Existing)
+                        .OrderBy(item => item.BookingServiceId)
+                        .Select(item => item.ServiceItem.TenDichVu).ToList(),
+                    EstimatedTotal = contract.Booking.EstimatedTotal ?? 0m,
+                    StatusCode = contract.Booking.Status.StatusCode,
+                    StatusName = contract.Booking.Status.StatusName
+                },
+                Payments = contract.Payments.OrderByDescending(payment => payment.PaymentDate)
+                    .Select(payment => new ManagerPaymentListItemDto
+                    {
+                        PaymentId = payment.PaymentId,
+                        TransactionCode = payment.TransactionCode,
+                        ContractId = contract.ContractId,
+                        ContractCode = contract.ContractCode,
+                        BookingCode = contract.Booking.BookingCode,
+                        CustomerName = contract.Booking.Customer.FullName,
+                        CustomerPhone = contract.Booking.Customer.PhoneNumber,
+                        PaymentType = payment.PaymentType,
+                        Amount = payment.Amount,
+                        PaymentDate = payment.PaymentDate,
+                        PaymentMethod = payment.PaymentMethod,
+                        StatusCode = payment.Status.StatusCode,
+                        StatusName = payment.Status.StatusName
+                    }).ToList()
+            }).SingleOrDefaultAsync(cancellationToken);
+    }
 }
+

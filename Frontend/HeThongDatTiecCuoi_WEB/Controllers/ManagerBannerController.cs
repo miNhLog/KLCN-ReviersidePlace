@@ -27,36 +27,68 @@ public sealed class ManagerBannerController : Controller
     [HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> Save(BannerFormViewModel model, CancellationToken ct)
     {
-        if (!ModelState.IsValid || (model.BannerId == 0 && model.Image is null))
+        var isNew = !model.BannerId.HasValue || model.BannerId.Value <= 0;
+        if (!ModelState.IsValid || (isNew && model.Image is null))
         {
-            TempData["ErrorMessage"] = model.BannerId == 0 && model.Image is null ? "Vui lòng chọn ảnh cho banner mới." : "Dữ liệu banner chưa hợp lệ.";
+            var errors = ModelState.Values
+                .SelectMany(v => v.Errors)
+                .Select(e => e.ErrorMessage)
+                .Where(m => !string.IsNullOrWhiteSpace(m));
+            var message = string.Join("; ", errors);
+            if (string.IsNullOrWhiteSpace(message))
+            {
+                message = isNew && model.Image is null ? "Vui lòng chọn ảnh cho banner mới." : "Dữ liệu banner chưa hợp lệ.";
+            }
+            TempData["ErrorMessage"] = message;
             return RedirectToAction(nameof(Index));
         }
-        var payload = new { model.Title, model.Subtitle, model.Description, model.NavigationLabel, model.ImageAlt,
-            model.PrimaryActionType, model.PrimaryButtonLabel, model.PrimaryLink, model.SecondaryActionType,
-            model.SecondaryButtonLabel, model.SecondaryLink, model.SortOrder, model.IsVisible, model.Version };
-        var method = model.BannerId == 0 ? HttpMethod.Post : HttpMethod.Put;
-        var url = model.BannerId == 0 ? "api/banners" : $"api/banners/{model.BannerId}";
+
+        var primaryAction = string.IsNullOrWhiteSpace(model.PrimaryActionType) ? "NONE" : model.PrimaryActionType.Trim().ToUpperInvariant();
+        var secondaryAction = string.IsNullOrWhiteSpace(model.SecondaryActionType) ? "NONE" : model.SecondaryActionType.Trim().ToUpperInvariant();
+
+        var payload = new {
+            Title = model.Title.Trim(),
+            Subtitle = model.Subtitle.Trim(),
+            Description = model.Description.Trim(),
+            NavigationLabel = model.NavigationLabel.Trim(),
+            ImageAlt = model.ImageAlt.Trim(),
+            PrimaryActionType = primaryAction,
+            PrimaryButtonLabel = model.PrimaryButtonLabel,
+            PrimaryLink = model.PrimaryLink,
+            SecondaryActionType = secondaryAction,
+            SecondaryButtonLabel = model.SecondaryButtonLabel,
+            SecondaryLink = model.SecondaryLink,
+            model.SortOrder,
+            model.IsVisible,
+            model.Version
+        };
+
+        var method = isNew ? HttpMethod.Post : HttpMethod.Put;
+        var url = isNew ? "api/banners" : $"api/banners/{model.BannerId!.Value}";
         var saved = await Send<BannerViewModel>(method, url, payload, ct);
         if (!saved.Ok || saved.Value is null) return RedirectWithError(saved.Error);
+
+        var bannerId = saved.Value.BannerId;
         if (model.Image is not null)
         {
-            var uploaded = await Upload(saved.Value.BannerId, model.Image, ct);
+            var uploaded = await Upload(bannerId, model.Image, ct);
             if (!uploaded.Ok) return RedirectWithError($"Đã lưu nội dung nhưng tải ảnh thất bại: {uploaded.Error}");
         }
-        if (model.IsVisible && (model.BannerId == 0 || !saved.Value.IsVisible))
+
+        if (model.IsVisible && (isNew || !saved.Value.IsVisible))
         {
-            var shown = await Send<JsonElement>(HttpMethod.Patch, $"api/banners/{saved.Value.BannerId}/visibility", new { isVisible = true }, ct);
+            var shown = await Send<JsonElement>(HttpMethod.Patch, $"api/banners/{bannerId}/visibility", new { isVisible = true }, ct);
             if (!shown.Ok) return RedirectWithError($"Đã lưu banner nhưng chưa thể bật hiển thị: {shown.Error}");
         }
-        TempData["SuccessMessage"] = model.BannerId == 0 ? "Đã tạo banner mới." : "Đã cập nhật banner.";
+
+        TempData["SuccessMessage"] = isNew ? "Đã tạo banner mới thành công." : "Đã cập nhật banner thành công.";
         return RedirectToAction(nameof(Index));
     }
 
     [HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> Toggle(int id, bool visible, string? version, CancellationToken ct)
     {
-        var result = await Send<JsonElement>(HttpMethod.Patch, $"api/banners/{id}/visibility", new { isVisible = visible, version }, ct);
+        var result = await Send<JsonElement>(HttpMethod.Patch, $"api/banners/{id}/visibility", new { isVisible = visible }, ct);
         SetMessage(result.Ok, result.Ok ? (visible ? "Đã bật hiển thị banner." : "Đã ẩn banner.") : result.Error);
         return RedirectToAction(nameof(Index));
     }

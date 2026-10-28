@@ -133,3 +133,29 @@ public sealed class EventCoordinationCalendarDto
 public sealed class EventCoordinationCalendarItemDto : EventCoordinationListItemDto
 {
 }
+
+
+public sealed class ManagerAvailableCoordinatorDto
+{
+    public int EmployeeId { get; set; }
+    public string EmployeeCode { get; set; } = string.Empty;
+    public string FullName { get; set; } = string.Empty;
+    public string PhoneNumber { get; set; } = string.Empty;
+    public bool IsAvailable { get; set; }
+    public bool IsCurrent { get; set; }
+    public string StatusNote { get; set; } = string.Empty;
+}
+
+public sealed class ManagerEmergencyAssignRequestDto
+{
+    public int CoordinatorEmployeeId { get; set; }
+    public string Reason { get; set; } = string.Empty;
+}
+
+public sealed class ManagerAssignResultDto
+{
+    public bool Success { get; set; }
+    public string Message { get; set; } = string.Empty;
+    public int BookingId { get; set; }
+    public int? AssignmentId { get; set; }
+}

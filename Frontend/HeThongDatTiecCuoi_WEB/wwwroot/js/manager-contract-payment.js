@@ -4,7 +4,7 @@
 
     const base = '/quan-ly/hop-dong-thanh-toan';
     const token = document.querySelector('#cpAntiforgery input[name="__RequestVerificationToken"]')?.value || '';
-    const state = { contractPage: 1, paymentPage: 1, paymentsLoaded: false, selectedBooking: null, currentContract: null, confirmCallback: null };
+    const state = { contractPage: 1, paymentPage: 1, paymentsLoaded: false, selectedBooking: null, currentContract: null, confirmCallback: null, payosPollTimer: null, currentPayosOrder: null, currentPayosContractId: null, payosCheckoutUrl: null };
     const byId = id => document.getElementById(id);
     const money = value => `${Number(value || 0).toLocaleString('vi-VN')} đ`;
     const date = value => value ? new Date(value).toLocaleDateString('vi-VN') : '—';
@@ -215,7 +215,12 @@
             const item = createNode('div'); item.append(createNode('span', '', label), createNode('strong', '', value)); values.append(item);
         }); summary.append(values);
         if (detail.hasPaymentInconsistency) summary.append(createNode('p', 'cp-warning', 'Tổng thanh toán vượt giá trị hợp đồng. Vui lòng kiểm tra dữ liệu.'));
-        else if (detail.statusCode === 'ACTIVE' && detail.remainingBalance > 0) summary.append(createNode('p', 'cp-warning', `Còn ${money(detail.remainingBalance)} chưa thanh toán.`));
+        else if (detail.statusCode === 'ACTIVE' && detail.remainingBalance > 0) {
+            summary.append(createNode('p', 'cp-warning', `Còn ${money(detail.remainingBalance)} chưa thanh toán.`));
+            const payBtn = actionButton('Ghi nhận thanh toán', 'cp-primary', () => openRecordPaymentModal(detail));
+            payBtn.style.marginTop = '10px';
+            summary.append(payBtn);
+        }
         section.append(summary);
         const history = createNode('article', 'cp-detail-card'); history.append(createNode('h3', '', 'Lịch sử giao dịch (chỉ đọc)'));
         if (!detail.payments?.length) history.append(createNode('p', 'cp-pre', 'Chưa phát sinh giao dịch thanh toán.'));
@@ -242,6 +247,9 @@
         if (detail.statusCode === 'DRAFT') {
             actions.append(actionButton('Sửa hợp đồng', 'cp-secondary', () => openEdit(detail)), actionButton('Kích hoạt', 'cp-primary', () => confirmActivate(detail)), actionButton('Hủy hợp đồng', 'cp-danger', () => confirmCancel(detail)));
         } else if (detail.statusCode === 'ACTIVE') {
+            if (detail.remainingBalance > 0) {
+                actions.append(actionButton('Thu tiền / PayOS', 'cp-primary', () => openRecordPaymentModal(detail)));
+            }
             if (!detail.hasPaymentInconsistency && Number(detail.paidAmount) === Number(detail.totalValue)) actions.append(actionButton('Hoàn tất hợp đồng', 'cp-primary', () => confirmComplete(detail)));
             actions.append(actionButton('Hủy hợp đồng', 'cp-danger', () => confirmCancel(detail)));
         }
@@ -308,8 +316,311 @@
     function confirmCancel(detail) { const warning = detail.paidAmount > 0 ? ' Hợp đồng đã phát sinh thanh toán thành công. Việc hủy không xóa hoặc hoàn tiền các giao dịch đã ghi nhận.' : ''; showConfirm('Hủy hợp đồng', `Bạn có chắc chắn muốn hủy ${detail.contractCode}? Booking không bị hủy.${warning}`, () => runCommand(detail.contractId, 'cancel'), true); }
     async function runCommand(id, command) { closeModal('confirmModal'); try { const result = await request(`${base}/contracts/${id}/${command}`, { method: 'POST' }); showToast(result.message); await loadContracts(state.contractPage); await openDrawer(id); } catch (error) { showToast(error.message, true); } }
 
+
+    function openRecordPaymentModal(detail) {
+        state.currentContract = detail;
+        byId('recordPaymentType').value = 'Thanh toán đợt';
+        byId('recordPaymentMethod').value = 'CASH';
+        const defaultAmt = Math.max(0, Math.min(detail.remainingBalance, Math.round(detail.totalValue * 0.5)));
+        byId('recordPaymentAmount').value = defaultAmt || detail.remainingBalance;
+        byId('recordPaymentNote').value = '';
+        updatePaymentHelperText();
+        openModal('recordPaymentModal');
+    }
+
+    function updatePaymentHelperText() {
+        const detail = state.currentContract;
+        if (!detail) return;
+        const type = byId('recordPaymentType').value;
+        const method = byId('recordPaymentMethod').value;
+        const helper = byId('paymentHelperMsg');
+        if (method === 'CASH') {
+            helper.textContent = `Thu tiền mặt tại quầy cho ${type}. Giao dịch sẽ được ghi nhận ngay và cập nhật vào tiến độ hợp đồng.`;
+        } else {
+            helper.textContent = `Hệ thống sẽ tạo mã QR VietQR PayOS cho ${type}. Quản lý cho khách quét mã hoặc sao chép liên kết thanh toán.`;
+        }
+    }
+
+    async function submitPayment() {
+        const detail = state.currentContract;
+        if (!detail) return;
+        const paymentType = byId('recordPaymentType').value;
+        const paymentMethod = byId('recordPaymentMethod').value;
+        const amount = Number(byId('recordPaymentAmount').value || 0);
+        const note = byId('recordPaymentNote').value?.trim();
+
+        if (amount <= 0) return showToast('Vui lòng nhập số tiền hợp lệ.', true);
+        if (amount > detail.remainingBalance) {
+            return showToast(`Số tiền thanh toán (${money(amount)}) không được vượt quá số dư còn lại (${money(detail.remainingBalance)}).`, true);
+        }
+
+        const submitBtn = byId('btnSubmitPayment');
+        submitBtn.disabled = true;
+
+        try {
+            if (paymentMethod === 'CASH') {
+                const res = await request(`${base}/payments/record-cash`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        contractId: detail.contractId,
+                        amount: amount,
+                        paymentType: paymentType,
+                        notes: note
+                    })
+                });
+                closeModal('recordPaymentModal');
+                showToast(res.message || 'Ghi nhận thanh toán tiền mặt thành công!');
+                await loadContracts(state.contractPage);
+                await openDrawer(detail.contractId, 'payments');
+                if (state.paymentsLoaded) await loadPayments(state.paymentPage);
+            } else if (paymentMethod === 'VIETQR_PAYOS') {
+                const res = await request(`${base}/payments/create-payos-link`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        contractId: detail.contractId,
+                        amount: amount,
+                        paymentType: paymentType,
+                        description: note
+                    })
+                });
+                closeModal('recordPaymentModal');
+                openPayosModal(res, detail.contractId);
+            }
+        } catch (err) {
+            showToast(err.message, true);
+        } finally {
+            submitBtn.disabled = false;
+        }
+    }
+
+    function copyToClipboard(text, btnElement) {
+        if (!text) return;
+        navigator.clipboard.writeText(String(text)).then(() => {
+            if (btnElement) {
+                const originalHtml = btnElement.innerHTML;
+                btnElement.innerHTML = '<i class="fa-solid fa-check"></i> Đã chép';
+                btnElement.style.background = '#10B981';
+                btnElement.style.color = '#FFFFFF';
+                setTimeout(() => {
+                    btnElement.innerHTML = originalHtml;
+                    btnElement.style.background = '';
+                    btnElement.style.color = '';
+                }, 1800);
+            }
+            showToast('Đã sao chép vào bộ nhớ tạm.');
+        }).catch(err => {
+            console.error('Không thể sao chép:', err);
+        });
+    }
+
+    function resolveQrImageUrl(qrRaw) {
+        if (!qrRaw) return '';
+        const trimmed = String(qrRaw).trim();
+        if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:image/')) {
+            return trimmed;
+        }
+        return `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(trimmed)}`;
+    }
+
+    function getQrFallbackUrl(qrRaw) {
+        if (!qrRaw) return '';
+        const trimmed = String(qrRaw).trim();
+        return `https://quickchart.io/qr?size=300&text=${encodeURIComponent(trimmed)}`;
+    }
+
+    function resolveBankName(bankBin, rawBankName) {
+        if (rawBankName && isNaN(rawBankName)) return rawBankName;
+        const binMap = {
+            '970422': 'MB Bank (Quân Đội)',
+            '970415': 'VietinBank (Công Thương)',
+            '970436': 'Vietcombank (Ngoại Thương)',
+            '970407': 'Techcombank (Kỹ Thương)',
+            '970418': 'BIDV (Đầu Tư & Phát Triển)',
+            '970405': 'Agribank (Nông Nghiệp)'
+        };
+        return binMap[String(bankBin || rawBankName).trim()] || (rawBankName || 'Ngân hàng Quân Đội (MB Bank)');
+    }
+
+    function startPayosCountdown(seconds = 600) {
+        stopPayosCountdown();
+        let remain = seconds;
+        const el = byId('payosCountdownVal');
+        function tick() {
+            if (remain <= 0) {
+                stopPayosCountdown();
+                if (el) el.textContent = '00:00 (Hết hạn)';
+                return;
+            }
+            const m = Math.floor(remain / 60);
+            const s = remain % 60;
+            if (el) el.textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+            remain--;
+        }
+        tick();
+        state.payosCountdownTimer = setInterval(tick, 1000);
+    }
+
+    function stopPayosCountdown() {
+        if (state.payosCountdownTimer) {
+            clearInterval(state.payosCountdownTimer);
+            state.payosCountdownTimer = null;
+        }
+    }
+
+    function openPayosModal(res, contractId) {
+        const orderCode = res.orderCode || res.orderId || '';
+        const amt = res.businessAmount || res.amount || res.actualAmount || 0;
+        state.currentPayosOrder = orderCode;
+        state.currentPayosContractId = contractId;
+        state.payosCheckoutUrl = res.checkoutUrl;
+
+        // Reset views
+        const initView = byId('payosInitialContent');
+        const successView = byId('payosSuccessContent');
+        if (initView) initView.style.display = 'block';
+        if (successView) successView.style.display = 'none';
+
+        const loadingEl = byId('payosQrLoading');
+        const errorEl = byId('payosQrError');
+        const qrImg = byId('payosQrImg');
+        if (loadingEl) loadingEl.style.display = 'flex';
+        if (errorEl) errorEl.style.display = 'none';
+        if (qrImg) qrImg.style.display = 'none';
+
+        // Bind data
+        const cCode = (state.currentContract && state.currentContract.contractCode) || ('HD-' + contractId);
+        if (byId('payosContractCodeDisplay')) byId('payosContractCodeDisplay').textContent = cCode;
+        if (byId('payosAmountDisplay')) byId('payosAmountDisplay').textContent = money(amt);
+
+        // Demo banner
+        const demoBanner = byId('payosDemoBanner');
+        if (demoBanner) {
+            if (res.isDemoMode) {
+                demoBanner.style.display = 'flex';
+                const actualEl = byId('payosActualAmountDisplay');
+                if (actualEl) actualEl.textContent = money(res.actualAmount || 2000);
+            } else {
+                demoBanner.style.display = 'none';
+            }
+        }
+
+        // Details
+        if (byId('payosBankName')) byId('payosBankName').textContent = resolveBankName(res.bankBin, res.bankName);
+        if (byId('payosAccountName')) byId('payosAccountName').textContent = res.accountName || 'CONG TY CP RIVERSIDE PALACE';
+        if (byId('payosAccountNo')) byId('payosAccountNo').textContent = res.accountNumber || '--';
+        if (byId('payosTransferDesc')) byId('payosTransferDesc').textContent = res.description || ('HD' + contractId);
+        if (byId('payosOrderCode')) byId('payosOrderCode').textContent = String(orderCode);
+
+        // Status alert
+        const alertEl = byId('payosStatusAlert');
+        if (alertEl) {
+            alertEl.innerHTML = '<div class="rp-pay-spinner"></div><span id="payosStatusText">Đang chờ khách hàng quét mã và hệ thống ngân hàng xác nhận...</span>';
+            alertEl.style.background = '#F8FAFC';
+            alertEl.style.color = '#1E40AF';
+        }
+
+        // Copy buttons
+        const copyAccBtn = byId('payosCopyAccBtn');
+        if (copyAccBtn) {
+            copyAccBtn.onclick = () => copyToClipboard(res.accountNumber, copyAccBtn);
+        }
+        const copyDescBtn = byId('payosCopyDescBtn');
+        if (copyDescBtn) {
+            copyDescBtn.onclick = () => copyToClipboard(res.description, copyDescBtn);
+        }
+
+        // Real VietQR image resolver
+        const rawQr = res.qrCode || '';
+        let qrFallbackAttempted = false;
+        if (qrImg) {
+            qrImg.onload = () => {
+                if (loadingEl) loadingEl.style.display = 'none';
+                if (errorEl) errorEl.style.display = 'none';
+                qrImg.style.display = 'block';
+            };
+            qrImg.onerror = () => {
+                if (!qrFallbackAttempted && rawQr && !rawQr.startsWith('http://') && !rawQr.startsWith('https://')) {
+                    qrFallbackAttempted = true;
+                    qrImg.src = getQrFallbackUrl(rawQr);
+                    return;
+                }
+                if (loadingEl) loadingEl.style.display = 'none';
+                if (errorEl) errorEl.style.display = 'flex';
+            };
+            qrImg.src = resolveQrImageUrl(rawQr);
+        }
+
+        // Timer & Polling
+        startPayosCountdown(600);
+        openModal('payosModal');
+        startPayosPolling(res.orderCode, contractId);
+    }
+
+    function onPayosSuccess(contractId, amt) {
+        stopPayosPolling();
+        stopPayosCountdown();
+
+        const initView = byId('payosInitialContent');
+        const successView = byId('payosSuccessContent');
+        if (initView) initView.style.display = 'none';
+        if (successView) {
+            successView.style.display = 'block';
+            const successAmt = byId('payosSuccessAmount');
+            if (successAmt) successAmt.textContent = money(amt);
+        }
+
+        showToast('Khách hàng đã thanh toán PayOS thành công!');
+
+        // Refresh background state
+        loadContracts(state.contractPage);
+        openDrawer(contractId, 'payments');
+        if (state.paymentsLoaded) loadPayments(state.paymentPage);
+    }
+
+    function startPayosPolling(orderCode, contractId) {
+        stopPayosPolling();
+        state.payosPollTimer = setInterval(async () => {
+            try {
+                const checkRes = await request(`${base}/payments/check-payos/${orderCode}`);
+                if (checkRes.isPaid || checkRes.status === 'PAID') {
+                    onPayosSuccess(contractId, checkRes.businessDeposit || checkRes.actualAmount || 0);
+                }
+            } catch (e) {
+                // Ignore background polling errors
+            }
+        }, 3000);
+    }
+
+    function stopPayosPolling() {
+        if (state.payosPollTimer) {
+            clearInterval(state.payosPollTimer);
+            state.payosPollTimer = null;
+        }
+    }
+
+    async function checkPayosManual() {
+        if (!state.currentPayosOrder) return;
+        try {
+            const checkRes = await request(`${base}/payments/check-payos/${state.currentPayosOrder}`);
+            if (checkRes.isPaid || checkRes.status === 'PAID') {
+                onPayosSuccess(state.currentPayosContractId, checkRes.businessDeposit || checkRes.actualAmount || 0);
+            } else {
+                showToast(`Trạng thái giao dịch: ${checkRes.status || 'PENDING'}`);
+            }
+        } catch (e) {
+            showToast(e.message, true);
+        }
+    }
+
     function openModal(id) { byId(id).classList.add('open'); }
-    function closeModal(id) { byId(id).classList.remove('open'); if (id === 'confirmModal') state.confirmCallback = null; }
+    function closeModal(id) {
+        byId(id).classList.remove('open');
+        if (id === 'confirmModal') state.confirmCallback = null;
+        if (id === 'payosModal') {
+            stopPayosPolling();
+            stopPayosCountdown();
+        }
+    }
     function debounce(handler, delay = 350) { let timer; return (...args) => { clearTimeout(timer); timer = setTimeout(() => handler(...args), delay); }; }
 
     document.querySelectorAll('[data-main-tab]').forEach(button => button.addEventListener('click', () => {
@@ -324,6 +635,13 @@
     byId('paymentKeyword').addEventListener('input', debounce(() => loadPayments(1)));
     byId('eligibleKeyword').addEventListener('input', debounce(event => loadEligibleBookings(event.target.value)));
     byId('openCreateContract').addEventListener('click', openCreateModal); byId('saveDraft').addEventListener('click', saveDraft); byId('saveEdit').addEventListener('click', saveEdit);
+    byId('recordPaymentType')?.addEventListener('change', updatePaymentHelperText);
+    byId('recordPaymentMethod')?.addEventListener('change', updatePaymentHelperText);
+    byId('btnFill50')?.addEventListener('click', () => { if (state.currentContract) byId('recordPaymentAmount').value = Math.max(0, Math.min(state.currentContract.remainingBalance, Math.round(state.currentContract.totalValue * 0.5))); });
+    byId('btnFillRemaining')?.addEventListener('click', () => { if (state.currentContract) byId('recordPaymentAmount').value = state.currentContract.remainingBalance; });
+    byId('btnSubmitPayment')?.addEventListener('click', submitPayment);
+    byId('btnCheckPayosNow')?.addEventListener('click', checkPayosManual);
+    byId('btnCopyPayosLink')?.addEventListener('click', () => { if (state.payosCheckoutUrl) { navigator.clipboard.writeText(state.payosCheckoutUrl); showToast('Đã chép link thanh toán!'); } });
     byId('closeDrawer').addEventListener('click', closeDrawer); byId('drawerOverlay').addEventListener('click', closeDrawer);
     byId('confirmAction').addEventListener('click', () => { const callback = state.confirmCallback; if (callback) callback(); });
     document.addEventListener('keydown', event => { if (event.key === 'Escape') { closeDrawer(); document.querySelectorAll('.cp-modal.open').forEach(modal => closeModal(modal.id)); } });

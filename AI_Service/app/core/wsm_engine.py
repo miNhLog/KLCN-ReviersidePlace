@@ -80,14 +80,30 @@ def style_score(desired: str, decor_style: str, groups: Dict) -> float:
     return 0.0
 
 
+def calculate_hall_price(base_price: float, shift: str = "", event_date_str: str = "") -> float:
+    try:
+        from datetime import date
+        d = date.fromisoformat(event_date_str)
+        is_weekend = d.weekday() >= 5  # 5=Saturday, 6=Sunday
+    except Exception:
+        is_weekend = False
+    is_dinner = "toi" in (shift or "").lower() or "tối" in (shift or "").lower()
+    if is_weekend:
+        return round(float(base_price) * 1.25)
+    if is_dinner:
+        return round(float(base_price) * 1.15)
+    return round(float(base_price))
+
+
 def score_candidate(budget: float, table_count: int, desired_style: str,
                     priority: List[str], hall: Dict, menu_price: float,
                     decor: Dict, included: List[str], groups: Dict,
-                    weights: Dict[str, float]) -> Tuple[float, Dict[str, float], float]:
+                    weights: Dict[str, float], shift: str = "", event_date_str: str = "") -> Tuple[float, Dict[str, float], float]:
     svc_price_map = {s["service_id"]: s["price"] for s in load_catalog()["services"]}
     menu_total = float(menu_price) * int(table_count)
-    services_price = float(sum((svc_price_map.get(s, 0) * int(table_count) if s == "DV001" else svc_price_map.get(s, 0)) for s in included))
-    total = float(menu_total + hall["base_price"] + decor["price"] + services_price)
+    services_price = float(sum(((200000.0 if svc_price_map.get(s, 0) > 500000 else svc_price_map.get(s, 0)) * int(table_count) if s == "DV001" else svc_price_map.get(s, 0)) for s in included))
+    hall_price = calculate_hall_price(hall["base_price"], shift, event_date_str)
+    total = float(menu_total + hall_price + decor["price"] + services_price)
     # Diem ngan sach r1: uu tien trong ngan sach, vuot nhe <= Δ diem trung binh,
     # vuot nhieu phat nang de khong lot Top 3. Δ = min(10tr, 5% budget) theo prompt.txt.
     over = total - float(budget)
@@ -162,6 +178,9 @@ def rank_top3(request) -> Tuple[List[Dict], int]:
     budget = float(request.expected_budget)
     table_count = int(request.table_count)
 
+    shift = getattr(request, "shift", "")
+    event_date_str = getattr(request, "event_date", "")
+
     scored: List[Dict] = []
     for hall in halls:
         if hall["hall_id"] in occupied:
@@ -170,22 +189,23 @@ def rank_top3(request) -> Tuple[List[Dict], int]:
         # min_tables <= requested_tables <= max_tables.
         if table_count < hall["min_tables"] or table_count > hall["max_tables"]:
             continue
+        hall_price = calculate_hall_price(hall["base_price"], shift, event_date_str)
         for menu in menus:
             for decor in decors:
                 # Uoc tinh nhanh de loc cung: dung included = priority (day du nhat).
                 # Chỉ giữ combo trong ngân sách hoặc vượt tối đa 10tr tuyệt đối
                 # (thay vì 10% tương đối gây vượt tới 20–30tr với budget lớn).
                 svc_map = {s["service_id"]: s["price"] for s in catalog["services"]}
-                est_services = sum((svc_map.get(s, 0) * table_count if s == "DV001" else svc_map.get(s, 0)) for s in priority)
-                est_total = menu["price_per_table"] * table_count + hall["base_price"] + decor["price"] + est_services
+                est_services = sum(((200000.0 if svc_map.get(s, 0) > 500000 else svc_map.get(s, 0)) * table_count if s == "DV001" else svc_map.get(s, 0)) for s in priority)
+                est_total = menu["price_per_table"] * table_count + hall_price + decor["price"] + est_services
                 if est_total > budget + budget_tolerance(budget):
                     continue
                 included = list(priority)
                 s, parts, total = score_candidate(budget, table_count, request.desired_style,
                                                   priority, hall, float(menu["price_per_table"]),
-                                                  decor, included, groups, weights)
+                                                  decor, included, groups, weights, shift, event_date_str)
                 scored.append({
-                    "hall": hall, "menu": menu, "decor": decor,
+                    "hall": hall, "hall_price": hall_price, "menu": menu, "decor": decor,
                     "included": included, "score": s, "parts": parts, "total": total,
                 })
     total_eval = len(scored)
@@ -245,7 +265,7 @@ def rank_top3(request) -> Tuple[List[Dict], int]:
         items.append({
             "hall_id": hall["hall_id"],
             "hall_name": hall["hall_name"],
-            "hall_price": float(hall["base_price"]),
+            "hall_price": float(entry.get("hall_price") or hall["base_price"]),
             # Chuan hoa khach vs ban (1 ban = 10 khach). Tuyet doi khong render
             # so khach kem chu "ban" o Frontend.
             "hall_min_guests": int(hall.get("min_guests", hall["min_tables"] * 10)),

@@ -47,6 +47,12 @@ public class MyBookingsController : Controller
             targetPhone = Request.Cookies["customer_phone"] ?? "";
         }
 
+        // Nếu có truyền query phone cụ thể thì ưu tiên tìm theo phone, không bị mask bởi session Quản lý
+        if (!string.IsNullOrWhiteSpace(phone))
+        {
+            currentUserId = null;
+        }
+
         // 3. Gửi truy vấn kết hợp cả phone và currentUserId
         var result = await _apiClient.GetMyBookingsAsync(targetPhone, currentUserId, cancellationToken);
         var bookings = result.Value ?? new List<MyBookingViewModel>();
@@ -77,4 +83,34 @@ public class MyBookingsController : Controller
         }
         return Json(new { success = false, message = result.Error ?? "Không thể hủy đơn tiệc lúc này." });
     }
+
+    [HttpGet("DownloadContractPdf")]
+    public async Task<IActionResult> DownloadContractPdf(
+        [FromQuery] string bookingCode,
+        [FromQuery] string? phone,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var targetPhone = phone ?? "";
+            if (string.IsNullOrEmpty(targetPhone) && User.Identity?.IsAuthenticated == true)
+                targetPhone = User.FindFirstValue(ClaimTypes.MobilePhone) ?? User.FindFirstValue("phone") ?? "";
+            if (string.IsNullOrEmpty(targetPhone))
+                targetPhone = Request.Cookies["customer_phone"] ?? "";
+
+            var result = await _apiClient.DownloadPublicContractPdfAsync(bookingCode, targetPhone, cancellationToken);
+            if (result.Succeeded && result.Value is not null)
+            {
+                return File(result.Value.Content, result.Value.ContentType, result.Value.FileName);
+            }
+
+            TempData["ErrorMessage"] = result.Error ?? "Không thể tải PDF hợp đồng.";
+            return RedirectToAction(nameof(Index), new { phone = targetPhone });
+        }
+        catch
+        {
+            return RedirectToAction(nameof(Index));
+        }
+    }
+
 }

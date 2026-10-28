@@ -39,6 +39,8 @@ public interface IRiversideApiClient
     Task<ApiCallResult<EventCoordinationListResponseViewModel>> GetManagerEventCoordinationAsync(string accessToken, string? search, string? bookingStatus, string? coordinationStatus, DateTime? fromDate, DateTime? toDate, int page, int pageSize, CancellationToken cancellationToken);
     Task<ApiCallResult<EventCoordinationDetailViewModel>> GetManagerEventCoordinationDetailAsync(string accessToken, int bookingId, CancellationToken cancellationToken);
     Task<ApiCallResult<EventCoordinationCalendarViewModel>> GetManagerEventCoordinationCalendarAsync(string accessToken, DateTime fromDate, DateTime toDate, int? hallId, int? coordinatorEmployeeId, bool conflictsOnly, CancellationToken cancellationToken);
+    Task<ApiCallResult<List<ManagerAvailableCoordinatorViewModel>>> GetManagerCoordinationAvailableCoordinatorsAsync(string accessToken, int bookingId, CancellationToken cancellationToken);
+    Task<ApiCallResult<ManagerAssignResultViewModel>> AssignManagerEventCoordinatorAsync(string accessToken, int bookingId, int coordinatorEmployeeId, string reason, CancellationToken cancellationToken);
     Task<ApiCallResult<HallManagerCoordinationListViewModel>> GetHallManagerCoordinationAsync(string accessToken, string? search, int? hallId, DateTime? eventDate, string? coordinationStatus, int page, int pageSize, CancellationToken cancellationToken);
     Task<ApiCallResult<List<CoordinatorAvailabilityViewModel>>> GetCoordinatorAvailabilityAsync(string accessToken, int bookingId, CancellationToken cancellationToken);
     Task<ApiCallResult<HallManagerCoordinationDetailViewModel>> GetHallManagerCoordinationDetailAsync(string accessToken, int bookingId, CancellationToken cancellationToken);
@@ -58,6 +60,10 @@ public interface IRiversideApiClient
     Task<ApiCallResult<ContractActionResponseViewModel>> CancelManagerContractAsync(string accessToken, int id, CancellationToken cancellationToken);
     Task<ApiCallResult<ManagerPaymentListResponseViewModel>> GetManagerPaymentsAsync(string accessToken, string? keyword, string? type, string? status, DateTime? fromDate, DateTime? toDate, int page, CancellationToken cancellationToken);
     Task<ApiCallResult<PdfDownloadViewModel>> DownloadManagerContractPdfAsync(string accessToken, int id, CancellationToken cancellationToken);
+    Task<ApiCallResult<object>> RecordManagerPaymentAsync(string accessToken, RecordPaymentViewModel model, CancellationToken cancellationToken);
+    Task<ApiCallResult<ContractPayOsLinkResultViewModel>> CreateManagerPayOsPaymentLinkAsync(string accessToken, CreateContractPayOsLinkViewModel model, CancellationToken cancellationToken);
+    Task<ApiCallResult<HeThongDatTiecCuoi_WEB.Models.Payment.PaymentStatusResponseViewModel>> CheckManagerPayOsPaymentStatusAsync(string accessToken, long orderCode, CancellationToken cancellationToken);
+    Task<ApiCallResult<PdfDownloadViewModel>> DownloadPublicContractPdfAsync(string bookingCode, string phone, CancellationToken cancellationToken);
     Task<ApiCallResult<ManagerHrPageViewModel>> GetManagerHrAsync(string accessToken,string? search,string? role,string? status,string? assignmentStatus,int page,int pageSize,CancellationToken cancellationToken);
     Task<ApiCallResult<ManagerHrActionViewModel>> AssignManagerHallsAsync(int employeeId,AssignHallsViewModel model,string accessToken,CancellationToken cancellationToken);
     Task<ApiCallResult<ManagerHrActionViewModel>> EndManagerHallAssignmentAsync(int assignmentId,string accessToken,CancellationToken cancellationToken);
@@ -302,7 +308,7 @@ public interface IRiversideApiClient
         string accessToken,
         CancellationToken cancellationToken);
 
-    // MÓN ĂN
+    // MÃ“N Ä‚N
     Task<ApiCallResult<List<DishViewModel>>> GetDishesAsync(
         string? keyword,
         string? category,

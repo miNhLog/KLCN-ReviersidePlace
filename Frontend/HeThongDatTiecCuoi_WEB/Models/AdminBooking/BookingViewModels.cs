@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
@@ -25,10 +25,27 @@ public class BookingListResponseViewModel
     public int TotalPages => (int)Math.Ceiling((double)TotalCount / (PageSize > 0 ? PageSize : 10));
 
     [JsonPropertyName("pendingCount")]
-    public int PendingConfirmationCount { get; set; }
+    public int PendingCount { get; set; }
+
+    [JsonPropertyName("pendingConfirmationCount")]
+    public int PendingConfirmationCount
+    {
+        get => PendingCount;
+        set => PendingCount = value;
+    }
+
     public int ConfirmedCount { get; set; }
+
     [JsonPropertyName("preparingCount")]
-    public int DepositedCount { get; set; }
+    public int PreparingCount { get; set; }
+
+    [JsonPropertyName("depositedCount")]
+    public int DepositedCount
+    {
+        get => PreparingCount;
+        set => PreparingCount = value;
+    }
+
     public int CompletedCount { get; set; }
     public int CancelledCount { get; set; }
 }

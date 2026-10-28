@@ -34,3 +34,36 @@ public sealed class PaymentStatusResponseDto
     public DateTime? PaidAt { get; set; }
     public string Message { get; set; } = string.Empty;
 }
+
+public sealed class RecordCashPaymentRequestDto
+{
+    public int ContractId { get; set; }
+    public string PaymentType { get; set; } = string.Empty;
+    public decimal Amount { get; set; }
+    public string? Note { get; set; }
+    public string? Notes { get => Note; set => Note = value; }
+}
+
+public sealed class CreateContractPayOsLinkRequestDto
+{
+    public int ContractId { get; set; }
+    public string PaymentType { get; set; } = string.Empty;
+    public decimal Amount { get; set; }
+}
+
+public sealed class CreateContractPayOsLinkResponseDto
+{
+    public long OrderCode { get; set; }
+    public string QrCode { get; set; } = string.Empty;
+    public string CheckoutUrl { get; set; } = string.Empty;
+    public string? AccountNumber { get; set; }
+    public string? AccountName { get; set; }
+    public string? BankBin { get; set; }
+    public string? BankName { get; set; }
+    public string Description { get; set; } = string.Empty;
+    public decimal BusinessAmount { get; set; }
+    public decimal Amount => BusinessAmount;
+    public int ActualAmount { get; set; }
+    public bool IsDemoMode { get; set; }
+    public DateTime ExpiresAt { get; set; }
+}

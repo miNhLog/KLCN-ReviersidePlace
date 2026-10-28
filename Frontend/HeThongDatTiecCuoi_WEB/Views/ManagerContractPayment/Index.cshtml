@@ -1,4 +1,4 @@
-@model HeThongDatTiecCuoi_WEB.Models.ManagerContractPayment.ManagerContractPaymentPageViewModel
+﻿@model HeThongDatTiecCuoi_WEB.Models.ManagerContractPayment.ManagerContractPaymentPageViewModel
 @using System.Globalization
 @{
     ViewData["Title"] = "Hợp đồng & Thanh toán";
@@ -16,6 +16,7 @@
 
 @section Styles {
     <link rel="stylesheet" href="~/css/manager-contract-payment.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/payment-deposit.css" asp-append-version="true" />
     <style>
     </style>
 }
@@ -124,5 +125,177 @@
 
 <div class="cp-modal" id="confirmModal" role="dialog" aria-modal="true" aria-labelledby="confirmTitle"><div class="cp-modal-card small"><header class="cp-modal-head"><h2 id="confirmTitle">Xác nhận</h2><button type="button" class="cp-drawer-close" data-close-modal="confirmModal"><i class="fa-solid fa-xmark"></i></button></header><div class="cp-modal-body"><p id="confirmMessage" style="margin:0;font-size:12px;line-height:1.65;color:#42516a"></p></div><footer class="cp-modal-actions"><button type="button" class="cp-secondary" data-close-modal="confirmModal">Hủy</button><button type="button" class="cp-primary" id="confirmAction">Xác nhận</button></footer></div></div>
 
+
+<div class="cp-modal" id="recordPaymentModal" role="dialog" aria-modal="true" aria-labelledby="recordPaymentTitle">
+    <div class="cp-modal-card small">
+        <header class="cp-modal-head">
+            <h2 id="recordPaymentTitle">Thu tiền đợt 2 / Quyết toán</h2>
+            <button type="button" class="cp-drawer-close" data-close-modal="recordPaymentModal"><i class="fa-solid fa-xmark"></i></button>
+        </header>
+        <div class="cp-modal-body">
+            <input type="hidden" id="recordPaymentContractId" />
+            <div class="cp-form-group">
+                <label for="recordPaymentType">Loại thanh toán</label>
+                <select class="cp-select" id="recordPaymentType">
+                    <option value="Thanh toán đợt">Thanh toán đợt (Đợt 2 - Trước tiệc)</option>
+                    <option value="Quyết toán">Quyết toán hợp đồng (Sau tiệc)</option>
+                </select>
+            </div>
+            <div class="cp-form-group">
+                <label for="recordPaymentMethod">Hình thức thu tiền</label>
+                <select class="cp-select" id="recordPaymentMethod">
+                    <option value="CASH">Tiền mặt tại quầy (Ghi nhận ngay)</option>
+                    <option value="VIETQR_PAYOS">Tạo mã QR VietQR PayOS</option>
+                </select>
+            </div>
+            <div class="cp-form-group">
+                <label for="recordPaymentAmount">Số tiền thanh toán (VNĐ)</label>
+                <input class="cp-input" id="recordPaymentAmount" type="number" min="1000" step="1000" placeholder="Nhập số tiền..." />
+                <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">
+                    <button type="button" class="cp-secondary" style="min-height:28px;padding:2px 8px;font-size:11px;" id="btnFill50">50% Hợp đồng</button>
+                    <button type="button" class="cp-secondary" style="min-height:28px;padding:2px 8px;font-size:11px;" id="btnFillRemaining">Còn lại</button>
+                </div>
+            </div>
+            <div class="cp-form-group" id="groupPaymentNote">
+                <label for="recordPaymentNote">Ghi chú (Tùy chọn)</label>
+                <input class="cp-input" id="recordPaymentNote" placeholder="Ví dụ: Khách thanh toán tại quầy lễ tân..." />
+            </div>
+            <div id="paymentHelperMsg" style="font-size:11.5px;color:#64748B;line-height:1.5;"></div>
+        </div>
+        <footer class="cp-modal-actions">
+            <button type="button" class="cp-secondary" data-close-modal="recordPaymentModal">Hủy</button>
+            <button type="button" class="cp-primary" id="btnSubmitPayment"><i class="fa-solid fa-check"></i> Xác nhận</button>
+        </footer>
+    </div>
+</div>
+
+<div class="rp-pay-backdrop cp-modal" id="payosModal" role="dialog" aria-modal="true" aria-labelledby="payosModalTitle">
+    <div class="rp-pay-modal" style="max-width:540px;">
+        <!-- Header -->
+        <div class="rp-pay-header">
+            <div class="rp-pay-kicker">
+                <i class="fa-solid fa-shield-halved"></i> Riverside Palace · Thanh toán an toàn VietQR PayOS
+            </div>
+            <h3 class="rp-pay-title" id="payosModalTitle">Thanh toán Hợp đồng & Quyết toán</h3>
+            <button type="button" class="rp-pay-close" data-close-modal="payosModal" aria-label="Đóng popup">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <div class="rp-pay-body">
+            <!-- Initial State (Chờ thanh toán) -->
+            <div id="payosInitialContent">
+                <!-- Info Box -->
+                <div class="rp-pay-info-box">
+                    <div class="rp-pay-booking-code">
+                        <span>Hợp đồng:</span>
+                        <strong id="payosContractCodeDisplay">HD-...</strong>
+                    </div>
+                    <div class="rp-pay-deposit-amount">
+                        <span id="payosTypeLabel">Khoản thanh toán:</span>
+                        <h3 id="payosAmountDisplay">0 đ</h3>
+                    </div>
+                </div>
+
+                <!-- Alert Demo Scale -->
+                <div class="rp-pay-demo-banner" id="payosDemoBanner" style="display:none;">
+                    <i class="fa-solid fa-lightbulb"></i>
+                    <div>
+                        <strong>Chế độ Thử nghiệm:</strong> Số tiền thanh toán qua VietQR đã được quy đổi thành <strong id="payosActualAmountDisplay" style="color:#DC2626;font-size:13.5px;">2.000 VNĐ</strong> (tỷ lệ 1/10.000) để khách hàng có thể quét chuyển tiền thật bằng App ngân hàng trải nghiệm trọn vẹn quy trình.
+                    </div>
+                </div>
+
+                <!-- QR Card -->
+                <div class="rp-pay-qr-card">
+                    <div class="rp-pay-qr-wrapper">
+                        <!-- Loading State -->
+                        <div id="payosQrLoading" class="rp-pay-qr-loading">
+                            <div class="rp-pay-spinner"></div>
+                            <span id="payosQrLoadingText">Đang khởi tạo mã VietQR từ PayOS...</span>
+                        </div>
+
+                        <!-- Error State -->
+                        <div id="payosQrError" class="rp-pay-qr-error" style="display:none;">
+                            <i class="fa-solid fa-triangle-exclamation" style="font-size:30px;color:#EF4444;margin-bottom:8px;"></i>
+                            <p id="payosQrErrorMsg" style="font-size:12.5px;color:#991B1B;margin:0 0 12px;line-height:1.4;">
+                                Không thể tải mã QR thanh toán. Vui lòng bấm thử lại hoặc liên hệ quản trị viên.
+                            </p>
+                        </div>
+
+                        <!-- QR Image -->
+                        <img id="payosQrImg" class="rp-pay-qr-img" alt="Mã VietQR Thanh toán" style="display:none;" />
+                    </div>
+
+                    <div>
+                        <div class="rp-pay-timer-pill">
+                            <span class="dot"></span>
+                            Thời gian chờ thanh toán: <span id="payosCountdownVal">10:00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Transfer Details -->
+                <div class="rp-pay-details">
+                    <div class="rp-pay-detail-row">
+                        <span class="rp-pay-detail-label">Ngân hàng thụ hưởng:</span>
+                        <span class="rp-pay-detail-val" id="payosBankName">MB Bank</span>
+                    </div>
+                    <div class="rp-pay-detail-row">
+                        <span class="rp-pay-detail-label">Chủ tài khoản:</span>
+                        <span class="rp-pay-detail-val" id="payosAccountName">CONG TY CP RIVERSIDE PALACE</span>
+                    </div>
+                    <div class="rp-pay-detail-row">
+                        <span class="rp-pay-detail-label">Số tài khoản:</span>
+                        <div class="rp-pay-detail-val">
+                            <span id="payosAccountNo" style="font-family:monospace;letter-spacing:0.05em;">--</span>
+                            <button type="button" class="rp-pay-copy-btn" id="payosCopyAccBtn"><i class="fa-regular fa-copy"></i> Chép</button>
+                        </div>
+                    </div>
+                    <div class="rp-pay-detail-row">
+                        <span class="rp-pay-detail-label">Nội dung chuyển khoản:</span>
+                        <div class="rp-pay-detail-val">
+                            <span id="payosTransferDesc" style="color:#DC2626;font-family:monospace;font-weight:800;">RSP --</span>
+                            <button type="button" class="rp-pay-copy-btn" id="payosCopyDescBtn"><i class="fa-regular fa-copy"></i> Chép</button>
+                        </div>
+                    </div>
+                    <div class="rp-pay-detail-row">
+                        <span class="rp-pay-detail-label">Mã giao dịch PayOS:</span>
+                        <span class="rp-pay-detail-val" id="payosOrderCode" style="font-family:monospace;">--</span>
+                    </div>
+                </div>
+
+                <!-- Polling Status -->
+                <div class="rp-pay-status-bar" id="payosStatusAlert">
+                    <div class="rp-pay-spinner"></div>
+                    <span id="payosStatusText">Đang chờ hệ thống ngân hàng xác nhận giao dịch...</span>
+                </div>
+            </div>
+
+            <!-- Success State (Thanh toán thành công) -->
+            <div id="payosSuccessContent" class="rp-pay-success-box" style="display:none;">
+                <div class="rp-pay-success-icon">
+                    <i class="fa-solid fa-check"></i>
+                </div>
+                <h3 class="rp-pay-success-title">Thanh Toán PayOS Thành Công!</h3>
+                <p class="rp-pay-success-desc">
+                    Hệ thống đã nhận thanh toán <strong id="payosSuccessAmount">0 đ</strong> qua VietQR PayOS. Hợp đồng và lịch sử giao dịch đã được cập nhật tự động.
+                </p>
+                <div style="font-size:12.5px;color:#10B981;font-weight:700;margin-bottom:18px;">
+                    <i class="fa-solid fa-circle-check"></i> Giao dịch hợp lệ và được lưu trữ trong sổ kế toán điện tử.
+                </div>
+                <button type="button" class="rp-pay-btn-done" data-close-modal="payosModal">
+                    <i class="fa-solid fa-check"></i> Hoàn tất & Quay lại hợp đồng
+                </button>
+            </div>
+        </div>
+        <footer class="cp-modal-actions" style="justify-content:space-between;border-top:1px solid #E2E8F0;padding:12px 20px;">
+            <button type="button" class="cp-secondary" id="btnCopyPayosLink"><i class="fa-regular fa-copy"></i> Sao chép link</button>
+            <div style="display:flex;gap:8px;">
+                <button type="button" class="cp-secondary" data-close-modal="payosModal">Đóng</button>
+                <button type="button" class="cp-primary" id="btnCheckPayosNow"><i class="fa-solid fa-arrows-rotate"></i> Kiểm tra ngay</button>
+            </div>
+        </footer>
+    </div>
+</div>
 
 @section Scripts { <script src="~/js/manager-contract-payment.js" asp-append-version="true"></script> }

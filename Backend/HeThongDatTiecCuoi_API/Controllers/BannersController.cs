@@ -122,9 +122,10 @@ public sealed class BannersController : ControllerBase
     {
         var banner = await _db.HomeBanners.SingleOrDefaultAsync(x => x.BannerId == id, ct);
         if (banner is null) return NotFound(new { message = "Không tìm thấy banner." });
-        if (!VersionMatches(banner, request.Version)) return Conflict(new { message = "Banner vừa được cập nhật. Vui lòng tải lại trang." });
+        if (!string.IsNullOrWhiteSpace(request.Version) && !VersionMatches(banner, request.Version))
+            return Conflict(new { message = "Banner vừa được cập nhật. Vui lòng tải lại trang." });
         if (request.IsVisible && string.IsNullOrWhiteSpace(banner.ImagePath))
-            return BadRequest(new { message = "Vui lòng tải ảnh trước khi hiển thị banner." });
+            return BadRequest(new { message = "Vui lòng tải ảnh đại diện lên trước khi bật hiển thị banner." });
         banner.IsVisible = request.IsVisible;
         banner.UpdatedAt = DateTime.Now;
         banner.UpdatedByUserId = UserId();
@@ -174,9 +175,10 @@ public sealed class BannersController : ControllerBase
     {
         target.Title = source.Title.Trim(); target.Subtitle = source.Subtitle.Trim();
         target.Description = source.Description.Trim(); target.NavigationLabel = source.NavigationLabel.Trim();
-        target.ImageAlt = source.ImageAlt.Trim(); target.PrimaryActionType = source.PrimaryActionType.Trim().ToUpperInvariant();
+        target.ImageAlt = source.ImageAlt.Trim();
+        target.PrimaryActionType = string.IsNullOrWhiteSpace(source.PrimaryActionType) ? "NONE" : source.PrimaryActionType.Trim().ToUpperInvariant();
         target.PrimaryButtonLabel = Clean(source.PrimaryButtonLabel); target.PrimaryLink = Clean(source.PrimaryLink);
-        target.SecondaryActionType = source.SecondaryActionType.Trim().ToUpperInvariant();
+        target.SecondaryActionType = string.IsNullOrWhiteSpace(source.SecondaryActionType) ? "NONE" : source.SecondaryActionType.Trim().ToUpperInvariant();
         target.SecondaryButtonLabel = Clean(source.SecondaryButtonLabel); target.SecondaryLink = Clean(source.SecondaryLink);
         target.SortOrder = source.SortOrder; target.IsVisible = source.IsVisible;
     }
@@ -184,9 +186,11 @@ public sealed class BannersController : ControllerBase
     private static string? Clean(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
     private static bool ValidateActions(BannerUpsertRequest request, out string error)
     {
+        request.PrimaryActionType = string.IsNullOrWhiteSpace(request.PrimaryActionType) ? "NONE" : request.PrimaryActionType.Trim().ToUpperInvariant();
+        request.SecondaryActionType = string.IsNullOrWhiteSpace(request.SecondaryActionType) ? "NONE" : request.SecondaryActionType.Trim().ToUpperInvariant();
         foreach (var action in new[] { (request.PrimaryActionType, request.PrimaryButtonLabel, request.PrimaryLink), (request.SecondaryActionType, request.SecondaryButtonLabel, request.SecondaryLink) })
         {
-            var type = action.Item1.Trim().ToUpperInvariant();
+            var type = action.Item1;
             if (!ActionTypes.Contains(type)) { error = "Loại CTA không hợp lệ."; return false; }
             if (type != "NONE" && string.IsNullOrWhiteSpace(action.Item2)) { error = "CTA phải có nhãn nút."; return false; }
             if (type == "SECTION" && (string.IsNullOrWhiteSpace(action.Item3) || !action.Item3.StartsWith('#'))) { error = "Liên kết section phải bắt đầu bằng #."; return false; }
@@ -200,8 +204,7 @@ public sealed class BannersController : ControllerBase
         if (file is null || file.Length == 0) return (null, "Vui lòng chọn ảnh.");
         if (file.Length > MaxImageSize) return (null, "Ảnh không được vượt quá 5 MB.");
         var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
-        var allowedMime = ext switch { ".jpg" or ".jpeg" => "image/jpeg", ".png" => "image/png", ".webp" => "image/webp", _ => null };
-        if (allowedMime is null || !string.Equals(file.ContentType, allowedMime, StringComparison.OrdinalIgnoreCase)) return (null, "Chỉ chấp nhận ảnh JPG, PNG hoặc WebP.");
+        if (ext is not (".jpg" or ".jpeg" or ".png" or ".webp")) return (null, "Chỉ chấp nhận ảnh JPG, PNG hoặc WebP.");
         var header = new byte[12];
         await using var stream = file.OpenReadStream();
         var read = await stream.ReadAsync(header, ct);

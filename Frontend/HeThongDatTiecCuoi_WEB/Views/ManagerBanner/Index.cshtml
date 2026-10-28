@@ -33,7 +33,7 @@
                     <div class="banner-actions">
                         <button type="button" class="icon-btn" title="Xem trước" data-banner-preview="@item.BannerId"><i class="fa-regular fa-eye"></i></button>
                         <button type="button" class="icon-btn" title="Chỉnh sửa" data-banner-edit="@item.BannerId"><i class="fa-regular fa-pen-to-square"></i></button>
-                        <form method="post" asp-action="Toggle"><input type="hidden" name="id" value="@item.BannerId"/><input type="hidden" name="visible" value="@(!item.IsVisible)"/><input type="hidden" name="version" value="@item.Version"/><button class="icon-btn" title="@(item.IsVisible ? "Ẩn" : "Hiện")"><i class="fa-regular @(item.IsVisible ? "fa-eye-slash" : "fa-eye")"></i></button></form>
+                        <form method="post" asp-action="Toggle"><input type="hidden" name="id" value="@item.BannerId"/><input type="hidden" name="visible" value="@(item.IsVisible ? "false" : "true")"/><button class="icon-btn" title="@(item.IsVisible ? "Ẩn" : "Hiện")"><i class="fa-regular @(item.IsVisible ? "fa-eye-slash" : "fa-eye")"></i></button></form>
                         <form method="post" asp-action="Delete" data-delete-banner><input type="hidden" name="id" value="@item.BannerId"/><button class="icon-btn danger" title="Xóa"><i class="fa-regular fa-trash-can"></i></button></form>
                     </div>
                 </article>
@@ -45,8 +45,8 @@
 
 <dialog class="banner-dialog" id="bannerFormDialog">
     <form method="post" asp-action="Save" enctype="multipart/form-data" id="bannerForm">
-        <input type="hidden" name="BannerId"/><input type="hidden" name="Version"/>
-        <header><div><span class="backoffice-hero__eyebrow">NỘI DUNG CINEMATIC HERO</span><h2 id="bannerFormTitle">Thêm Banner</h2></div><button type="button" data-dialog-close aria-label="Đóng">×</button></header>
+        <input type="hidden" name="BannerId" value="0"/><input type="hidden" name="Version"/>
+        <header><div><span class="backoffice-hero__eyebrow">NỘI DUNG CINEMATIC HERO</span><h2 id="bannerFormTitle">Thêm Banner</h2></div><button type="button" data-dialog-close aria-label="Đóng"><i class="fa-solid fa-xmark"></i></button></header>
         <div class="banner-form-body">
             <label class="banner-upload"><span class="banner-image-preview"><i class="fa-regular fa-image"></i></span><b>Ảnh banner <span>*</span></b><small>JPG, PNG, WebP · tối đa 5 MB · khuyến nghị 1920×1080.</small><input type="file" name="Image" accept="image/jpeg,image/png,image/webp" data-banner-image/></label>
             <div class="banner-fields">
@@ -61,6 +61,6 @@
         <footer><button type="button" class="banner-btn light" data-dialog-close>Hủy</button><button class="banner-btn gold"><i class="fa-regular fa-floppy-disk"></i> Lưu banner</button></footer>
     </form>
 </dialog>
-<dialog class="banner-dialog preview" id="bannerPreviewDialog"><div class="preview-card"><img alt=""/><div><button type="button" data-dialog-close>×</button><h2></h2><h3></h3><p></p></div></div></dialog>
+<dialog class="banner-dialog preview" id="bannerPreviewDialog"><div class="preview-card"><img alt=""/><div><h2></h2><h3></h3><p></p></div><button type="button" data-dialog-close class="preview-close-btn" aria-label="Đóng"><i class="fa-solid fa-xmark"></i></button></div></dialog>
 <script type="application/json" id="bannerData">@Html.Raw(JsonSerializer.Serialize(Model.Banners, new JsonSerializerOptions(JsonSerializerDefaults.Web)))</script>
 @section Scripts { <script src="~/js/manager-banner.js" asp-append-version="true"></script> }

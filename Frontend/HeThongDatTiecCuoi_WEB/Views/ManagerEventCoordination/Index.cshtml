@@ -57,7 +57,15 @@
                         <td>@(item.HallManagerName ?? "Chưa bổ nhiệm")</td>
                         <td>@(item.CoordinatorName ?? "-")</td>
                         <td><span class="event-badge coordination @item.CoordinationState.ToLowerInvariant()">@CoordinationLabel(item.CoordinationState)</span></td>
-                        <td><button type="button" class="view-event" data-booking-id="@item.BookingId" aria-label="Xem chi tiết @item.BookingCode" title="Xem chi tiết"><i class="fa-regular fa-eye"></i></button></td>
+                        <td class="event-actions-cell">
+                            <button type="button" class="view-event" data-booking-id="@item.BookingId" aria-label="Xem chi tiết @item.BookingCode" title="Xem chi tiết"><i class="fa-regular fa-eye"></i></button>
+                            @if (item.BookingStatusCode != "CANCELLED" && item.BookingStatusCode != "COMPLETED")
+                            {
+                                <button type="button" class="assign-event-btn" data-emergency-assign="@item.BookingId" data-booking-code="@item.BookingCode" data-event-info="@item.EventDate.ToString("dd/MM/yyyy") - @item.Shift" data-current-coordinator="@(item.CoordinatorName ?? "")" title="Phân công / Đổi điều phối viên" aria-label="Phân công hoặc đổi điều phối viên">
+                                    <i class="fa-solid fa-user-gear"></i>
+                                </button>
+                            }
+                        </td>
                     </tr>
                 }
                 </tbody>
@@ -88,5 +96,64 @@
 
 <div class="event-drawer-overlay" id="eventDrawerOverlay" hidden></div>
 <aside class="event-drawer" id="eventDrawer" aria-hidden="true" aria-label="Chi tiết tiệc"><div id="eventDrawerContent"><div class="drawer-loading"><i class="fa-solid fa-spinner fa-spin"></i><span>Đang tải chi tiết...</span></div></div></aside>
+
+<!-- Modal Phân công khẩn cấp / Đổi điều phối viên -->
+<div class="event-modal-overlay" id="reassignModalOverlay" hidden></div>
+<div class="event-modal" id="reassignModal" hidden role="dialog" aria-modal="true" aria-labelledby="reassignModalTitle">
+    <div class="event-modal-dialog">
+        <header class="event-modal-header">
+            <div class="event-modal-header-text">
+                <span class="event-modal-eyebrow"><i class="fa-solid fa-user-shield"></i> CAN THIỆP QUẢN LÝ</span>
+                <h3 id="reassignModalTitle">Phân công / Đổi điều phối viên</h3>
+                <p id="reassignModalSubtitle">-</p>
+            </div>
+            <button type="button" class="event-modal-close" data-close-reassign aria-label="Đóng"><i class="fa-solid fa-xmark"></i></button>
+        </header>
+        <form id="reassignForm" class="event-modal-body">
+            <input type="hidden" id="reassignBookingId" />
+            <div class="reassign-info-box">
+                <div class="reassign-info-item">
+                    <span class="label">Mã tiệc:</span>
+                    <strong id="reassignBookingCode">-</strong>
+                </div>
+                <div class="reassign-info-item">
+                    <span class="label">Ngày &amp; Ca:</span>
+                    <strong id="reassignEventTime">-</strong>
+                </div>
+                <div class="reassign-info-item">
+                    <span class="label">Điều phối hiện tại:</span>
+                    <strong id="reassignCurrentCoordinator" class="highlight">-</strong>
+                </div>
+            </div>
+
+            <div class="reassign-form-group">
+                <label for="reassignCoordinatorSelect" class="reassign-form-label">
+                    Chọn Điều phối viên <span class="required">*</span>
+                </label>
+                <div class="select-loading-wrap">
+                    <select id="reassignCoordinatorSelect" class="reassign-form-control" required>
+                        <option value="">-- Đang tải danh sách điều phối viên... --</option>
+                    </select>
+                </div>
+                <small class="reassign-form-hint" id="coordinatorHint"><i class="fa-solid fa-circle-info"></i> Hệ thống tự động kiểm tra lịch rảnh và cảnh báo trùng ca trực.</small>
+            </div>
+
+            <div class="reassign-form-group">
+                <label for="reassignReason" class="reassign-form-label">
+                    Lý do can thiệp / phân công <span class="required">*</span>
+                </label>
+                <textarea id="reassignReason" class="reassign-form-control" rows="3" placeholder="Nhập lý do phân công hoặc thay đổi điều phối viên (ví dụ: Nhân sự xin nghỉ phép đột xuất, phân công tăng cường theo yêu cầu của khách hàng...)" required minlength="3"></textarea>
+                <small class="reassign-form-hint"><i class="fa-solid fa-shield-halved"></i> Lý do can thiệp được lưu trữ vĩnh viễn trong Nhật ký kiểm toán hệ thống.</small>
+            </div>
+
+            <div class="event-modal-footer">
+                <button type="button" class="btn-cancel" data-close-reassign>Hủy bỏ</button>
+                <button type="submit" class="btn-gold" id="btnSubmitReassign">
+                    <i class="fa-solid fa-check"></i> <span>Xác nhận phân công</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
 
 @section Scripts { <script src="~/js/manager-event-coordination.js" asp-append-version="true"></script> }

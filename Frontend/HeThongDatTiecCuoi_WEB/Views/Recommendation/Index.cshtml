@@ -1920,16 +1920,29 @@
                 const capMinTables = Number(h.capacity_min_tables ?? h.capacityMinTables ?? h.CapacityMinTables ?? 0) || Math.floor(capMinGuests / 10);
                 const capLabel = capMinTables > 0 ? `${capMinTables} - ${capMaxTables} bàn (${capGuests} khách)` : `${capMaxTables} bàn (${capGuests} khách)`;
                 const price = Number(h.rentalPrice ?? h.RentalPrice ?? 0);
-                const priceStr = isNaN(price) ? '0' : price.toLocaleString('vi-VN');
+                const priceNoon = Number(h.rentalPriceNoon ?? h.RentalPriceNoon ?? price);
+                const priceEve = Number(h.rentalPriceEvening ?? h.RentalPriceEvening ?? price);
+                const isWeekend = Boolean(h.isWeekend ?? h.IsWeekend);
+
+                const priceNoonStr = isNaN(priceNoon) ? '0' : priceNoon.toLocaleString('vi-VN');
+                const priceEveStr = isNaN(priceEve) ? '0' : priceEve.toLocaleString('vi-VN');
+
+                let priceLabel = '';
+                if (isWeekend) {
+                    priceLabel = `Giá thuê: ${priceEveStr} đ (Cuối tuần +25%)`;
+                } else {
+                    priceLabel = `Trưa: ${priceNoonStr} đ • Tối (+15%): ${priceEveStr} đ`;
+                }
+
                 const noonFree = h.isNoonAvailable ?? h.IsNoonAvailable ?? false;
                 const eveFree = h.isEveningAvailable ?? h.IsEveningAvailable ?? false;
                 const safeDate = (dateStr || '').replace(/'/g, '');
                 const noonBtn = noonFree
-                    ? `<button type="button" onclick="selectShowtimeSlot('${safeDate}', 'Ca trưa')" class="recom-slot-free"><span class="recom-slot-title">Ca Trưa (10:30 – 14:00)</span><span class="recom-slot-sub"><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Còn trống (Bấm để chọn)</span></button>`
+                    ? `<button type="button" onclick="selectShowtimeSlot('${safeDate}', 'Ca trưa')" class="recom-slot-free"><span class="recom-slot-title">Ca Trưa (10:30 – 14:00) • ${priceNoonStr} đ</span><span class="recom-slot-sub"><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Còn trống (Bấm để chọn)</span></button>`
                     : `<button type="button" disabled class="recom-slot-locked"><span class="recom-slot-title">Ca Trưa (10:30 – 14:00)</span><span class="recom-slot-sub"><span class="material-symbols-outlined" aria-hidden="true">cancel</span> Đã kín lịch</span></button>`;
 
                 const eveBtn = eveFree
-                    ? `<button type="button" onclick="selectShowtimeSlot('${safeDate}', 'Ca tối')" class="recom-slot-free"><span class="recom-slot-title">Ca Tối (17:30 – 21:30)</span><span class="recom-slot-sub"><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Còn trống (Bấm để chọn)</span></button>`
+                    ? `<button type="button" onclick="selectShowtimeSlot('${safeDate}', 'Ca tối')" class="recom-slot-free"><span class="recom-slot-title">Ca Tối (17:30 – 21:30) • ${priceEveStr} đ</span><span class="recom-slot-sub"><span class="material-symbols-outlined" aria-hidden="true">check_circle</span> Còn trống (Bấm để chọn)</span></button>`
                     : `<button type="button" disabled class="recom-slot-locked"><span class="recom-slot-title">Ca Tối (17:30 – 21:30)</span><span class="recom-slot-sub"><span class="material-symbols-outlined" aria-hidden="true">cancel</span> Đã kín lịch</span></button>`;
 
                 const card = document.createElement('div');
@@ -1937,7 +1950,7 @@
                 card.innerHTML = `
                         <div class="recom-matrix-head">
                             <strong><span class="material-symbols-outlined" aria-hidden="true">apartment</span> Sảnh ${hallName}</strong>
-                            <span>Sức chứa: ${capLabel} • Giá: ${priceStr} đ</span>
+                            <span>Sức chứa: ${capLabel} • ${priceLabel}</span>
                         </div>
                         <div class="recom-matrix-slots">${noonBtn}${eveBtn}</div>`;
                 container.appendChild(card);

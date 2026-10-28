@@ -1,4 +1,4 @@
-using HeThongDatTiecCuoi_WEB.Models.AdminAccount;
+﻿using HeThongDatTiecCuoi_WEB.Models.AdminAccount;
 using HeThongDatTiecCuoi_WEB.Models.AdminHall;
 using HeThongDatTiecCuoi_WEB.Models.Auth;
 using HeThongDatTiecCuoi_WEB.Models.Common;
@@ -133,6 +133,18 @@ public sealed class RiversideApiClient : IRiversideApiClient
             $"api/manager/event-coordination/calendar?{string.Join('&', query)}", null, accessToken, cancellationToken);
     }
 
+    public Task<ApiCallResult<List<ManagerAvailableCoordinatorViewModel>>> GetManagerCoordinationAvailableCoordinatorsAsync(
+        string accessToken, int bookingId, CancellationToken cancellationToken) =>
+        SendAsync<List<ManagerAvailableCoordinatorViewModel>>(HttpMethod.Get,
+            $"api/manager/event-coordination/{bookingId}/available-coordinators", null, accessToken, cancellationToken);
+
+    public Task<ApiCallResult<ManagerAssignResultViewModel>> AssignManagerEventCoordinatorAsync(
+        string accessToken, int bookingId, int coordinatorEmployeeId, string reason, CancellationToken cancellationToken) =>
+        SendAsync<ManagerAssignResultViewModel>(HttpMethod.Post,
+            $"api/manager/event-coordination/{bookingId}/assign",
+            new { CoordinatorEmployeeId = coordinatorEmployeeId, Reason = reason },
+            accessToken, cancellationToken);
+
     public Task<ApiCallResult<HallManagerCoordinationListViewModel>> GetHallManagerCoordinationAsync(
         string accessToken, string? search, int? hallId, DateTime? eventDate, string? coordinationStatus,
         int page, int pageSize, CancellationToken cancellationToken)
@@ -255,6 +267,46 @@ public sealed class RiversideApiClient : IRiversideApiClient
         catch (HttpRequestException)
         {
             return ApiCallResult<PdfDownloadViewModel>.Failure("Không thể kết nối Backend API. Hãy kiểm tra API đã chạy hay chưa.");
+        }
+        catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return ApiCallResult<PdfDownloadViewModel>.Failure("Backend API phản hồi quá lâu.");
+        }
+    }
+
+    public Task<ApiCallResult<object>> RecordManagerPaymentAsync(
+        string accessToken, RecordPaymentViewModel model, CancellationToken cancellationToken) =>
+        SendAsync<object>(HttpMethod.Post, "api/manager/payments/record-cash", model, accessToken, cancellationToken);
+
+    public Task<ApiCallResult<ContractPayOsLinkResultViewModel>> CreateManagerPayOsPaymentLinkAsync(
+        string accessToken, CreateContractPayOsLinkViewModel model, CancellationToken cancellationToken) =>
+        SendAsync<ContractPayOsLinkResultViewModel>(HttpMethod.Post, "api/manager/payments/create-payos-link", model, accessToken, cancellationToken);
+
+    public Task<ApiCallResult<HeThongDatTiecCuoi_WEB.Models.Payment.PaymentStatusResponseViewModel>> CheckManagerPayOsPaymentStatusAsync(
+        string accessToken, long orderCode, CancellationToken cancellationToken) =>
+        SendAsync<HeThongDatTiecCuoi_WEB.Models.Payment.PaymentStatusResponseViewModel>(
+            HttpMethod.Get, $"api/manager/payments/check-payos/{orderCode}", null, accessToken, cancellationToken);
+
+    public async Task<ApiCallResult<PdfDownloadViewModel>> DownloadPublicContractPdfAsync(
+        string bookingCode, string phone, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var url = $"api/v1/public/bookings/{Uri.EscapeDataString(bookingCode)}/contract/pdf?phone={Uri.EscapeDataString(phone)}";
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            using var response = await _httpClient.SendAsync(request, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+                return ApiCallResult<PdfDownloadViewModel>.Failure(await ReadErrorAsync(response, cancellationToken), (int)response.StatusCode);
+            var bytes = await response.Content.ReadAsByteArrayAsync(cancellationToken);
+            var fileName = response.Content.Headers.ContentDisposition?.FileNameStar
+                ?? response.Content.Headers.ContentDisposition?.FileName?.Trim('"')
+                ?? $"HopDong_{bookingCode}.pdf";
+            return ApiCallResult<PdfDownloadViewModel>.Success(new PdfDownloadViewModel(
+                bytes, fileName, response.Content.Headers.ContentType?.MediaType ?? "application/pdf"));
+        }
+        catch (HttpRequestException)
+        {
+            return ApiCallResult<PdfDownloadViewModel>.Failure("Không thể kết nối Backend API.");
         }
         catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
@@ -1262,7 +1314,7 @@ public sealed class RiversideApiClient : IRiversideApiClient
 
 
     // =========================================================
-    // MÓN ĂN
+    // MÃ“N Ä‚N
     // =========================================================
 
     public async Task<ApiCallResult<List<DishViewModel>>> GetDishesAsync(
@@ -2060,7 +2112,8 @@ public sealed class RiversideApiClient : IRiversideApiClient
             HallId = GetJsonInt(it, "hall_id", "HallId"),
             HallName = hallName,
             HallImageUrl = hallImageUrl,
-            HallRentalPrice = GetJsonDecimal(it, "hall_price", "HallPrice", "hallPrice", "hall_rental_price"),
+            HallCode = GetJsonString(it, "hall_code", "HallCode", "hallCode") ?? string.Empty,
+            HallRentalPrice = GetJsonDecimal(it, "hallRentalPrice", "HallRentalPrice", "hall_rental_price", "hall_price", "HallPrice", "hallPrice"),
             HallCapacity = hallMaxGuests,
             CapacityMinGuests = GetJsonInt(it, "hall_min_guests", "capacity_min_guests", "CapacityMinGuests"),
             CapacityMaxGuests = hallMaxGuests,
@@ -2515,7 +2568,7 @@ public sealed class RiversideApiClient : IRiversideApiClient
         }
     }
 
-    // UC10: POST /api/v1/ai-chat/send (AllowAnonymous) — proxy FE -> BE -> AI_Service RAG.
+    // UC10: POST /api/v1/ai-chat/send (AllowAnonymous) â€” proxy FE -> BE -> AI_Service RAG.
     public async Task<ApiCallResult<HeThongDatTiecCuoi_WEB.Models.AiChat.AiChatReplyViewModel>> SendAiChatAsync(
         HeThongDatTiecCuoi_WEB.Models.AiChat.AiChatSendViewModel request,
         CancellationToken cancellationToken = default)

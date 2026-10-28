@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
@@ -219,6 +219,15 @@ public class HallSlotItemViewModel
 
     [JsonPropertyName("rentalPrice")]
     public decimal RentalPrice { get; set; }
+
+    [JsonPropertyName("rentalPriceNoon")]
+    public decimal RentalPriceNoon { get; set; }
+
+    [JsonPropertyName("rentalPriceEvening")]
+    public decimal RentalPriceEvening { get; set; }
+
+    [JsonPropertyName("isWeekend")]
+    public bool IsWeekend { get; set; }
 
     [JsonPropertyName("isNoonAvailable")]
     public bool IsNoonAvailable { get; set; }

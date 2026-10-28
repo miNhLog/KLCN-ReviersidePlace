@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
@@ -81,6 +81,16 @@ public class PublicBookingDetailViewModel
     public string? SpecialRequests { get; set; }
     public string? ConsultantName { get; set; }
     public string? ConsultantPhone { get; set; }
+
+    public int? ContractId { get; set; }
+    public string? ContractCode { get; set; }
+    public string? ContractStatusCode { get; set; }
+    public string? ContractStatusName { get; set; }
+    public string? ContractContent { get; set; }
+    public string? PaymentTerms { get; set; }
+    public decimal? ContractTotalValue { get; set; }
+    public decimal? ContractPaidAmount { get; set; }
+    public bool HasContract => ContractId.HasValue;
 
     public bool IsCancelled => StatusCode == "CANCELLED" || StatusName == "Đã hủy";
     public bool IsPending => StatusCode == "PENDING" || StatusName == "Chờ xác nhận";

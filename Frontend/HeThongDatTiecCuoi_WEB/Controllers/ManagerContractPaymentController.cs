@@ -1,4 +1,4 @@
-using HeThongDatTiecCuoi_WEB.Constants;
+﻿using HeThongDatTiecCuoi_WEB.Constants;
 using HeThongDatTiecCuoi_WEB.Models.ManagerContractPayment;
 using HeThongDatTiecCuoi_WEB.Models.Auth;
 using HeThongDatTiecCuoi_WEB.Services;
@@ -123,6 +123,37 @@ public sealed class ManagerContractPaymentController : Controller
         if (!result.Succeeded || result.Value is null)
             return StatusCode(result.StatusCode ?? StatusCodes.Status502BadGateway, result.Error);
         return File(result.Value.Content, result.Value.ContentType, result.Value.FileName);
+    }
+
+    [HttpPost("payments/record-cash")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RecordCash([FromBody] RecordPaymentViewModel model, CancellationToken cancellationToken)
+    {
+        if (!ModelState.IsValid) return BadRequest(new { success = false, message = "Dữ liệu thanh toán không hợp lệ." });
+        var token = Token();
+        if (token is null) return UnauthorizedJson();
+        var result = await _api.RecordManagerPaymentAsync(token, model, cancellationToken);
+        return ApiJson(result);
+    }
+
+    [HttpPost("payments/create-payos-link")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CreatePayOsLink([FromBody] CreateContractPayOsLinkViewModel model, CancellationToken cancellationToken)
+    {
+        if (!ModelState.IsValid) return BadRequest(new { success = false, message = "Dữ liệu tạo link thanh toán không hợp lệ." });
+        var token = Token();
+        if (token is null) return UnauthorizedJson();
+        var result = await _api.CreateManagerPayOsPaymentLinkAsync(token, model, cancellationToken);
+        return ApiJson(result);
+    }
+
+    [HttpGet("payments/check-payos/{orderCode:long}")]
+    public async Task<IActionResult> CheckPayOs(long orderCode, CancellationToken cancellationToken)
+    {
+        var token = Token();
+        if (token is null) return UnauthorizedJson();
+        var result = await _api.CheckManagerPayOsPaymentStatusAsync(token, orderCode, cancellationToken);
+        return ApiJson(result);
     }
 
     private string? Token() => Request.Cookies[TokenCookie];

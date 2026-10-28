@@ -21,8 +21,10 @@ public sealed class BookingListResponseDto
     public int PageSize { get; set; }
     public int TotalPages => (int)Math.Ceiling((double)TotalCount / PageSize);
     public int PendingCount { get; set; }
+    public int PendingConfirmationCount => PendingCount;
     public int ConfirmedCount { get; set; }
     public int PreparingCount { get; set; }
+    public int DepositedCount => PreparingCount;
     public int CompletedCount { get; set; }
     public int CancelledCount { get; set; }
 }

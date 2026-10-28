@@ -122,6 +122,7 @@ builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IStatusService, StatusService>();
 builder.Services.AddSingleton<IPaymentPolicyProvider, PaymentPolicyProvider>();
+builder.Services.AddSingleton<IHallPricingPolicyService, HallPricingPolicyService>();
 builder.Services.Configure<SmsOptions>(builder.Configuration.GetSection(SmsOptions.SectionName));
 builder.Services.Configure<PayOSOptions>(builder.Configuration.GetSection("PayOS"));
 builder.Services.AddSingleton(sp =>

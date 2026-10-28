@@ -14,7 +14,7 @@
     --coord-shadow: 0 6px 20px rgba(15, 35, 61, .055);
 }
 
-.coordination-page { min-height: calc(100vh - 70px); padding: 20px 30px 38px; background: var(--coord-bg); color: var(--coord-text); font-family: "Be Vietnam Pro", sans-serif; }
+.coordination-page { min-height: calc(100vh - 70px); padding: 20px 30px 38px; background: var(--coord-bg); color: var(--coord-text); font-family: "Plus Jakarta Sans", sans-serif; }
 .coord-breadcrumb { display: flex; align-items: center; gap: 9px; margin-bottom: 14px; color: var(--coord-muted); font-size: 11px; }
 .coord-breadcrumb i { color: #a8b1bd; font-size: 8px; }
 .coord-breadcrumb strong { color: #4a5a70; }

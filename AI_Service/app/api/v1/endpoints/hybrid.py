@@ -29,6 +29,8 @@ def _enumerate_candidates(payload: RecommendationRequest):
     priority = list(payload.priority_services or [])
     budget = float(payload.expected_budget)
     table_count = int(payload.table_count)
+    shift = getattr(payload, "shift", "")
+    event_date_str = getattr(payload, "event_date", "")
     svc_map = {s["service_id"]: s["price"] for s in catalog["services"]}
     out = []
     for hall in halls:
@@ -36,18 +38,20 @@ def _enumerate_candidates(payload: RecommendationRequest):
             continue
         if table_count < hall["min_tables"] or table_count > hall["max_tables"]:
             continue
+        hall_price = wsm_engine.calculate_hall_price(hall["base_price"], shift, event_date_str)
         for menu in menus:
             for decor in decors:
                 est_services = sum(svc_map.get(s, 0) for s in priority)
-                est_total = (menu["price_per_table"] * table_count + hall["base_price"]
+                est_total = (menu["price_per_table"] * table_count + hall_price
                              + decor["price"] + est_services)
                 if est_total > budget + _pricing_config.budget_tolerance(budget):
                     continue
                 included = list(priority)
                 s, parts, total = wsm_engine.score_candidate(
                     budget, table_count, payload.desired_style, priority,
-                    hall, float(menu["price_per_table"]), decor, included, groups, weights)
-                out.append({"hall": hall, "menu": menu, "decor": decor,
+                    hall, float(menu["price_per_table"]), decor, included, groups, weights,
+                    shift, event_date_str)
+                out.append({"hall": hall, "hall_price": hall_price, "menu": menu, "decor": decor,
                             "included": included, "score": s, "parts": parts, "total": total})
     return out
 
@@ -97,7 +101,7 @@ def rank_hybrid(payload: HybridRankRequest):
         st_score = round(max(50.0, min(100.0, (1.0 if r3 >= 1.0 else 0.85 if r3 >= 0.5 else 0.75) * 100)), 1)
         rt_score = round(max(50.0, min(100.0, ((sp_score + st_score) / 2))), 1)
         items.append(RecommendationItem(
-            hall_id=hall["hall_id"], hall_name=hall["hall_name"], hall_price=float(hall["base_price"]),
+            hall_id=hall["hall_id"], hall_name=hall["hall_name"], hall_price=float(entry.get("hall_price") or hall["base_price"]),
             hall_min_guests=int(hall.get("min_guests", hall["min_tables"] * 10)),
             hall_max_guests=int(hall.get("max_guests", hall["max_tables"] * 10)),
             hall_min_tables=int(hall["min_tables"]), hall_max_tables=int(hall["max_tables"]),

@@ -174,6 +174,9 @@ public sealed class HallAvailabilityItemDto
     [JsonPropertyName("capacity_min_tables")] public int CapacityMinTables { get; set; }
     [JsonPropertyName("capacity_max_tables")] public int CapacityMaxTables { get; set; }
     [JsonPropertyName("rentalPrice")] public decimal RentalPrice { get; set; }
+    [JsonPropertyName("rentalPriceNoon")] public decimal RentalPriceNoon { get; set; }
+    [JsonPropertyName("rentalPriceEvening")] public decimal RentalPriceEvening { get; set; }
+    [JsonPropertyName("isWeekend")] public bool IsWeekend { get; set; }
     [JsonPropertyName("isNoonAvailable")] public bool IsNoonAvailable { get; set; }
     [JsonPropertyName("isEveningAvailable")] public bool IsEveningAvailable { get; set; }
 }

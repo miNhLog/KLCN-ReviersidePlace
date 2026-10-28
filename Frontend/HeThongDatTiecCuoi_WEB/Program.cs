@@ -25,6 +25,10 @@ builder.Services
             ?? throw new InvalidOperationException("Thiếu RiversideApi:BaseUrl.");
         client.BaseAddress = new Uri(baseUrl);
         client.Timeout = TimeSpan.FromSeconds(20);
+    })
+    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+    {
+        ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
     });
 
 builder.Services.AddHttpClient("RiversideApi", client =>
@@ -33,6 +37,10 @@ builder.Services.AddHttpClient("RiversideApi", client =>
         ?? throw new InvalidOperationException("Thiếu RiversideApi:BaseUrl.");
     client.BaseAddress = new Uri(baseUrl);
     client.Timeout = TimeSpan.FromSeconds(20);
+})
+.ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+{
+    ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
 });
 
 builder.Services

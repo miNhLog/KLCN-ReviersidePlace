@@ -1,4 +1,4 @@
-﻿@model HeThongDatTiecCuoi_WEB.Models.AdminBooking.BookingListResponseViewModel
+@model HeThongDatTiecCuoi_WEB.Models.AdminBooking.BookingListResponseViewModel
 @{
     ViewData["Title"] = "Quản Lý Đặt Tiệc";
     Layout = "_AdminLayout";
@@ -222,7 +222,7 @@
             <button type="button" onclick="filterByStatus(event, 'PENDING')" class="status-tab-btn px-3.5 py-2 rounded-lg font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-700 shrink-0 text-xs flex items-center gap-1.5">
                 <i class="fa-regular fa-clock text-[10px]"></i>
                 <span>Chờ xác nhận</span>
-                <span class="px-1.5 py-0.5 rounded text-[10px] bg-blue-100 text-blue-700 font-bold" id="countPending">@Model.PendingConfirmationCount</span>
+                <span class="px-1.5 py-0.5 rounded text-[10px] bg-blue-100 text-blue-700 font-bold" id="countPending">@(Model.PendingCount > 0 ? Model.PendingCount : Model.PendingConfirmationCount)</span>
             </button>
             <button type="button" onclick="filterByStatus(event, 'CONFIRMED')" class="status-tab-btn px-3.5 py-2 rounded-lg font-semibold text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 shrink-0 text-xs flex items-center gap-1.5">
                 <i class="fa-solid fa-check-double text-[10px]"></i>
@@ -232,7 +232,7 @@
             <button type="button" onclick="filterByStatus(event, 'PREPARING')" class="status-tab-btn px-3.5 py-2 rounded-lg font-semibold text-slate-700 hover:bg-amber-50 hover:text-amber-700 shrink-0 text-xs flex items-center gap-1.5">
                 <i class="fa-solid fa-list-check text-[10px]"></i>
                 <span>Đang chuẩn bị</span>
-                <span class="px-1.5 py-0.5 rounded text-[10px] bg-amber-100 text-amber-800 font-bold" id="countDeposited">@Model.DepositedCount</span>
+                <span class="px-1.5 py-0.5 rounded text-[10px] bg-amber-100 text-amber-800 font-bold" id="countDeposited">@(Model.PreparingCount > 0 ? Model.PreparingCount : Model.DepositedCount)</span>
             </button>
             <button type="button" onclick="filterByStatus(event, 'COMPLETED')" class="status-tab-btn px-3.5 py-2 rounded-lg font-semibold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 shrink-0 text-xs flex items-center gap-1.5">
                 <i class="fa-solid fa-circle-check text-[10px]"></i>
@@ -893,9 +893,9 @@
 
             // Cập nhật số liệu tabs
             document.getElementById('countTotal').innerText = data.totalCount ?? data.TotalCount ?? 0;
-            document.getElementById('countPending').innerText = data.pendingConfirmationCount ?? data.PendingConfirmationCount ?? 0;
+            document.getElementById('countPending').innerText = data.pendingCount ?? data.pendingConfirmationCount ?? data.PendingCount ?? data.PendingConfirmationCount ?? 0;
             document.getElementById('countConfirmed').innerText = data.confirmedCount ?? data.ConfirmedCount ?? 0;
-            document.getElementById('countDeposited').innerText = data.depositedCount ?? data.DepositedCount ?? 0;
+            document.getElementById('countDeposited').innerText = data.preparingCount ?? data.depositedCount ?? data.PreparingCount ?? data.DepositedCount ?? 0;
             document.getElementById('countCompleted').innerText = data.completedCount ?? data.CompletedCount ?? 0;
             document.getElementById('countCancelled').innerText = data.cancelledCount ?? data.CancelledCount ?? 0;
 
@@ -1244,10 +1244,33 @@
         function renderAvailableHalls() {
             if (!createBookingOptions) return;
             const shift = document.getElementById('newShift').value;
+            const dateStr = document.getElementById('newEventDate').value;
+            let isWeekend = false;
+            if (dateStr) {
+                const parts = dateStr.split('-');
+                if (parts.length === 3) {
+                    const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+                    isWeekend = d.getDay() === 0 || d.getDay() === 6;
+                }
+            }
+            const isDinner = (shift || '').toLowerCase().includes('tối');
+
             const select = document.getElementById('newHallId');
             const current = select.value;
             const halls = createBookingOptions.halls.filter(x => shift === 'Ca trưa' ? x.isNoonAvailable : x.isEveningAvailable);
-            select.innerHTML = '<option value="">Chọn sảnh còn trống</option>' + halls.map(x => `<option value="${x.hallId}" data-price="${x.rentalPrice}">${escapeHtml(x.hallName)} — ${x.minimumCapacity || 0}-${x.maximumCapacity} khách</option>`).join('');
+            select.innerHTML = '<option value="">Chọn sảnh còn trống</option>' + halls.map(x => {
+                const base = Number(x.rentalPrice || 0);
+                let eff = base;
+                let policyTag = 'Ca trưa (giá gốc)';
+                if (isWeekend) {
+                    eff = Math.round(base * 1.25);
+                    policyTag = 'Cuối tuần (+25%)';
+                } else if (isDinner) {
+                    eff = Math.round(base * 1.15);
+                    policyTag = 'Ca tối (+15%)';
+                }
+                return `<option value="${x.hallId}" data-price="${eff}">${escapeHtml(x.hallName)} — ${x.minimumCapacity || 0}-${x.maximumCapacity} khách [${formatNumber(eff)} ₫ • ${policyTag}]</option>`;
+            }).join('');
             if (halls.some(x => String(x.hallId) === current)) select.value = current;
             updateCreateEstimate();
         }

@@ -529,6 +529,18 @@
         // 1. DỮ LIỆU ĐỒNG BỘ 100% CSDL SQL VÀ MẪU
         let currentTab = 'decor';
         const decorProjectImages = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ProjectImages.GetImages("DecorPackages")));
+        const serviceFallbackImages = {
+            'DV-SND-01': '/images/home/hero-ballroom-8k.jpg',
+            'DV-LGT-02': '/images/home/hero-ballroom-8k.jpg',
+            'DV-BND-03': '/images/home/hero-riverfront-8k.jpg',
+            'DV-LED-01': '/images/recommendation/romantic-wedding-banner.jpg',
+            'DV-BND-05': '/images/home/hero-riverfront-8k.jpg',
+            'DV001': '/images/home/hero-cuisine-8k.jpg',
+            'DV002': '/images/home/hero-riverfront-8k.jpg',
+            'DV003': '/images/home/hero-ballroom-8k.jpg',
+            'DV004': '/images/recommendation/romantic-wedding-banner.jpg',
+            'DV005': '/images/home/hero-wedding.jpg'
+        };
         const isUploadedImage = value => {
             if (!value) return false;
             try { return new URL(value, window.location.origin).pathname.toLowerCase().startsWith('/uploads/'); }
@@ -621,7 +633,7 @@
                 moTa: 'Hệ thống loa Line Array 8 module, sub kép công suất lớn, mixer Yamaha 32 kênh, 4 mic Shure không dây chống hú rít.',
                 spec1: '2 kỹ thuật viên âm thanh',
                 spec2: 'Setup trước ca 2.5h',
-                hinhAnh: '',
+                hinhAnh: '/images/home/hero-ballroom-8k.jpg',
                 trangThai: 'Áp dụng'
             },
             {
@@ -633,7 +645,7 @@
                 moTa: 'Gồm 12 đèn Moving Head Beam 380W sắc nét, 16 đèn Par LED 54 bóng nhuộm màu, 2 máy tạo khói lạnh Haze cao cấp.',
                 spec1: '1 kỹ sư lập trình DMX',
                 spec2: 'Setup trước ca 3.0h',
-                hinhAnh: '',
+                hinhAnh: '/images/home/hero-ballroom-8k.jpg',
                 trangThai: 'Áp dụng'
             },
             {
@@ -657,7 +669,7 @@
                 moTa: 'Gồm 2 Violin, 1 Viola, 1 Cello biểu diễn các bản tình ca cổ điển và pop cover lãng mạn suốt 60 phút đón khách tại Foyer.',
                 spec1: '4 nhạc công Nhạc viện TP.HCM',
                 spec2: 'Tổng thời lượng 90 phút',
-                hinhAnh: '',
+                hinhAnh: '/images/home/hero-riverfront-8k.jpg',
                 trangThai: 'Áp dụng'
             },
             {
@@ -669,7 +681,7 @@
                 moTa: 'Mật độ điểm ảnh siêu mịn P2.5, kích thước 7.5m x 4.0m, quét 3840Hz, xử lý tín hiệu trực tiếp từ camera live stream.',
                 spec1: 'Bộ vi xử lý NovaStar cao cấp',
                 spec2: '1 VJ trực visual sân khấu',
-                hinhAnh: '',
+                hinhAnh: '/images/recommendation/romantic-wedding-banner.jpg',
                 trangThai: 'Áp dụng'
             },
             {
@@ -681,7 +693,7 @@
                 moTa: 'Biểu diễn trọn gói nghi thức thính phòng hoàng gia. Tạm ngưng để thẩm định lại danh mục nhân sự và phối khí 2026.',
                 spec1: 'Dàn nhạc 12 nghệ sĩ chuyên nghiệp',
                 spec2: 'Tạm dừng tiếp nhận hợp đồng mới',
-                hinhAnh: '',
+                hinhAnh: '/images/home/hero-riverfront-8k.jpg',
                 trangThai: 'Ngừng áp dụng'
             }
         ];
@@ -727,7 +739,9 @@
                     moTa: item.description || '',
                     spec1: 'Theo cấu hình dịch vụ',
                     spec2: 'Theo kế hoạch vận hành',
-                    hinhAnh: item.imageUrl || '',
+                    hinhAnh: isUploadedImage(item.imageUrl)
+                        ? item.imageUrl
+                        : (serviceFallbackImages[item.serviceCode] || item.imageUrl || '/images/home/hero-wedding.jpg'),
                     trangThai: item.statusCode === 'ACTIVE' ? 'Áp dụng' : 'Ngừng áp dụng'
                 }));
             } catch (error) {
@@ -1152,6 +1166,9 @@
 
         function closeDecorModal() {
             document.getElementById('decorModal').classList.add('hidden');
+            const form = document.getElementById('decorForm');
+            if (form) form.reset();
+            removeImagePreview();
         }
 
         // 12. UPLOAD & PREVIEW ẢNH

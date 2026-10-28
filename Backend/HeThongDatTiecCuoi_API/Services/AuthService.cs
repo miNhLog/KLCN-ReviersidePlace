@@ -268,9 +268,10 @@ public sealed partial class AuthService : IAuthService
         }
         else
         {
+            var upperCode = identifier.ToUpperInvariant();
             var phone = PhoneNumberHelper.Normalize(identifier);
             user = await query.SingleOrDefaultAsync(
-                x => (x.Employee != null && x.Employee.PhoneNumber == phone) ||
+                x => (x.Employee != null && (x.Employee.EmployeeCode == upperCode || x.Employee.PhoneNumber == phone)) ||
                      (x.Customer != null && x.Customer.PhoneNumber == phone),
                 cancellationToken);
         }

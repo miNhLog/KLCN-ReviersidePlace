@@ -363,9 +363,9 @@
                         <div class="rp-info">
                             <h4>Tài chính</h4>
                             <div class="rp-kv"><span>Tổng dự toán</span><b>@detail.TotalAmount.ToString("N0") đ</b></div>
-                            <div class="rp-kv"><span>Đã cọc (SUCCESS)</span><b>@detail.DepositPaid.ToString("N0") đ</b></div>
+                            <div class="rp-kv"><span>Đã thanh toán</span><b>@detail.DepositPaid.ToString("N0") đ</b></div>
                             <div class="rp-kv"><span>Còn lại</span><b style="color:#B89758;">@detail.RemainingDebt.ToString("N0") đ</b></div>
-                            <div style="font-size:11.5px;color:#94A3B8;margin-top:8px;">Đã cọc = tổng ThanhToan SUCCESS thuộc HopDong của đơn này.</div>
+                            <div style="font-size:11.5px;color:#94A3B8;margin-top:8px;">Số tiền đã thanh toán được tự động đối soát qua PayOS và cập nhật vào hồ sơ hợp đồng.</div>
 
                             @if (!detail.IsCancelled && detail.DepositPaid <= 0)
                             {
@@ -402,6 +402,29 @@
                                         <i class="fa-solid fa-file-invoice-dollar"></i> Tải hóa đơn / biên lai điện tử (Ký số X.509)
                                     </a>
                                 </div>
+                                @if (detail != null && detail.HasContract)
+                                {
+                                    <div style="background: #FDFBF7; border: 1px solid #EEDBB2; border-radius: 12px; padding: 14px; margin-top: 14px;">
+                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                            <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #B89758;">Hợp đồng dịch vụ tiệc cưới</span>
+                                            <span class="rp-code" style="font-size: 12px;">@detail.ContractCode</span>
+                                        </div>
+                                        <div style="font-size: 12.5px; color: #334155; line-height: 1.5; margin-bottom: 12px;">
+                                            Hợp đồng chính thức xác lập quyền lợi, thực đơn, sảnh và tiến độ thanh toán tiệc cưới của quý khách.
+                                        </div>
+                                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                            <button type="button" class="rp-btn-gold" id="btnOpenContractModal" onclick="openCustomerContractModal()" style="padding: 9px 16px; font-size: 12.5px;">
+                                                <i class="fa-regular fa-file-lines"></i> Xem hợp đồng
+                                            </button>
+                                            <a class="rp-btn-ghost" id="btnDownloadContractPdf" style="text-decoration: none; display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; font-size: 12.5px; border-radius: 10px; border: 1px solid #B89758; color: #B89758; font-weight: 700;"
+                                               asp-controller="MyBooking" asp-action="DownloadContractPdf"
+                                               asp-route-bookingCode="@detail.BookingCode" asp-route-phone="@detail.PhoneNumber"
+                                               target="_blank">
+                                                <i class="fa-solid fa-file-arrow-down"></i> Tải PDF hợp đồng
+                                            </a>
+                                        </div>
+                                    </div>
+                                }
                             }
                         </div>
                     </div>
@@ -446,7 +469,7 @@
             {
                 <section class="rp-card" aria-label="Danh sách đơn theo SĐT">
                     <h2 style="font-family:'Playfair Display',serif;font-size:18px;margin:0 0 4px;">Đơn tiệc theo số điện thoại của bạn (@myBookings.Count)</h2>
-                    <p class="rp-sub">Danh sách rút gọn từ API cũ <code>GET /api/my-bookings</code> — bấm mã để tra cứu chi tiết đầy đủ ở trên.</p>
+                    <p class="rp-sub">Danh sách các tiệc cưới liên kết với số điện thoại của bạn — bấm chọn mã để xem chi tiết đầy đủ.</p>
                     <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px;">
                         @foreach (var b in myBookings)
                         {
@@ -459,6 +482,53 @@
                 </section>
             }
         </div>
+        @if (detail != null && detail.HasContract)
+        {
+            <div class="rp-modal-backdrop" id="contractDetailModal" role="dialog" aria-modal="true" aria-label="Chi tiết hợp đồng đặt tiệc">
+                <div class="rp-modal" style="max-width: 680px; max-height: 85vh; overflow-y: auto;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #E2E8F0; padding-bottom: 12px; margin-bottom: 16px;">
+                        <div>
+                            <span class="rp-eyebrow">HỢP ĐỒNG KÝ KẾT</span>
+                            <h3 style="margin: 2px 0 0; font-size: 20px;">Hợp Đồng Dịch Vụ Tiệc Cưới</h3>
+                        </div>
+                        <span class="rp-code">@detail.ContractCode</span>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; background: #FAF8F5; border: 1px solid #E9E2D3; border-radius: 12px; padding: 14px; margin-bottom: 16px; font-size: 12.5px;">
+                        <div>
+                            <span style="color: #64748B; display: block; font-size: 11px;">Bên A (Khách hàng):</span>
+                            <strong>@detail.CustomerName</strong>
+                            <div style="color: #64748B;">@detail.PhoneNumber</div>
+                        </div>
+                        <div>
+                            <span style="color: #64748B; display: block; font-size: 11px;">Bên B (Đơn vị tổ chức):</span>
+                            <strong>Trung Tâm Hội Nghị Tiệc Cưới Riverside Palace</strong>
+                            <div style="color: #64748B;">360D Bến Vân Đồn, Q.4, TP.HCM</div>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 16px;">
+                        <h4 style="font-size: 12px; text-transform: uppercase; color: #B89758; margin-bottom: 6px;">Nội Dung Hợp Đồng</h4>
+                        <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px; padding: 12px; font-size: 12.5px; line-height: 1.6; white-space: pre-wrap; color: #334155;">@(detail.ContractContent ?? "Hợp đồng dịch vụ tiệc cưới được thiết lập theo thông tin đặt tiệc.")</div>
+                    </div>
+
+                    <div style="margin-bottom: 16px;">
+                        <h4 style="font-size: 12px; text-transform: uppercase; color: #B89758; margin-bottom: 6px;">Điều Khoản &amp; Tiến Độ Thanh Toán</h4>
+                        <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px; padding: 12px; font-size: 12.5px; line-height: 1.6; white-space: pre-wrap; color: #334155;">@(detail.PaymentTerms ?? "Đợt 1: Đặt cọc 10%\nĐợt 2: Thanh toán 50% trước ngày tiệc 07 ngày\nĐợt 3: Quyết toán và phát sinh sau tiệc")</div>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #E2E8F0; padding-top: 14px;">
+                        <a class="rp-btn-gold" style="text-decoration: none; font-size: 12.5px; padding: 10px 18px;"
+                           asp-controller="MyBooking" asp-action="DownloadContractPdf"
+                           asp-route-bookingCode="@detail.BookingCode" asp-route-phone="@detail.PhoneNumber"
+                           target="_blank">
+                            <i class="fa-solid fa-file-arrow-down"></i> Tải bản PDF chính thức
+                        </a>
+                        <button type="button" class="rp-btn-ghost" onclick="closeCustomerContractModal()">Đóng</button>
+                    </div>
+                </div>
+            </div>
+        }
     </main>
     <partial name="_PublicFooter" />
 </div>
@@ -466,6 +536,16 @@
 <partial name="_PaymentDepositModal" />
 
 @section Scripts {
+    <script>
+        function openCustomerContractModal() {
+            var m = document.getElementById('contractDetailModal');
+            if (m) m.classList.add('open');
+        }
+        function closeCustomerContractModal() {
+            var m = document.getElementById('contractDetailModal');
+            if (m) m.classList.remove('open');
+        }
+    </script>
     <script src="~/js/public-site.js" asp-append-version="true"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
     <script src="~/js/payment-deposit.js" asp-append-version="true"></script>

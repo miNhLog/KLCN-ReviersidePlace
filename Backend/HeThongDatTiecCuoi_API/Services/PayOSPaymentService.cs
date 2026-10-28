@@ -559,5 +559,249 @@ public sealed class PayOSPaymentService : IPaymentService
 
         return (signResult.SignedPdfBytes, $"HoaDonDienTu_{booking.BookingCode}.pdf", signResult);
     }
-}
+    public async Task<CreateContractPayOsLinkResponseDto> CreateContractPaymentAsync(
+        CreateContractPayOsLinkRequestDto request,
+        int? managerUserId = null)
+    {
+        if (request.ContractId <= 0)
+            throw new ArgumentException("Mã hợp đồng không hợp lệ.", nameof(request.ContractId));
 
+        if (request.Amount <= 0)
+            throw new ArgumentException("Số tiền thanh toán phải lớn hơn 0.", nameof(request.Amount));
+
+        var validTypes = new[] { PaymentTypes.Installment, PaymentTypes.Settlement };
+        var normalizedType = validTypes.FirstOrDefault(t => string.Equals(t, request.PaymentType?.Trim(), StringComparison.OrdinalIgnoreCase))
+            ?? PaymentTypes.Installment;
+
+        var contract = await _context.Contracts
+            .Include(c => c.Status)
+            .Include(c => c.Booking).ThenInclude(b => b.Customer)
+            .SingleOrDefaultAsync(c => c.ContractId == request.ContractId);
+
+        if (contract == null)
+            throw new KeyNotFoundException("Không tìm thấy hợp đồng này.");
+
+        if (contract.Status.StatusCode != ContractStatusCodes.Active)
+            throw new InvalidOperationException($"Chỉ có thể tạo thanh toán cho hợp đồng đang có hiệu lực (Hiện tại: {contract.Status.StatusName}).");
+
+        decimal businessAmount = request.Amount;
+        int actualAmount;
+        if (_options.Value.IsDemoMode)
+        {
+            int ratio = _options.Value.DemoScaleRatio > 0 ? _options.Value.DemoScaleRatio : 10000;
+            actualAmount = Math.Max(2000, (int)Math.Round(businessAmount / ratio, MidpointRounding.AwayFromZero));
+        }
+        else
+        {
+            actualAmount = (int)businessAmount;
+        }
+
+        long orderCode = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+        string typeShort = normalizedType == PaymentTypes.Installment ? "Dot 2" : "Quyet toan";
+        string description = $"HD{contract.ContractId} {typeShort}";
+        if (description.Length > 25) description = description.Substring(0, 25);
+
+        var items = new List<PaymentLinkItem>
+        {
+            new PaymentLinkItem
+            {
+                Name = $"TT {contract.ContractCode}",
+                Quantity = 1,
+                Price = actualAmount
+            }
+        };
+
+        var paymentRequest = new CreatePaymentLinkRequest
+        {
+            OrderCode = orderCode,
+            Amount = actualAmount,
+            Description = description,
+            Items = items,
+            CancelUrl = _options.Value.CancelUrl,
+            ReturnUrl = _options.Value.ReturnUrl
+        };
+
+        CreatePaymentLinkResponse paymentResult;
+        try
+        {
+            paymentResult = await _payOSClient.PaymentRequests.CreateAsync(paymentRequest);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Lỗi khi gọi PayOS SDK PaymentRequests.CreateAsync cho ContractId={ContractId}", contract.ContractId);
+            throw new InvalidOperationException($"Không thể tạo liên kết VietQR lúc này: {ex.Message}", ex);
+        }
+
+        var txType = normalizedType == PaymentTypes.Installment
+            ? PaymentTransactionTypes.Installment
+            : PaymentTransactionTypes.Settlement;
+
+        var transaction = new PaymentTransactionEntity
+        {
+            DatTiecId = contract.BookingId,
+            TransactionType = txType,
+            OrderCode = orderCode,
+            SoTienGiaoDich = actualAmount,
+            SoTienGhiNhan = businessAmount,
+            PhuongThuc = "VIETQR_PAYOS",
+            TrangThai = "PENDING",
+            NgayTao = DateTime.Now
+        };
+        _context.PaymentTransactions.Add(transaction);
+
+        var pendingStatusId = await _statusService.GetStatusIdAsync(StatusGroups.Payment, PaymentStatusCodes.Pending);
+        var payment = new Payment
+        {
+            ContractId = contract.ContractId,
+            PaymentType = normalizedType,
+            Amount = businessAmount,
+            PaymentDate = DateTime.Now,
+            PaymentMethod = "VIETQR_PAYOS",
+            TransactionCode = orderCode.ToString(),
+            StatusId = pendingStatusId
+        };
+        _context.Payments.Add(payment);
+
+        await _context.SaveChangesAsync();
+
+        return new CreateContractPayOsLinkResponseDto
+        {
+            OrderCode = orderCode,
+            QrCode = paymentResult.QrCode ?? string.Empty,
+            CheckoutUrl = paymentResult.CheckoutUrl ?? string.Empty,
+            AccountNumber = paymentResult.AccountNumber,
+            AccountName = paymentResult.AccountName,
+            BankBin = paymentResult.Bin,
+            BankName = paymentResult.Bin,
+            Description = description,
+            BusinessAmount = businessAmount,
+            ActualAmount = actualAmount,
+            IsDemoMode = _options.Value.IsDemoMode,
+            ExpiresAt = DateTime.Now.AddMinutes(15)
+        };
+    }
+
+    public async Task<PaymentStatusResponseDto> CheckContractPaymentStatusAsync(long orderCode)
+    {
+        var tx = await _context.PaymentTransactions
+            .Include(t => t.Booking)
+            .SingleOrDefaultAsync(t => t.OrderCode == orderCode);
+
+        if (tx == null)
+        {
+            return new PaymentStatusResponseDto
+            {
+                OrderCode = orderCode,
+                Status = "NOT_FOUND",
+                Message = "Không tìm thấy thông tin giao dịch."
+            };
+        }
+
+        if (tx.TrangThai == "PENDING")
+        {
+            try
+            {
+                PaymentLink linkInfo = await _payOSClient.PaymentRequests.GetAsync(orderCode);
+                var statusStr = linkInfo?.Status.ToString();
+                if (linkInfo != null && string.Equals(statusStr, "PAID", StringComparison.OrdinalIgnoreCase))
+                {
+                    _logger.LogInformation("Fallback Sync Contract: PayOS báo PAID cho OrderCode={OrderCode}, tự động hoàn tất giao dịch.", orderCode);
+                    await CompleteContractPaymentTransactionAsync(tx, orderCode, "Auto-polled from PayOS PaymentRequests.GetAsync");
+                }
+                else if (linkInfo != null && string.Equals(statusStr, "CANCELLED", StringComparison.OrdinalIgnoreCase))
+                {
+                    tx.TrangThai = "CANCELLED";
+                    var payment = await _context.Payments.SingleOrDefaultAsync(p => p.TransactionCode == orderCode.ToString());
+                    if (payment != null)
+                    {
+                        var cancelledStatusId = await _statusService.GetStatusIdAsync(StatusGroups.Payment, PaymentStatusCodes.Cancelled);
+                        payment.StatusId = cancelledStatusId;
+                    }
+                    await _context.SaveChangesAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "Kiểm tra PayOS fallback cho OrderCode={OrderCode} chưa có kết quả mới.", orderCode);
+            }
+        }
+
+        return new PaymentStatusResponseDto
+        {
+            OrderCode = tx.OrderCode,
+            BookingId = tx.DatTiecId,
+            BookingCode = tx.Booking?.BookingCode ?? string.Empty,
+            Status = tx.TrangThai,
+            BusinessDeposit = tx.SoTienGhiNhan,
+            ActualAmount = tx.SoTienGiaoDich,
+            PaidAt = tx.NgayThanhToan,
+            Message = tx.TrangThai == "PAID"
+                ? "Thanh toán hợp đồng thành công!"
+                : (tx.TrangThai == "CANCELLED" ? "Giao dịch đã bị hủy." : "Đang chờ thanh toán...")
+        };
+    }
+
+    private async Task CompleteContractPaymentTransactionAsync(PaymentTransactionEntity tx, long orderCode, string payload)
+    {
+        await using var dbTransaction = await _context.Database.BeginTransactionAsync();
+        try
+        {
+            tx.TrangThai = "PAID";
+            tx.NgayThanhToan = DateTime.Now;
+            tx.PayloadWebhook = payload;
+
+            var booking = await _context.WeddingBookings
+                .Include(b => b.Contract)
+                .SingleAsync(b => b.BookingId == tx.DatTiecId);
+
+            booking.PaidAmount = (booking.PaidAmount) + tx.SoTienGhiNhan;
+
+            var successStatusId = await _statusService.GetStatusIdAsync(StatusGroups.Payment, PaymentStatusCodes.Success);
+            var payment = await _context.Payments
+                .SingleOrDefaultAsync(p => p.TransactionCode == orderCode.ToString());
+
+            if (payment != null)
+            {
+                payment.StatusId = successStatusId;
+                payment.PaymentDate = DateTime.Now;
+            }
+            else if (booking.Contract != null)
+            {
+                payment = new Payment
+                {
+                    ContractId = booking.Contract.ContractId,
+                    PaymentType = tx.TransactionType == PaymentTransactionTypes.Settlement ? PaymentTypes.Settlement : PaymentTypes.Installment,
+                    Amount = tx.SoTienGhiNhan,
+                    PaymentDate = DateTime.Now,
+                    PaymentMethod = "VIETQR_PAYOS",
+                    TransactionCode = orderCode.ToString(),
+                    StatusId = successStatusId
+                };
+                _context.Payments.Add(payment);
+            }
+
+            _context.AuditLogs.Add(new AuditLog
+            {
+                UserId = null,
+                Action = "PAYMENT",
+                EntityName = AuditEntityNames.Contract,
+                EntityId = booking.Contract?.ContractId ?? booking.BookingId,
+                OldData = "OrderCode=" + orderCode + ";TrangThai=PENDING",
+                NewData = "OrderCode=" + orderCode + ";TrangThai=PAID;Amount=" + tx.SoTienGhiNhan,
+                Timestamp = DateTime.Now,
+                Notes = "Đã thanh toán thành công " + tx.SoTienGhiNhan.ToString("N0") + " đ qua VietQR PayOS cho hợp đồng."
+            });
+
+            await _context.SaveChangesAsync();
+            await dbTransaction.CommitAsync();
+            _logger.LogInformation("Hoàn tất thanh toán hợp đồng OrderCode={OrderCode}, Số tiền={Amount:N0} đ", orderCode, tx.SoTienGhiNhan);
+        }
+        catch (Exception ex)
+        {
+            await dbTransaction.RollbackAsync();
+            _logger.LogError(ex, "Lỗi khi hoàn tất thanh toán hợp đồng OrderCode={OrderCode}", orderCode);
+            throw;
+        }
+    }
+}

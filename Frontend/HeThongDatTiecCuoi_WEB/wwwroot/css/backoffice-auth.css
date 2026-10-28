@@ -1,7 +1,7 @@
 .auth-app {
     --auth-navy:#0f172a;--auth-navy-soft:#17233a;--auth-gold:#c6a15b;--auth-gold-dark:#765619;
     --auth-cream:#fbf7ef;--auth-border:#e6eaf0;--auth-text:#162033;--auth-muted:#64748b;
-    margin:0;color:var(--auth-text);background:#f8fafc;font-family:"Plus Jakarta Sans","Be Vietnam Pro",Arial,sans-serif;
+    margin:0;color:var(--auth-text);background:#f8fafc;font-family:"Plus Jakarta Sans",Arial,sans-serif;
 }
 .auth-app :is(input,button,textarea,select) { font-family:inherit; }
 .auth-app .auth-shell { background:#f8fafc; }

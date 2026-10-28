@@ -10,7 +10,17 @@
         document.getElementById('bannerFormTitle').textContent = banner ? 'Chỉnh sửa Banner' : 'Thêm Banner';
         ['BannerId','Version','Title','Subtitle','Description','NavigationLabel','ImageAlt','PrimaryActionType','PrimaryButtonLabel','PrimaryLink','SecondaryActionType','SecondaryButtonLabel','SecondaryLink','SortOrder'].forEach(name => {
             const key = name.charAt(0).toLowerCase() + name.slice(1);
-            if (field(name)) field(name).value = banner?.[key] ?? (name === 'SortOrder' ? data.length + 1 : '');
+            if (field(name)) {
+                if (name === 'BannerId') {
+                    field(name).value = banner?.bannerId ?? '0';
+                } else if (name === 'PrimaryActionType' || name === 'SecondaryActionType') {
+                    field(name).value = banner?.[key] || 'NONE';
+                } else if (name === 'SortOrder') {
+                    field(name).value = banner?.[key] ?? (data.length + 1);
+                } else {
+                    field(name).value = banner?.[key] ?? '';
+                }
+            }
         });
         field('IsVisible').checked = banner?.isVisible ?? false;
         const preview = form.querySelector('.banner-image-preview');

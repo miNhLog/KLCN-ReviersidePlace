@@ -159,3 +159,35 @@ public sealed class ContractAuditEventViewModel
 }
 
 public sealed record PdfDownloadViewModel(byte[] Content, string FileName, string ContentType);
+
+public sealed class RecordPaymentViewModel
+{
+    public int ContractId { get; set; }
+    public string PaymentType { get; set; } = string.Empty;
+    public decimal Amount { get; set; }
+    public string? Note { get; set; }
+}
+
+public sealed class CreateContractPayOsLinkViewModel
+{
+    public int ContractId { get; set; }
+    public string PaymentType { get; set; } = string.Empty;
+    public decimal Amount { get; set; }
+}
+
+public sealed class ContractPayOsLinkResultViewModel
+{
+    public long OrderCode { get; set; }
+    public string QrCode { get; set; } = string.Empty;
+    public string CheckoutUrl { get; set; } = string.Empty;
+    public string? AccountNumber { get; set; }
+    public string? AccountName { get; set; }
+    public string? BankBin { get; set; }
+    public string? BankName { get; set; }
+    public string Description { get; set; } = string.Empty;
+    public decimal BusinessAmount { get; set; }
+    public decimal Amount => BusinessAmount;
+    public int ActualAmount { get; set; }
+    public bool IsDemoMode { get; set; }
+    public DateTime ExpiresAt { get; set; }
+}

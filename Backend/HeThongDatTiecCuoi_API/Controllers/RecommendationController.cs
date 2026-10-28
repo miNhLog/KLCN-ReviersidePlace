@@ -33,6 +33,7 @@ public sealed class RecommendationController : ControllerBase
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly AiServiceOptions _aiOptions;
     private readonly PricingPolicyOptions _pricing;
+    private readonly IHallPricingPolicyService _hallPricing;
     private readonly ILogger<RecommendationController> _logger;
     private readonly IEmailService? _emailService;
 
@@ -51,6 +52,7 @@ public sealed class RecommendationController : ControllerBase
         IOptions<AiServiceOptions> aiOptions,
         IOptions<PricingPolicyOptions> pricing,
         ILogger<RecommendationController> logger,
+        IHallPricingPolicyService? hallPricing = null,
         IEmailService? emailService = null)
     {
         _context = context;
@@ -59,6 +61,7 @@ public sealed class RecommendationController : ControllerBase
         _aiOptions = aiOptions.Value;
         _pricing = pricing.Value;
         _logger = logger;
+        _hallPricing = hallPricing ?? new HallPricingPolicyService();
         _emailService = emailService;
     }
 
@@ -616,8 +619,9 @@ public sealed class RecommendationController : ControllerBase
             var hall = schedule.Hall;
             var decor = decorCandidate.Decor;
             var menuTotal = menu.PricePerTable * tableCount;
-            // Dự toán trọn gói = Giá thuê sảnh + (Đơn giá Menu × Tổng số bàn) + Giá Decor + Tổng giá Dịch vụ ưu tiên.
-            var totalCost = hall.RentalPrice + menuTotal + decor.Gia + servicesTotalFallback;
+            var effectiveHallPrice = _hallPricing.CalculateHallPrice(hall.RentalPrice, desiredShift, targetDate);
+            // Dự toán trọn gói = Giá thuê sảnh theo ca/ngày + (Đơn giá Menu × Tổng số bàn) + Giá Decor + Tổng giá Dịch vụ ưu tiên.
+            var totalCost = effectiveHallPrice + menuTotal + decor.Gia + servicesTotalFallback;
             // Hard filter WSM: est_total <= budget + Δ (Δ = min(10tr, 5%) tu PricingPolicyOptions, dong bo py + C#).
             if (totalCost > request.ExpectedBudget + _pricing.GetTolerance(request.ExpectedBudget))
                 continue;
@@ -659,7 +663,7 @@ public sealed class RecommendationController : ControllerBase
                 CapacityMaxGuests = hall.MaximumCapacity,
                 CapacityMinTables = (hall.MinimumCapacity ?? 150) / 10,
                 CapacityMaxTables = hall.MaximumCapacity / 10,
-                HallRentalPrice = hall.RentalPrice,
+                HallRentalPrice = effectiveHallPrice,
                 HallDescription = hall.Description ?? string.Empty,
                 TotalEstimatedCost = totalCost,
                 BudgetDifference = budgetDifference,
@@ -843,7 +847,8 @@ public sealed class RecommendationController : ControllerBase
             var cands = await ResolveAvailableCandidatesAsync(targetDate, nextDay, desiredShift, guestCount, existingDataStatusId);
             var freeIds = cands.Select(c => c.Hall.HallId).ToHashSet();
             var freeCheapest = hallsByPrice.FirstOrDefault(h => freeIds.Contains(h.HallId));
-            cheapestHallPrice = (freeCheapest ?? hallsByPrice[0]).RentalPrice;
+            var rawCheapest = (freeCheapest ?? hallsByPrice[0]).RentalPrice;
+            cheapestHallPrice = _hallPricing.CalculateHallPrice(rawCheapest, desiredShift, targetDate);
         }
         var minRequired = cheapestHallPrice + cheapestMenu * Math.Max(0, tableCount) + cheapestDecor;
 
@@ -1014,8 +1019,9 @@ public sealed class RecommendationController : ControllerBase
             var hall = schedule.Hall;
             var decor = decorCandidate.Decor;
             var menuTotal = menu.PricePerTable * estimatedTableCount;
-            // Dự toán trọn gói = Giá thuê sảnh + (Đơn giá Menu × Tổng số bàn) + Giá Decor + Tổng giá Dịch vụ ưu tiên.
-            var totalCost = hall.RentalPrice + menuTotal + decor.Gia + servicesTotal;
+            var effectiveHallPrice = _hallPricing.CalculateHallPrice(hall.RentalPrice, desiredShift, targetDate);
+            // Dự toán trọn gói = Giá thuê sảnh theo ca/ngày + (Đơn giá Menu × Tổng số bàn) + Giá Decor + Tổng giá Dịch vụ ưu tiên.
+            var totalCost = effectiveHallPrice + menuTotal + decor.Gia + servicesTotal;
             // Hard filter WSM: est_total <= budget + Δ (Δ = min(10tr, 5%) tu PricingPolicyOptions, dong bo py + C#).
             if (totalCost > request.ExpectedBudget + _pricing.GetTolerance(request.ExpectedBudget))
                 continue;
@@ -1061,7 +1067,7 @@ public sealed class RecommendationController : ControllerBase
                 CapacityMaxGuests = hall.MaximumCapacity,
                 CapacityMinTables = (hall.MinimumCapacity ?? 150) / 10,
                 CapacityMaxTables = hall.MaximumCapacity / 10,
-                HallRentalPrice = hall.RentalPrice,
+                HallRentalPrice = effectiveHallPrice,
                 HallDescription = hall.Description ?? string.Empty,
                 MenuId = menu.MenuId,
                 MenuName = menu.MenuName,
@@ -1194,22 +1200,32 @@ public sealed class RecommendationController : ControllerBase
             occupiedHallShifts.Any(item => item.HallId == hallId &&
                 string.Equals(NormalizeHallShift(item.Shift), NormalizeHallShift(shift), StringComparison.OrdinalIgnoreCase));
 
+        bool isWeekend = targetDate.DayOfWeek == DayOfWeek.Saturday || targetDate.DayOfWeek == DayOfWeek.Sunday;
+
         return Ok(new HallAvailabilityResponseDto
         {
             QueryDate = targetDate.ToString("yyyy-MM-dd"),
-            Halls = halls.Select(hall => new HallAvailabilityItemDto
+            Halls = halls.Select(hall =>
             {
-                HallId = hall.HallId,
-                HallName = hall.HallName,
-                HallCode = hall.HallCode,
-                Capacity = hall.Capacity,
-                CapacityMinGuests = hall.MinimumCapacity ?? 150,
-                CapacityMaxGuests = hall.Capacity,
-                CapacityMinTables = (hall.MinimumCapacity ?? 150) / 10,
-                CapacityMaxTables = hall.Capacity / 10,
-                RentalPrice = hall.RentalPrice,
-                IsNoonAvailable = !IsBlocked(hall.HallId, HallShiftNames.Lunch),
-                IsEveningAvailable = !IsBlocked(hall.HallId, HallShiftNames.Dinner)
+                var noonPrice = _hallPricing.CalculateHallPrice(hall.RentalPrice, HallShiftNames.Lunch, targetDate);
+                var eveningPrice = _hallPricing.CalculateHallPrice(hall.RentalPrice, HallShiftNames.Dinner, targetDate);
+                return new HallAvailabilityItemDto
+                {
+                    HallId = hall.HallId,
+                    HallName = hall.HallName,
+                    HallCode = hall.HallCode,
+                    Capacity = hall.Capacity,
+                    CapacityMinGuests = hall.MinimumCapacity ?? 150,
+                    CapacityMaxGuests = hall.Capacity,
+                    CapacityMinTables = (hall.MinimumCapacity ?? 150) / 10,
+                    CapacityMaxTables = hall.Capacity / 10,
+                    RentalPrice = isWeekend ? eveningPrice : noonPrice,
+                    RentalPriceNoon = noonPrice,
+                    RentalPriceEvening = eveningPrice,
+                    IsWeekend = isWeekend,
+                    IsNoonAvailable = !IsBlocked(hall.HallId, HallShiftNames.Lunch),
+                    IsEveningAvailable = !IsBlocked(hall.HallId, HallShiftNames.Dinner)
+                };
             }).ToList()
         });
         }
@@ -1698,6 +1714,7 @@ public sealed class RecommendationController : ControllerBase
                 enrichedRequests = string.IsNullOrEmpty(enrichedRequests) ? svcMarker : $"{enrichedRequests}; {svcMarker}";
             }
         }
+        var effectiveHallRentalPrice = _hallPricing.CalculateHallPrice(schedule.Hall.RentalPrice, schedule.Shift, schedule.Date);
         var booking = new WeddingBooking
         {
             BookingCode = await GenerateBookingCodeAsync(schedule.Date),
@@ -1706,10 +1723,10 @@ public sealed class RecommendationController : ControllerBase
             MenuId = menu?.MenuId,
             DecorationPackageId = decor?.GoiTrangTriID,
             GuestCount = request.GuestCount,
-            FinalHallPrice = schedule.Hall.RentalPrice,
+            FinalHallPrice = effectiveHallRentalPrice,
             FinalMenuPrice = menu == null ? (decimal?)null : effectiveMenuPricePerTable,
             FinalDecorationPrice = decor?.Gia,
-            EstimatedTotal = schedule.Hall.RentalPrice + (menu == null ? 0m : effectiveMenuPricePerTable) * estimatedTableCount + (decor?.Gia ?? 0m) + servicesTotalBooking,
+            EstimatedTotal = effectiveHallRentalPrice + (menu == null ? 0m : effectiveMenuPricePerTable) * estimatedTableCount + (decor?.Gia ?? 0m) + servicesTotalBooking,
             SpecialRequests = NormalizeOptional(enrichedRequests),
             StatusId = await _statusService.GetStatusIdAsync(StatusGroups.Booking, BookingStatusCodes.Pending),
             BookedAt = DateTime.Now
@@ -1846,7 +1863,7 @@ public sealed class RecommendationController : ControllerBase
             {
                 ServiceCode = svc.MaDichVu,
                 ServiceName = svc.TenDichVu,
-                Price = svc.Gia,
+                Price = string.Equals(svc.MaDichVu, "DV001", StringComparison.OrdinalIgnoreCase) && svc.Gia > 500_000m ? 200_000m : svc.Gia,
                 Note = svc.MoTa ?? string.Empty
             })
             .ToListAsync();

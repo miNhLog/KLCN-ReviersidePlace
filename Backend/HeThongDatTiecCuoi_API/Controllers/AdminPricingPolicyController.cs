@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
 using HeThongDatTiecCuoi_API.Data;
@@ -16,13 +16,16 @@ namespace HeThongDatTiecCuoi_API.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly IPaymentPolicyProvider _paymentPolicies;
+        private readonly IHallPricingPolicyService _hallPricing;
 
         public AdminPricingPolicyController(
             ApplicationDbContext context,
-            IPaymentPolicyProvider paymentPolicies)
+            IPaymentPolicyProvider paymentPolicies,
+            IHallPricingPolicyService hallPricing)
         {
             _context = context;
             _paymentPolicies = paymentPolicies;
+            _hallPricing = hallPricing;
         }
 
         // ================= TAB 1: DỮ LIỆU ĐIỀU KHOẢN HỢP ĐỒNG MẪU =================
@@ -64,19 +67,22 @@ namespace HeThongDatTiecCuoi_API.Controllers
                 .OrderBy(h => h.HallId)
                 .ToListAsync();
 
-            var result = halls.Select(h => new HallShiftPricingDto
-            {
-                SanhTiecId = h.HallId,
-                MaSanh = h.HallCode,
-                TenSanh = h.HallName,
-                SucChuaToiThieu = h.MinimumCapacity,
-                SucChuaToiDa = h.MaximumCapacity,
-                GiaGoc = h.RentalPrice,
-                GiaCaTrua = h.RentalPrice,
-                GiaCaToi = h.RentalPrice * 1.15m,
-                GiaCuoiTuan = h.RentalPrice * 1.25m,
-                // Sửa tại đây: Lấy StatusName (hoặc TenTrangThai nếu model đặt tiếng Việt)
-                TrangThai = h.Status != null ? h.Status.StatusName : "Hoạt động"
+            var result = halls.Select(h => {
+                var prices = _hallPricing.GetShiftPriceBreakdown(h.RentalPrice);
+                return new HallShiftPricingDto
+                {
+                    SanhTiecId = h.HallId,
+                    MaSanh = h.HallCode,
+                    TenSanh = h.HallName,
+                    SucChuaToiThieu = h.MinimumCapacity,
+                    SucChuaToiDa = h.MaximumCapacity,
+                    GiaGoc = prices.BasePrice,
+                    GiaCaTrua = prices.NoonPrice,
+                    GiaCaToi = prices.EveningPrice,
+                    GiaCuoiTuan = prices.WeekendPrice,
+                    // Sửa tại đây: Lấy StatusName (hoặc TenTrangThai nếu model đặt tiếng Việt)
+                    TrangThai = h.Status != null ? h.Status.StatusName : "Hoạt động"
+                };
             }).ToList();
 
             return Ok(new { success = true, data = result });
@@ -95,6 +101,7 @@ namespace HeThongDatTiecCuoi_API.Controllers
             if (hall == null)
                 return NotFound(new { success = false, message = "Không tìm thấy thông tin sảnh." });
 
+            var prices = _hallPricing.GetShiftPriceBreakdown(hall.RentalPrice);
             var detail = new HallShiftPricingDto
             {
                 SanhTiecId = hall.HallId,
@@ -102,10 +109,10 @@ namespace HeThongDatTiecCuoi_API.Controllers
                 TenSanh = hall.HallName,
                 SucChuaToiThieu = hall.MinimumCapacity,
                 SucChuaToiDa = hall.MaximumCapacity,
-                GiaGoc = hall.RentalPrice,
-                GiaCaTrua = hall.RentalPrice,
-                GiaCaToi = hall.RentalPrice * 1.15m,
-                GiaCuoiTuan = hall.RentalPrice * 1.25m,
+                GiaGoc = prices.BasePrice,
+                GiaCaTrua = prices.NoonPrice,
+                GiaCaToi = prices.EveningPrice,
+                GiaCuoiTuan = prices.WeekendPrice,
                 // Sửa tại đây:
                 TrangThai = hall.Status != null ? hall.Status.StatusName : "Hoạt động"
             };

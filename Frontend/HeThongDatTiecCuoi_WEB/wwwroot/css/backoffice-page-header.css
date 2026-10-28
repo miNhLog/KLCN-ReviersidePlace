@@ -93,7 +93,7 @@
 ) :is(h1, h2) {
     margin: 5px 0 0 !important;
     color: var(--rp-hero-navy) !important;
-    font-family: "Plus Jakarta Sans", "Be Vietnam Pro", sans-serif !important;
+    font-family: "Plus Jakarta Sans", sans-serif !important;
     font-size: clamp(25px, 2.15vw, 32px) !important;
     font-weight: 800 !important;
     letter-spacing: -.025em !important;

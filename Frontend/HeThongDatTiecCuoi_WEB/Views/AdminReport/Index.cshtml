@@ -1,4 +1,4 @@
-﻿@model HeThongDatTiecCuoi_WEB.Models.AdminReport.RevenueBiViewModel
+@model HeThongDatTiecCuoi_WEB.Models.AdminReport.RevenueBiViewModel
 @{
     ViewData["Title"] = "Báo Cáo Doanh Thu & Thống Kê BI";
     Layout = "_AdminLayout";
@@ -208,7 +208,7 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div class="bg-white rounded-xl p-5 border border-slate-200 card-shadow relative overflow-hidden">
             <div class="flex items-center justify-between">
-                <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tổng Doanh Thu</span>
+                <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tổng Doanh Thu (Thực Thu)</span>
                 <div class="w-8 h-8 rounded-lg bg-[#B89758]/15 border border-[#B89758]/30 flex items-center justify-center text-[#8C6D32]">
                     <i class="fa-solid fa-coins text-sm"></i>
                 </div>
@@ -217,8 +217,8 @@
                 <h3 id="kpiTotalRevenue" class="font-serif text-2xl font-bold text-slate-900">
                     @Model.Kpi.TotalRevenue.ToString("N0") <span class="text-xs font-sans font-normal text-slate-500">VNĐ</span>
                 </h3>
-                <p class="text-[11px] text-emerald-600 font-semibold mt-1 flex items-center gap-1">
-                    <i class="fa-solid fa-arrow-trend-up"></i> Tăng trưởng thực tế theo hợp đồng
+                <p id="kpiEstimatedRevenueText" class="text-[11px] text-emerald-600 font-semibold mt-1 flex items-center gap-1">
+                    <i class="fa-solid fa-circle-check"></i> Đã thanh toán • Dự toán: @Model.Kpi.EstimatedTotalRevenue.ToString("N0") đ
                 </p>
             </div>
             <div class="absolute -right-2 -bottom-2 w-16 h-16 bg-[#B89758]/5 rounded-full pointer-events-none"></div>
@@ -226,17 +226,17 @@
 
         <div class="bg-white rounded-xl p-5 border border-slate-200 card-shadow relative overflow-hidden">
             <div class="flex items-center justify-between">
-                <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Sự Kiện Tiệc Cưới</span>
+                <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Hợp Đồng &amp; Sự Kiện</span>
                 <div class="w-8 h-8 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600">
-                    <i class="fa-solid fa-bell-concierge text-sm"></i>
+                    <i class="fa-solid fa-file-signature text-sm"></i>
                 </div>
             </div>
             <div class="mt-3">
-                <h3 id="kpiTotalBookings" class="font-serif text-2xl font-bold text-slate-900">
-                    @Model.Kpi.TotalBookings <span class="text-xs font-sans font-normal text-slate-500">hợp đồng</span>
+                <h3 id="kpiTotalContracts" class="font-serif text-2xl font-bold text-slate-900">
+                    @Model.Kpi.TotalContracts <span class="text-xs font-sans font-normal text-slate-500">hợp đồng</span>
                 </h3>
-                <p class="text-[11px] text-slate-500 mt-1">
-                    Tổng quy mô: <strong id="kpiTotalTables">@Model.Kpi.TotalTables</strong> bàn tiệc
+                <p id="kpiTotalBookingsText" class="text-[11px] text-slate-500 mt-1">
+                    Tiếp nhận <strong id="kpiTotalBookings">@Model.Kpi.TotalBookings</strong> đơn tiệc (<strong id="kpiTotalTables">@Model.Kpi.TotalTables</strong> bàn)
                 </p>
             </div>
             <div class="absolute -right-2 -bottom-2 w-16 h-16 bg-blue-50/50 rounded-full pointer-events-none"></div>
@@ -244,7 +244,7 @@
 
         <div class="bg-white rounded-xl p-5 border border-slate-200 card-shadow relative overflow-hidden">
             <div class="flex items-center justify-between">
-                <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Doanh Thu / Bàn Tiệc</span>
+                <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Doanh Thu / Bàn (ARPT)</span>
                 <div class="w-8 h-8 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600">
                     <i class="fa-solid fa-utensils text-sm"></i>
                 </div>
@@ -253,8 +253,8 @@
                 <h3 id="kpiAvgPerTable" class="font-serif text-2xl font-bold text-[#8C6D32]">
                     @Model.Kpi.AverageRevenuePerTable.ToString("N0") <span class="text-xs font-sans font-normal text-slate-500">VNĐ</span>
                 </h3>
-                <p class="text-[11px] text-slate-500 mt-1">
-                    Bao gồm Món ăn, Sảnh &amp; Decor
+                <p id="kpiMenuPriceText" class="text-[11px] text-slate-500 mt-1" title="Bình quân trọn gói ẩm thực, sảnh và decor trên mỗi bàn tiệc">
+                    Menu ~@Model.Kpi.AverageMenuPricePerTable.ToString("N0") đ • Trọn gói kèm sảnh, decor
                 </p>
             </div>
             <div class="absolute -right-2 -bottom-2 w-16 h-16 bg-amber-50/50 rounded-full pointer-events-none"></div>
@@ -272,7 +272,7 @@
                     @Model.Kpi.AverageOccupancyRate% <span class="text-xs font-sans font-normal text-slate-500">lấp đầy</span>
                 </h3>
                 <p class="text-[11px] text-slate-500 mt-1">
-                    Bình quân 9 đại sảnh (Ca trưa &amp; tối)
+                    Chuẩn 14 ca/tuần trên 9 đại sảnh hoàng gia
                 </p>
             </div>
             <div class="absolute -right-2 -bottom-2 w-16 h-16 bg-emerald-50/50 rounded-full pointer-events-none"></div>
@@ -337,7 +337,7 @@
                     <h3 class="font-serif font-bold text-base text-slate-900">Sự Kiện Tiệc Cưới Gần Nhất</h3>
                     <p class="text-[11px] text-slate-500">Dữ liệu thực tế từ các bản ghi đặt tiệc mới nhất</p>
                 </div>
-                <span class="px-2.5 py-1 bg-slate-100 text-slate-600 rounded-md text-[11px] font-semibold">@Model.RecentBookings.Count hợp đồng</span>
+                <span class="px-2.5 py-1 bg-slate-100 text-slate-600 rounded-md text-[11px] font-semibold"><span id="recentBookingsBadgeCount">@Model.RecentBookings.Count</span> đơn đặt tiệc</span>
             </div>
 
             <div class="overflow-x-auto custom-scrollbar flex-1">
@@ -430,10 +430,11 @@
                 </div>
 
                 <div class="flex items-center gap-2 shrink-0">
-                    <button type="button" onclick="loadMatrixDefaultWeek()"
-                            class="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-[#FAF8F5] text-slate-700 rounded-lg text-xs font-semibold border border-slate-200 shadow-2xs transition-colors">
-                        <i class="fa-solid fa-wand-magic-sparkles text-[#B89758] text-[11px]"></i>
-                        <span>Mùa cưới 2026</span>
+                    <button type="button" onclick="loadMatrixCurrentWeek()"
+                            class="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-[#FAF8F5] text-slate-700 rounded-lg text-xs font-semibold border border-slate-200 shadow-2xs transition-colors cursor-pointer"
+                            title="Quay về tuần hiện tại">
+                        <i class="fa-solid fa-calendar-check text-[#B89758] text-[11px]"></i>
+                        <span>Tuần hiện tại</span>
                     </button>
                     <button type="button" onclick="closeHallMatrixModal()"
                             class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-slate-800 hover:bg-slate-200/70 rounded-lg transition-colors cursor-pointer"
@@ -734,15 +735,35 @@
         function updateKpiDom(kpi) {
             if (!kpi) return;
             const totalRevenue = kpi.totalRevenue ?? kpi.TotalRevenue ?? 0;
+            const estimatedTotal = kpi.estimatedTotalRevenue ?? kpi.EstimatedTotalRevenue ?? 0;
+            const totalContracts = kpi.totalContracts ?? kpi.TotalContracts ?? 0;
             const totalBookings = kpi.totalBookings ?? kpi.TotalBookings ?? 0;
             const totalTables = kpi.totalTables ?? kpi.TotalTables ?? 0;
             const avgPerTable = kpi.averageRevenuePerTable ?? kpi.AverageRevenuePerTable ?? 0;
+            const avgMenuPrice = kpi.averageMenuPricePerTable ?? kpi.AverageMenuPricePerTable ?? 0;
             const occupancy = kpi.averageOccupancyRate ?? kpi.AverageOccupancyRate ?? 0;
 
             document.getElementById('kpiTotalRevenue').innerHTML = `${Number(totalRevenue).toLocaleString('vi-VN')} <span class="text-xs font-sans font-normal text-slate-500">VNĐ</span>`;
-            document.getElementById('kpiTotalBookings').innerHTML = `${totalBookings} <span class="text-xs font-sans font-normal text-slate-500">hợp đồng</span>`;
-            document.getElementById('kpiTotalTables').innerText = totalTables;
+            const estText = document.getElementById('kpiEstimatedRevenueText');
+            if (estText) {
+                estText.innerHTML = `<i class="fa-solid fa-circle-check"></i> Đã thanh toán • Dự toán: ${Number(estimatedTotal).toLocaleString('vi-VN')} đ`;
+            }
+
+            const contractEl = document.getElementById('kpiTotalContracts');
+            if (contractEl) {
+                contractEl.innerHTML = `${totalContracts} <span class="text-xs font-sans font-normal text-slate-500">hợp đồng</span>`;
+            }
+            const bookingsEl = document.getElementById('kpiTotalBookings');
+            if (bookingsEl) bookingsEl.innerText = totalBookings;
+            const tablesEl = document.getElementById('kpiTotalTables');
+            if (tablesEl) tablesEl.innerText = totalTables;
+
             document.getElementById('kpiAvgPerTable').innerHTML = `${Number(avgPerTable).toLocaleString('vi-VN')} <span class="text-xs font-sans font-normal text-slate-500">VNĐ</span>`;
+            const menuText = document.getElementById('kpiMenuPriceText');
+            if (menuText) {
+                menuText.innerHTML = `Menu ~${Number(avgMenuPrice).toLocaleString('vi-VN')} đ • Trọn gói kèm sảnh, decor`;
+            }
+
             document.getElementById('kpiOccupancy').innerHTML = `${occupancy}% <span class="text-xs font-sans font-normal text-slate-500">lấp đầy</span>`;
         }
 
@@ -750,6 +771,8 @@
             const tbody = document.getElementById('recentBookingsTbody');
             tbody.innerHTML = '';
             const list = bookings || [];
+            const badgeCount = document.getElementById('recentBookingsBadgeCount');
+            if (badgeCount) badgeCount.innerText = list.length;
 
             if (list.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-slate-400 italic">Không có sự kiện tiệc trong kỳ này.</td></tr>`;
@@ -906,11 +929,14 @@
 
                 const kpi = reportData.kpi || reportData.Kpi;
                 const kpiRows = [
-                    ['Tổng doanh thu', (kpi.totalRevenue || kpi.TotalRevenue || 0), 'VNĐ'],
-                    ['Tổng số hợp đồng', (kpi.totalBookings || kpi.TotalBookings || 0), 'hợp đồng'],
+                    ['Tổng doanh thu thực thu', (kpi.totalRevenue || kpi.TotalRevenue || 0), 'VNĐ'],
+                    ['Tổng doanh thu dự kiến', (kpi.estimatedTotalRevenue || kpi.EstimatedTotalRevenue || 0), 'VNĐ'],
+                    ['Tổng số hợp đồng chính thức', (kpi.totalContracts || kpi.TotalContracts || 0), 'hợp đồng'],
+                    ['Tổng số đơn tiệc tiếp nhận', (kpi.totalBookings || kpi.TotalBookings || 0), 'đơn tiệc'],
                     ['Tổng số bàn tiệc', (kpi.totalTables || kpi.TotalTables || 0), 'bàn'],
-                    ['Doanh thu / Bàn', (kpi.averageRevenuePerTable || kpi.AverageRevenuePerTable || 0), 'VNĐ'],
-                    ['Công suất lấp đầy', (kpi.averageOccupancyRate || kpi.AverageOccupancyRate || 0), '%']
+                    ['Doanh thu trọn gói / Bàn (ARPT)', (kpi.averageRevenuePerTable || kpi.AverageRevenuePerTable || 0), 'VNĐ'],
+                    ['Đơn giá thực đơn / Bàn', (kpi.averageMenuPricePerTable || kpi.AverageMenuPricePerTable || 0), 'VNĐ'],
+                    ['Công suất lấp đầy bình quân', (kpi.averageOccupancyRate || kpi.AverageOccupancyRate || 0), '%']
                 ];
 
                 kpiRows.forEach((row, idx) => {
@@ -935,7 +961,7 @@
                     wsDash.getRow(r).height = 24;
                 });
 
-                let currentRow = 12;
+                let currentRow = 5 + kpiRows.length + 2;
 
                 // CHART 1: Monthly Revenue
                 if (monthlyChart) {
@@ -1181,7 +1207,16 @@
         }
 
         // ================= XỬ LÝ MA TRẬN LỊCH SẢNH (THOÁT STACKING CONTEXT & CHUẨN HÓA DỮ LIỆU) =================
-        let currentMatrixStartDate = new Date(2026, 0, 12); // Thứ Hai, 12/01/2026
+        function getMondayOfWeek(d) {
+            const date = new Date(d);
+            const day = date.getDay();
+            const diff = (day === 0 ? -6 : 1) - day;
+            date.setDate(date.getDate() + diff);
+            date.setHours(0, 0, 0, 0);
+            return date;
+        }
+
+        let currentMatrixStartDate = getMondayOfWeek(new Date());
 
         function openHallMatrixModal() {
             const modal = document.getElementById('hallMatrixModal');
@@ -1209,8 +1244,8 @@
             loadHallMatrixData(currentMatrixStartDate);
         }
 
-        function loadMatrixDefaultWeek() {
-            currentMatrixStartDate = new Date(2026, 0, 12);
+        function loadMatrixCurrentWeek() {
+            currentMatrixStartDate = getMondayOfWeek(new Date());
             loadHallMatrixData(currentMatrixStartDate);
         }
 
@@ -1332,13 +1367,17 @@
                 `;
 
                 slots.forEach(slot => {
-                    const statusId = slot.statusId ?? slot.StatusId ?? 401;
+                    const statusCode = (slot.statusCode || slot.StatusCode || '').toUpperCase();
+                    const statusId = slot.statusId ?? slot.StatusId ?? 301;
                     const bookingCode = slot.bookingCode || slot.BookingCode;
                     const customerName = slot.customerName || slot.CustomerName || '';
                     const tableCount = slot.tableCount ?? slot.TableCount ?? 0;
                     const bookingStatus = slot.bookingStatus || slot.BookingStatus || '';
 
-                    if (statusId === 402 && bookingCode) {
+                    const isBooked = statusCode === 'BOOKED' || statusId === 302 || statusId === 402;
+                    const isLocked = statusCode === 'LOCKED' || statusId === 303 || statusId === 403;
+
+                    if (isBooked) {
                         const isCompleted = bookingStatus === 'Hoàn tất';
                         const accentColor = isCompleted ? 'emerald' : 'amber';
                         const badgeBg = isCompleted
@@ -1351,20 +1390,20 @@
                                 <div class="matrix-cell-booking p-2 rounded-lg bg-white border border-[#B89758]/40 shadow-2xs cursor-default">
                                     <div class="flex items-center justify-center gap-1 mb-0.5">
                                         <span class="w-1.5 h-1.5 rounded-full ${dotClass}"></span>
-                                        <span class="font-mono font-bold text-[10.5px] text-[#8C6D32] tracking-tight">${bookingCode}</span>
+                                        <span class="font-mono font-bold text-[10.5px] text-[#8C6D32] tracking-tight">${bookingCode || 'ĐÃ ĐẶT'}</span>
                                     </div>
-                                    <span class="text-[10.5px] text-slate-800 font-semibold block truncate max-w-[90px] sm:max-w-[110px] mx-auto" title="${customerName}">${customerName}</span>
+                                    <span class="text-[10.5px] text-slate-800 font-semibold block truncate max-w-[90px] sm:max-w-[110px] mx-auto" title="${customerName}">${customerName || 'Đã đặt tiệc'}</span>
                                     <div class="flex items-center justify-center gap-1 mt-1">
                                         <span class="inline-flex items-center gap-0.5 text-[9px] text-slate-500">
                                             <i class="fa-solid fa-chair text-[8px]"></i>
-                                            ${tableCount} bàn
+                                            ${tableCount > 0 ? tableCount + ' bàn' : 'Sảnh tiệc'}
                                         </span>
-                                        <span class="inline-block px-1.5 py-0.5 rounded text-[8.5px] font-bold border ${badgeBg}">${bookingStatus}</span>
+                                        <span class="inline-block px-1.5 py-0.5 rounded text-[8.5px] font-bold border ${badgeBg}">${bookingStatus || 'Đã đặt'}</span>
                                     </div>
                                 </div>
                             </td>
                         `;
-                    } else if (statusId === 403) {
+                    } else if (isLocked) {
                         rowHtml += `
                             <td class="p-1.5 border border-slate-200 text-center bg-rose-50/40 align-middle">
                                 <div class="flex flex-col items-center justify-center gap-1 py-2">

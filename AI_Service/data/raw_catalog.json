@@ -1,11 +1,8 @@
 {
   "meta": {
     "venue": "Riverside Palace",
-    "thesis": "CNTT-KLCN257",
-    "advisor": "GVHD ThS. Le Thi Thuy Lan",
-    "currency": "VND",
-    "version": "2.0.0",
-    "source": "Dong bo 100% tu IRiversidePalaceDB (SanhTiec/ThucDon/GoiTrangTri/DichVu). SucChua luu SO KHACH, 1 ban = 10 khach."
+    "version": "2.1.0",
+    "source": "Đồng bộ thời gian thực từ Backend (.NET 8 ApplicationDbContext)"
   },
   "halls": [
     {
@@ -16,7 +13,7 @@
       "max_guests": 580,
       "min_tables": 30,
       "max_tables": 58,
-      "optimal_tables": 44,
+      "optimal_tables": 46,
       "base_price": 30000000,
       "max_capacity": 580,
       "description": "Tinh tế và sang trọng, không gian ấm cúng và thanh lịch."
@@ -29,7 +26,7 @@
       "max_guests": 360,
       "min_tables": 15,
       "max_tables": 36,
-      "optimal_tables": 25,
+      "optimal_tables": 29,
       "base_price": 20000000,
       "max_capacity": 360,
       "description": "Hiện đại, trẻ trung, tinh giản và phóng khoáng."
@@ -42,7 +39,7 @@
       "max_guests": 540,
       "min_tables": 30,
       "max_tables": 54,
-      "optimal_tables": 42,
+      "optimal_tables": 43,
       "base_price": 28000000,
       "max_capacity": 540,
       "description": "Huyền bí, lãng mạn với tông tím nhẹ và ánh sáng dịu."
@@ -51,11 +48,11 @@
       "hall_id": 4,
       "hall_code": "S004",
       "hall_name": "Seine",
-      "min_guests": 300,
+      "min_guests": 150,
       "max_guests": 650,
-      "min_tables": 30,
+      "min_tables": 15,
       "max_tables": 65,
-      "optimal_tables": 47,
+      "optimal_tables": 52,
       "base_price": 32000000,
       "max_capacity": 650,
       "description": "Phong cách cổ điển châu Âu, không gian lãng mạn và thanh lịch."
@@ -68,7 +65,7 @@
       "max_guests": 580,
       "min_tables": 32,
       "max_tables": 58,
-      "optimal_tables": 45,
+      "optimal_tables": 46,
       "base_price": 30000000,
       "max_capacity": 580,
       "description": "Phong cách hoàng gia, sang trọng và lộng lẫy."
@@ -81,7 +78,7 @@
       "max_guests": 580,
       "min_tables": 32,
       "max_tables": 58,
-      "optimal_tables": 45,
+      "optimal_tables": 46,
       "base_price": 30000000,
       "max_capacity": 580,
       "description": "Không gian sang trọng, phù hợp tiệc cưới quy mô lớn."
@@ -94,7 +91,7 @@
       "max_guests": 300,
       "min_tables": 15,
       "max_tables": 30,
-      "optimal_tables": 22,
+      "optimal_tables": 24,
       "base_price": 25000000,
       "max_capacity": 300,
       "description": "Không gian ngoài trời ven sông, gần gũi thiên nhiên."
@@ -107,7 +104,7 @@
       "max_guests": 650,
       "min_tables": 30,
       "max_tables": 65,
-      "optimal_tables": 47,
+      "optimal_tables": 52,
       "base_price": 35000000,
       "max_capacity": 650,
       "description": "Không gian hiện đại, nghệ thuật và phù hợp phong cách cá nhân."
@@ -120,7 +117,7 @@
       "max_guests": 2000,
       "min_tables": 115,
       "max_tables": 200,
-      "optimal_tables": 157,
+      "optimal_tables": 160,
       "base_price": 80000000,
       "max_capacity": 2000,
       "description": "Đại sảnh quy mô lớn, không gian rộng và sang trọng."
@@ -131,6 +128,7 @@
       "menu_id": 1,
       "menu_code": "TD001",
       "menu_name": "Thực đơn tiệc cưới 1",
+      "menu_type": "STANDARD",
       "price_per_table": 4350000,
       "description": "Thực đơn kết hợp hải sản, bò Mỹ và sườn BBQ, mang phong vị Á - Nhật hiện đại.",
       "dishes": [
@@ -147,6 +145,7 @@
       "menu_id": 2,
       "menu_code": "TD002",
       "menu_name": "Thực đơn tiệc cưới 2",
+      "menu_type": "STANDARD",
       "price_per_table": 4350000,
       "description": "Thực đơn nổi bật với cua, cá hồi, tôm, cá chẽm và sườn non, hương vị hài hòa dễ dùng.",
       "dishes": [
@@ -163,6 +162,7 @@
       "menu_id": 3,
       "menu_code": "TD003",
       "menu_name": "Thực đơn tiệc cưới 3",
+      "menu_type": "STANDARD",
       "price_per_table": 4350000,
       "description": "Thực đơn kết hợp hải sản, bò sốt rượu vang và mì gà quay, mang phong cách Á - Âu.",
       "dishes": [
@@ -179,6 +179,7 @@
       "menu_id": 4,
       "menu_code": "TD004",
       "menu_name": "Thực đơn tiệc cưới 4",
+      "menu_type": "STANDARD",
       "price_per_table": 4600000,
       "description": "Thực đơn thanh nhẹ với tôm, cá tầm, gà hấp và bò tiềm, kết hợp các nguyên liệu thảo mộc.",
       "dishes": [
@@ -195,6 +196,7 @@
       "menu_id": 5,
       "menu_code": "TD005",
       "menu_name": "Thực đơn tiệc cưới 5",
+      "menu_type": "STANDARD",
       "price_per_table": 4600000,
       "description": "Thực đơn đa dạng với tempura, cá chẽm, vịt sốt cam gừng và lẩu miso bò Mỹ.",
       "dishes": [
@@ -211,6 +213,7 @@
       "menu_id": 6,
       "menu_code": "TD006",
       "menu_name": "Thực đơn tiệc cưới 6",
+      "menu_type": "STANDARD",
       "price_per_table": 4600000,
       "description": "Thực đơn thiên về hải sản với mực, cua, cá chẽm, cá tầm kết hợp bò cuộn nấm.",
       "dishes": [
@@ -227,6 +230,7 @@
       "menu_id": 7,
       "menu_code": "TD007",
       "menu_name": "Thực đơn tiệc cưới 7",
+      "menu_type": "STANDARD",
       "price_per_table": 4800000,
       "description": "Thực đơn đậm vị với cá chẽm, bò nướng, tôm rang muối, sườn mật ong và mì udon hải sản.",
       "dishes": [
@@ -243,6 +247,7 @@
       "menu_id": 8,
       "menu_code": "TD008",
       "menu_name": "Thực đơn tiệc cưới 8",
+      "menu_type": "STANDARD",
       "price_per_table": 4800000,
       "description": "Thực đơn kết hợp tôm, ức ngỗng, gà tiềm, cá chẽm và sườn BBQ cùng lẩu cua đồng.",
       "dishes": [
@@ -259,6 +264,7 @@
       "menu_id": 9,
       "menu_code": "TD009",
       "menu_name": "Thực đơn tiệc cưới 9",
+      "menu_type": "STANDARD",
       "price_per_table": 4800000,
       "description": "Thực đơn đậm đà với sườn mật ong, hải sản Tứ Xuyên, cá chẽm, vịt quay và lẩu gà.",
       "dishes": [
@@ -275,6 +281,7 @@
       "menu_id": 10,
       "menu_code": "TD010",
       "menu_name": "Thực đơn tiệc cưới 10",
+      "menu_type": "STANDARD",
       "price_per_table": 5000000,
       "description": "Thực đơn kết hợp gà, tôm, bò, cá tầm và sườn BBQ, điểm nhấn là lẩu sa tế hải sản.",
       "dishes": [
@@ -291,6 +298,7 @@
       "menu_id": 11,
       "menu_code": "TD011",
       "menu_name": "Thực đơn tiệc cưới 11",
+      "menu_type": "STANDARD",
       "price_per_table": 5000000,
       "description": "Thực đơn cao cấp với vịt quay, tôm, gà tiềm, cá chẽm, bò Mỹ và sườn non thảo mộc.",
       "dishes": [
@@ -307,6 +315,7 @@
       "menu_id": 12,
       "menu_code": "TD012",
       "menu_name": "Thực đơn tiệc cưới 12",
+      "menu_type": "STANDARD",
       "price_per_table": 5000000,
       "description": "Thực đơn đậm vị với bò Mỹ, cá chẽm, tôm trứng muối, sườn BBQ và lẩu Thái tôm càng.",
       "dishes": [
@@ -323,6 +332,7 @@
       "menu_id": 13,
       "menu_code": "TD013",
       "menu_name": "Thực đơn tiệc cưới 13",
+      "menu_type": "STANDARD",
       "price_per_table": 5200000,
       "description": "Thực đơn kết hợp tôm, nấm cuộn thịt, cá tầm, bò nấu đậu và lẩu Thái tôm càng.",
       "dishes": [
@@ -339,6 +349,7 @@
       "menu_id": 14,
       "menu_code": "TD014",
       "menu_name": "Thực đơn tiệc cưới 14",
+      "menu_type": "STANDARD",
       "price_per_table": 5200000,
       "description": "Thực đơn hiện đại với cá chẽm, hải sản Tứ Xuyên, tôm càng, sườn sốt cà phê và mì bò.",
       "dishes": [
@@ -355,6 +366,7 @@
       "menu_id": 15,
       "menu_code": "TD015",
       "menu_name": "Thực đơn tiệc cưới 15",
+      "menu_type": "STANDARD",
       "price_per_table": 5200000,
       "description": "Thực đơn gồm sườn sốt me, tôm trứng muối, gà hấp, cá bống mú và lẩu bò Mỹ cuộn nấm.",
       "dishes": [
@@ -371,6 +383,7 @@
       "menu_id": 16,
       "menu_code": "TD016",
       "menu_name": "Thực đơn tiệc cưới 16",
+      "menu_type": "STANDARD",
       "price_per_table": 5500000,
       "description": "Thực đơn mang hương vị châu Á với bò Mỹ, tempura, cá bống mú, sườn cà ri và lẩu nấm.",
       "dishes": [
@@ -387,6 +400,7 @@
       "menu_id": 17,
       "menu_code": "TD017",
       "menu_name": "Thực đơn tiệc cưới 17",
+      "menu_type": "STANDARD",
       "price_per_table": 5500000,
       "description": "Thực đơn kết hợp tôm, cá chẽm, sườn BBQ, vịt quay thảo mộc và lẩu cua đồng hải sản.",
       "dishes": [
@@ -403,6 +417,7 @@
       "menu_id": 18,
       "menu_code": "TD018",
       "menu_name": "Thực đơn tiệc cưới 18",
+      "menu_type": "STANDARD",
       "price_per_table": 5500000,
       "description": "Thực đơn sang trọng với bò cuộn nấm, hải sản nhụy hoa nghệ tây, cá tầm và cơm rang tôm càng.",
       "dishes": [
@@ -419,6 +434,7 @@
       "menu_id": 19,
       "menu_code": "TD019",
       "menu_name": "Thực đơn tiệc cưới 19",
+      "menu_type": "STANDARD",
       "price_per_table": 5700000,
       "description": "Thực đơn phong phú với bò Mỹ, cá hồi, tôm càng, gà hấp và cơm chiên xá xíu.",
       "dishes": [
@@ -435,6 +451,7 @@
       "menu_id": 20,
       "menu_code": "TD020",
       "menu_name": "Thực đơn tiệc cưới 20",
+      "menu_type": "STANDARD",
       "price_per_table": 5700000,
       "description": "Thực đơn phong cách Á - Âu với tôm sốt dijon, gà chanh dây, cá tầm, bò sốt Thái và mì vịt quay.",
       "dishes": [
@@ -451,6 +468,7 @@
       "menu_id": 21,
       "menu_code": "TD021",
       "menu_name": "Thực đơn tiệc cưới 21",
+      "menu_type": "STANDARD",
       "price_per_table": 5700000,
       "description": "Thực đơn cao cấp với tôm, mực, gà tiềm, cá chẽm, thăn bê và lẩu hải sản.",
       "dishes": [
@@ -467,6 +485,7 @@
       "menu_id": 22,
       "menu_code": "TD022",
       "menu_name": "Thực đơn tiệc cưới 22",
+      "menu_type": "STANDARD",
       "price_per_table": 5900000,
       "description": "Thực đơn nổi bật với cá tầm, tôm, cua, vịt quay, bò sốt Thái và lẩu cá tầm măng chua.",
       "dishes": [
@@ -483,6 +502,7 @@
       "menu_id": 23,
       "menu_code": "TD023",
       "menu_name": "Thực đơn tiệc cưới 23",
+      "menu_type": "STANDARD",
       "price_per_table": 5900000,
       "description": "Thực đơn hải sản đậm vị với tôm càng, cá bống mú, sườn BBQ và mì hấp vịt quay.",
       "dishes": [
@@ -499,6 +519,7 @@
       "menu_id": 24,
       "menu_code": "TD024",
       "menu_name": "Thực đơn tiệc cưới 24",
+      "menu_type": "STANDARD",
       "price_per_table": 5900000,
       "description": "Thực đơn đa dạng với bò BBQ, cá hồi, gà tiềm, tôm càng, gân nai và lẩu cua đồng hải sản.",
       "dishes": [
@@ -515,66 +536,59 @@
   "decors": [
     {
       "decor_id": 1,
-      "decor_code": "GT001",
       "decor_name": "Endless Love",
       "style": "Lãng mạn",
-      "description": "Chủ đề tình yêu vĩnh cửu, không gian cưới lãng mạn.",
-      "price": 20000000
+      "price": 20000000,
+      "description": "Chủ đề tình yêu vĩnh cửu, không gian cưới lãng mạn."
     },
     {
       "decor_id": 2,
-      "decor_code": "GT002",
       "decor_name": "Đám cưới cuối năm",
       "style": "Nhẹ nhàng",
-      "description": "Trang trí nhẹ nhàng, không quá cầu kỳ.",
-      "price": 18000000
+      "price": 18000000,
+      "description": "Trang trí nhẹ nhàng, không quá cầu kỳ."
     },
     {
       "decor_id": 3,
-      "decor_code": "GT003",
       "decor_name": "Elegant Blue",
       "style": "Hiện đại / lãng mạn",
-      "description": "Tông xanh dương chủ đạo, thanh lịch.",
-      "price": 22000000
+      "price": 22000000,
+      "description": "Tông xanh dương chủ đạo, thanh lịch."
     },
     {
       "decor_id": 4,
-      "decor_code": "GT004",
       "decor_name": "The Color of Love",
       "style": "Sân vườn / lãng mạn",
-      "description": "Không gian sân vườn với hoa nhiều màu sắc.",
-      "price": 25000000
+      "price": 25000000,
+      "description": "Không gian sân vườn với hoa nhiều màu sắc."
     },
     {
       "decor_id": 5,
-      "decor_code": "GT005",
       "decor_name": "Dear My Princess",
       "style": "Cổ tích / lãng mạn",
-      "description": "Phong cách công chúa, khu vườn và cảm giác cổ tích.",
-      "price": 28000000
+      "price": 28000000,
+      "description": "Phong cách công chúa, khu vườn và cảm giác cổ tích."
     },
     {
       "decor_id": 6,
-      "decor_code": "GT006",
       "decor_name": "Tiệc cưới ven sông",
       "style": "Thiên nhiên / ngoài trời",
-      "description": "Không gian ngoài trời ven sông, thoáng và thanh bình.",
-      "price": 22000000
+      "price": 22000000,
+      "description": "Không gian ngoài trời ven sông, thoáng và thanh bình."
     },
     {
       "decor_id": 7,
-      "decor_code": "GT007",
       "decor_name": "Tiệc cưới mùa thu",
       "style": "Lãng mạn",
-      "description": "Phối tông xanh dương, trắng, hồng và xanh lam.",
-      "price": 24000000
+      "price": 24000000,
+      "description": "Phối tông xanh dương, trắng, hồng và xanh lam."
     }
   ],
   "services": [
     {
       "service_id": "DV001",
       "service_name": "Dịch vụ thức uống trọn gói",
-      "service_type": "Thức uống",
+      "service_type": null,
       "description": "Thức uống trọn gói trong 2,5 giờ. Giá tham khảo từ 200.000 đến 1.100.000 đồng/bàn; gồm các lựa chọn nước suối, nước ngọt, bia tùy gói.",
       "price": 200000
     },
@@ -618,7 +632,8 @@
       "Nhẹ nhàng"
     ],
     "nature": [
-      "Thiên nhiên / ngoài trời"
+      "Thiên nhiên / ngoài trời",
+      "Sân vườn"
     ]
   }
 }

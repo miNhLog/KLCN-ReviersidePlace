@@ -32,19 +32,36 @@ public sealed class MyBookingsController : ControllerBase
             .Select(item => item.DataStatusId).SingleAsync();
         var query = _context.WeddingBookings.AsNoTracking().AsQueryable();
 
-        if (userId is > 0)
+        if (!string.IsNullOrWhiteSpace(phone))
+        {
+            var normalizedPhone = phone.Trim();
+            if (!string.IsNullOrWhiteSpace(bookingCode))
+            {
+                var normalizedCode = bookingCode.Trim();
+                query = query.Where(item => item.BookingCode == normalizedCode &&
+                    item.Customer.PhoneNumber == normalizedPhone && item.Customer.DataStatusId == existingId);
+            }
+            else
+            {
+                query = query.Where(item => item.Customer.PhoneNumber == normalizedPhone && item.Customer.DataStatusId == existingId);
+            }
+        }
+        else if (userId is > 0)
+        {
             query = query.Where(item => item.Customer.UserId == userId && item.Customer.DataStatusId == existingId);
+        }
+        else if (!string.IsNullOrWhiteSpace(bookingCode))
+        {
+            var normalizedCode = bookingCode.Trim();
+            query = query.Where(item => item.BookingCode == normalizedCode && item.Customer.DataStatusId == existingId);
+        }
         else
         {
-            if (string.IsNullOrWhiteSpace(bookingCode) || string.IsNullOrWhiteSpace(phone))
-                return BadRequest(new { success = false, message = "Tra cứu khách cần cả mã đặt tiệc và số điện thoại." });
-            var normalizedCode = bookingCode.Trim();
-            var normalizedPhone = phone.Trim();
-            query = query.Where(item => item.BookingCode == normalizedCode &&
-                item.Customer.PhoneNumber == normalizedPhone && item.Customer.DataStatusId == existingId);
+            return BadRequest(new { success = false, message = "Vui lòng cung cấp số điện thoại hoặc mã đặt tiệc." });
         }
 
-        var result = await query.OrderByDescending(item => item.BookedAt)
+        var dtoList = await query
+            .AsSplitQuery()
             .Select(item => new MyBookingDto
             {
                 BookingId = item.BookingId,
@@ -68,8 +85,14 @@ public sealed class MyBookingsController : ControllerBase
                 StatusCode = item.Status.StatusCode,
                 StatusName = item.Status.StatusName,
                 BookedAt = item.BookedAt,
-                SpecialRequests = item.SpecialRequests
+                SpecialRequests = item.SpecialRequests,
+                ContractId = item.Contract != null ? item.Contract.ContractId : (int?)null,
+                ContractCode = item.Contract != null ? item.Contract.ContractCode : null,
+                ContractStatusCode = item.Contract != null ? item.Contract.Status.StatusCode : null,
+                ContractStatusName = item.Contract != null ? item.Contract.Status.StatusName : null
             }).ToListAsync();
+
+        var result = dtoList.OrderByDescending(item => item.BookedAt).ToList();
 
         return Ok(new { success = true, data = result });
     }

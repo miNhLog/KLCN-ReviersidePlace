@@ -16,7 +16,31 @@
  </div><aside class="md-detail" id="dishDetail"><div class="md-detail-empty"><i class="fa-regular fa-hand-pointer"></i><h2>Chọn một món ăn</h2><p>Thông tin chi tiết và các thực đơn đang sử dụng sẽ hiển thị tại đây.</p></div></aside></div>
 </section>
 
-<div class="md-modal" id="createDishModal" hidden><form method="post" action="@Url.Action("Create")" enctype="multipart/form-data" class="md-modal-box">@Html.AntiForgeryToken()<header><h2>Thêm món ăn</h2><button type="button" data-close>×</button></header><div class="md-form-grid"><label class="md-upload"><span class="md-preview"><i class="fa-solid fa-image"></i></span><b>Hình ảnh món ăn</b><small>Không chọn ảnh, hệ thống sẽ sử dụng ảnh mặc định.</small><input type="file" name="Image" accept="image/jpeg,image/png,image/webp" data-preview /></label><div><label>Tên món ăn *<input name="DishName" maxlength="200" required /></label><label>Danh mục *<select name="Category" required><option value="">Chọn danh mục</option><option>Món khai vị</option><option>Món súp</option><option>Món chính</option><option>Món tráng miệng</option></select></label><label>Giá bán *<input name="Price" type="number" min="0" step="1" required /></label></div></div><footer><button class="md-btn light" type="button" data-close>Hủy</button><button class="md-btn gold">Thêm món ăn</button></footer></form></div>
-<div class="md-modal" id="editDishModal" hidden><form method="post" action="@Url.Action("Update")" enctype="multipart/form-data" class="md-modal-box">@Html.AntiForgeryToken()<input type="hidden" name="DishId"/><header><h2>Chỉnh sửa món ăn</h2><button type="button" data-close>×</button></header><div class="md-form-grid"><label class="md-upload"><span class="md-preview"><i class="fa-solid fa-image"></i></span><b>Hình ảnh món ăn</b><input type="file" name="NewImage" accept="image/jpeg,image/png,image/webp" data-preview/><span class="md-delete-image"><input type="checkbox" name="DeleteImage" value="true"/> Xóa ảnh hiện tại</span></label><div><label>Mã món<input name="DishCode" disabled /></label><label>Tên món ăn *<input name="DishName" maxlength="200" required /></label><label>Danh mục *<select name="Category" required><option>Món khai vị</option><option>Món súp</option><option>Món chính</option><option>Món tráng miệng</option></select></label><label>Giá bán *<input name="Price" type="number" min="0" required /></label></div></div><footer><button class="md-btn light" type="button" data-close>Hủy</button><button class="md-btn gold">Lưu thay đổi</button></footer></form></div>
-<div class="md-modal" id="statusModal" hidden><form id="statusForm" class="md-confirm">@Html.AntiForgeryToken()<header><h2 id="statusTitle">Xác nhận</h2><button type="button" data-close>×</button></header><p id="statusMessage"></p><footer><button type="button" class="md-btn light" data-close>Hủy</button><button class="md-btn gold" id="statusConfirm">Xác nhận</button></footer></form></div>
+<div class="md-modal" id="createDishModal" hidden><form method="post" action="@Url.Action("Create")" enctype="multipart/form-data" class="md-modal-box">@Html.AntiForgeryToken()<header><h2>Thêm món ăn</h2><button type="button" data-close aria-label="Đóng"><i class="fa-solid fa-xmark"></i></button></header><div class="md-form-grid"><label class="md-upload"><span class="md-preview"><i class="fa-solid fa-image"></i></span><b>Hình ảnh món ăn</b><small>Không chọn ảnh, hệ thống sẽ sử dụng ảnh mặc định.</small><input type="file" name="Image" accept="image/jpeg,image/png,image/webp" data-preview /></label><div><label>Tên món ăn *<input name="DishName" maxlength="200" required /></label><label>Danh mục *<select name="Category" required><option value="">Chọn danh mục</option><option>Món khai vị</option><option>Món súp</option><option>Món chính</option><option>Món tráng miệng</option></select></label><label>Giá bán *<input name="Price" type="number" min="0" step="1" required /></label></div></div><footer><button class="md-btn light" type="button" data-close>Hủy</button><button class="md-btn gold">Thêm món ăn</button></footer></form></div>
+<div class="md-modal" id="editDishModal" hidden><form method="post" action="@Url.Action("Update")" enctype="multipart/form-data" class="md-modal-box">@Html.AntiForgeryToken()<input type="hidden" name="DishId"/><header><h2>Chỉnh sửa món ăn</h2><button type="button" data-close aria-label="Đóng"><i class="fa-solid fa-xmark"></i></button></header><div class="md-form-grid"><label class="md-upload"><span class="md-preview"><i class="fa-solid fa-image"></i></span><b>Hình ảnh món ăn</b><input type="file" name="NewImage" accept="image/jpeg,image/png,image/webp" data-preview/><span class="md-delete-image"><input type="checkbox" name="DeleteImage" value="true"/> Xóa ảnh hiện tại</span></label><div><label>Mã món<input name="DishCode" disabled /></label><label>Tên món ăn *<input name="DishName" maxlength="200" required /></label><label>Danh mục *<select name="Category" required><option>Món khai vị</option><option>Món súp</option><option>Món chính</option><option>Món tráng miệng</option></select></label><label>Giá bán *<input name="Price" type="number" min="0" required /></label></div></div><footer><button class="md-btn light" type="button" data-close>Hủy</button><button class="md-btn gold">Lưu thay đổi</button></footer></form></div>
+<div class="md-modal" id="statusModal" hidden>
+    <form id="statusForm" class="md-confirm">
+        @Html.AntiForgeryToken()
+        <header>
+            <h2 id="statusTitle">Xác nhận</h2>
+            <button type="button" data-close aria-label="Đóng"><i class="fa-solid fa-xmark"></i></button>
+        </header>
+        <div id="statusAlertBanner" class="md-warning-banner" hidden>
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <div>
+                <strong>Cảnh báo ảnh hưởng thực đơn</strong>
+                <p>Món ăn này hiện đang nằm trong các thực đơn tiệc cưới dưới đây. Vui lòng cân nhắc thay thế món trước khi ngưng phục vụ.</p>
+            </div>
+        </div>
+        <p id="statusMessage"></p>
+        <div id="statusAffectedMenusContainer" class="md-affected-menus-wrap" hidden>
+            <label class="md-affected-label"><i class="fa-solid fa-list-check"></i> Các thực đơn tiệc cưới đang chứa món ăn này:</label>
+            <div id="statusAffectedMenusList" class="md-affected-list"></div>
+        </div>
+        <footer>
+            <button type="button" class="md-btn light" data-close>Hủy</button>
+            <button class="md-btn gold" id="statusConfirm">Xác nhận</button>
+        </footer>
+    </form>
+</div>
 @section Scripts { <script src="~/js/manager-dish.js" asp-append-version="true"></script> }

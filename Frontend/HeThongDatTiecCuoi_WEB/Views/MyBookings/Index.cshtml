@@ -328,7 +328,7 @@
                     {
                         var isCancelled = item.Status == "Đã hủy";
                         var isPending = item.Status == "Chờ xác nhận";
-                        var isConfirmed = item.Status == "Đã cọc" || item.Status == "Đã ký hợp đồng";
+                        var isConfirmed = item.Status == "Đã cọc" || item.Status == "Đã ký hợp đồng" || item.Status == "Đã xác nhận" || item.HasContract;
 
                         <div class="myb-card">
                             <!-- Tiêu đề thẻ -->
@@ -377,7 +377,7 @@
                                         <span style="font-size: 11px; font-weight: 600; color: #64748B;">Tư vấn sảnh</span>
                                     </div>
                                     <div class="myb-step-item">
-                                        <div class="myb-step-dot @(isConfirmed ? "myb-step-done" : "myb-step-wait")">3</div>
+                                        <div class="myb-step-dot @(isConfirmed || item.HasContract ? "myb-step-done" : "myb-step-wait")">3</div>
                                         <span style="font-size: 11px; font-weight: 600; color: #64748B;">Ký hợp đồng</span>
                                     </div>
                                     <div class="myb-step-item">
@@ -427,6 +427,15 @@
 
                             <!-- Nút thao tác -->
                             <div style="display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin-top: 16px;">
+                                @if (item.HasContract)
+                                {
+                                    <a href="/MyBooking?bookingCode=@item.BookingCode&phone=@currentPhone" class="myb-btn-primary" style="padding: 9px 16px; border-radius: 10px; background: #B89758; color: #FFFFFF; font-weight: 700; font-size: 12px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+                                        <i class="fa-regular fa-file-lines"></i> Xem Hợp Đồng
+                                    </a>
+                                    <a href="/MyBookings/DownloadContractPdf?bookingCode=@item.BookingCode&phone=@currentPhone" target="_blank" style="padding: 9px 16px; border-radius: 10px; background: #FFFFFF; border: 1px solid #B89758; color: #B89758; font-weight: 700; font-size: 12px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+                                        <i class="fa-solid fa-file-arrow-down"></i> Tải PDF Hợp Đồng
+                                    </a>
+                                }
                                 @if (isPending)
                                 {
                                     <button type="button" onclick="cancelMyBooking(@item.BookingId, '@item.BookingCode')" style="padding: 9px 16px; border-radius: 10px; background: #FFFFFF; border: 1px solid #EF4444; color: #EF4444; font-weight: 700; font-size: 12px; cursor: pointer;">

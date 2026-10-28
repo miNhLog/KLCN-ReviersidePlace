@@ -1,4 +1,4 @@
-// Alias route /MyBooking theo yêu cầu UC14/UC15 (giữ nguyên /MyBookings/Index tương thích).
+﻿// Alias route /MyBooking theo yêu cầu UC14/UC15 (giữ nguyên /MyBookings/Index tương thích).
 using System;
 using System.Collections.Generic;
 using System.Security.Claims;
@@ -294,5 +294,39 @@ public class MyBookingController : Controller
     private static bool IsLookupShapeValid(string code, string contact) =>
         Regex.IsMatch(code ?? string.Empty, @"^DT-\d{8}-[A-Z0-9]{4,}$")
         && Regex.IsMatch(contact ?? string.Empty, @"^(0\d{9}|[^\s@]+@[^\s@]+\.[^\s@]+)$", RegexOptions.IgnoreCase);
-}
 
+    // GET /MyBooking/DownloadContractPdf?bookingCode=...&phone=...
+    [HttpGet("DownloadContractPdf")]
+    public async Task<IActionResult> DownloadContractPdf(
+        [FromQuery] string? bookingCode,
+        [FromQuery] string? phone,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var code = (bookingCode ?? Request.Cookies["booking_code"] ?? string.Empty).Trim().ToUpperInvariant();
+            var targetPhone = (phone ?? Request.Cookies["customer_phone"] ?? string.Empty).Trim();
+            if (User.Identity?.IsAuthenticated == true && string.IsNullOrEmpty(targetPhone))
+                targetPhone = User.FindFirstValue(ClaimTypes.MobilePhone) ?? User.FindFirstValue("phone") ?? string.Empty;
+
+            if (!IsLookupShapeValid(code, targetPhone))
+                return BadRequest("Mã đặt tiệc hoặc email/số điện thoại không hợp lệ.");
+
+            var result = await _apiClient.DownloadPublicContractPdfAsync(code, targetPhone, cancellationToken);
+            if (result.Succeeded && result.Value is not null)
+            {
+                return File(result.Value.Content, result.Value.ContentType, result.Value.FileName);
+            }
+
+            TempData["ErrorMessage"] = result.Error ?? "Không thể tải file PDF hợp đồng lúc này.";
+            return RedirectToAction(nameof(Index), new { bookingCode = code, phone = targetPhone });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Lỗi khi tải PDF hợp đồng cho {BookingCode}", bookingCode);
+            TempData["ErrorMessage"] = "Không thể tải PDF hợp đồng lúc này.";
+            return RedirectToAction(nameof(Index), new { bookingCode, phone });
+        }
+    }
+
+}

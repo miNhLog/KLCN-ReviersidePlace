@@ -50,6 +50,8 @@ public static class PaymentTransactionTypes
 {
     public const string Deposit = "DEPOSIT";
     public const string ScheduleChange = "SCHEDULE_CHANGE";
+    public const string Installment = "INSTALLMENT";
+    public const string Settlement = "SETTLEMENT";
 }
 
 public static class ScheduleChangePolicyStatusCodes
