@@ -72,6 +72,8 @@ public class PublicBookingDetailViewModel
     public decimal TotalAmount { get; set; }
     public decimal DepositPaid { get; set; }
     public decimal RemainingDebt { get; set; }
+    public bool HasPaidStage2 { get; set; }
+    public decimal Stage2Paid { get; set; }
     public string StatusCode { get; set; } = string.Empty;
     public string StatusName { get; set; } = string.Empty;
     public bool CanCancelOnline { get; set; }

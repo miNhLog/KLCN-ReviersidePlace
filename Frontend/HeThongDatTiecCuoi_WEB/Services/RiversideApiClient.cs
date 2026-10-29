@@ -2484,11 +2484,15 @@ public sealed class RiversideApiClient : IRiversideApiClient
         }
     }
 
-    public async Task<ApiCallResult<bool>> CancelBookingAsync(int bookingId, CancellationToken cancellationToken = default)
+    public async Task<ApiCallResult<bool>> CancelBookingAsync(int bookingId, string? bookingCode = null, string? phone = null, CancellationToken cancellationToken = default)
     {
         try
         {
-            var response = await _httpClient.PutAsync($"api/my-bookings/{bookingId}/cancel", null, cancellationToken);
+            var query = new List<string>();
+            if (!string.IsNullOrWhiteSpace(bookingCode)) query.Add($"bookingCode={Uri.EscapeDataString(bookingCode.Trim())}");
+            if (!string.IsNullOrWhiteSpace(phone)) query.Add($"phone={Uri.EscapeDataString(phone.Trim())}");
+            var queryString = query.Count > 0 ? "?" + string.Join("&", query) : "";
+            var response = await _httpClient.PutAsync($"api/my-bookings/{bookingId}/cancel{queryString}", null, cancellationToken);
             if (!response.IsSuccessStatusCode)
             {
                 var err = await response.Content.ReadAsStringAsync(cancellationToken);
@@ -2693,6 +2697,49 @@ public sealed class RiversideApiClient : IRiversideApiClient
         try
         {
             using var req = new HttpRequestMessage(HttpMethod.Post, "api/v1/payment/create-deposit")
+            {
+                Content = JsonContent.Create(request, options: JsonOptions)
+            };
+            if (!string.IsNullOrWhiteSpace(accessToken))
+                req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+            using var response = await _httpClient.SendAsync(req, cancellationToken);
+            var json = await response.Content.ReadAsStringAsync(cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                return ApiCallResult<HeThongDatTiecCuoi_WEB.Models.Payment.CreateDepositPaymentResponseViewModel>.Failure(
+                    ExtractApiMessage(json, response.StatusCode), (int)response.StatusCode);
+            }
+
+            using var doc = JsonDocument.Parse(json);
+            if (doc.RootElement.TryGetProperty("data", out var dataEl))
+            {
+                var dto = JsonSerializer.Deserialize<HeThongDatTiecCuoi_WEB.Models.Payment.CreateDepositPaymentResponseViewModel>(dataEl.GetRawText(), JsonOptions);
+                return dto != null
+                    ? ApiCallResult<HeThongDatTiecCuoi_WEB.Models.Payment.CreateDepositPaymentResponseViewModel>.Success(dto)
+                    : ApiCallResult<HeThongDatTiecCuoi_WEB.Models.Payment.CreateDepositPaymentResponseViewModel>.Failure("Không thể đọc dữ liệu phản hồi thanh toán.");
+            }
+
+            return ApiCallResult<HeThongDatTiecCuoi_WEB.Models.Payment.CreateDepositPaymentResponseViewModel>.Failure("Không tìm thấy dữ liệu thanh toán trong phản hồi.");
+        }
+        catch (HttpRequestException)
+        {
+            return ApiCallResult<HeThongDatTiecCuoi_WEB.Models.Payment.CreateDepositPaymentResponseViewModel>.Failure("Không thể kết nối đến máy chủ thanh toán.");
+        }
+        catch (Exception ex)
+        {
+            return ApiCallResult<HeThongDatTiecCuoi_WEB.Models.Payment.CreateDepositPaymentResponseViewModel>.Failure($"Lỗi khởi tạo thanh toán: {ex.Message}");
+        }
+    }
+
+        public async Task<ApiCallResult<HeThongDatTiecCuoi_WEB.Models.Payment.CreateDepositPaymentResponseViewModel>> CreateCustomerContractPaymentAsync(
+        HeThongDatTiecCuoi_WEB.Models.Payment.CreateCustomerContractPaymentRequestViewModel request,
+        string? accessToken = null,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            using var req = new HttpRequestMessage(HttpMethod.Post, "api/v1/payment/create-contract-payment")
             {
                 Content = JsonContent.Create(request, options: JsonOptions)
             };

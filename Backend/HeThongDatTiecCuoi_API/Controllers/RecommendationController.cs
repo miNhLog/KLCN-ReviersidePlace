@@ -93,8 +93,8 @@ public sealed class RecommendationController : ControllerBase
         // Fallback GuestCount từ TableCount trước mọi validation để JS cũ không bị 400.
         if (request.GuestCount <= 0 && (request.TableCount > 0 || request.OfficialTableCount > 0))
             request.GuestCount = Math.Max(request.TableCount, request.OfficialTableCount + request.SpareTableCount) * 10;
-        if (request.GuestCount <= 0)
-            return BadRequest(new { message = "Số lượng khách phải lớn hơn 0." });
+        if (request.GuestCount < 50 || request.GuestCount > 1400)
+            return BadRequest(new { message = "Số lượng khách phải từ 50 đến 1400 khách (tương đương 5 đến 140 bàn phù hợp năng lực sảnh tiệc của Riverside Palace)." });
         // Ràng buộc ngân sách: min tuyệt đối 100tr (min thực tế ~103,3tr cho 150 khách:
         // sảnh Elbe 20tr + menu 4,35tr/bàn × 15 bàn + decor 18tr). Gợi ý chỉ vượt tối đa 10tr.
         const decimal MinBudgetAbsolute = 100_000_000m;
@@ -371,8 +371,8 @@ public sealed class RecommendationController : ControllerBase
             return BadRequest(new { message = "Phong cách mong muốn không được để trống." });
         if (request.GuestCount <= 0 && (request.TableCount > 0 || request.OfficialTableCount > 0))
             request.GuestCount = Math.Max(request.TableCount, request.OfficialTableCount + request.SpareTableCount) * 10;
-        if (request.GuestCount <= 0)
-            return BadRequest(new { message = "Số lượng khách phải lớn hơn 0." });
+        if (request.GuestCount < 50 || request.GuestCount > 1400)
+            return BadRequest(new { message = "Số lượng khách phải từ 50 đến 1400 khách (tương đương 5 đến 140 bàn phù hợp năng lực sảnh tiệc của Riverside Palace)." });
         const decimal MinBudgetHybrid = 100_000_000m;
         const decimal MaxBudgetHybrid = 3_000_000_000m;
         if (request.ExpectedBudget < MinBudgetHybrid || request.ExpectedBudget > MaxBudgetHybrid)
@@ -380,8 +380,12 @@ public sealed class RecommendationController : ControllerBase
         DateTime targetDate;
         try { targetDate = request.DesiredDate.Date; }
         catch { return BadRequest(new { message = "Ngày tổ chức không hợp lệ." }); }
-        if (targetDate < DateTime.Today.AddDays(30) || targetDate > DateTime.Today.AddDays(365))
-            return BadRequest(new { message = "Ngày tổ chức phải cách hiện tại 30-365 ngày." });
+        var minDateHybrid = DateTime.Today.AddDays(30);
+        var maxDateHybrid = DateTime.Today.AddDays(365);
+        if (targetDate < minDateHybrid)
+            return BadRequest(new { message = "Ngày tổ chức tiệc cưới phải cách ngày hiện tại tối thiểu 30 ngày. Vui lòng chọn ngày xa hơn để Riverside Palace có thời gian chuẩn bị tốt nhất." });
+        if (targetDate > maxDateHybrid)
+            return BadRequest(new { message = "Hệ thống chỉ nhận đăng ký giữ chỗ trước tối đa 365 ngày (1 năm). Vui lòng chọn ngày gần hơn." });
         var nextDay = targetDate.AddDays(1);
         List<int> occupiedHallIds = new();
         byte existingDataStatusId;
@@ -902,8 +906,8 @@ public sealed class RecommendationController : ControllerBase
         // Fallback GuestCount từ TableCount/Official+Spare trước Model validation.
         if (request.GuestCount <= 0 && (request.TableCount > 0 || request.OfficialTableCount > 0))
             request.GuestCount = Math.Max(request.TableCount, request.OfficialTableCount + request.SpareTableCount) * 10;
-        if (request.GuestCount <= 0)
-            return BadRequest(new { message = "Số lượng khách phải lớn hơn 0." });
+        if (request.GuestCount < 50 || request.GuestCount > 1400)
+            return BadRequest(new { message = "Số lượng khách phải từ 50 đến 1400 khách (tương đương 5 đến 140 bàn phù hợp năng lực sảnh tiệc của Riverside Palace)." });
         // Ràng buộc ngân sách: min tuyệt đối 100tr (min thực tế ~103,3tr cho 150 khách).
         const decimal MinBudgetAbsolute2 = 100_000_000m;
         const decimal MaxBudgetAbsolute2 = 3_000_000_000m;
@@ -1391,8 +1395,8 @@ public sealed class RecommendationController : ControllerBase
         // "Số lượng khách phải lớn hơn 0" khi JS chỉ gửi TableCount.
         if (request.GuestCount <= 0 && request.TableCount > 0)
             request.GuestCount = request.TableCount * 10;
-        if (request.GuestCount <= 0)
-            return BadRequest(new { success = false, message = "Số lượng khách phải lớn hơn 0." });
+        if (request.GuestCount < 50 || request.GuestCount > 1400)
+            return BadRequest(new { success = false, message = "Số lượng khách phải từ 50 đến 1400 khách (tương đương 5 đến 140 bàn phù hợp năng lực sảnh tiệc của Riverside Palace)." });
 
         await using var transaction = await _context.Database.BeginTransactionAsync(IsolationLevel.Serializable);
         try

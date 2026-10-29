@@ -50,6 +50,38 @@ public sealed class PaymentController : Controller
     }
 
     /// <summary>
+    /// Proxy tạo liên kết thanh toán VietQR PayOS cho hợp đồng (Đợt 2 / Thanh toán từ xa).
+    /// </summary>
+    [HttpPost("CreateContractPayment")]
+    public async Task<IActionResult> CreateContractPayment([FromBody] CreateCustomerContractPaymentRequestViewModel request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (request == null || request.BookingId <= 0)
+                return Json(new { success = false, message = "Thiếu thông tin đơn tiệc cần thanh toán." });
+
+            string? accessToken = null;
+            if (User.Identity?.IsAuthenticated == true)
+            {
+                accessToken = Request.Cookies["access_token"] ?? User.FindFirstValue("access_token");
+            }
+
+            var result = await _apiClient.CreateCustomerContractPaymentAsync(request, accessToken, cancellationToken);
+            if (result.Succeeded && result.Value != null)
+            {
+                return Json(new { success = true, data = result.Value });
+            }
+
+            return Json(new { success = false, message = result.Error ?? "Không thể khởi tạo mã VietQR lúc này." });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Lỗi proxy tạo thanh toán hợp đồng cho BookingId={BookingId}", request?.BookingId);
+            return Json(new { success = false, message = "Không thể kết nối đến cổng thanh toán, vui lòng thử lại sau." });
+        }
+    }
+
+    /// <summary>
     /// Proxy kiểm tra trạng thái thanh toán phục vụ Polling mỗi 2 giây.
     /// </summary>
     [HttpGet("CheckStatus")]

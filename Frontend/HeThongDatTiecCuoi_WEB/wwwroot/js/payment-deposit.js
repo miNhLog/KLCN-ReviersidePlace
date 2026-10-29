@@ -1,5 +1,5 @@
 /**
- * Riverside Palace - VietQR PayOS Deposit Modal Handler
+ * Riverside Palace - VietQR PayOS Deposit & Contract Payment Modal Handler
  * Real-time Polling, EMVCo QR Resolver, Robust Error & Timeout Handling, Confetti Celebration
  */
 
@@ -12,6 +12,7 @@ const RiversidePayment = (function () {
     let lastBookingParams = null;
     let rawQrCode = null;
     let qrFallbackAttempted = false;
+    let isContractMode = false;
 
     function formatVnd(amount) {
         return Number(amount || 0).toLocaleString('vi-VN') + ' đ';
@@ -86,28 +87,31 @@ const RiversidePayment = (function () {
         if (retryBtn) {
             retryBtn.onclick = function () {
                 if (lastBookingParams) {
-                    openDepositModal(
-                        lastBookingParams.bookingId,
-                        lastBookingParams.bookingCode,
-                        lastBookingParams.phoneNumber,
-                        lastBookingParams.totalEstimate
-                    );
+                    if (isContractMode) {
+                        openContractPayment(
+                            lastBookingParams.bookingId,
+                            lastBookingParams.bookingCode,
+                            lastBookingParams.phoneNumber,
+                            lastBookingParams.remainingDebt,
+                            lastBookingParams.totalEstimate
+                        );
+                    } else {
+                        openDepositModal(
+                            lastBookingParams.bookingId,
+                            lastBookingParams.bookingCode,
+                            lastBookingParams.phoneNumber,
+                            lastBookingParams.totalEstimate
+                        );
+                    }
                 }
             };
         }
     }
 
-    async function openDepositModal(bookingId, bookingCode, phoneNumber, totalEstimate) {
+    async function executePaymentRequest(apiUrl, requestBody, defaultAmountFormatted) {
         const modalBackdrop = document.getElementById('rpPayModalBackdrop');
         if (!modalBackdrop) return;
 
-        // Lưu thông số gần nhất để phục vụ nút Thử lại (Retry)
-        lastBookingParams = {
-            bookingId: bookingId,
-            bookingCode: bookingCode,
-            phoneNumber: phoneNumber,
-            totalEstimate: totalEstimate
-        };
         rawQrCode = null;
         qrFallbackAttempted = false;
 
@@ -140,10 +144,8 @@ const RiversidePayment = (function () {
         document.getElementById('rpPayStatusText').innerText = 'Đang khởi tạo mã VietQR từ PayOS...';
 
         // Điền trước thông tin cơ bản
-        document.getElementById('rpPayBookingCode').innerText = bookingCode || ('#' + bookingId);
-        const estTotal = Number(totalEstimate || 0);
-        const depositEst = Math.round(estTotal * 0.10);
-        document.getElementById('rpPayDepositVal').innerText = formatVnd(depositEst);
+        document.getElementById('rpPayBookingCode').innerText = requestBody.bookingCode || ('#' + requestBody.bookingId);
+        document.getElementById('rpPayDepositVal').innerText = defaultAmountFormatted;
 
         // Mở modal backdrop
         modalBackdrop.classList.add('is-open');
@@ -156,18 +158,13 @@ const RiversidePayment = (function () {
         }, 15000);
 
         try {
-            // Gọi Backend tạo link cọc
-            const response = await fetch('/Payment/CreateDeposit', {
+            const response = await fetch(apiUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest'
                 },
-                body: JSON.stringify({
-                    bookingId: parseInt(bookingId),
-                    bookingCode: bookingCode,
-                    phoneNumber: phoneNumber
-                })
+                body: JSON.stringify(requestBody)
             });
 
             if (!response.ok) {
@@ -176,7 +173,7 @@ const RiversidePayment = (function () {
 
             const result = await response.json();
             if (!result.success || !result.data) {
-                throw new Error(result.message || 'Không thể tạo mã VietQR thanh toán cọc lúc này.');
+                throw new Error(result.message || 'Không thể tạo mã VietQR thanh toán lúc này.');
             }
 
             const data = result.data;
@@ -184,12 +181,19 @@ const RiversidePayment = (function () {
             rawQrCode = data.qrCode || '';
 
             // Hiển thị thông tin thực tế từ PayOS
-            document.getElementById('rpPayDepositVal').innerText = formatVnd(data.businessDeposit);
+            const bizAmount = (data.businessAmount && data.businessAmount > 0)
+                ? data.businessAmount
+                : ((data.businessDeposit && data.businessDeposit > 0)
+                    ? data.businessDeposit
+                    : ((data.amount && data.amount > 0)
+                        ? data.amount
+                        : (requestBody.amount || (lastBookingParams ? (lastBookingParams.remainingDebt || lastBookingParams.totalEstimate * 0.1) : 0))));
+            document.getElementById('rpPayDepositVal').innerText = formatVnd(bizAmount);
             document.getElementById('rpPayActualAmount').innerText = formatVnd(data.actualAmount);
             document.getElementById('rpPayAccountName').innerText = data.accountName || 'CONG TY CP RIVERSIDE PALACE';
             document.getElementById('rpPayAccountNumber').innerText = data.accountNumber || '--';
             document.getElementById('rpPayBankName').innerText = data.bankName || data.bankBin || 'VietinBank';
-            document.getElementById('rpPayDescription').innerText = data.description || ('RSP ' + bookingId);
+            document.getElementById('rpPayDescription').innerText = data.description || ('RSP ' + requestBody.bookingId);
 
             // Gắn sự kiện copy
             const copyAccBtn = document.getElementById('rpPayCopyAccBtn');
@@ -206,7 +210,6 @@ const RiversidePayment = (function () {
                 const targetQrUrl = resolveQrImageUrl(rawQrCode);
 
                 qrImg.onload = function () {
-                    // Xóa timeout khi ảnh tải thành công
                     clearTimeout(qrTimeoutTimer);
                     if (loadingEl) loadingEl.style.display = 'none';
                     if (errorEl) errorEl.style.display = 'none';
@@ -216,7 +219,6 @@ const RiversidePayment = (function () {
 
                 qrImg.onerror = function () {
                     console.warn('Lỗi khi tải ảnh QR từ:', qrImg.src);
-                    // Thử fallback sang QuickChart 1 lần nếu chuỗi ban đầu là EMVCo
                     if (!qrFallbackAttempted && rawQrCode && !rawQrCode.startsWith('http://') && !rawQrCode.startsWith('https://')) {
                         qrFallbackAttempted = true;
                         console.info('Thử fallback sang QuickChart QR API...');
@@ -227,7 +229,6 @@ const RiversidePayment = (function () {
                     showQrError('Không thể tải mã QR thanh toán. Vui lòng bấm thử lại hoặc liên hệ quản trị viên.');
                 };
 
-                // Bắt đầu tải ảnh QR
                 qrImg.src = targetQrUrl;
             }
 
@@ -235,15 +236,69 @@ const RiversidePayment = (function () {
             startCountdown(10 * 60);
 
             // Bắt đầu Polling kiểm tra trạng thái mỗi 2 giây
-            startPolling(data.orderCode, bookingCode);
+            startPolling(data.orderCode, requestBody.bookingCode);
 
         } catch (err) {
-            console.error('Lỗi quy trình tạo thanh toán cọc:', err);
+            console.error('Lỗi quy trình tạo thanh toán:', err);
             clearInterval(countdownInterval);
             clearInterval(pollingInterval);
             clearTimeout(qrTimeoutTimer);
             showQrError(err.message || 'Không thể kết nối đến máy chủ thanh toán.');
         }
+    }
+
+    async function openDepositModal(bookingId, bookingCode, phoneNumber, totalEstimate) {
+        isContractMode = false;
+        lastBookingParams = {
+            bookingId: bookingId,
+            bookingCode: bookingCode,
+            phoneNumber: phoneNumber,
+            totalEstimate: totalEstimate
+        };
+
+        const titleEl = document.getElementById('rpPayModalTitle');
+        if (titleEl) titleEl.innerText = 'Thanh toán Đặt cọc Giữ chỗ Sảnh';
+
+        const labelEl = document.querySelector('#rpPayInitialContent .rp-pay-deposit-amount span');
+        if (labelEl) labelEl.innerText = 'Tiền cọc giữ chỗ (10%):';
+
+        const estTotal = Number(totalEstimate || 0);
+        const depositEst = Math.round(estTotal * 0.10);
+
+        await executePaymentRequest('/Payment/CreateDeposit', {
+            bookingId: parseInt(bookingId),
+            bookingCode: bookingCode,
+            phoneNumber: phoneNumber
+        }, formatVnd(depositEst));
+    }
+
+    async function openContractPayment(bookingId, bookingCode, phoneNumber, remainingDebt, totalEstimate) {
+        isContractMode = true;
+        lastBookingParams = {
+            bookingId: bookingId,
+            bookingCode: bookingCode,
+            phoneNumber: phoneNumber,
+            remainingDebt: remainingDebt,
+            totalEstimate: totalEstimate
+        };
+
+        const titleEl = document.getElementById('rpPayModalTitle');
+        if (titleEl) titleEl.innerText = 'Thanh toán Hợp đồng Đợt 2 (VietQR PayOS)';
+
+        const labelEl = document.querySelector('#rpPayInitialContent .rp-pay-deposit-amount span');
+        if (labelEl) labelEl.innerText = 'Số tiền thanh toán Đợt 2:';
+
+        const rem = Number(remainingDebt || 0);
+        const estTotal = Number(totalEstimate || 0);
+        const halfTotal = Math.round(estTotal * 0.50);
+        const targetAmount = rem > 0 ? (rem > halfTotal && halfTotal > 0 ? halfTotal : rem) : 0;
+
+        await executePaymentRequest('/Payment/CreateContractPayment', {
+            bookingId: parseInt(bookingId),
+            bookingCode: bookingCode,
+            phoneNumber: phoneNumber,
+            amount: targetAmount > 0 ? targetAmount : undefined
+        }, formatVnd(targetAmount));
     }
 
     function startCountdown(durationSeconds) {
@@ -306,8 +361,34 @@ const RiversidePayment = (function () {
         // Đổi giao diện sang trạng thái thành công
         document.getElementById('rpPayInitialContent').style.display = 'none';
         document.getElementById('rpPaySuccessContent').style.display = 'block';
-        document.getElementById('rpPaySuccessAmount').innerText = formatVnd(data.businessDeposit);
-        document.getElementById('rpPaySuccessBookingCode').innerText = bookingCode || data.bookingCode || 'Đơn tiệc của bạn';
+
+        const successTitleEl = document.querySelector('.rp-pay-success-title');
+        const successDescEl = document.querySelector('.rp-pay-success-desc');
+
+        const successAmt = (data.businessAmount && data.businessAmount > 0)
+            ? data.businessAmount
+            : ((data.businessDeposit && data.businessDeposit > 0)
+                ? data.businessDeposit
+                : ((data.amount && data.amount > 0)
+                    ? data.amount
+                    : (data.actualAmount || 0)));
+
+        if (isContractMode) {
+            if (successTitleEl) successTitleEl.innerText = 'Thanh Toán Hợp Đồng Đợt 2 Thành Công!';
+            if (successDescEl) {
+                successDescEl.innerHTML = `Hệ thống đã xác nhận thanh toán thành công số tiền <strong id="rpPaySuccessAmount">${formatVnd(successAmt)}</strong> cho hợp đồng <strong id="rpPaySuccessBookingCode">${bookingCode || data.bookingCode || 'của bạn'}</strong>.<br/><br/>Hóa đơn điện tử có chữ ký số điện tử X.509 PAdES hợp pháp đã được <strong>gửi tự động về email</strong> của quý khách.`;
+            }
+        } else {
+            if (successTitleEl) successTitleEl.innerText = 'Thanh Toán Đặt Cọc Thành Công!';
+            if (successDescEl) {
+                successDescEl.innerHTML = `Hệ thống đã xác nhận đặt cọc thành công <strong id="rpPaySuccessAmount">${formatVnd(successAmt)}</strong> cho hồ sơ <strong id="rpPaySuccessBookingCode">${bookingCode || data.bookingCode || 'Đơn tiệc của bạn'}</strong>. Lịch sảnh tiệc đã được <strong>khóa chính thức</strong> trên hệ thống Riverside Palace.`;
+            }
+        }
+
+        const successAmountEl = document.getElementById('rpPaySuccessAmount');
+        if (successAmountEl) successAmountEl.innerText = formatVnd(successAmt);
+        const successBookingEl = document.getElementById('rpPaySuccessBookingCode');
+        if (successBookingEl) successBookingEl.innerText = bookingCode || data.bookingCode || 'Đơn tiệc của bạn';
 
         // Kích hoạt pháo hoa chúc mừng Confetti
         fireConfetti();
@@ -360,6 +441,7 @@ const RiversidePayment = (function () {
 
     return {
         open: openDepositModal,
+        openContractPayment: openContractPayment,
         close: closeDepositModal
     };
 })();

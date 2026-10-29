@@ -1,7 +1,9 @@
+using System.Security.Claims;
 using HeThongDatTiecCuoi_API.Constants;
 using HeThongDatTiecCuoi_API.Constants.StatusCodes;
 using HeThongDatTiecCuoi_API.Data;
 using HeThongDatTiecCuoi_API.DTOs.Booking;
+using HeThongDatTiecCuoi_API.Models;
 using HeThongDatTiecCuoi_API.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -27,37 +29,48 @@ public sealed class MyBookingsController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetMyBookings([FromQuery] int? userId, [FromQuery] string? bookingCode, [FromQuery] string? phone)
     {
+        var rawUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var isAuthenticated = int.TryParse(rawUserId, out var currentUserId);
+        var isStaff = isAuthenticated && (
+            User.IsInRole(RoleNames.Admin) ||
+            User.IsInRole(RoleNames.Manager) ||
+            User.IsInRole(RoleNames.Coordinator) ||
+            User.IsInRole(RoleNames.HallManager));
+
         var existingId = await _context.DataStatuses
             .Where(item => item.DataStatusCode == DataStatusCodes.Existing)
             .Select(item => item.DataStatusId).SingleAsync();
         var query = _context.WeddingBookings.AsNoTracking().AsQueryable();
 
-        if (!string.IsNullOrWhiteSpace(phone))
+        // 1. Tra cứu theo userId
+        if (userId is > 0)
         {
-            var normalizedPhone = phone.Trim();
-            if (!string.IsNullOrWhiteSpace(bookingCode))
+            if (!isAuthenticated)
             {
-                var normalizedCode = bookingCode.Trim();
-                query = query.Where(item => item.BookingCode == normalizedCode &&
-                    item.Customer.PhoneNumber == normalizedPhone && item.Customer.DataStatusId == existingId);
+                return StatusCode(StatusCodes.Status401Unauthorized, new { success = false, message = "Yêu cầu đăng nhập để tra cứu theo mã tài khoản." });
             }
-            else
+            if (!isStaff && currentUserId != userId.Value)
             {
-                query = query.Where(item => item.Customer.PhoneNumber == normalizedPhone && item.Customer.DataStatusId == existingId);
+                return StatusCode(StatusCodes.Status403Forbidden, new { success = false, message = "Bạn không có quyền truy cập dữ liệu đơn tiệc của người khác." });
             }
-        }
-        else if (userId is > 0)
-        {
             query = query.Where(item => item.Customer.UserId == userId && item.Customer.DataStatusId == existingId);
         }
-        else if (!string.IsNullOrWhiteSpace(bookingCode))
+        // 2. Người dùng đã đăng nhập tự xem danh sách tiệc của mình
+        else if (isAuthenticated && !isStaff && string.IsNullOrWhiteSpace(bookingCode) && string.IsNullOrWhiteSpace(phone))
         {
-            var normalizedCode = bookingCode.Trim();
-            query = query.Where(item => item.BookingCode == normalizedCode && item.Customer.DataStatusId == existingId);
+            query = query.Where(item => item.Customer.UserId == currentUserId && item.Customer.DataStatusId == existingId);
+        }
+        // 3. Khách tra cứu công khai: BẮT BUỘC có cả mã đặt tiệc VÀ số điện thoại để chống rò rỉ dữ liệu (SEC-03)
+        else if (!string.IsNullOrWhiteSpace(phone) && !string.IsNullOrWhiteSpace(bookingCode))
+        {
+            var normalizedPhone = phone.Trim();
+            var normalizedCode = bookingCode.Trim().ToUpperInvariant();
+            query = query.Where(item => item.BookingCode == normalizedCode &&
+                item.Customer.PhoneNumber == normalizedPhone && item.Customer.DataStatusId == existingId);
         }
         else
         {
-            return BadRequest(new { success = false, message = "Vui lòng cung cấp số điện thoại hoặc mã đặt tiệc." });
+            return BadRequest(new { success = false, message = "Vui lòng cung cấp cả mã đặt tiệc và số điện thoại để tra cứu." });
         }
 
         var dtoList = await query
@@ -73,7 +86,6 @@ public sealed class MyBookingsController : ControllerBase
                 EventDate = item.HallSchedule.Date,
                 Shift = item.HallSchedule.Shift,
                 GuestCount = item.GuestCount,
-                // LỖI D: bổ sung để list cũ không hiện 0 bàn / trống trạng thái.
                 TableCount = (int)Math.Ceiling(item.GuestCount / 10m),
                 Status = item.Status.StatusName,
                 MenuName = item.Menu != null ? item.Menu.MenuName : null,
@@ -98,42 +110,82 @@ public sealed class MyBookingsController : ControllerBase
     }
 
     [HttpPut("{id:int}/cancel")]
-    public async Task<IActionResult> CancelBooking(int id, [FromQuery] string? cancellationReason)
+    public async Task<IActionResult> CancelBooking(
+        int id,
+        [FromQuery] string? cancellationReason,
+        [FromQuery] string? bookingCode = null,
+        [FromQuery] string? phone = null)
     {
+        var rawUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var isAuthenticated = int.TryParse(rawUserId, out var currentUserId);
+        var isStaff = isAuthenticated && (
+            User.IsInRole(RoleNames.Admin) ||
+            User.IsInRole(RoleNames.Manager) ||
+            User.IsInRole(RoleNames.Coordinator) ||
+            User.IsInRole(RoleNames.HallManager));
+
         await using var transaction = await _context.Database.BeginTransactionAsync();
         try
         {
-        var booking = await _context.WeddingBookings
-            .Include(item => item.Status)
-            .Include(item => item.HallSchedule)
-            .SingleOrDefaultAsync(item => item.BookingId == id);
-        if (booking == null)
-            return NotFound(new { success = false, message = "Không tìm thấy đơn tiệc cưới này." });
-        if (booking.Status.StatusGroup != StatusGroups.Booking || booking.Status.StatusCode != BookingStatusCodes.Pending)
-            return BadRequest(new { success = false, message = "Chỉ có thể hủy booking đang ở trạng thái PENDING." });
-        if (cancellationReason?.Trim().Length > 500)
-            return BadRequest(new { success = false, message = "Lý do hủy không được vượt quá 500 ký tự." });
+            var booking = await _context.WeddingBookings
+                .Include(item => item.Status)
+                .Include(item => item.HallSchedule)
+                .Include(item => item.Customer)
+                .SingleOrDefaultAsync(item => item.BookingId == id);
+            if (booking == null)
+                return NotFound(new { success = false, message = "Không tìm thấy đơn tiệc cưới này." });
 
-        booking.StatusId = await _statusService.GetStatusIdAsync(StatusGroups.Booking, BookingStatusCodes.Cancelled);
-        booking.CancellationReason = string.IsNullOrWhiteSpace(cancellationReason)
-            ? "Hủy theo yêu cầu khách hàng"
-            : cancellationReason.Trim();
-        await _coordinationAssignments.SynchronizeBookingAssignmentsAsync(booking.BookingId,
-            BookingStatusCodes.Cancelled, null, booking.CancellationReason, HttpContext.RequestAborted);
+            // Kiểm tra phân quyền hủy tiệc (SEC-01: BOLA/IDOR protection)
+            if (!isStaff)
+            {
+                if (isAuthenticated)
+                {
+                    if (booking.Customer?.UserId != currentUserId)
+                    {
+                        return StatusCode(StatusCodes.Status403Forbidden, new { success = false, message = "Bạn không có quyền hủy đơn tiệc này." });
+                    }
+                }
+                else
+                {
+                    var normalizedCode = bookingCode?.Trim().ToUpperInvariant();
+                    var normalizedPhone = phone?.Trim();
+                    if (string.IsNullOrEmpty(normalizedCode) || string.IsNullOrEmpty(normalizedPhone))
+                    {
+                        return StatusCode(StatusCodes.Status401Unauthorized, new { success = false, message = "Vui lòng đăng nhập hoặc cung cấp mã đơn và số điện thoại để thực hiện hủy giữ chỗ." });
+                    }
 
-        // Giải phóng LichSanh về AVAILABLE theo BR03 trong cùng transaction.
-        // Bỏ qua nếu schedule null (default-available). Chỉ giữ BOOKED khi còn DatTiec hoạt động khác.
-        var hasOtherActiveBooking = await _context.WeddingBookings.AnyAsync(item =>
-            item.BookingId != booking.BookingId && item.HallScheduleId == booking.HallScheduleId &&
-            item.Status != null &&
-            item.Status.StatusGroup == StatusGroups.Booking &&
-            BookingStatusCodes.OccupyingSchedule.Contains(item.Status.StatusCode));
-        if (!hasOtherActiveBooking && booking.HallSchedule is not null)
-            booking.HallSchedule.StatusId = await _statusService.GetStatusIdAsync(StatusGroups.HallSchedule, HallScheduleStatusCodes.Available);
+                    if (!string.Equals(booking.BookingCode, normalizedCode, StringComparison.OrdinalIgnoreCase) ||
+                        !string.Equals(booking.Customer?.PhoneNumber, normalizedPhone, StringComparison.Ordinal))
+                    {
+                        return StatusCode(StatusCodes.Status403Forbidden, new { success = false, message = "Thông tin xác thực đơn tiệc không chính xác." });
+                    }
+                }
+            }
 
-        await _context.SaveChangesAsync();
-        await transaction.CommitAsync();
-        return Ok(new { success = true, message = "Đã hủy đơn giữ chỗ tiệc cưới thành công." });
+            if (booking.Status.StatusGroup != StatusGroups.Booking || booking.Status.StatusCode != BookingStatusCodes.Pending)
+                return BadRequest(new { success = false, message = "Chỉ có thể hủy booking đang ở trạng thái PENDING." });
+            if (cancellationReason?.Trim().Length > 500)
+                return BadRequest(new { success = false, message = "Lý do hủy không được vượt quá 500 ký tự." });
+
+            booking.StatusId = await _statusService.GetStatusIdAsync(StatusGroups.Booking, BookingStatusCodes.Cancelled);
+            booking.CancellationReason = string.IsNullOrWhiteSpace(cancellationReason)
+                ? "Hủy theo yêu cầu khách hàng"
+                : cancellationReason.Trim();
+            await _coordinationAssignments.SynchronizeBookingAssignmentsAsync(booking.BookingId,
+                BookingStatusCodes.Cancelled, null, booking.CancellationReason, HttpContext.RequestAborted);
+
+            // Giải phóng LichSanh về AVAILABLE theo BR03 trong cùng transaction.
+            var hasOtherActiveBooking = await _context.WeddingBookings.AnyAsync(item =>
+                item.BookingId != booking.BookingId && item.HallScheduleId == booking.HallScheduleId &&
+                item.Status != null &&
+                item.Status.StatusGroup == StatusGroups.Booking &&
+                BookingStatusCodes.OccupyingSchedule.Contains(item.Status.StatusCode));
+            if (!hasOtherActiveBooking && booking.HallSchedule is not null)
+                booking.HallSchedule.StatusId = await _statusService.GetStatusIdAsync(StatusGroups.HallSchedule, HallScheduleStatusCodes.Available);
+
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+            return Ok(new { success = true, message = "Đã hủy đơn giữ chỗ tiệc cưới thành công." });
         }
         catch
         {

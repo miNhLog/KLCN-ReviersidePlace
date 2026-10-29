@@ -63,16 +63,25 @@ public class MyBookingController : Controller
                     ViewBag.LookupError = result.Error ?? "Mã đặt tiệc hoặc email/số điện thoại không chính xác.";
             }
 
-            // Danh sách cũ (tương thích): best-effort, lỗi thì list rỗng, không throw.
+            // SEC-03: Chỉ tải danh sách tổng quan khi người dùng đã đăng nhập tài khoản.
+            // Tránh rò rỉ PII khi truy cập ẩn danh chỉ với tham số số điện thoại.
             try
             {
                 int? currentUserId = null;
                 if (User.Identity?.IsAuthenticated == true
                     && int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var uid))
                     currentUserId = uid;
-                var listResult = await _apiClient.GetMyBookingsAsync(
-                    string.IsNullOrEmpty(targetPhone) ? null : targetPhone, currentUserId, cancellationToken);
-                ViewBag.MyBookings = listResult.Value ?? new List<MyBookingViewModel>();
+
+                if (currentUserId.HasValue)
+                {
+                    var listResult = await _apiClient.GetMyBookingsAsync(
+                        null, currentUserId, cancellationToken);
+                    ViewBag.MyBookings = listResult.Value ?? new List<MyBookingViewModel>();
+                }
+                else
+                {
+                    ViewBag.MyBookings = new List<MyBookingViewModel>();
+                }
             }
             catch
             {
@@ -118,11 +127,17 @@ public class MyBookingController : Controller
                 Response.Cookies.Append("customer_phone", input.PhoneNumber, new CookieOptions
                 {
                     Expires = DateTimeOffset.Now.AddDays(30),
+                    HttpOnly = true,
+                    Secure = true,
+                    SameSite = SameSiteMode.Lax,
                     IsEssential = true
                 });
                 Response.Cookies.Append("booking_code", input.BookingCode, new CookieOptions
                 {
                     Expires = DateTimeOffset.Now.AddDays(30),
+                    HttpOnly = true,
+                    Secure = true,
+                    SameSite = SameSiteMode.Lax,
                     IsEssential = true
                 });
             }
@@ -229,6 +244,7 @@ public class MyBookingController : Controller
 
     // POST /MyBooking/CancelHold — gọi Backend cancel-hold, trả JSON cho modal.
     [HttpPost("CancelHold")]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> CancelHold(
         [FromForm] int bookingId,
         [FromForm] string bookingCode,

@@ -59,12 +59,59 @@ public sealed class PaymentController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Lỗi ngoài ý muốn khi tạo link cọc PayOS cho BookingId={BookingId}", request?.BookingId);
+            _logger.LogError(ex, "Lỗi ngoài ý muốn khi tạo link cọc PayOS cho BookingId={BookingId}. traceId={TraceId}", request?.BookingId, HttpContext.TraceIdentifier);
             return StatusCode(StatusCodes.Status500InternalServerError, new
             {
                 success = false,
                 message = "Không thể khởi tạo giao dịch thanh toán VietQR lúc này. Vui lòng thử lại sau.",
-                detail = ex.Message
+                traceId = HttpContext.TraceIdentifier
+            });
+        }
+    }
+
+    /// <summary>
+    /// Tạo liên kết thanh toán hợp đồng (Đợt 2 / Thanh toán từ xa) VietQR PayOS cho khách hàng.
+    /// Hỗ trợ cả người dùng đã đăng nhập hoặc khách tra cứu bằng mã đặt tiệc + SĐT.
+    /// </summary>
+    [HttpPost("create-contract-payment")]
+    [AllowAnonymous]
+    public async Task<IActionResult> CreateContractPayment([FromBody] CreateCustomerContractPaymentRequestDto? request)
+    {
+        try
+        {
+            if (request == null || request.BookingId <= 0)
+                return BadRequest(new { success = false, message = "Thiếu thông tin đặt tiệc cần thanh toán." });
+
+            int? userId = null;
+            if (User.Identity?.IsAuthenticated == true &&
+                int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var uid))
+            {
+                userId = uid;
+            }
+
+            var result = await _paymentService.CreateCustomerContractPaymentAsync(request, userId);
+            return Ok(new { success = true, data = result });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { success = false, message = ex.Message });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { success = false, message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { success = false, message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Lỗi ngoài ý muốn khi tạo link thanh toán hợp đồng PayOS cho BookingId={BookingId}. traceId={TraceId}", request?.BookingId, HttpContext.TraceIdentifier);
+            return StatusCode(StatusCodes.Status500InternalServerError, new
+            {
+                success = false,
+                message = "Không thể khởi tạo giao dịch thanh toán VietQR lúc này. Vui lòng thử lại sau.",
+                traceId = HttpContext.TraceIdentifier
             });
         }
     }
@@ -86,12 +133,12 @@ public sealed class PaymentController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Lỗi kiểm tra trạng thái thanh toán OrderCode={OrderCode}", orderCode);
+            _logger.LogError(ex, "Lỗi kiểm tra trạng thái thanh toán OrderCode={OrderCode}. traceId={TraceId}", orderCode, HttpContext.TraceIdentifier);
             return StatusCode(StatusCodes.Status500InternalServerError, new
             {
                 success = false,
-                message = "Lỗi khi kiểm tra trạng thái thanh toán.",
-                detail = ex.Message
+                message = "Lỗi khi kiểm tra trạng thái thanh toán. Vui lòng thử lại sau.",
+                traceId = HttpContext.TraceIdentifier
             });
         }
     }
@@ -118,12 +165,12 @@ public sealed class PaymentController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Lỗi xử lý Webhook PayOS");
+            _logger.LogError(ex, "Lỗi xử lý Webhook PayOS. traceId={TraceId}", HttpContext.TraceIdentifier);
             return StatusCode(StatusCodes.Status500InternalServerError, new
             {
                 success = false,
                 message = "Lỗi xử lý Webhook.",
-                detail = ex.Message
+                traceId = HttpContext.TraceIdentifier
             });
         }
     }
@@ -153,12 +200,12 @@ public sealed class PaymentController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Lỗi tải hóa đơn điện tử cho {BookingCode}", bookingCode);
+            _logger.LogError(ex, "Lỗi tải hóa đơn điện tử cho {BookingCode}. traceId={TraceId}", bookingCode, HttpContext.TraceIdentifier);
             return StatusCode(StatusCodes.Status500InternalServerError, new
             {
                 success = false,
                 message = "Không thể tạo hóa đơn điện tử lúc này. Vui lòng thử lại sau.",
-                detail = ex.Message
+                traceId = HttpContext.TraceIdentifier
             });
         }
     }
@@ -202,12 +249,12 @@ public sealed class PaymentController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Lỗi xác thực hóa đơn điện tử cho {BookingCode}", bookingCode);
+            _logger.LogError(ex, "Lỗi xác thực hóa đơn điện tử cho {BookingCode}. traceId={TraceId}", bookingCode, HttpContext.TraceIdentifier);
             return StatusCode(StatusCodes.Status500InternalServerError, new
             {
                 success = false,
-                message = "Không thể xác thực hóa đơn lúc này.",
-                detail = ex.Message
+                message = "Không thể xác thực hóa đơn lúc này. Vui lòng thử lại sau.",
+                traceId = HttpContext.TraceIdentifier
             });
         }
     }

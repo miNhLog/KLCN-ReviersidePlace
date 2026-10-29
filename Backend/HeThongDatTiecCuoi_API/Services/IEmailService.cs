@@ -86,5 +86,42 @@ public interface IEmailService
         byte[]? invoicePdfBytes = null,
         string? invoiceFileName = null,
         CancellationToken cancellationToken = default);
-}
 
+    /// <summary>
+    /// Gửi email thông báo / yêu cầu thanh toán hợp đồng (Đợt 2 hoặc Quyết toán) kèm liên kết PayOS thanh toán từ xa.
+    /// </summary>
+    Task SendContractPaymentRequestEmailAsync(
+        string recipientEmail,
+        string customerName,
+        string bookingCode,
+        string contractCode,
+        string paymentType,
+        decimal amount,
+        string checkoutUrl,
+        DateTime? paymentDeadline,
+        DateTime eventDate,
+        string shift,
+        string hallName,
+        string? phoneNumber = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gửi email xác nhận thanh toán hợp đồng (Đợt 2 hoặc Quyết toán) thành công qua VietQR PayOS.
+    /// Đính kèm hóa đơn điện tử có chữ ký số điện tử (PAdES).
+    /// </summary>
+    Task SendContractPaymentSuccessEmailAsync(
+        string recipientEmail,
+        string customerName,
+        string bookingCode,
+        string contractCode,
+        string paymentType,
+        decimal amountPaid,
+        decimal remainingDebt,
+        DateTime eventDate,
+        string shift,
+        string hallName,
+        string? phoneNumber = null,
+        byte[]? invoicePdfBytes = null,
+        string? invoiceFileName = null,
+        CancellationToken cancellationToken = default);
+}

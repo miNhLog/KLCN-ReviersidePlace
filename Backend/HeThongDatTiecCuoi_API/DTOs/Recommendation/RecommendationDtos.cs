@@ -8,7 +8,7 @@ public sealed class RecommendationRequestDto
     [Range(typeof(decimal), "100000000", "3000000000", ErrorMessage = "Ngân sách tối thiểu 100 triệu (chi phí tối thiểu ~103,3 triệu cho 150 khách) đến 3 tỷ VNĐ.")]
     public decimal ExpectedBudget { get; set; }
 
-    [Range(1, int.MaxValue)]
+    [Range(50, 1400, ErrorMessage = "Số lượng khách phải từ 50 đến 1400 khách (tương đương 5 đến 140 bàn phù hợp năng lực sảnh tiệc của Riverside Palace).")]
     public int GuestCount { get; set; }
 
     /// <summary>Số bàn chính thức quy đổi từ GuestCount (ceil(GuestCount/10)). Optional để tương thích JS cũ.</summary>

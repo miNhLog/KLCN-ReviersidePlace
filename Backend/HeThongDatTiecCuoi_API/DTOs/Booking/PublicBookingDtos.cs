@@ -106,6 +106,8 @@ public sealed class PublicBookingDetailDto
     public decimal TotalAmount { get; set; }
     public decimal DepositPaid { get; set; }
     public decimal RemainingDebt { get; set; }
+    public bool HasPaidStage2 { get; set; }
+    public decimal Stage2Paid { get; set; }
 
     // 5 trạng thái thực tế trong DB (TrangThai NhomTrangThai=BOOKING):
     // Chờ xác nhận / Đã xác nhận / Đang chuẩn bị / Hoàn tất / Đã hủy.

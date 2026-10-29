@@ -274,6 +274,12 @@ public sealed class PublicBookingController : ControllerBase
             .Sum(p => p.Amount) ?? 0m;
         var remaining = Math.Max(0m, total - deposit);
 
+        var stage2 = booking.Contract?.Payments
+            .Where(p => p.Status != null && p.Status.StatusCode == "SUCCESS" && p.PaymentType == PaymentTypes.Installment)
+            .Sum(p => p.Amount) ?? 0m;
+        var contractTotal = booking.Contract?.TotalValue ?? total;
+        var hasPaidStage2 = stage2 > 0 || (contractTotal > 0 && deposit >= contractTotal * 0.59m);
+
         var consultant = booking.CoordinationAssignments
             .Where(a => a.Status.StatusCode == CoordinationAssignmentStatusCodes.Assigned)
             .OrderByDescending(a => a.AssignedAt)
@@ -309,6 +315,8 @@ public sealed class PublicBookingController : ControllerBase
             TotalAmount = total,
             DepositPaid = deposit,
             RemainingDebt = remaining,
+            HasPaidStage2 = hasPaidStage2,
+            Stage2Paid = stage2,
             StatusCode = booking.Status.StatusCode,
             StatusName = booking.Status.StatusName,
             CanCancelOnline = booking.Status.StatusGroup == StatusGroups.Booking

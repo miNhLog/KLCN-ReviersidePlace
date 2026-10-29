@@ -19,14 +19,11 @@ public class MyBookingsController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> Index([FromQuery] string? phone, CancellationToken cancellationToken)
+    public async Task<IActionResult> Index([FromQuery] string? phone, [FromQuery] string? bookingCode, CancellationToken cancellationToken)
     {
         ViewData["PublicActivePage"] = "my-bookings";
 
         int? currentUserId = null;
-        string targetPhone = phone ?? "";
-
-        // 1. Lấy UserId và SĐT từ phiên đăng nhập nếu có
         if (User.Identity?.IsAuthenticated == true)
         {
             var idClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -34,49 +31,43 @@ public class MyBookingsController : Controller
             {
                 currentUserId = uid;
             }
-
-            if (string.IsNullOrEmpty(targetPhone))
-            {
-                targetPhone = User.FindFirstValue(ClaimTypes.MobilePhone) ?? User.FindFirstValue("phone") ?? "";
-            }
         }
 
-        // 2. Nếu chưa có SĐT, đọc từ Cookie "customer_phone" đã lưu khi đặt tiệc
-        if (string.IsNullOrEmpty(targetPhone))
+        // Nếu đã đăng nhập: lấy danh sách tiệc của chính tài khoản đó
+        if (currentUserId.HasValue)
         {
-            targetPhone = Request.Cookies["customer_phone"] ?? "";
+            var result = await _apiClient.GetMyBookingsAsync(null, currentUserId, cancellationToken);
+            var bookings = result.Value ?? new List<MyBookingViewModel>();
+            var targetPhone = bookings.Count > 0 ? bookings[0].PhoneNumber : "";
+            ViewBag.CurrentPhone = targetPhone;
+            return View(bookings);
         }
 
-        // Nếu có truyền query phone cụ thể thì ưu tiên tìm theo phone, không bị mask bởi session Quản lý
-        if (!string.IsNullOrWhiteSpace(phone))
+        // SEC-03: Khách chưa đăng nhập không được truy cập danh sách chỉ qua số điện thoại
+        // Chuyển hướng sang trang tra cứu /MyBooking với mã và số điện thoại
+        if (!string.IsNullOrWhiteSpace(bookingCode) && !string.IsNullOrWhiteSpace(phone))
         {
-            currentUserId = null;
+            return RedirectToAction("Index", "MyBooking", new { bookingCode = bookingCode.Trim(), phone = phone.Trim() });
         }
 
-        // 3. Gửi truy vấn kết hợp cả phone và currentUserId
-        var result = await _apiClient.GetMyBookingsAsync(targetPhone, currentUserId, cancellationToken);
-        var bookings = result.Value ?? new List<MyBookingViewModel>();
-
-        // 4. Nếu tìm thấy tiệc theo UserId, tự động điền SĐT thực tế vào ô tra cứu và cập nhật Cookie
-        if (string.IsNullOrEmpty(targetPhone) && bookings.Count > 0)
-        {
-            targetPhone = bookings[0].PhoneNumber;
-            Response.Cookies.Append("customer_phone", targetPhone, new CookieOptions
-            {
-                Expires = DateTimeOffset.Now.AddDays(30),
-                IsEssential = true
-            });
-        }
-
-        ViewBag.CurrentPhone = targetPhone;
-
-        return View(bookings);
+        return RedirectToAction("Index", "MyBooking");
     }
 
     [HttpPost]
-    public async Task<IActionResult> CancelBooking(int bookingId, CancellationToken cancellationToken)
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CancelBooking(
+        int bookingId,
+        [FromQuery] string? bookingCode,
+        [FromQuery] string? phone,
+        CancellationToken cancellationToken)
     {
-        var result = await _apiClient.CancelBookingAsync(bookingId, cancellationToken);
+        var targetPhone = phone ?? "";
+        if (string.IsNullOrEmpty(targetPhone) && User.Identity?.IsAuthenticated == true)
+            targetPhone = User.FindFirstValue(ClaimTypes.MobilePhone) ?? User.FindFirstValue("phone") ?? "";
+        if (string.IsNullOrEmpty(targetPhone))
+            targetPhone = Request.Cookies["customer_phone"] ?? "";
+
+        var result = await _apiClient.CancelBookingAsync(bookingId, bookingCode, targetPhone, cancellationToken);
         if (result.Succeeded)
         {
             return Json(new { success = true, message = "Đã hủy đơn giữ chỗ tiệc cưới thành công." });

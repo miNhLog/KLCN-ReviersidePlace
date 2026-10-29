@@ -62,8 +62,17 @@ public sealed class CreateContractPayOsLinkResponseDto
     public string? BankName { get; set; }
     public string Description { get; set; } = string.Empty;
     public decimal BusinessAmount { get; set; }
+    public decimal BusinessDeposit => BusinessAmount;
     public decimal Amount => BusinessAmount;
     public int ActualAmount { get; set; }
     public bool IsDemoMode { get; set; }
     public DateTime ExpiresAt { get; set; }
+}
+
+public sealed class CreateCustomerContractPaymentRequestDto
+{
+    public int BookingId { get; set; }
+    public string? BookingCode { get; set; }
+    public string? PhoneNumber { get; set; }
+    public decimal? Amount { get; set; }
 }

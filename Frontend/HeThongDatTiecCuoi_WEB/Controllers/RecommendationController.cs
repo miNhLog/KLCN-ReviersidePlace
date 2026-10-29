@@ -272,6 +272,9 @@ public class RecommendationController : Controller
                 Response.Cookies.Append("customer_phone", request.PhoneNumber.Trim(), new CookieOptions
                 {
                     Expires = DateTimeOffset.Now.AddDays(30),
+                    HttpOnly = true,
+                    Secure = true,
+                    SameSite = SameSiteMode.Lax,
                     IsEssential = true
                 });
             }

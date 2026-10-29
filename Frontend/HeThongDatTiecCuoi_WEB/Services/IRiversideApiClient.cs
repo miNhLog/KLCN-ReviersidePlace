@@ -429,7 +429,7 @@ public interface IRiversideApiClient
     CancellationToken cancellationToken = default);
 
     Task<ApiCallResult<List<HeThongDatTiecCuoi_WEB.Models.MyBookings.MyBookingViewModel>>> GetMyBookingsAsync(string? phone, int? userId = null, CancellationToken cancellationToken = default);
-    Task<ApiCallResult<bool>> CancelBookingAsync(int bookingId, CancellationToken cancellationToken = default);
+    Task<ApiCallResult<bool>> CancelBookingAsync(int bookingId, string? bookingCode = null, string? phone = null, CancellationToken cancellationToken = default);
 
     // UC14 & UC15: tra cứu + hủy giữ chỗ public bằng mã + SĐT
     Task<ApiCallResult<HeThongDatTiecCuoi_WEB.Models.MyBookings.PublicBookingDetailViewModel>> LookupPublicBookingAsync(
@@ -447,6 +447,12 @@ public interface IRiversideApiClient
         CancellationToken cancellationToken = default);
 
     // Module Thanh toán Đặt cọc VietQR PayOS
+    Task<ApiCallResult<HeThongDatTiecCuoi_WEB.Models.Payment.CreateDepositPaymentResponseViewModel>> CreateCustomerContractPaymentAsync(
+        HeThongDatTiecCuoi_WEB.Models.Payment.CreateCustomerContractPaymentRequestViewModel request,
+        string? accessToken = null,
+        CancellationToken cancellationToken = default);
+
+
     Task<ApiCallResult<HeThongDatTiecCuoi_WEB.Models.Payment.CreateDepositPaymentResponseViewModel>> CreateDepositPaymentAsync(
         HeThongDatTiecCuoi_WEB.Models.Payment.CreateDepositPaymentRequestViewModel request,
         string? accessToken = null,

@@ -1,5 +1,23 @@
 @model HeThongDatTiecCuoi_WEB.Models.MyBookings.PublicBookingLookupInputViewModel
 @using HeThongDatTiecCuoi_WEB.Models.MyBookings
+@functions {
+    public static string MaskPhoneNumber(string? phone)
+    {
+        if (string.IsNullOrWhiteSpace(phone)) return "---";
+        var clean = phone.Trim();
+        if (clean.Contains('@'))
+        {
+            var atIndex = clean.IndexOf('@');
+            var name = clean.Substring(0, atIndex);
+            var domain = clean.Substring(atIndex);
+            if (name.Length <= 2) return string.Concat(name[0], "***", domain);
+            return string.Concat(name.Substring(0, 2), "***", domain);
+        }
+        if (clean.Length <= 4) return "****";
+        if (clean.Length <= 7) return string.Concat(clean.Substring(0, 2), "***", clean.Substring(clean.Length - 2));
+        return string.Concat(clean.Substring(0, 3), "***", clean.Substring(clean.Length - 4));
+    }
+}
 @{
     ViewData["Title"] = "Tra cứu tiệc cưới trực tuyến - Riverside Palace";
     ViewData["PublicActivePage"] = "my-bookings";
@@ -308,7 +326,7 @@
                                     <span class="rp-badge-success"><i class="fa-solid fa-circle-check"></i> @detail.StatusName</span>
                                 }
                             </div>
-                            <span style="font-size:11.5px;color:#94A3B8;display:block;margin-top:5px;">Ngày đặt: @detail.BookedAt.ToString("HH:mm - dd/MM/yyyy") · Khách: @detail.CustomerName (@detail.PhoneNumber)</span>
+                            <span style="font-size:11.5px;color:#94A3B8;display:block;margin-top:5px;">Ngày đặt: @detail.BookedAt.ToString("HH:mm - dd/MM/yyyy") · Khách: @detail.CustomerName (@MaskPhoneNumber(detail.PhoneNumber))</span>
                         </div>
                         <div style="text-align:right;">
                             <span style="font-size:11px;color:#64748B;">Tổng dự toán:</span>
@@ -367,6 +385,50 @@
                             <div class="rp-kv"><span>Còn lại</span><b style="color:#B89758;">@detail.RemainingDebt.ToString("N0") đ</b></div>
                             <div style="font-size:11.5px;color:#94A3B8;margin-top:8px;">Số tiền đã thanh toán được tự động đối soát qua PayOS và cập nhật vào hồ sơ hợp đồng.</div>
 
+                            <div style="margin-top:14px; padding-top:12px; border-top: 1px dashed #E2E8F0;">
+                                <div style="font-size:11.5px; font-weight:700; text-transform:uppercase; color:#64748B; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+                                    <span>Tiến độ các đợt thanh toán</span>
+                                    <span style="font-size:11px; text-transform:none; color:#94A3B8; font-weight:normal;">(Theo hợp đồng tiệc)</span>
+                                </div>
+                                <div class="rp-kv" style="font-size:12px; margin-bottom:6px;">
+                                    <span>Đợt 1 (Cọc 10%)</span>
+                                    @if (detail.DepositPaid > 0)
+                                    {
+                                        <b style="color:#16A34A;"><i class="fa-solid fa-check"></i> Đã hoàn tất</b>
+                                    }
+                                    else
+                                    {
+                                        <b style="color:#DC2626;"><i class="fa-regular fa-clock"></i> Chưa cọc</b>
+                                    }
+                                </div>
+                                <div class="rp-kv" style="font-size:12px; margin-bottom:6px;">
+                                    <span>Đợt 2 (50% trước 7 ngày)</span>
+                                    @if (detail.HasPaidStage2)
+                                    {
+                                        <b style="color:#16A34A;"><i class="fa-solid fa-check"></i> Đã thanh toán</b>
+                                    }
+                                    else if (detail.DepositPaid > 0)
+                                    {
+                                        <b style="color:#D97706;"><i class="fa-solid fa-hourglass-half"></i> Chờ thanh toán</b>
+                                    }
+                                    else
+                                    {
+                                        <span style="color:#94A3B8;">Theo tiến độ</span>
+                                    }
+                                </div>
+                                <div class="rp-kv" style="font-size:12px;">
+                                    <span>Đợt 3 (Quyết toán sau tiệc)</span>
+                                    @if (detail.RemainingDebt <= 0)
+                                    {
+                                        <b style="color:#16A34A;"><i class="fa-solid fa-check"></i> Đã quyết toán</b>
+                                    }
+                                    else
+                                    {
+                                        <span style="color:#64748B;">Thanh toán tại sảnh sau tiệc</span>
+                                    }
+                                </div>
+                            </div>
+
                             @if (!detail.IsCancelled && detail.DepositPaid <= 0)
                             {
                                 @if (detail.CanCancelOnline)
@@ -379,7 +441,7 @@
                                 }
                                 <div style="margin-top:14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
                                     <button type="button" class="rp-btn-gold" id="btnOpenDepositModal"
-                                            onclick="RiversidePayment.open('@detail.BookingId', '@detail.BookingCode', '@detail.PhoneNumber', @detail.TotalAmount)">
+                                            onclick="RiversidePayment.open('@detail.BookingId', '@detail.BookingCode', '@detail.PhoneNumber', @Convert.ToInt64(detail.TotalAmount))">
                                         <i class="fa-solid fa-qrcode"></i> Đặt cọc giữ chỗ ngay (10%)
                                     </button>
                                     @if (detail.CanCancelOnline)
@@ -402,6 +464,45 @@
                                         <i class="fa-solid fa-file-invoice-dollar"></i> Tải hóa đơn / biên lai điện tử (Ký số X.509)
                                     </a>
                                 </div>
+                                @* Trạng thái và tiến độ thanh toán Đợt 2 / Đợt 3 *@
+                                @if (detail.RemainingDebt <= 0)
+                                {
+                                    <div style="background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 12px; padding: 12px 16px; margin-top: 12px; display: flex; align-items: center; gap: 12px;">
+                                        <i class="fa-solid fa-shield-check" style="color: #16A34A; font-size: 22px;"></i>
+                                        <div>
+                                            <div style="font-weight: 700; color: #166534; font-size: 13.5px;">Hồ sơ tiệc đã quyết toán hoàn tất 100%</div>
+                                            <div style="color: #15803D; font-size: 12.5px;">Toàn bộ công nợ hợp đồng đã được thanh toán đầy đủ. Riverside Palace chúc hai bạn có một ngày trọng đại thật viên mãn!</div>
+                                        </div>
+                                    </div>
+                                }
+                                else if (detail.HasPaidStage2)
+                                {
+                                    <div style="background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 12px; padding: 14px 16px; margin-top: 12px; display: flex; align-items: flex-start; gap: 12px;">
+                                        <i class="fa-solid fa-circle-check" style="color: #16A34A; font-size: 20px; margin-top: 2px;"></i>
+                                        <div>
+                                            <div style="font-weight: 700; color: #166534; font-size: 13.5px; margin-bottom: 4px;">
+                                                Đã hoàn thành Thanh toán Đợt 2 (50%)
+                                            </div>
+                                            <div style="color: #15803D; font-size: 12.5px; line-height: 1.5;">
+                                                Quý khách đã hoàn tất nghĩa vụ thanh toán <strong>Đợt 1 (10%)</strong> và <strong>Đợt 2 (50%)</strong>. Toàn bộ thực đơn, sảnh tiệc và điều phối nhân sự đã được chuẩn bị sẵn sàng cho ngày vui của hai bạn.<br />
+                                                Khoản tiền còn lại (<strong>@detail.RemainingDebt.ToString("N0") đ</strong>) sẽ được <strong>quyết toán trực tiếp tại sảnh tiệc sau khi kết thúc buổi tiệc</strong> (Đợt 3).
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div style="margin-top:12px; background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 12px; padding: 12px 16px;">
+                                        <div style="font-size: 12.5px; color: #92400E; margin-bottom: 10px; line-height: 1.5;">
+                                            <i class="fa-solid fa-circle-info" style="color: #D97706; margin-right: 4px;"></i>
+                                            Tiến độ tiếp theo: Quý khách cần thanh toán <strong>Đợt 2 (50% giá trị hợp đồng)</strong> trước ngày tiệc 07 ngày. Quý khách có thể thanh toán trực tuyến qua VietQR PayOS ngay bên dưới.
+                                        </div>
+                                        <button type="button" class="rp-btn-gold" id="btnOpenContractPaymentModal" style="background: linear-gradient(135deg, #059669, #10B981); border: none; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);"
+                                                onclick="RiversidePayment.openContractPayment('@detail.BookingId', '@detail.BookingCode', '@detail.PhoneNumber', @Convert.ToInt64(detail.RemainingDebt), @Convert.ToInt64(detail.TotalAmount))">
+                                            <i class="fa-solid fa-credit-card"></i> Thanh toán Đợt 2 trực tuyến (VietQR PayOS)
+                                        </button>
+                                    </div>
+                                }
                                 @if (detail != null && detail.HasContract)
                                 {
                                     <div style="background: #FDFBF7; border: 1px solid #EEDBB2; border-radius: 12px; padding: 14px; margin-top: 14px;">
@@ -498,7 +599,7 @@
                         <div>
                             <span style="color: #64748B; display: block; font-size: 11px;">Bên A (Khách hàng):</span>
                             <strong>@detail.CustomerName</strong>
-                            <div style="color: #64748B;">@detail.PhoneNumber</div>
+                            <div style="color: #64748B;">@MaskPhoneNumber(detail.PhoneNumber)</div>
                         </div>
                         <div>
                             <span style="color: #64748B; display: block; font-size: 11px;">Bên B (Đơn vị tổ chức):</span>

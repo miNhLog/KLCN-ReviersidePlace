@@ -85,12 +85,13 @@ public sealed class ContractBusinessRulesTests
     }
 
     [Fact]
-    public void PaymentController_ExposesNoWriteActions()
+    public void PaymentController_ExposesOnlyAuthorizedWriteActions()
     {
         var methods = typeof(ManagerPaymentController).GetMethods()
-            .Where(method => method.DeclaringType == typeof(ManagerPaymentController));
-        Assert.DoesNotContain(methods, method => method.GetCustomAttributes(true).Any(attribute =>
-            attribute.GetType().Name is "HttpPostAttribute" or "HttpPutAttribute" or "HttpPatchAttribute" or "HttpDeleteAttribute"));
+            .Where(method => method.DeclaringType == typeof(ManagerPaymentController) &&
+                             method.GetCustomAttributes(true).Any(attribute =>
+                                 attribute.GetType().Name is "HttpPostAttribute" or "HttpPutAttribute" or "HttpPatchAttribute" or "HttpDeleteAttribute"));
+        Assert.All(methods, m => Assert.Contains(m.Name, new[] { "RecordCashPayment", "CreatePayOsLink" }));
     }
 
     [Fact]

@@ -398,3 +398,7 @@ prompt.txt
 *.pdf
 tmp/
 /data/
+
+# AppSettings Production and Local Secrets (SEC-02)
+appsettings.Production.json
+appsettings.*.local.json

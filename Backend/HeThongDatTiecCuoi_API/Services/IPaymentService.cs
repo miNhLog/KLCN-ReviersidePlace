@@ -11,4 +11,5 @@ public interface IPaymentService
     Task<PaymentStatusResponseDto> CheckContractPaymentStatusAsync(long orderCode);
     Task<bool> ProcessWebhookAsync(Webhook webhookBody);
     Task<(byte[] PdfBytes, string FileName, InvoiceSignatureResult Signature)> GetSignedInvoicePdfAsync(string bookingCode, string phone);
+    Task<CreateContractPayOsLinkResponseDto> CreateCustomerContractPaymentAsync(CreateCustomerContractPaymentRequestDto request, int? userId = null);
 }

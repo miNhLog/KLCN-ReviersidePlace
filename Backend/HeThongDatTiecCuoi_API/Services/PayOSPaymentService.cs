@@ -234,6 +234,12 @@ public sealed class PayOSPaymentService : IPaymentService
         // 4. Kiểm tra mã phản hồi thành công từ PayOS (code == "00")
         if (webhookData.Code == "00" || webhookBody.Code == "00")
         {
+            if (tx.TransactionType == PaymentTransactionTypes.Installment || tx.TransactionType == PaymentTransactionTypes.Settlement)
+            {
+                await CompleteContractPaymentTransactionAsync(tx, webhookData.OrderCode, JsonSerializer.Serialize(webhookBody));
+                return true;
+            }
+
             await CompletePaymentTransactionAsync(tx, webhookData.OrderCode, JsonSerializer.Serialize(webhookBody));
             return true;
         }
@@ -249,7 +255,7 @@ public sealed class PayOSPaymentService : IPaymentService
     {
         var tx = await _context.PaymentTransactions
             .Include(t => t.Booking)
-            .SingleOrDefaultAsync(t => t.OrderCode == orderCode && t.TransactionType == PaymentTransactionTypes.Deposit);
+            .SingleOrDefaultAsync(t => t.OrderCode == orderCode);
 
         if (tx == null)
         {
@@ -272,7 +278,14 @@ public sealed class PayOSPaymentService : IPaymentService
                 if (linkInfo != null && string.Equals(statusStr, "PAID", StringComparison.OrdinalIgnoreCase))
                 {
                     _logger.LogInformation("Fallback Sync: PayOS báo PAID cho OrderCode={OrderCode}, tự động hoàn tất giao dịch.", orderCode);
-                    await CompletePaymentTransactionAsync(tx, orderCode, "Auto-polled from PayOS PaymentRequests.GetAsync");
+                    if (tx.TransactionType == PaymentTransactionTypes.Installment || tx.TransactionType == PaymentTransactionTypes.Settlement)
+                    {
+                        await CompleteContractPaymentTransactionAsync(tx, orderCode, "Auto-polled from PayOS PaymentRequests.GetAsync");
+                    }
+                    else
+                    {
+                        await CompletePaymentTransactionAsync(tx, orderCode, "Auto-polled from PayOS PaymentRequests.GetAsync");
+                    }
                 }
                 else if (linkInfo != null && string.Equals(statusStr, "CANCELLED", StringComparison.OrdinalIgnoreCase))
                 {
@@ -576,6 +589,7 @@ public sealed class PayOSPaymentService : IPaymentService
         var contract = await _context.Contracts
             .Include(c => c.Status)
             .Include(c => c.Booking).ThenInclude(b => b.Customer)
+            .Include(c => c.Payments).ThenInclude(p => p.Status)
             .SingleOrDefaultAsync(c => c.ContractId == request.ContractId);
 
         if (contract == null)
@@ -583,6 +597,21 @@ public sealed class PayOSPaymentService : IPaymentService
 
         if (contract.Status.StatusCode != ContractStatusCodes.Active)
             throw new InvalidOperationException($"Chỉ có thể tạo thanh toán cho hợp đồng đang có hiệu lực (Hiện tại: {contract.Status.StatusName}).");
+
+        // SEC-05: Kiểm tra trần số tiền thanh toán không được vượt quá số dư công nợ còn lại
+        var paidSuccess = contract.Payments
+            .Where(p => p.Status != null && p.Status.StatusCode == PaymentStatusCodes.Success)
+            .Sum(p => p.Amount);
+        var remainingBalance = Math.Max(0, contract.TotalValue - paidSuccess);
+
+        if (remainingBalance <= 0)
+            throw new InvalidOperationException("Hợp đồng này đã được thanh toán đầy đủ 100%, không còn số dư cần thanh toán.");
+
+        if (request.Amount > remainingBalance)
+            throw new InvalidOperationException($"Số tiền thanh toán ({request.Amount:N0} đ) vượt quá số dư công nợ còn lại của hợp đồng ({remainingBalance:N0} đ).");
+
+        if (request.Amount < 2000)
+            throw new InvalidOperationException("Số tiền thanh toán tối thiểu là 2.000 đ.");
 
         decimal businessAmount = request.Amount;
         int actualAmount;
@@ -664,6 +693,36 @@ public sealed class PayOSPaymentService : IPaymentService
         _context.Payments.Add(payment);
 
         await _context.SaveChangesAsync();
+
+        // Gửi email thông báo thanh toán hợp đồng từ xa kèm liên kết VietQR PayOS cho khách hàng
+        if (!string.IsNullOrWhiteSpace(contract.Booking?.Customer?.Email))
+        {
+            var customerEmail = contract.Booking.Customer.Email;
+            var customerName = contract.Booking.Customer.FullName;
+            var bookingCode = contract.Booking.BookingCode;
+            var contractCode = contract.ContractCode;
+            var checkoutUrl = paymentResult.CheckoutUrl ?? string.Empty;
+            var eventDate = contract.Booking.HallSchedule?.Date ?? DateTime.Today.AddDays(30);
+            var deadline = eventDate.AddDays(-7);
+            var shift = contract.Booking.HallSchedule?.Shift ?? "Tối";
+            var hallName = contract.Booking.HallSchedule?.Hall?.HallName ?? "Sảnh tiệc Riverside";
+            var customerPhone = contract.Booking.Customer.PhoneNumber;
+
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await _emailService.SendContractPaymentRequestEmailAsync(
+                        customerEmail, customerName, bookingCode, contractCode,
+                        normalizedType, businessAmount, checkoutUrl, deadline,
+                        eventDate, shift, hallName, customerPhone);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Lỗi gửi email thông báo thanh toán hợp đồng cho {Email}", customerEmail);
+                }
+            });
+        }
 
         return new CreateContractPayOsLinkResponseDto
         {
@@ -752,7 +811,11 @@ public sealed class PayOSPaymentService : IPaymentService
             tx.PayloadWebhook = payload;
 
             var booking = await _context.WeddingBookings
-                .Include(b => b.Contract)
+                .Include(b => b.Customer)
+                .Include(b => b.HallSchedule).ThenInclude(s => s.Hall)
+                .Include(b => b.Menu)
+                .Include(b => b.DecorationPackage)
+                .Include(b => b.Contract).ThenInclude(c => c!.Payments)
                 .SingleAsync(b => b.BookingId == tx.DatTiecId);
 
             booking.PaidAmount = (booking.PaidAmount) + tx.SoTienGhiNhan;
@@ -796,6 +859,90 @@ public sealed class PayOSPaymentService : IPaymentService
             await _context.SaveChangesAsync();
             await dbTransaction.CommitAsync();
             _logger.LogInformation("Hoàn tất thanh toán hợp đồng OrderCode={OrderCode}, Số tiền={Amount:N0} đ", orderCode, tx.SoTienGhiNhan);
+
+            // Gửi email xác nhận thanh toán hợp đồng kèm Hóa đơn điện tử có chữ ký số (PAdES)
+            if (!string.IsNullOrWhiteSpace(booking.Customer?.Email))
+            {
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        var contractTotal = booking.Contract?.TotalValue ?? booking.EstimatedTotal ?? tx.SoTienGhiNhan;
+                        var remaining = Math.Max(0, contractTotal - booking.PaidAmount);
+                        var isFullSettlement = remaining <= 0 || booking.PaidAmount >= contractTotal;
+                        var paymentTypeName = isFullSettlement
+                            ? "Quyết toán (100%)"
+                            : (tx.TransactionType == PaymentTransactionTypes.Settlement ? "Quyết toán sau tiệc" : "Thanh toán Đợt 2 (50%)");
+
+                        var invoiceDto = new DTOs.Invoice.InvoicePdfDto
+                        {
+                            InvoiceNumber = $"HDDT-{booking.BookingCode}-02",
+                            BookingCode = booking.BookingCode,
+                            CustomerName = booking.Customer.FullName,
+                            CustomerPhone = booking.Customer.PhoneNumber,
+                            CustomerEmail = booking.Customer.Email ?? string.Empty,
+                            PaymentType = paymentTypeName,
+                            PaymentMethod = "VIETQR_PAYOS",
+                            TransactionCode = orderCode.ToString(),
+                            InvoiceDate = DateTime.Now,
+                            EventDate = booking.HallSchedule?.Date ?? DateTime.Today,
+                            Shift = booking.HallSchedule?.Shift ?? "Tối",
+                            HallName = booking.HallSchedule?.Hall?.HallName ?? "Sảnh tiệc Riverside",
+                            GuestCount = booking.GuestCount,
+                            TotalTables = (booking.GuestCount + 9) / 10,
+                            MenuName = booking.Menu?.MenuName,
+                            DecorName = booking.DecorationPackage?.TenGoi,
+                            TotalEstimatedCost = contractTotal,
+                            AmountPaid = tx.SoTienGhiNhan,
+                            AccumulatedPaid = booking.PaidAmount,
+                            RemainingDebt = remaining,
+                            VerificationUrl = $"https://localhost:7102/MyBooking?bookingCode={Uri.EscapeDataString(booking.BookingCode)}&phone={Uri.EscapeDataString(booking.Customer.PhoneNumber)}",
+                            IsDigitallySigned = true,
+                            SignedAt = DateTime.Now
+                        };
+
+                        byte[] unsignedPdf = _invoicePdfGenerator.Generate(invoiceDto);
+                        var signResult = _signatureService.SignPdfDocument(unsignedPdf, invoiceDto.InvoiceNumber);
+
+                        if (isFullSettlement)
+                        {
+                            await _emailService.SendFullPaymentSuccessEmailAsync(
+                                booking.Customer.Email!,
+                                booking.Customer.FullName,
+                                booking.BookingCode,
+                                booking.Contract?.ContractCode ?? $"HD-{booking.BookingCode}",
+                                booking.PaidAmount,
+                                booking.HallSchedule?.Date ?? DateTime.Today,
+                                booking.HallSchedule?.Shift ?? "Tối",
+                                booking.HallSchedule?.Hall?.HallName ?? "Sảnh tiệc Riverside",
+                                booking.Customer.PhoneNumber,
+                                signResult.SignedPdfBytes,
+                                $"HoaDonDienTu_{booking.BookingCode}_QuyetToan.pdf");
+                        }
+                        else
+                        {
+                            await _emailService.SendContractPaymentSuccessEmailAsync(
+                                booking.Customer.Email!,
+                                booking.Customer.FullName,
+                                booking.BookingCode,
+                                booking.Contract?.ContractCode ?? $"HD-{booking.BookingCode}",
+                                paymentTypeName,
+                                tx.SoTienGhiNhan,
+                                remaining,
+                                booking.HallSchedule?.Date ?? DateTime.Today,
+                                booking.HallSchedule?.Shift ?? "Tối",
+                                booking.HallSchedule?.Hall?.HallName ?? "Sảnh tiệc Riverside",
+                                booking.Customer.PhoneNumber,
+                                signResult.SignedPdfBytes,
+                                $"HoaDonDienTu_{booking.BookingCode}_Dot2.pdf");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Lỗi gửi email xác nhận thanh toán hợp đồng kèm chữ ký số cho BookingCode={BookingCode}", booking.BookingCode);
+                    }
+                });
+            }
         }
         catch (Exception ex)
         {
@@ -803,5 +950,76 @@ public sealed class PayOSPaymentService : IPaymentService
             _logger.LogError(ex, "Lỗi khi hoàn tất thanh toán hợp đồng OrderCode={OrderCode}", orderCode);
             throw;
         }
+    }
+
+    public async Task<CreateContractPayOsLinkResponseDto> CreateCustomerContractPaymentAsync(
+        CreateCustomerContractPaymentRequestDto request, int? userId = null)
+    {
+        var query = _context.WeddingBookings
+            .Include(b => b.Customer)
+            .Include(b => b.Status)
+            .Include(b => b.Contract).ThenInclude(c => c!.Status)
+            .Include(b => b.Contract).ThenInclude(c => c!.Payments).ThenInclude(p => p.Status)
+            .AsQueryable();
+
+        WeddingBooking? booking;
+        if (request.BookingId > 0)
+            booking = await query.SingleOrDefaultAsync(b => b.BookingId == request.BookingId);
+        else
+            booking = await query.SingleOrDefaultAsync(b => b.BookingCode == request.BookingCode!.Trim());
+
+        if (booking == null)
+            throw new KeyNotFoundException("Không tìm thấy đơn đặt tiệc cưới này.");
+
+        // Xác thực quyền sở hữu
+        if (userId.HasValue && userId.Value > 0)
+        {
+            if (booking.Customer.UserId != userId.Value)
+            {
+                if (!IsGuestVerified(booking, request.BookingCode, request.PhoneNumber))
+                    throw new UnauthorizedAccessException("Bạn không có quyền thực hiện thanh toán cho đơn tiệc này.");
+            }
+        }
+        else
+        {
+            if (!IsGuestVerified(booking, request.BookingCode, request.PhoneNumber))
+                throw new UnauthorizedAccessException("Thông tin mã đặt tiệc hoặc số điện thoại không khớp với hồ sơ.");
+        }
+
+        if (booking.Contract == null)
+            throw new InvalidOperationException("Đơn tiệc chưa có hợp đồng để thanh toán.");
+
+        if (booking.Contract.Status != null && booking.Contract.Status.StatusCode != ContractStatusCodes.Active)
+            throw new InvalidOperationException($"Chỉ có thể thanh toán cho hợp đồng đang có hiệu lực (Hiện tại: {booking.Contract.Status.StatusName}).");
+
+        var paidSuccess = booking.Contract.Payments
+            .Where(p => p.Status != null && p.Status.StatusCode == PaymentStatusCodes.Success)
+            .Sum(p => p.Amount);
+        var remainingBalance = Math.Max(0, booking.Contract.TotalValue - paidSuccess);
+
+        if (remainingBalance <= 0)
+            throw new InvalidOperationException("Hợp đồng này đã được thanh toán đầy đủ 100%, không còn số dư cần thanh toán.");
+
+        // Mặc định Đợt 2 là 50% tổng giá trị hợp đồng (hoặc toàn bộ số dư còn lại nếu còn ít hơn)
+        decimal amountToPay;
+        if (request.Amount.HasValue && request.Amount.Value > 0)
+        {
+            if (request.Amount.Value > remainingBalance)
+                throw new InvalidOperationException($"Số tiền thanh toán ({request.Amount.Value:N0} đ) vượt quá số dư công nợ còn lại của hợp đồng ({remainingBalance:N0} đ).");
+            amountToPay = request.Amount.Value;
+        }
+        else
+        {
+            amountToPay = Math.Min(remainingBalance, Math.Round(booking.Contract.TotalValue * 0.50m, 0));
+        }
+
+        var contractRequest = new CreateContractPayOsLinkRequestDto
+        {
+            ContractId = booking.Contract.ContractId,
+            Amount = amountToPay,
+            PaymentType = PaymentTypes.Installment
+        };
+
+        return await CreateContractPaymentAsync(contractRequest, userId);
     }
 }

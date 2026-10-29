@@ -136,6 +136,21 @@ public sealed class ManagerPaymentController : ControllerBase
         if (contract.Status.StatusCode != ContractStatusCodes.Active)
             return Conflict(new { success = false, message = $"Chỉ hợp đồng đang có hiệu lực mới được ghi nhận thanh toán (Trạng thái hiện tại: {contract.Status.StatusName})." });
 
+        // SEC-05: Kiểm tra trần số tiền thanh toán tiền mặt không vượt quá công nợ còn lại
+        var oldPaid = contract.Payments
+            .Where(p => p.Status != null && p.Status.StatusCode == PaymentStatusCodes.Success)
+            .Sum(p => p.Amount);
+        var remainingBalance = Math.Max(0, contract.TotalValue - oldPaid);
+
+        if (remainingBalance <= 0)
+            return BadRequest(new { success = false, message = "Hợp đồng này đã được thanh toán đầy đủ 100%, không còn số dư cần thanh toán." });
+
+        if (request.Amount > remainingBalance)
+            return BadRequest(new { success = false, message = $"Số tiền thanh toán ({request.Amount:N0} đ) vượt quá số dư công nợ còn lại của hợp đồng ({remainingBalance:N0} đ)." });
+
+        if (request.Amount < 2000)
+            return BadRequest(new { success = false, message = "Số tiền thanh toán tối thiểu là 2.000 đ." });
+
         int? actorId = null;
         if (int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var uid))
             actorId = uid;
@@ -157,7 +172,6 @@ public sealed class ManagerPaymentController : ControllerBase
 
         contract.Booking.PaidAmount = (contract.Booking.PaidAmount) + request.Amount;
 
-        var oldPaid = contract.Payments.Where(p => p.Status.StatusCode == PaymentStatusCodes.Success).Sum(p => p.Amount);
         var newPaid = oldPaid + request.Amount;
 
         _context.AuditLogs.Add(new AuditLog
@@ -218,12 +232,17 @@ public sealed class ManagerPaymentController : ControllerBase
         }
         catch (InvalidOperationException ex)
         {
-            return Conflict(new { success = false, message = ex.Message });
+            return BadRequest(new { success = false, message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Lỗi khi tạo PayOS link cho ContractId={ContractId}", request.ContractId);
-            return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = ex.Message });
+            _logger.LogError(ex, "Lỗi khi tạo PayOS link cho ContractId={ContractId}. traceId={TraceId}", request.ContractId, HttpContext.TraceIdentifier);
+            return StatusCode(StatusCodes.Status500InternalServerError, new
+            {
+                success = false,
+                message = "Đã xảy ra lỗi khi tạo liên kết thanh toán PayOS. Vui lòng thử lại sau.",
+                traceId = HttpContext.TraceIdentifier
+            });
         }
     }
 
@@ -240,8 +259,13 @@ public sealed class ManagerPaymentController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Lỗi kiểm tra trạng thái PayOS OrderCode={OrderCode}", orderCode);
-            return StatusCode(StatusCodes.Status500InternalServerError, new { success = false, message = ex.Message });
+            _logger.LogError(ex, "Lỗi kiểm tra trạng thái PayOS OrderCode={OrderCode}. traceId={TraceId}", orderCode, HttpContext.TraceIdentifier);
+            return StatusCode(StatusCodes.Status500InternalServerError, new
+            {
+                success = false,
+                message = "Đã xảy ra lỗi khi kiểm tra trạng thái thanh toán PayOS.",
+                traceId = HttpContext.TraceIdentifier
+            });
         }
     }
 
