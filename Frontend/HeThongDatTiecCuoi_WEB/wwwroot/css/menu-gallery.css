@@ -12,7 +12,7 @@
 }
 
 .menu-gallery-page main {
-    padding-top: 68px;
+    padding-top: 0;
     background: var(--mg-bg);
     color: var(--mg-body);
 }

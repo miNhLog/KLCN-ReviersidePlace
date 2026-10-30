@@ -24,17 +24,17 @@ if (-not (Test-Path -LiteralPath (Join-Path $aiDirectory ".env"))) {
     Write-Host "    [Canh bao] Chua co AI_Service\.env -> chatbot chay offline (rule-based), khong dung LLM." -ForegroundColor Yellow
     Write-Host "    Tao tu mau: Copy-Item AI_Service\.env.example AI_Service\.env roi dien OPENAI_API_KEY/GEMINI_API_KEY." -ForegroundColor DarkYellow
 }
-Start-Process powershell -WorkingDirectory $aiDirectory -ArgumentList "-NoExit", "-Command", "Write-Host '=== AI MICROSERVICE (PORT 8000) ===' -ForegroundColor Yellow; & '$aiPython' -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload"
+Start-Process powershell -WindowStyle Hidden -WorkingDirectory $aiDirectory -ArgumentList "-NoProfile", "-Command", "& '$aiPython' -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload"
 
 Start-Sleep -Seconds 2
 
 Write-Host ">>> [3/4] Khoi dong Backend API (ASP.NET Core - Port 7101)..." -ForegroundColor Green
-Start-Process powershell -WorkingDirectory $backendDirectory -ArgumentList "-NoExit", "-Command", "Write-Host '=== BACKEND API (PORT 7101) ===' -ForegroundColor Green; dotnet run"
+Start-Process powershell -WindowStyle Hidden -WorkingDirectory $backendDirectory -ArgumentList "-NoProfile", "-Command", "dotnet run"
 
 Start-Sleep -Seconds 3
 
 Write-Host ">>> [4/4] Khoi dong Frontend Web (ASP.NET Core MVC - Port 7102)..." -ForegroundColor Magenta
-Start-Process powershell -WorkingDirectory $frontendDirectory -ArgumentList "-NoExit", "-Command", "Write-Host '=== FRONTEND WEB (PORT 7102) ===' -ForegroundColor Magenta; dotnet run"
+Start-Process powershell -WindowStyle Hidden -WorkingDirectory $frontendDirectory -ArgumentList "-NoProfile", "-Command", "dotnet run"
 
 Write-Host "==============================================================================" -ForegroundColor Cyan
 Write-Host " Toan bo 3 service dang duoc khoi dong tren cac cua so rieng biet!" -ForegroundColor Cyan

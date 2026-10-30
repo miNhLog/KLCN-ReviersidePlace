@@ -1008,23 +1008,17 @@
 .account-page-error { margin: -4px 0 16px; }
 
 .system-admin-panel {
-    overflow: hidden;
-    padding: 0 16px 16px;
-    border: 1px solid #b3bdc5;
-    border-radius: 14px;
+    overflow: visible;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
     color: #f6f8fb;
-    background: #1d2e40;
-    box-shadow: 0 8px 22px rgba(15, 27, 43, .12);
+    background: transparent;
+    box-shadow: none;
 }
 
 .system-admin-heading {
-    min-height: 72px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin: 0 -16px 16px;
-    padding: 0 28px;
-    border-bottom: 1px solid rgba(204, 161, 37, .42);
+    display: none;
 }
 
 .system-admin-heading-icon {

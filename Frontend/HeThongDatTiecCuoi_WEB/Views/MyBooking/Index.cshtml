@@ -241,6 +241,10 @@
 <div class="home-page my-booking-page">
     <partial name="_PublicHeader" />
 
+    <nav class="public-breadcrumb" aria-label="Đường dẫn trang">
+        <div class="home-container"><a asp-controller="Home" asp-action="Index" asp-route-publicSite="true">Trang chủ</a><span class="public-breadcrumb-separator" aria-hidden="true">›</span><span aria-current="page">Tiệc của tôi</span></div>
+    </nav>
+
     <!-- HERO BANNER CỰC ĐẸP CHO TIỆC CỦA TÔI -->
     <section class="myb-hero" aria-labelledby="myb-hero-title">
         <div class="myb-hero-bg" aria-hidden="true"></div>

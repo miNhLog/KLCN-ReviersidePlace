@@ -21,6 +21,9 @@
     <partial name="_PublicHeader" />
 
     <main class="recom-main-wrapper">
+        <nav class="public-breadcrumb" aria-label="Đường dẫn trang">
+            <div class="home-container"><a asp-controller="Home" asp-action="Index" asp-route-publicSite="true">Trang chủ</a><span class="public-breadcrumb-separator" aria-hidden="true">›</span><span aria-current="page">Gợi ý tiệc</span></div>
+        </nav>
         <section class="hero recom-hero" aria-labelledby="recom-hero-title">
             <div class="hero-image recom-hero-bg" aria-hidden="true"></div>
             <div class="recom-hero-overlay" aria-hidden="true"></div>
