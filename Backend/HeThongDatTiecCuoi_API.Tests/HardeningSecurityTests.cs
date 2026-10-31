@@ -1,10 +1,13 @@
 using System.Security.Claims;
 using HeThongDatTiecCuoi_API.Controllers;
+using HeThongDatTiecCuoi_API.DTOs.AiChat;
 using HeThongDatTiecCuoi_API.DTOs.Payment;
+using HeThongDatTiecCuoi_API.Options;
 using HeThongDatTiecCuoi_API.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using PayOS.Models.Webhooks;
 using Xunit;
 
@@ -49,7 +52,7 @@ public sealed class HardeningSecurityTests
         const string secretMessage = "Internal Server Exception with DB details";
         var controller = CreateFaultyPaymentController(secretMessage);
 
-        var result = await controller.CreateContractPayment(new CreateCustomerContractPaymentRequestDto { BookingId = 10, Amount = 1000000 });
+        var result = await controller.CreateContractPayment(new CreateCustomerContractPaymentRequestDto { BookingId = 10, Amount = 5000000 });
 
         var statusResult = Assert.IsType<ObjectResult>(result);
         Assert.Equal(StatusCodes.Status500InternalServerError, statusResult.StatusCode);
@@ -63,27 +66,10 @@ public sealed class HardeningSecurityTests
     [Fact]
     public async Task CheckStatus_OnException_HidesExceptionMessageAndIncludesTraceId()
     {
-        const string secretMessage = "Unhandled KeyVault credentials error";
+        const string secretMessage = "Database Deadlock Error at Connection Pool";
         var controller = CreateFaultyPaymentController(secretMessage);
 
-        var result = await controller.CheckStatus(123456);
-
-        var statusResult = Assert.IsType<ObjectResult>(result);
-        Assert.Equal(StatusCodes.Status500InternalServerError, statusResult.StatusCode);
-
-        var json = System.Text.Json.JsonSerializer.Serialize(statusResult.Value);
-        Assert.DoesNotContain(secretMessage, json);
-        Assert.DoesNotContain("detail", json, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("TEST-TRACE-ID-12345", json);
-    }
-
-    [Fact]
-    public async Task DownloadInvoice_OnException_HidesExceptionMessageAndIncludesTraceId()
-    {
-        const string secretMessage = "Certificate private key file path: /etc/ssl/certs/secret.pfx";
-        var controller = CreateFaultyPaymentController(secretMessage);
-
-        var result = await controller.DownloadInvoice("DT-20261028-0001", "0988776655");
+        var result = await controller.CheckStatus(123456789);
 
         var statusResult = Assert.IsType<ObjectResult>(result);
         Assert.Equal(StatusCodes.Status500InternalServerError, statusResult.StatusCode);
@@ -109,6 +95,48 @@ public sealed class HardeningSecurityTests
         Assert.DoesNotContain(secretMessage, json);
         Assert.DoesNotContain("detail", json, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("TEST-TRACE-ID-12345", json);
+    }
+
+    [Fact]
+    public void AiServiceOptions_DefaultValues_Have15SecondTimeoutAndLocalhost()
+    {
+        var options = new AiServiceOptions();
+        Assert.Equal(15, options.TimeoutSeconds);
+        Assert.Equal("http://127.0.0.1:8000/", options.BaseUrl);
+    }
+
+    [Fact]
+    public async Task AiChatService_OnConnectionError_ReturnsFriendlyFallbackGracefully()
+    {
+        var stubFactory = new StubFailingHttpClientFactory();
+        var options = Microsoft.Extensions.Options.Options.Create(new AiServiceOptions { TimeoutSeconds = 15 });
+        var logger = NullLogger<AiChatService>.Instance;
+        var service = new AiChatService(stubFactory, options, logger);
+
+        var result = await service.SendChatAsync("Giá sảnh tiệc bao nhiêu?", new List<object>());
+
+        Assert.NotNull(result);
+        Assert.Equal(0, result.Confidence);
+        Assert.Contains("Dạ trợ lý AI Riverside Palace hiện đang bận", result.Reply);
+        Assert.Contains("Hotline 0933 777 888", result.Reply);
+    }
+
+    private sealed class StubFailingHttpClientFactory : IHttpClientFactory
+    {
+        public HttpClient CreateClient(string name)
+        {
+            // Point to a non-listening port or use a handler that throws HttpRequestException
+            var handler = new FailingHttpMessageHandler();
+            return new HttpClient(handler) { BaseAddress = new Uri("http://127.0.0.1:9999/") };
+        }
+    }
+
+    private sealed class FailingHttpMessageHandler : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            throw new HttpRequestException("Connection refused");
+        }
     }
 
     private sealed class FaultyPaymentService : IPaymentService

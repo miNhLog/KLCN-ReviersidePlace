@@ -25,9 +25,9 @@ logger = logging.getLogger("uvicorn.error")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Warm-up luc khoi dong: khoi tao catalog/weights/index/CF de request dau tien khong bi cham.
-    # Truoc day /api/v1/ai/hybrid/rank ~8s o lan goi dau (CF/SVD lazy) > timeout 5s cua Backend
-    # nen bi fallback sang /wsm/rank; warm-up dua chi phi do ve thoi diem khoi dong.
+    # Warm-up luc khoi dong: khoi tao catalog/weights/index/CF/RAG de request dau tien khong bi cham.
+    # Truoc day /api/v1/ai/hybrid/rank ~8s va /api/v1/ai/rag/chat ~7-10s o lan goi dau (lazy load)
+    # gay timeout tren Backend; warm-up dua chi phi do ve thoi diem khoi dong.
     t0 = time.perf_counter()
     done = []
     try:
@@ -55,6 +55,13 @@ async def lifespan(app: FastAPI):
         done.append("cf")
     except Exception as ex:  # pragma: no cover
         logger.warning("Warm-up cf loi: %s", ex)
+    try:
+        from .core import rag_engine
+        rag_engine.ensure_ingested()
+        rag_engine.search_context("Riverside Palace", top_k=1)
+        done.append("rag")
+    except Exception as ex:  # pragma: no cover
+        logger.warning("Warm-up rag loi: %s", ex)
     logger.info("AI warm-up xong [%s] trong %.2fs", ",".join(done), time.perf_counter() - t0)
     yield
 

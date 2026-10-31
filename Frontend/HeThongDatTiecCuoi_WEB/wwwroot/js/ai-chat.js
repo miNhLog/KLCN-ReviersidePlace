@@ -75,14 +75,21 @@
                 setTyping(false); sending = false;
                 var reply = (data && data.reply) || 'Dạ trợ lý AI đang bận, Quý khách gọi Hotline 0933 777 888 để được hỗ trợ ngay ạ!';
                 addMsg(reply, 'bot');
-                history.push({ role: 'assistant', content: reply });
-                refreshExtract();
+                var isFallback = !data || !data.reply || (data.confidence === 0 && (reply.indexOf('bận') >= 0 || reply.indexOf('gián đoạn') >= 0));
+                if (!isFallback) {
+                    history.push({ role: 'assistant', content: reply });
+                    refreshExtract();
+                } else if (history.length > 0 && history[history.length - 1].role === 'user') {
+                    history.pop();
+                }
             })
             .catch(function () {
                 setTyping(false); sending = false;
                 var fb = 'Dạ kết nối trợ lý AI đang gián đoạn, Quý khách vui lòng thử lại hoặc gọi Hotline 0933 777 888 ạ!';
                 addMsg(fb, 'bot');
-                history.push({ role: 'assistant', content: fb });
+                if (history.length > 0 && history[history.length - 1].role === 'user') {
+                    history.pop();
+                }
             });
     }
 
