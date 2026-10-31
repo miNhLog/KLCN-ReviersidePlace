@@ -787,6 +787,10 @@ public sealed class ScheduleChangeService : IScheduleChangeService
             booking.FinalHallPrice, booking.EstimatedTotal };
         booking.HallScheduleId = newSchedule.HallScheduleId;
         booking.HallSchedule = newSchedule;
+        var reviewQr = await _context.ReviewQrCodes.SingleOrDefaultAsync(
+            qr => qr.BookingId == booking.BookingId, cancellationToken);
+        if (reviewQr is not null && ChecklistTimingRules.Window(newSchedule) is { } reviewWindow)
+            reviewQr.ExpiresAt = reviewWindow.End.AddHours(24);
         await ChecklistLifecycle.RecordAsync(_context, booking.BookingId, change.ApprovedByUserId,
             "Hệ thống đổi lịch", "RESCHEDULED",
             $"Đổi lịch {oldSchedule.Date:dd/MM/yyyy} {oldSchedule.Shift} → {newSchedule.Date:dd/MM/yyyy} {newSchedule.Shift}. Hạn công việc được dời tương ứng; giữ nguyên tiến độ.",

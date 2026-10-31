@@ -32,6 +32,7 @@ MIN_REAL_ROWS = 20
 CSV_COLUMNS = [
     "SampleId",
     "user_id",
+    "reviewer_type",
     "HallId",
     "MenuId",
     "DecorId",
@@ -51,7 +52,9 @@ CSV_COLUMNS = [
 QUERY = """
 SELECT 
     r.DanhGiaID AS SampleId,
-    ISNULL(dt.KhachHangID, 0) AS user_id,
+    CASE WHEN r.LoaiNguoiDanhGia = N'Chủ tiệc' THEN ISNULL(dt.KhachHangID, 0)
+         ELSE -r.DanhGiaID END AS user_id,
+    r.LoaiNguoiDanhGia AS reviewer_type,
     ISNULL(ls.SanhTiecID, 0) AS HallId,
     ISNULL(dt.ThucDonID, 0) AS MenuId,
     ISNULL(dt.GoiTrangTriID, 0) AS DecorId,
@@ -130,23 +133,25 @@ def export_via_odbc(conn_str: str, out_path: Path) -> int:
         for r in rows:
             sample_id = int(r[0])
             user_id = int(r[1])
-            hall_id = int(r[2])
-            menu_id = int(r[3])
-            decor_id = int(r[4])
-            rating = float(r[5])
-            satisfaction = float(r[6])
-            food = float(r[7])
-            service = float(r[8])
-            atmosphere = float(r[9])
-            cost = float(r[10])
-            comment = str(r[11])
-            created_at = str(r[12])
+            reviewer_type = str(r[2])
+            hall_id = int(r[3])
+            menu_id = int(r[4])
+            decor_id = int(r[5])
+            rating = float(r[6])
+            satisfaction = float(r[7])
+            food = float(r[8])
+            service = float(r[9])
+            atmosphere = float(r[10])
+            cost = float(r[11])
+            comment = str(r[12])
+            created_at = str(r[13])
 
             combo_id = f"{hall_id}_{menu_id}_{decor_id}"
 
             w.writerow([
                 sample_id,
                 user_id,
+                reviewer_type,
                 hall_id,
                 menu_id,
                 decor_id,

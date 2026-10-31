@@ -1,0 +1,16 @@
+@model HeThongDatTiecCuoi_WEB.Controllers.ReviewInput
+@{ var f = (System.Text.Json.JsonElement)ViewBag.Form; ViewData["Title"] = "Đánh giá buổi tiệc"; }
+<style>
+.rv-wrap{max-width:720px;margin:40px auto;padding:0 16px}.rv-card{background:#fff;border-radius:18px;padding:28px;box-shadow:0 10px 35px #2b21151a;border-top:5px solid #a87932}.rv-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.rv-card select,.rv-card textarea{width:100%;padding:11px;border:1px solid #ddd;border-radius:8px}.rv-card label{display:block;margin:12px 0 5px;font-weight:600}.rv-submit{margin-top:20px;width:100%;padding:13px;background:#8b642a;color:#fff;border:0;border-radius:9px;font-weight:700}.rv-note{padding:12px;background:#fff7e8;border-radius:8px}@@media(max-width:600px){.rv-grid{grid-template-columns:1fr}.rv-card{padding:20px}}
+</style>
+<main class="rv-wrap"><section class="rv-card">
+ <h1>Đánh giá buổi tiệc</h1><p><b>@f.GetProperty("hallName").GetString()</b> · @f.GetProperty("eventDate").GetDateTime().ToString("dd/MM/yyyy") · @f.GetProperty("shift").GetString()</p>
+ <p class="rv-note">@f.GetProperty("message").GetString()<br>Mở: @f.GetProperty("opensAt").GetDateTime().ToString("dd/MM/yyyy HH:mm") · Hết hạn: @f.GetProperty("expiresAt").GetDateTime().ToString("dd/MM/yyyy HH:mm")</p>
+ @if(ViewBag.SubmitError is string error){<p class="text-danger">@error</p>}
+ @if(f.GetProperty("canSubmit").GetBoolean()){
+ <form method="post">@Html.AntiForgeryToken()<input asp-for="SubmissionId" type="hidden" />
+ <div class="rv-grid">@foreach(var item in new[]{("HallScore","Chất lượng sảnh"),("FoodScore","Món ăn"),("ServiceScore","Phục vụ"),("SoundScore","Âm thanh"),("LightingScore","Ánh sáng")}){<div><label for="@item.Item1">@item.Item2</label><select name="@item.Item1" id="@item.Item1"><option value="">Không chấm</option>@for(var i=5;i>=1;i--){<option value="@i">@i sao</option>}</select></div>}</div>
+ <label asp-for="OverallScore">Điểm tổng thể *</label><select asp-for="OverallScore" required><option value="">Chọn điểm</option>@for(var i=5;i>=1;i--){<option value="@i">@i sao</option>}</select>
+ <label asp-for="Comment">Bình luận</label><textarea asp-for="Comment" maxlength="1000" rows="5" placeholder="Chia sẻ trải nghiệm của bạn..."></textarea>
+ <button class="rv-submit" type="submit" onclick="this.disabled=true;this.form.submit()">Gửi đánh giá</button></form>}
+</section></main>

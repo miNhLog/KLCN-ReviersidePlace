@@ -36,6 +36,7 @@ public sealed class RecommendationController : ControllerBase
     private readonly IHallPricingPolicyService _hallPricing;
     private readonly ILogger<RecommendationController> _logger;
     private readonly IEmailService? _emailService;
+    private readonly IReviewQrService? _reviewQrService;
 
     // Python FastAPI trả snake_case (top_3, hall_id, total_estimated_cost...).
     // C# dùng PascalCase -> bắt buộc case-insensitive + JsonPropertyName đầy đủ,
@@ -53,7 +54,8 @@ public sealed class RecommendationController : ControllerBase
         IOptions<PricingPolicyOptions> pricing,
         ILogger<RecommendationController> logger,
         IHallPricingPolicyService? hallPricing = null,
-        IEmailService? emailService = null)
+        IEmailService? emailService = null,
+        IReviewQrService? reviewQrService = null)
     {
         _context = context;
         _statusService = statusService;
@@ -63,6 +65,7 @@ public sealed class RecommendationController : ControllerBase
         _logger = logger;
         _hallPricing = hallPricing ?? new HallPricingPolicyService();
         _emailService = emailService;
+        _reviewQrService = reviewQrService;
     }
 
     /// <summary>
@@ -1756,6 +1759,16 @@ public sealed class RecommendationController : ControllerBase
             await _context.SaveChangesAsync();
         }
         await transaction.CommitAsync();
+        // Booking is durable. QR failure must not roll it back; the worker retries missing QR rows.
+        try
+        {
+            if (_reviewQrService is not null)
+                await _reviewQrService.EnsureForBookingAsync(booking.BookingId, HttpContext.RequestAborted);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Booking {BookingId} was saved but review QR creation failed; backfill will retry.", booking.BookingId);
+        }
 
         // FR15 / UC13 (6a) fault-tolerant: gửi email xác nhận SAU commit, lỗi SMTP
         // chỉ LogError, KHÔNG rollback, vẫn trả success + mã cho client.

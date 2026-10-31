@@ -82,6 +82,12 @@ public sealed class BookingDetailDto
     public int? ContractId { get; set; }
     public string? ContractCode { get; set; }
     public string? ContractStatusCode { get; set; }
+    public bool HasReviewQr { get; set; }
+    public string? ReviewQrToken { get; set; }
+    public string? ReviewQrState { get; set; }
+    public DateTime? ReviewOpensAt { get; set; }
+    public DateTime? ReviewExpiresAt { get; set; }
+    public int ReviewCount { get; set; }
 }
 
 public sealed class BookingServiceDto

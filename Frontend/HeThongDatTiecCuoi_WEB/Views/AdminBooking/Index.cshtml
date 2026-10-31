@@ -407,7 +407,7 @@
                                             <button type="button" class="booking-action-item" onclick="closeBookingActions(); viewBookingDetail(@b.BookingId)" role="menuitem"><i class="fa-regular fa-eye"></i><span>Xem chi tiết</span></button>
                                         @if (isManager && b.HasContract)
                                         {
-                                            <a href="/quan-ly/hop-dong-thanh-toan?contractId=@b.ContractId" class="booking-action-item" role="menuitem"><i class="fa-solid fa-file-contract"></i><span>Xem hợp đồng @b.ContractCode</span></a>
+                                            <a href="/quan-ly/hop-dong-thanh-toan?contractId=@b.ContractId" class="booking-action-item" role="menuitem"><i class="fa-solid fa-file-contract"></i><span>Xem hợp đồng</span></a>
                                         }
                                         else if (isManager && b.StatusCode == "CONFIRMED")
                                         {
@@ -464,7 +464,7 @@
                     <i class="fa-solid fa-file-invoice-dollar text-base"></i>
                 </div>
                 <div>
-                    <h3 class="font-serif font-bold text-base sm:text-lg text-slate-900 flex items-center gap-2">
+                    <h3 class="font-bold text-base sm:text-lg text-slate-900 flex items-center gap-2">
                         <span>Hồ Sơ Đặt Tiệc:</span>
                         <span id="mdBookingCode" class="font-mono text-[#8C6D32]">DT-XXXX</span>
                     </h3>
@@ -564,6 +564,26 @@
             </div>
 
             <!-- Liên kết nghiệp vụ hợp đồng; thanh toán không được ghi nhận thủ công tại Booking. -->
+            <div id="mdReviewQrSection" class="hidden bg-slate-50/60 rounded-xl p-4 border border-slate-200/70">
+                <h4 class="font-bold text-xs text-slate-700 uppercase tracking-wider mb-3 flex items-center gap-1.5"><i class="fa-solid fa-qrcode text-[#B89758]"></i> QR Đánh Giá Buổi Tiệc</h4>
+                <div class="flex flex-col sm:flex-row gap-4 sm:items-center">
+                    <div class="w-32 h-32 bg-white rounded-xl border border-slate-200 p-2 shrink-0"><img id="mdReviewQrImage" class="w-full h-full object-contain" alt="QR đánh giá khách mời" /></div>
+                    <div class="min-w-0 flex-1 text-xs">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
+                            <p><span class="text-slate-500">Trạng thái:</span> <strong id="mdReviewQrState" class="text-slate-800">---</strong></p>
+                            <p><span class="text-slate-500">Lượt đánh giá:</span> <strong id="mdReviewCount" class="text-slate-800">0</strong></p>
+                            <p><span class="text-slate-500">Bắt đầu:</span> <strong id="mdReviewOpensAt" class="text-slate-800">---</strong></p>
+                            <p><span class="text-slate-500">Hết hạn:</span> <strong id="mdReviewExpiresAt" class="text-slate-800">---</strong></p>
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                            <button type="button" onclick="copyReviewLink()" class="px-3 py-2 bg-white border border-slate-200 hover:border-[#B89758] text-slate-700 rounded-lg font-semibold transition-colors"><i class="fa-regular fa-copy mr-1"></i>Sao chép link</button>
+                            <a id="mdReviewQrDownload" download class="px-3 py-2 bg-white border border-slate-200 hover:border-[#B89758] text-slate-700 rounded-lg font-semibold transition-colors"><i class="fa-solid fa-download mr-1"></i>Tải QR</a>
+                            <button type="button" onclick="printReviewQr()" class="px-3 py-2 bg-[#1E293B] hover:bg-slate-900 text-white rounded-lg font-semibold transition-colors"><i class="fa-solid fa-print mr-1"></i>In QR</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="bg-gradient-to-br from-[#FAF8F5] to-[#F5EFE3] border border-[#E5D5B8] p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
                 <div>
                     <span class="font-bold text-slate-800 flex items-center gap-1.5">
@@ -723,6 +743,8 @@
         };
 
         let selectedBookingId = null;
+        let selectedReviewUrl = '';
+        let selectedReviewQrImage = '';
         let createBookingOptions = null;
         let currentBookings = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Items ?? new List<HeThongDatTiecCuoi_WEB.Models.AdminBooking.BookingSummaryViewModel>()));
         const canManageContracts = document.querySelector('.booking-page-wrapper')?.dataset.canManageContracts === 'true';
@@ -947,7 +969,7 @@
                     </button>
                 `;
                 if (canManageContracts && hasContract) {
-                    actionBtns += `<a href="/quan-ly/hop-dong-thanh-toan?contractId=${Number(contractId)}" class="booking-action-item" role="menuitem"><i class="fa-solid fa-file-contract"></i><span>Xem hợp đồng ${safeContractCode}</span></a>`;
+                    actionBtns += `<a href="/quan-ly/hop-dong-thanh-toan?contractId=${Number(contractId)}" class="booking-action-item" role="menuitem"><i class="fa-solid fa-file-contract"></i><span>Xem hợp đồng</span></a>`;
                 } else if (canManageContracts && statusCode === 'CONFIRMED') {
                     actionBtns += `<a href="/quan-ly/hop-dong-thanh-toan?bookingId=${id}&openCreate=true" class="booking-action-item" role="menuitem"><i class="fa-solid fa-file-circle-plus"></i><span>Tạo hợp đồng</span></a>`;
                 }
@@ -1117,13 +1139,34 @@
                     document.getElementById('mdMenuName').innerText = b.menuName || b.MenuName || 'Chưa chọn thực đơn';
                     document.getElementById('mdDecorName').innerText = b.decorationPackageName || b.DecorationPackageName || 'Chưa chọn gói trang trí';
 
+                    const hasReviewQr = b.hasReviewQr ?? b.HasReviewQr ?? false;
+                    const qrSection = document.getElementById('mdReviewQrSection');
+                    qrSection.classList.toggle('hidden', !hasReviewQr);
+                    selectedReviewUrl = '';
+                    selectedReviewQrImage = '';
+                    if (hasReviewQr) {
+                        const token = b.reviewQrToken || b.ReviewQrToken;
+                        selectedReviewUrl = `${window.location.origin}/danh-gia/khach-moi/${encodeURIComponent(token)}`;
+                        selectedReviewQrImage = `/danh-gia/quan-ly/${id}/qr.png`;
+                        document.getElementById('mdReviewQrImage').src = selectedReviewQrImage;
+                        document.getElementById('mdReviewQrDownload').href = `${selectedReviewQrImage}?download=true`;
+                        const state = b.reviewQrState || b.ReviewQrState || 'Pending';
+                        const stateLabels = { Pending: 'Chờ kích hoạt', Active: 'Đang hoạt động', Expired: 'Hết hạn', Locked: 'Bị khóa' };
+                        document.getElementById('mdReviewQrState').innerText = stateLabels[state] || state;
+                        document.getElementById('mdReviewCount').innerText = b.reviewCount ?? b.ReviewCount ?? 0;
+                        const opensAt = b.reviewOpensAt || b.ReviewOpensAt;
+                        const expiresAt = b.reviewExpiresAt || b.ReviewExpiresAt;
+                        document.getElementById('mdReviewOpensAt').innerText = opensAt ? new Date(opensAt).toLocaleString('vi-VN') : '---';
+                        document.getElementById('mdReviewExpiresAt').innerText = expiresAt ? new Date(expiresAt).toLocaleString('vi-VN') : '---';
+                    }
+
                     const btnGroup = document.getElementById('mdActionBtnGroup');
                     btnGroup.innerHTML = '';
                     if (canManageContracts && hasContract) {
                         const link = document.createElement('a');
                         link.href = `/quan-ly/hop-dong-thanh-toan?contractId=${contractId}`;
                         link.className = 'px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold shadow-sm transition-colors flex items-center gap-2';
-                        link.textContent = `Xem hợp đồng ${contractCode}`;
+                        link.textContent = 'Xem hợp đồng';
                         btnGroup.appendChild(link);
                     } else if (canManageContracts && statusCode === 'CONFIRMED') {
                         const link = document.createElement('a');
@@ -1146,6 +1189,21 @@
                     false
                 );
             }
+        }
+
+        async function copyReviewLink() {
+            if (!selectedReviewUrl) return;
+            await navigator.clipboard.writeText(selectedReviewUrl);
+            showToast('Đã sao chép', 'Đường dẫn đánh giá khách mời đã được sao chép.');
+        }
+
+        function printReviewQr() {
+            if (!selectedReviewQrImage) return;
+            const popup = window.open('', '_blank', 'width=520,height=680');
+            if (!popup) return;
+            const bookingCode = document.getElementById('mdBookingCode').innerText;
+            popup.document.write(`<html><head><title>QR đánh giá ${escapeHtml(bookingCode)}</title></head><body style="font-family:Arial;text-align:center;padding:40px"><h2>Đánh giá buổi tiệc</h2><p>${escapeHtml(bookingCode)}</p><img src="${selectedReviewQrImage}" style="width:320px;height:320px" onload="window.print();window.close()"></body></html>`);
+            popup.document.close();
         }
 
         function closeDetailModal() {
