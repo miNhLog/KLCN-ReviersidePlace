@@ -77,7 +77,7 @@
     });
 
     window
-        .matchMedia('(min-width: 1100px)')
+        .matchMedia('(min-width: 1024px)')
         .addEventListener('change', event => {
             if (event.matches)
                 closeMenu();
