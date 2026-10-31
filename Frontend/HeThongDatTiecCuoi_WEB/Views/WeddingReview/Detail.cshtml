@@ -4,9 +4,40 @@
     var d = (System.Text.Json.JsonElement)ViewBag.Statistics;
     var reviews = d.GetProperty("reviews").EnumerateArray().ToList();
     var total = d.GetProperty("totalReviews").GetInt32();
+    var bookingId = d.GetProperty("bookingId").GetInt32();
+    var bookingCode = d.GetProperty("bookingCode").GetString();
+    var hallName = d.GetProperty("hallName").GetString();
+    var eventDate = d.GetProperty("eventDate").GetDateTime();
+    var shift = d.GetProperty("shift").GetString();
     var qrState = d.GetProperty("qrState").GetString();
     var qrLabel = qrState == "Pending" ? "Chờ kích hoạt" : qrState == "Active" ? "Đang hoạt động" : qrState == "Expired" ? "Hết hạn" : "Bị khóa";
-    string Number(string name, string suffix = "") => d.GetProperty(name).ValueKind == System.Text.Json.JsonValueKind.Null ? "—" : d.GetProperty(name).GetDouble().ToString("0.0") + suffix;
+
+    var guestReviews = d.GetProperty("guestReviews").GetInt32();
+    var hostReviews = d.GetProperty("hostReviews").GetInt32();
+    var positiveCount = d.GetProperty("positiveCount").GetInt32();
+    var neutralCount = d.GetProperty("neutralCount").GetInt32();
+    var negativeCount = d.GetProperty("negativeCount").GetInt32();
+
+    var avg = d.GetProperty("averageScore").ValueKind == System.Text.Json.JsonValueKind.Null ? 0d : d.GetProperty("averageScore").GetDouble();
+    var satRate = d.GetProperty("satisfactionRate").ValueKind == System.Text.Json.JsonValueKind.Null ? 0d : d.GetProperty("satisfactionRate").GetDouble();
+
+    double GetCriterion(string key) => (d.GetProperty("criteria").TryGetProperty(key, out var val) && val.ValueKind != System.Text.Json.JsonValueKind.Null) ? val.GetDouble() : 0d;
+
+    string ScoreLabel(double score) => score switch {
+        >= 4.5 => "Xuất sắc",
+        >= 4.0 => "Tốt",
+        >= 3.0 => "Đạt yêu cầu",
+        > 0 => "Cần cải thiện",
+        _ => "Chưa chấm"
+    };
+
+    string ScoreBadgeClass(double score) => score switch {
+        >= 4.5 => "excellent",
+        >= 4.0 => "good",
+        >= 3.0 => "fair",
+        > 0 => "poor",
+        _ => "empty"
+    };
 }
 @section Styles {
     <link rel="stylesheet" href="~/css/coordinator-incidents.css" asp-append-version="true" />
@@ -15,31 +46,289 @@
     <link rel="stylesheet" href="~/css/wedding-reviews.css" asp-append-version="true" />
 }
 <main class="incident-page hall-incident-page manager-incident-page review-page">
- <a class="review-back" href="/danh-gia/quan-ly"><i class="fa-solid fa-arrow-left"></i>Quay lại danh sách đánh giá</a>
- <header class="incident-header manager-incident-hero review-detail-hero"><div><span class="incident-eyebrow">CHI TIẾT ĐÁNH GIÁ SẢNH</span><h1>@d.GetProperty("hallName").GetString()</h1><p>Booking <strong>@d.GetProperty("bookingCode").GetString()</strong> · @d.GetProperty("eventDate").GetDateTime().ToString("dd/MM/yyyy") · @d.GetProperty("shift").GetString()</p></div><span class="review-status @qrState?.ToLowerInvariant()">@qrLabel</span></header>
+    <div class="review-detail-header-wrap">
+        <a class="review-breadcrumb" href="/danh-gia/quan-ly">
+            <i class="fa-solid fa-arrow-left"></i>
+            <span>Quay lại danh sách đánh giá</span>
+        </a>
+    </div>
 
- <section class="detail-metric-grid">
-  <article class="detail-metric"><small>Điểm trung bình</small><strong>@Number("averageScore", "/5")</strong><span>Điểm tổng thể</span></article>
-  <article class="detail-metric"><small>Tổng lượt đánh giá</small><strong>@total</strong><span>@d.GetProperty("guestReviews").GetInt32() khách mời · @d.GetProperty("hostReviews").GetInt32() chủ tiệc</span></article>
-  <article class="detail-metric positive"><small>Mức hài lòng</small><strong>@Number("satisfactionRate", "%")</strong><span>@d.GetProperty("positiveCount").GetInt32() đánh giá tích cực</span></article>
-  <article class="detail-metric neutral"><small>Trung lập</small><strong>@d.GetProperty("neutralCount").GetInt32()</strong><span>Đánh giá 3 sao</span></article>
-  <article class="detail-metric negative"><small>Tiêu cực</small><strong>@d.GetProperty("negativeCount").GetInt32()</strong><span>Đánh giá 1–2 sao</span></article>
-  <article class="detail-metric"><small>Đối tượng phản hồi</small><strong>@d.GetProperty("guestReviews").GetInt32() / @d.GetProperty("hostReviews").GetInt32()</strong><span>Khách mời / Chủ tiệc</span></article>
- </section>
+    <!-- Hero Header -->
+    <header class="review-detail-hero">
+        <div class="review-hero-main">
+            <span class="incident-eyebrow">CHẤT LƯỢNG DỊCH VỤ · CHI TIẾT ĐÁNH GIÁ SẢNH</span>
+            <h1>@hallName</h1>
+            <div class="detail-hero-tags">
+                <span class="detail-hero-tag"><i class="fa-solid fa-hashtag"></i> <strong>@bookingCode</strong></span>
+                <span class="detail-hero-tag"><i class="fa-regular fa-calendar"></i> @eventDate.ToString("dd/MM/yyyy")</span>
+                <span class="detail-hero-tag"><i class="fa-regular fa-clock"></i> Ca @shift</span>
+                <span class="review-status status-badge-inline @qrState?.ToLowerInvariant()"><i class="status-dot"></i> @qrLabel</span>
+            </div>
+        </div>
+        <div class="detail-hero-actions">
+            <a class="detail-qr-btn" href="/danh-gia/quan-ly/@bookingId/qr.png" target="_blank" download="QR-Danh-Gia-@bookingCode" title="Tải ảnh mã QR đánh giá của tiệc này">
+                <i class="fa-solid fa-qrcode"></i>
+                <span>Tải mã QR</span>
+            </a>
+        </div>
+    </header>
 
- <section class="review-stat-grid detail-charts">
-  <article class="incident-panel manager-incident-panel review-panel"><header class="incident-panel-head"><div><h2>Phân bố đánh giá theo số sao</h2><p>Số lượt và tỷ lệ trên tổng đánh giá của tiệc này.</p></div></header><div class="rating-bars">@for(var star=5;star>=1;star--){var count=d.GetProperty("ratingDistribution").GetProperty(star.ToString()).GetInt32();var width=total==0?0:count*100/total;var tone=star>=4?"positive":star==3?"neutral":"negative";<div class="rating-row @tone"><span>@star <i class="fa-solid fa-star"></i></span><div><i style="width:@width%"></i></div><strong>@count <small>(@(total==0?"—":$"{width}%"))</small></strong></div>}@if(total==0){<p class="chart-empty">Chưa có dữ liệu đánh giá.</p>}</div></article>
-  <article class="incident-panel manager-incident-panel review-panel"><header class="incident-panel-head"><div><h2>Điểm trung bình theo tiêu chí</h2><p>Chỉ tính những tiêu chí đã được người dùng chấm điểm.</p></div></header><div class="criteria-chart">@foreach(var item in new[]{("hall","Chất lượng sảnh","fa-building"),("food","Món ăn","fa-utensils"),("service","Phục vụ","fa-bell-concierge"),("sound","Âm thanh","fa-volume-high"),("lighting","Ánh sáng","fa-lightbulb")}){var value=d.GetProperty("criteria").GetProperty(item.Item1);var score=value.ValueKind==System.Text.Json.JsonValueKind.Null?0d:value.GetDouble();<div class="criteria-column"><strong>@score.ToString("0.0")</strong><div><i style="height:@(score*20)%"></i></div><span><i class="fa-solid @item.Item3"></i>@item.Item2</span></div>}</div></article>
- </section>
+    <!-- 4 High-Impact Visual Metric Cards -->
+    <section class="detail-metric-grid-4">
+        <article class="visual-metric-card">
+            <div class="visual-metric-icon gold"><i class="fa-solid fa-ranking-star"></i></div>
+            <div class="visual-metric-body">
+                <span class="visual-metric-label">Điểm trung bình</span>
+                <div class="visual-metric-value">
+                    @(avg > 0 ? avg.ToString("0.0") : "0")<small>/5.0</small>
+                </div>
+                <div class="metric-stars">
+                    @for (var s = 1; s <= 5; s++) {
+                        if (s <= Math.Floor(avg)) { <i class="fa-solid fa-star star-filled"></i> }
+                        else if (s - avg <= 0.5 && s - avg > 0) { <i class="fa-solid fa-star-half-stroke star-filled"></i> }
+                        else { <i class="fa-regular fa-star star-empty"></i> }
+                    }
+                </div>
+                <span class="visual-metric-desc">@ScoreLabel(avg) · @total lượt</span>
+            </div>
+        </article>
 
- <section class="incident-panel manager-incident-panel review-panel detail-feedback">
-  <header class="incident-panel-head"><div><h2>Phản hồi của khách hàng</h2><p>Nội dung và điểm thành phần của từng lượt đánh giá.</p></div><label class="feedback-filter"><select id="feedbackFilter"><option value="all">Tất cả phản hồi</option><option value="positive">Tích cực</option><option value="neutral">Trung lập</option><option value="negative">Tiêu cực</option></select></label></header>
-  @if(reviews.Count==0){<div class="incident-empty"><span><i class="fa-regular fa-comment-dots"></i></span><h3>Chưa có phản hồi</h3><p>Các đánh giá mới sẽ xuất hiện tại đây.</p></div>}
-  else{<div class="comment-list">@foreach(var r in reviews){var classification=r.GetProperty("classification").GetString()?.ToLowerInvariant()??"neutral";var label=classification=="positive"?"Tích cực":classification=="negative"?"Tiêu cực":"Trung lập";<article class="review-comment" data-classification="@classification"><span class="comment-avatar"><i class="fa-regular fa-user"></i></span><div class="comment-content"><header><div><span class="reviewer-badge">@r.GetProperty("reviewerType").GetString()</span><span class="sentiment-badge @classification">@label</span></div><time>@r.GetProperty("reviewedAt").GetDateTime().ToString("dd/MM/yyyy HH:mm")</time></header><div class="comment-stars">@for(var star=1;star<=5;star++){<i class="@(star<=r.GetProperty("overallScore").GetInt32()?"fa-solid":"fa-regular") fa-star"></i>}<b>@r.GetProperty("overallScore").GetInt32()/5</b></div><div class="comment-scores">@foreach(var score in new[]{("hallScore","Sảnh"),("foodScore","Món ăn"),("serviceScore","Phục vụ"),("soundScore","Âm thanh"),("lightingScore","Ánh sáng")}){var value=r.GetProperty(score.Item1);if(value.ValueKind!=System.Text.Json.JsonValueKind.Null){<span>@score.Item2: @value.GetInt32()/5</span>}}</div><p>@(r.GetProperty("comment").ValueKind==System.Text.Json.JsonValueKind.Null?"Không có bình luận.":r.GetProperty("comment").GetString())</p></div></article>}</div>}
- </section>
+        <article class="visual-metric-card">
+            <div class="visual-metric-icon green"><i class="fa-solid fa-thumbs-up"></i></div>
+            <div class="visual-metric-body">
+                <span class="visual-metric-label">Mức độ hài lòng</span>
+                <div class="visual-metric-value">
+                    @(total > 0 ? satRate.ToString("0.0") : "0")<small>%</small>
+                </div>
+                <span class="visual-metric-desc">@positiveCount đánh giá 4–5 sao</span>
+            </div>
+        </article>
+
+        <article class="visual-metric-card">
+            <div class="visual-metric-icon blue"><i class="fa-solid fa-users"></i></div>
+            <div class="visual-metric-body">
+                <span class="visual-metric-label">Tổng lượt phản hồi</span>
+                <div class="visual-metric-value">@total</div>
+                <span class="visual-metric-desc">@guestReviews khách mời · @hostReviews chủ tiệc</span>
+            </div>
+        </article>
+
+        <article class="visual-metric-card">
+            <div class="visual-metric-icon purple"><i class="fa-solid fa-chart-pie"></i></div>
+            <div class="visual-metric-body">
+                <span class="visual-metric-label">Phân loại cảm xúc</span>
+                <div class="sentiment-mini-bar">
+                    <span class="pos" style="width: @(total > 0 ? (positiveCount * 100 / total) : 0)%"></span>
+                    <span class="neu" style="width: @(total > 0 ? (neutralCount * 100 / total) : 0)%"></span>
+                    <span class="neg" style="width: @(total > 0 ? (negativeCount * 100 / total) : 0)%"></span>
+                </div>
+                <span class="visual-metric-desc">🟢 @positiveCount · 🟡 @neutralCount · 🔴 @negativeCount</span>
+            </div>
+        </article>
+    </section>
+
+    <!-- Visual Charts: Rating Distribution (Left) & Criteria Breakdown (Right) -->
+    <section class="review-stat-grid-v2">
+        <!-- Left: Star Distribution -->
+        <article class="stat-panel-card rating-distribution-card" aria-labelledby="ratingDistributionTitle">
+            <header class="incident-panel-head">
+                <div>
+                    <h2 id="ratingDistributionTitle">Phân bố đánh giá theo số sao</h2>
+                    <p>Tỷ lệ và số lượng phản hồi từ 1 đến 5 sao.</p>
+                </div>
+            </header>
+            <div class="rating-overview-layout">
+                <div class="rating-big-badge">
+                    <strong>@(avg > 0 ? avg.ToString("0.0") : "0")</strong>
+                    <div class="rating-big-stars">
+                        @for (var s = 1; s <= 5; s++) {
+                            if (s <= Math.Floor(avg)) { <i class="fa-solid fa-star"></i> }
+                            else if (s - avg <= 0.5 && s - avg > 0) { <i class="fa-solid fa-star-half-stroke"></i> }
+                            else { <i class="fa-regular fa-star"></i> }
+                        }
+                    </div>
+                    <span>@(total > 0 ? $"{total} lượt đánh giá" : "Chưa có đánh giá")</span>
+                </div>
+                <div class="rating-bar-list">
+                    @for (var star = 5; star >= 1; star--) {
+                        var count = d.GetProperty("ratingDistribution").GetProperty(star.ToString()).GetInt32();
+                        var pct = total == 0 ? 0 : (int)Math.Round((double)count * 100 / total);
+                        var barTone = star >= 4 ? "pos" : star == 3 ? "neu" : "neg";
+                        <div class="rating-bar-row">
+                            <span>@star <i class="fa-solid fa-star"></i></span>
+                            <div class="rating-bar-track" role="progressbar" aria-label="@star sao: @count lượt, chiếm @pct phần trăm" aria-valuemin="0" aria-valuemax="100" aria-valuenow="@pct">
+                                <div class="rating-bar-fill @barTone" style="width: @pct%"></div>
+                            </div>
+                            <span class="rating-bar-num"><strong>@count</strong> <small>(@pct%)</small></span>
+                        </div>
+                    }
+                </div>
+            </div>
+        </article>
+
+        <!-- Right: Criteria Breakdown -->
+        <article class="stat-panel-card">
+            <header class="incident-panel-head">
+                <div>
+                    <h2>Điểm trung bình theo tiêu chí</h2>
+                    <p>Đánh giá chi tiết cho từng hạng mục dịch vụ của sảnh.</p>
+                </div>
+            </header>
+            <div class="criteria-list-layout">
+                @foreach (var crit in new[] {
+                    ("hall", "Chất lượng & Không gian sảnh", "fa-regular fa-building"),
+                    ("food", "Ẩm thực & Món ăn", "fa-solid fa-utensils"),
+                    ("service", "Tác phong phục vụ", "fa-solid fa-bell-concierge"),
+                    ("sound", "Hệ thống âm thanh", "fa-solid fa-volume-high"),
+                    ("lighting", "Hệ thống ánh sáng", "fa-solid fa-lightbulb")
+                }) {
+                    var score = GetCriterion(crit.Item1);
+                    var pct = (int)Math.Round(score * 20);
+                    var badgeClass = ScoreBadgeClass(score);
+                    <div class="criterion-card-row">
+                        <span class="criterion-icon"><i class="@crit.Item3"></i></span>
+                        <div class="criterion-content">
+                            <div class="criterion-top">
+                                <span class="criterion-title">@crit.Item2</span>
+                                <div class="criterion-tag-group">
+                                    <span class="criterion-score-text">@(score > 0 ? score.ToString("0.0") : "0")<small>/5</small></span>
+                                    <span class="criterion-badge @badgeClass">@ScoreLabel(score)</span>
+                                </div>
+                            </div>
+                            <div class="criterion-track">
+                                <div class="criterion-fill @badgeClass" style="width: @pct%"></div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </article>
+    </section>
+
+    <!-- Feedback List with Interactive Filter Tabs -->
+    <section class="detail-feedback-section">
+        <header class="feedback-header">
+            <div>
+                <h2>Phản hồi của khách hàng</h2>
+                <p>Nội dung nhận xét và điểm chi tiết từng lượt gửi.</p>
+            </div>
+            @if (reviews.Count > 0) {
+                <div class="feedback-filter-tabs">
+                    <button type="button" class="feedback-tab active" data-filter="all">Tất cả <span class="tab-count">@total</span></button>
+                    <button type="button" class="feedback-tab" data-filter="positive">🟢 Tích cực <span class="tab-count">@positiveCount</span></button>
+                    <button type="button" class="feedback-tab" data-filter="neutral">🟡 Trung lập <span class="tab-count">@neutralCount</span></button>
+                    <button type="button" class="feedback-tab" data-filter="negative">🔴 Tiêu cực <span class="tab-count">@negativeCount</span></button>
+                    <button type="button" class="feedback-tab" data-filter="host">👑 Chủ tiệc <span class="tab-count">@hostReviews</span></button>
+                    <button type="button" class="feedback-tab" data-filter="guest">👥 Khách mời <span class="tab-count">@guestReviews</span></button>
+                </div>
+            }
+        </header>
+
+        @if (reviews.Count == 0) {
+            <div class="feedback-empty-card">
+                <span class="empty-icon"><i class="fa-regular fa-comment-dots"></i></span>
+                <h3>Chưa có lượt đánh giá nào cho tiệc này</h3>
+                <p>Mã QR đánh giá đã sẵn sàng. Khi khách mời hoặc chủ tiệc quét mã để gửi nhận xét, phản hồi sẽ tự động xuất hiện tại đây.</p>
+            </div>
+        } else {
+            <div class="feedback-card-list">
+                @foreach (var r in reviews) {
+                    var classification = r.GetProperty("classification").GetString()?.ToLowerInvariant() ?? "neutral";
+                    var reviewerType = r.GetProperty("reviewerType").GetString() ?? "Khách mời";
+                    var isHost = reviewerType == "Chủ tiệc";
+                    var score = r.GetProperty("overallScore").GetInt32();
+                    var hasComment = r.GetProperty("comment").ValueKind != System.Text.Json.JsonValueKind.Null && !string.IsNullOrWhiteSpace(r.GetProperty("comment").GetString());
+                    var commentText = hasComment ? r.GetProperty("comment").GetString() : null;
+                    var reviewedAt = r.GetProperty("reviewedAt").GetDateTime();
+                    var isAttention = score <= 2;
+
+                    <article class="review-feedback-card @(isAttention ? "attention-card" : "")"
+                             data-classification="@classification"
+                             data-type="@(isHost ? "host" : "guest")">
+                        <div class="feedback-card-header">
+                            <div class="feedback-user-info">
+                                <div class="feedback-avatar @(isHost ? "avatar-host" : "avatar-guest")">
+                                    <i class="@(isHost ? "fa-solid fa-crown" : "fa-regular fa-user")"></i>
+                                </div>
+                                <div>
+                                    <div class="feedback-author-row">
+                                        <strong>@(isHost ? "Chủ tiệc" : "Khách mời tiệc")</strong>
+                                        <span class="reviewer-type-tag @(isHost ? "tag-host" : "tag-guest")">@reviewerType</span>
+                                        <span class="sentiment-badge @classification">@(classification == "positive" ? "Tích cực" : classification == "negative" ? "Tiêu cực" : "Trung lập")</span>
+                                        @if (isAttention) {
+                                            <span class="attention-badge"><i class="fa-solid fa-triangle-exclamation"></i> Cần lưu ý</span>
+                                        }
+                                    </div>
+                                    <time class="feedback-time"><i class="fa-regular fa-clock"></i> @reviewedAt.ToString("HH:mm · dd/MM/yyyy")</time>
+                                </div>
+                            </div>
+                            <div class="feedback-score-display">
+                                <div class="feedback-stars">
+                                    @for (var star = 1; star <= 5; star++) {
+                                        <i class="@(star <= score ? "fa-solid fa-star star-on" : "fa-regular fa-star star-off")"></i>
+                                    }
+                                </div>
+                                <strong class="feedback-score-num">@score<small>/5</small></strong>
+                            </div>
+                        </div>
+
+                        <div class="feedback-card-body">
+                            @if (hasComment) {
+                                <div class="feedback-comment-quote">
+                                    <i class="fa-solid fa-quote-left quote-icon"></i>
+                                    <p>@commentText</p>
+                                </div>
+                            } else {
+                                <p class="feedback-no-comment"><i class="fa-regular fa-comment-dots"></i> Người tham gia không để lại nội dung nhận xét.</p>
+                            }
+
+                            <div class="feedback-criteria-chips">
+                                @foreach (var sc in new[] {
+                                    ("hallScore", "Sảnh", "fa-building"),
+                                    ("foodScore", "Món ăn", "fa-utensils"),
+                                    ("serviceScore", "Phục vụ", "fa-bell-concierge"),
+                                    ("soundScore", "Âm thanh", "fa-volume-high"),
+                                    ("lightingScore", "Ánh sáng", "fa-lightbulb")
+                                }) {
+                                    var val = r.GetProperty(sc.Item1);
+                                    if (val.ValueKind != System.Text.Json.JsonValueKind.Null) {
+                                        var num = val.GetInt32();
+                                        <span class="criterion-chip @(num >= 4 ? "chip-good" : num == 3 ? "chip-fair" : "chip-poor")">
+                                            <i class="fa-solid @sc.Item3"></i> @sc.Item2: <strong>@num/5</strong>
+                                        </span>
+                                    }
+                                }
+                            </div>
+                        </div>
+                    </article>
+                }
+                <div id="feedbackFilterEmpty" class="feedback-empty-card" hidden>
+                    <span class="empty-icon"><i class="fa-solid fa-filter-circle-xmark"></i></span>
+                    <h3>Không có phản hồi phù hợp</h3>
+                    <p>Hãy chọn bộ lọc khác để xem danh sách phản hồi.</p>
+                </div>
+            </div>
+        }
+    </section>
 </main>
+
 <script>
- document.getElementById('feedbackFilter')?.addEventListener('change', function () {
-   document.querySelectorAll('[data-classification]').forEach(item => item.hidden = this.value !== 'all' && item.dataset.classification !== this.value);
- });
+    document.querySelectorAll('.feedback-tab').forEach(tab => {
+        tab.addEventListener('click', function () {
+            document.querySelectorAll('.feedback-tab').forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+            const filter = this.dataset.filter;
+            let visibleCount = 0;
+            document.querySelectorAll('.review-feedback-card').forEach(card => {
+                let show = false;
+                if (filter === 'all') show = true;
+                else if (filter === 'host' || filter === 'guest') show = card.dataset.type === filter;
+                else show = card.dataset.classification === filter;
+                card.hidden = !show;
+                if (show) visibleCount++;
+            });
+            const emptyState = document.getElementById('feedbackFilterEmpty');
+            if (emptyState) emptyState.hidden = (visibleCount > 0);
+        });
+    });
 </script>

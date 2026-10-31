@@ -1,16 +1,123 @@
 @model HeThongDatTiecCuoi_WEB.Controllers.ReviewInput
-@{ var f = (System.Text.Json.JsonElement)ViewBag.Form; ViewData["Title"] = "Đánh giá buổi tiệc"; }
-<style>
-.rv-wrap{max-width:720px;margin:40px auto;padding:0 16px}.rv-card{background:#fff;border-radius:18px;padding:28px;box-shadow:0 10px 35px #2b21151a;border-top:5px solid #a87932}.rv-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.rv-card select,.rv-card textarea{width:100%;padding:11px;border:1px solid #ddd;border-radius:8px}.rv-card label{display:block;margin:12px 0 5px;font-weight:600}.rv-submit{margin-top:20px;width:100%;padding:13px;background:#8b642a;color:#fff;border:0;border-radius:9px;font-weight:700}.rv-note{padding:12px;background:#fff7e8;border-radius:8px}@@media(max-width:600px){.rv-grid{grid-template-columns:1fr}.rv-card{padding:20px}}
-</style>
-<main class="rv-wrap"><section class="rv-card">
- <h1>Đánh giá buổi tiệc</h1><p><b>@f.GetProperty("hallName").GetString()</b> · @f.GetProperty("eventDate").GetDateTime().ToString("dd/MM/yyyy") · @f.GetProperty("shift").GetString()</p>
- <p class="rv-note">@f.GetProperty("message").GetString()<br>Mở: @f.GetProperty("opensAt").GetDateTime().ToString("dd/MM/yyyy HH:mm") · Hết hạn: @f.GetProperty("expiresAt").GetDateTime().ToString("dd/MM/yyyy HH:mm")</p>
- @if(ViewBag.SubmitError is string error){<p class="text-danger">@error</p>}
- @if(f.GetProperty("canSubmit").GetBoolean()){
- <form method="post">@Html.AntiForgeryToken()<input asp-for="SubmissionId" type="hidden" />
- <div class="rv-grid">@foreach(var item in new[]{("HallScore","Chất lượng sảnh"),("FoodScore","Món ăn"),("ServiceScore","Phục vụ"),("SoundScore","Âm thanh"),("LightingScore","Ánh sáng")}){<div><label for="@item.Item1">@item.Item2</label><select name="@item.Item1" id="@item.Item1"><option value="">Không chấm</option>@for(var i=5;i>=1;i--){<option value="@i">@i sao</option>}</select></div>}</div>
- <label asp-for="OverallScore">Điểm tổng thể *</label><select asp-for="OverallScore" required><option value="">Chọn điểm</option>@for(var i=5;i>=1;i--){<option value="@i">@i sao</option>}</select>
- <label asp-for="Comment">Bình luận</label><textarea asp-for="Comment" maxlength="1000" rows="5" placeholder="Chia sẻ trải nghiệm của bạn..."></textarea>
- <button class="rv-submit" type="submit" onclick="this.disabled=true;this.form.submit()">Gửi đánh giá</button></form>}
-</section></main>
+@{
+    var formData = (System.Text.Json.JsonElement)ViewBag.Form;
+    ViewData["Title"] = "Đánh giá buổi tiệc";
+    var criteria = new[]
+    {
+        (Name: "HallScore", Label: "Không gian sảnh", Hint: "Bố trí, vệ sinh và sự thoải mái", Value: Model.HallScore),
+        (Name: "FoodScore", Label: "Ẩm thực", Hint: "Hương vị, trình bày và khẩu phần", Value: Model.FoodScore),
+        (Name: "ServiceScore", Label: "Phong cách phục vụ", Hint: "Sự tận tâm và chuyên nghiệp", Value: Model.ServiceScore),
+        (Name: "SoundScore", Label: "Âm thanh", Hint: "Chất lượng âm thanh trong buổi tiệc", Value: Model.SoundScore),
+        (Name: "LightingScore", Label: "Ánh sáng", Hint: "Không khí và hiệu ứng sân khấu", Value: Model.LightingScore)
+    };
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/review-form.css" asp-append-version="true" />
+}
+
+<main class="review-form-page">
+    <div class="review-form-shell">
+        <header class="review-form-hero">
+            <div class="review-form-brand" aria-label="Riverside Palace">
+                <span class="review-form-monogram" aria-hidden="true">RP</span>
+                <span><strong>Riverside Palace</strong><small>Wedding &amp; Convention Center</small></span>
+            </div>
+            <div class="review-form-heading">
+                <span class="review-form-eyebrow">Chia sẻ trải nghiệm</span>
+                <h1>Khoảnh khắc của bạn,<br /><em>nguồn cảm hứng của chúng tôi</em></h1>
+                <p>Mỗi đánh giá chân thành giúp Riverside Palace hoàn thiện từng chi tiết cho những ngày trọng đại tiếp theo.</p>
+            </div>
+        </header>
+
+        <section class="review-form-card" aria-labelledby="reviewFormTitle">
+            <div class="review-event-heading">
+                <div><span class="review-section-kicker">Đánh giá buổi tiệc</span><h2 id="reviewFormTitle">@formData.GetProperty("hallName").GetString()</h2></div>
+                <span class="review-status-chip @(formData.GetProperty("canSubmit").GetBoolean() ? "is-open" : "")"><span aria-hidden="true"></span>@(formData.GetProperty("canSubmit").GetBoolean() ? "Đang nhận đánh giá" : "Chưa mở đánh giá")</span>
+            </div>
+
+            <div class="review-event-meta" aria-label="Thông tin buổi tiệc">
+                <span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2v3M17 2v3M3.5 9h17M5 4h14a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z"/></svg>@formData.GetProperty("eventDate").GetDateTime().ToString("dd/MM/yyyy")</span>
+                <span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>@formData.GetProperty("shift").GetString()</span>
+                <span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s7-5.2 7-12a7 7 0 1 0-14 0c0 6.8 7 12 7 12Z"/><circle cx="12" cy="9" r="2.4"/></svg>Sảnh @formData.GetProperty("hallName").GetString()</span>
+            </div>
+
+            <div class="review-window-note">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
+                <div><strong>@formData.GetProperty("message").GetString()</strong><span>Nhận phản hồi: @formData.GetProperty("opensAt").GetDateTime().ToString("HH:mm dd/MM/yyyy") – @formData.GetProperty("expiresAt").GetDateTime().ToString("HH:mm dd/MM/yyyy")</span></div>
+            </div>
+
+            @if (ViewBag.SubmitError is string error)
+            {
+                <div class="review-form-error" role="alert"><strong>Chưa thể gửi đánh giá</strong><span>@error</span></div>
+            }
+
+            @if (formData.GetProperty("canSubmit").GetBoolean())
+            {
+                <form method="post" id="weddingReviewForm">
+                    @Html.AntiForgeryToken()
+                    <input asp-for="SubmissionId" type="hidden" />
+
+                    <section class="review-form-section" aria-labelledby="criteriaTitle">
+                        <div class="review-section-heading"><span>01</span><div><h3 id="criteriaTitle">Trải nghiệm từng dịch vụ</h3><p>Bạn có thể bỏ qua tiêu chí chưa trải nghiệm.</p></div></div>
+                        <div class="review-criteria-grid">
+                            @foreach (var item in criteria)
+                            {
+                                <fieldset class="review-rating-field">
+                                    <legend><strong>@item.Label</strong><small>@item.Hint</small></legend>
+                                    <div class="review-stars" data-rating-group>
+                                        @for (var score = 1; score <= 5; score++)
+                                        {
+                                            var inputId = $"{item.Name}-{score}";
+                                            <input class="review-star-input" type="radio" name="@item.Name" id="@inputId" value="@score" checked="@(item.Value == score)" />
+                                            <label class="review-star" for="@inputId" aria-label="@score sao"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2.8 2.8 5.7 6.3.9-4.6 4.4 1.1 6.2-5.6-2.9L6.4 20l1.1-6.2-4.6-4.4 6.3-.9L12 2.8Z"/></svg></label>
+                                        }
+                                        <output class="review-rating-label" aria-live="polite">@(item.Value is null ? "Chưa đánh giá" : $"{item.Value}/5")</output>
+                                    </div>
+                                </fieldset>
+                            }
+                        </div>
+                    </section>
+
+                    <section class="review-form-section review-overall-section" aria-labelledby="overallTitle">
+                        <div class="review-section-heading"><span>02</span><div><h3 id="overallTitle">Cảm nhận tổng thể <b>*</b></h3><p>Hãy chọn số sao thể hiện trọn vẹn trải nghiệm của bạn.</p></div></div>
+                        <fieldset class="review-overall-field">
+                            <legend class="sr-only">Điểm tổng thể, bắt buộc</legend>
+                            <div class="review-stars review-stars-large" data-rating-group>
+                                @for (var score = 1; score <= 5; score++)
+                                {
+                                    var inputId = $"OverallScore-{score}";
+                                    <input class="review-star-input" asp-for="OverallScore" type="radio" id="@inputId" value="@score" required />
+                                    <label class="review-star" for="@inputId" aria-label="@score sao"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2.8 2.8 5.7 6.3.9-4.6 4.4 1.1 6.2-5.6-2.9L6.4 20l1.1-6.2-4.6-4.4 6.3-.9L12 2.8Z"/></svg></label>
+                                }
+                                <output class="review-rating-label" aria-live="polite">@(Model.OverallScore > 0 ? $"{Model.OverallScore}/5" : "Chọn số sao")</output>
+                            </div>
+                            <span asp-validation-for="OverallScore" class="review-field-error"></span>
+                        </fieldset>
+                    </section>
+
+                    <section class="review-form-section" aria-labelledby="commentTitle">
+                        <div class="review-section-heading"><span>03</span><div><h3 id="commentTitle">Lời nhắn dành cho chúng tôi</h3><p>Một vài chia sẻ cụ thể sẽ giúp đội ngũ phục vụ tốt hơn.</p></div></div>
+                        <div class="review-comment-field">
+                            <label asp-for="Comment">Bình luận <small>(không bắt buộc)</small></label>
+                            <textarea asp-for="Comment" maxlength="1000" rows="5" placeholder="Ví dụ: Không gian sảnh rất đẹp, món ăn vừa vị và nhân viên hỗ trợ tận tâm..." aria-describedby="commentHelp commentCounter"></textarea>
+                            <div class="review-comment-meta"><span id="commentHelp">Không nhập thông tin cá nhân hoặc dữ liệu nhạy cảm.</span><span id="commentCounter">0/1000</span></div>
+                            <span asp-validation-for="Comment" class="review-field-error"></span>
+                        </div>
+                    </section>
+
+                    <button class="review-submit" type="submit">
+                        <span class="review-submit-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m4 12 5 5L20 6"/></svg></span>
+                        <span><strong>Gửi đánh giá</strong><small>Phản hồi của bạn được ghi nhận bảo mật</small></span>
+                        <svg class="review-submit-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M14 7l5 5-5 5"/></svg>
+                    </button>
+                </form>
+            }
+        </section>
+        <footer class="review-form-footer">© 2026 Riverside Palace · Trân trọng từng khoảnh khắc của bạn</footer>
+    </div>
+</main>
+
+@section Scripts {
+    <script src="~/js/review-form.js" asp-append-version="true"></script>
+}

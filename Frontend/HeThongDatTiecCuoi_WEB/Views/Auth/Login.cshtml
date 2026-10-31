@@ -1,6 +1,9 @@
 @model LoginViewModel
 @{
     ViewData["Title"] = "Đăng nhập";
+    var loginErrorMessage = ViewData.ModelState.TryGetValue(string.Empty, out var loginErrors) && loginErrors.Errors.Count > 0
+        ? loginErrors.Errors[0].ErrorMessage
+        : null;
 }
 
 @section Styles {
@@ -32,21 +35,23 @@
             <h2>Đăng Nhập</h2>
             <p class="subtitle">Đăng nhập để truy cập khu vực quản trị và vận hành</p>
 
-            @if (TempData["Success"] is string successMessage)
-            {
-                <div class="auth-alert auth-alert-success" role="status"><span class="material-symbols-outlined" aria-hidden="true">check_circle</span><div><strong>Thành công</strong><p>@successMessage</p></div></div>
-            }
-            @if (TempData["Error"] is string errorMessage)
-            {
-                <div class="auth-alert auth-alert-error" role="alert"><span class="material-symbols-outlined" aria-hidden="true">error</span><div><strong>Không thể đăng nhập</strong><p>@errorMessage</p></div></div>
-            }
+            <div id="authInitialMessages" hidden>
+                @if (TempData["Success"] is string successMessage)
+                {
+                    <span data-auth-toast="success" data-auth-toast-title="Thành công">@successMessage</span>
+                }
+                @if (TempData["Error"] is string errorMessage)
+                {
+                    <span data-auth-toast="error" data-auth-toast-title="Không thể đăng nhập">@errorMessage</span>
+                }
+                @if (!string.IsNullOrWhiteSpace(loginErrorMessage))
+                {
+                    <span data-auth-toast="error" data-auth-toast-title="Không thể đăng nhập">@loginErrorMessage</span>
+                }
+            </div>
 
             <form id="loginForm" asp-action="Login" asp-controller="Auth" method="post" novalidate>
                 <input asp-for="ReturnUrl" type="hidden" />
-                @if (ViewData.ModelState.TryGetValue(string.Empty, out var loginErrors) && loginErrors.Errors.Count > 0)
-                {
-                    <div class="auth-alert auth-alert-error auth-alert-single" role="alert"><span class="material-symbols-outlined" aria-hidden="true">error</span><span>@loginErrors.Errors[0].ErrorMessage</span></div>
-                }
 
                 <div class="field">
                     <label asp-for="Identifier">Email, số điện thoại hoặc mã nhân viên <i>*</i></label>

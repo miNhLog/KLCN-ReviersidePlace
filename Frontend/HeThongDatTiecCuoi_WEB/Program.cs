@@ -1,6 +1,7 @@
 using HeThongDatTiecCuoi_WEB.Controllers;
 using HeThongDatTiecCuoi_WEB.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Localization;
 using System.Net;
 using System.Net.Http.Headers;
@@ -16,6 +17,16 @@ var googleClientSecret = builder.Configuration["Google:ClientSecret"];
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddHttpContextAccessor();
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor |
+                               ForwardedHeaders.XForwardedHost |
+                               ForwardedHeaders.XForwardedProto;
+    // Cloudflare Quick Tunnel uses changing proxy addresses, so they cannot be
+    // listed statically. The public tunnel itself remains the trusted boundary.
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 builder.Services.Configure<HeThongDatTiecCuoi_WEB.Options.RecommendationOptions>(
     builder.Configuration.GetSection(HeThongDatTiecCuoi_WEB.Options.RecommendationOptions.SectionName));
 builder.Services
@@ -119,6 +130,8 @@ if (!app.Environment.IsDevelopment())
     app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
 }
+
+app.UseForwardedHeaders();
 
 app.Use(async (context, next) =>
 {

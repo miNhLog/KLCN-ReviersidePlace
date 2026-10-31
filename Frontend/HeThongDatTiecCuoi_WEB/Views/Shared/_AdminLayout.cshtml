@@ -43,7 +43,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - Riverside Palace</title>
-    <link rel="icon" type="image/svg+xml" href="~/favicon.svg" />
+    <link rel="icon" type="image/svg+xml" href="~/favicon.svg" asp-append-version="true" />
 
     <script>
         try {
@@ -101,7 +101,10 @@
                    class="sidebar-brand"
                    aria-label="Riverside Palace - Tổng quan hệ thống">
                     <span class="brand-icon" aria-hidden="true">
-                        <i class="fa-solid fa-crown"></i>
+                        <img class="sidebar-brand-emblem"
+                             src="~/images/riverside-emblem.svg"
+                             asp-append-version="true"
+                             alt="" />
                     </span>
                     <span class="brand-text">
                         <strong>RIVERSIDE PALACE</strong>

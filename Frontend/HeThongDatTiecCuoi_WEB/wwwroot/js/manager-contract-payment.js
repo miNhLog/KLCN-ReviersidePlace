@@ -15,6 +15,11 @@
         if (text !== undefined && text !== null) element.textContent = text;
         return element;
     };
+    const iconNode = className => {
+        const icon = createNode('i', className);
+        icon.setAttribute('aria-hidden', 'true');
+        return icon;
+    };
 
     async function request(url, options = {}) {
         const headers = { ...(options.headers || {}) };
@@ -60,10 +65,22 @@
             byId('kpiTotal').textContent = data.statistics.totalContracts;
             byId('kpiActive').textContent = data.statistics.activeContracts;
             byId('kpiAwaiting').textContent = data.statistics.awaitingPaymentContracts;
-            byId('kpiRevenue').textContent = money(data.statistics.totalCollectedRevenue);
+            byId('kpiRevenue').querySelector('.cp-kpi-revenue-value').textContent = Number(data.statistics.totalCollectedRevenue || 0).toLocaleString('vi-VN');
+            updateKpiRatios(data.statistics);
             byId('contractPageInfo').textContent = `Trang ${Math.max(1, data.page)} / ${Math.max(1, data.totalPages)} · ${data.totalItems} hợp đồng`;
             renderPages(byId('contractPages'), data.page, data.totalPages, loadContracts);
         } catch (error) { showToast(error.message, true); }
+    }
+
+    function updateKpiRatios(statistics) {
+        const total = Math.max(0, Number(statistics.totalContracts || 0));
+        const setRatio = (value, barId, labelId) => {
+            const ratio = total > 0 ? Math.max(0, Math.min(100, Math.round(Number(value || 0) * 100 / total))) : 0;
+            byId(barId).style.width = `${ratio}%`;
+            byId(labelId).textContent = `${ratio}%`;
+        };
+        setRatio(statistics.activeContracts, 'kpiActiveBar', 'kpiActivePercent');
+        setRatio(statistics.awaitingPaymentContracts, 'kpiAwaitingBar', 'kpiAwaitingPercent');
     }
 
     function renderContractRows(items) {
@@ -173,12 +190,15 @@
         const status = byId('drawerStatus'); status.replaceChildren(statusBadge(detail.statusCode, detail.statusName));
 
         const general = byId('drawerGeneral');
-        general.append(detailCard('Thông tin chung', [
-            ['Mã hợp đồng', detail.contractCode], ['Mã booking', detail.booking.bookingCode], ['Khách hàng', detail.booking.customerName],
-            ['Số điện thoại', detail.booking.customerPhone], ['Email', detail.booking.customerEmail || 'Chưa cung cấp'],
-            ['Ngày tạo', date(detail.createdDate)], ['Tổng giá trị', money(detail.totalValue)], ['Trạng thái', detail.statusName]
-        ]));
-        general.append(textCard('Nội dung hợp đồng', detail.contractContent), textCard('Điều khoản thanh toán', detail.paymentTerms));
+        general.append(contractOverview(detail));
+        general.append(detailCard('Thông tin hợp đồng và khách hàng', [
+            ['Mã hợp đồng', detail.contractCode], ['Mã booking', detail.booking.bookingCode],
+            ['Khách hàng', detail.booking.customerName], ['Số điện thoại', detail.booking.customerPhone],
+            ['Email', detail.booking.customerEmail || 'Chưa cung cấp'], ['Ngày lập', date(detail.createdDate)]
+        ], 'fa-regular fa-address-card'));
+        const contractText = createNode('div', 'cp-detail-text-grid');
+        contractText.append(textCard('Nội dung hợp đồng', detail.contractContent, 'fa-regular fa-file-lines'), textCard('Điều khoản thanh toán', detail.paymentTerms, 'fa-solid fa-scale-balanced'));
+        general.append(contractText);
 
         const booking = byId('drawerBooking');
         booking.append(detailCard('Booking liên quan', [
@@ -186,28 +206,52 @@
             ['Sảnh', detail.booking.hallName], ['Số khách', String(detail.booking.guestCount)], ['Thực đơn', detail.booking.menuName || 'Chưa chọn'],
             ['Trang trí', detail.booking.decorationPackageName || 'Chưa chọn'], ['Dịch vụ', detail.booking.services?.length ? detail.booking.services.join(', ') : 'Không có'],
             ['Dự toán', money(detail.booking.estimatedTotal)], ['Trạng thái booking', detail.booking.statusName]
-        ]));
-        const bookingLink = createNode('a', 'cp-secondary', 'Xem Booking'); bookingLink.href = '/AdminBooking'; bookingLink.style.marginTop = '4px'; booking.append(bookingLink);
+        ], 'fa-regular fa-calendar-check'));
+        const bookingLink = createNode('a', 'cp-secondary cp-detail-link', 'Xem chi tiết Booking'); bookingLink.href = '/AdminBooking';
+        bookingLink.prepend(createNode('i', 'fa-solid fa-arrow-up-right-from-square')); booking.append(bookingLink);
 
         renderDrawerPayments(detail);
         renderHistory(detail.history || []);
         renderDrawerActions(detail);
     }
 
-    function detailCard(title, pairs) {
-        const card = createNode('article', 'cp-detail-card'); card.append(createNode('h3', '', title));
+    function contractOverview(detail) {
+        const overview = createNode('section', 'cp-contract-overview');
+        const heading = createNode('div', 'cp-contract-overview-head');
+        const title = createNode('div'); title.append(createNode('span', '', 'TỔNG QUAN TÀI CHÍNH'), createNode('strong', '', `${percentage(detail.paymentPercentage)}% đã thanh toán`));
+        const progress = createNode('div', 'cp-contract-overview-progress'); const bar = createNode('span');
+        bar.style.width = `${Math.max(0, Math.min(100, Number(detail.paymentPercentage || 0)))}%`; progress.append(bar); heading.append(title, progress);
+        const metrics = createNode('div', 'cp-contract-metrics');
+        [
+            ['Tổng giá trị', money(detail.totalValue), 'fa-solid fa-file-invoice-dollar', 'navy'],
+            ['Đã thanh toán', money(detail.paidAmount), 'fa-solid fa-circle-check', 'green'],
+            ['Còn phải thu', money(detail.remainingBalance), 'fa-regular fa-clock', detail.remainingBalance > 0 ? 'amber' : 'green']
+        ].forEach(([label, value, icon, tone]) => {
+            const item = createNode('div', `cp-contract-metric ${tone}`); const iconBox = createNode('span', 'cp-contract-metric-icon');
+            iconBox.append(iconNode(icon)); const copy = createNode('span', 'cp-contract-metric-copy'); copy.append(createNode('small', '', label), createNode('strong', '', value)); item.append(iconBox, copy); metrics.append(item);
+        });
+        overview.append(heading, metrics); return overview;
+    }
+
+    function detailCard(title, pairs, iconClass = 'fa-regular fa-rectangle-list') {
+        const card = createNode('article', 'cp-detail-card');
+        const heading = createNode('header', 'cp-detail-card-head'); const icon = createNode('span'); icon.append(iconNode(iconClass)); heading.append(icon, createNode('h3', '', title)); card.append(heading);
         const list = createNode('dl', 'cp-detail-grid');
         pairs.forEach(([label, value]) => { list.append(createNode('dt', '', label), createNode('dd', '', value ?? '—')); });
         card.append(list); return card;
     }
 
-    function textCard(title, text) {
-        const card = createNode('article', 'cp-detail-card'); card.append(createNode('h3', '', title), createNode('p', 'cp-pre', text || 'Chưa có nội dung.')); return card;
+    function textCard(title, text, iconClass = 'fa-regular fa-file-lines') {
+        const card = createNode('article', 'cp-detail-card cp-detail-text-card');
+        const heading = createNode('header', 'cp-detail-card-head'); const icon = createNode('span'); icon.append(iconNode(iconClass)); heading.append(icon, createNode('h3', '', title));
+        const content = createNode('p', `cp-pre${text ? '' : ' cp-detail-empty-copy'}`, text || 'Chưa có nội dung.'); card.append(heading, content); return card;
     }
 
     function renderDrawerPayments(detail) {
         const section = byId('drawerPayments');
-        const summary = createNode('article', 'cp-detail-card'); summary.append(createNode('h3', '', 'Tiến độ thanh toán'));
+        const summary = createNode('article', 'cp-detail-card cp-payment-detail-card');
+        const summaryHead = createNode('header', 'cp-detail-card-head'); const summaryIcon = createNode('span'); summaryIcon.append(iconNode('fa-solid fa-chart-line'));
+        summaryHead.append(summaryIcon, createNode('h3', '', 'Tiến độ thanh toán'), createNode('b', 'cp-payment-percentage', `${percentage(detail.paymentPercentage)}%`)); summary.append(summaryHead);
         const track = createNode('div', 'cp-progress-track'); const bar = createNode('div', 'cp-progress-bar');
         bar.style.width = `${Math.max(0, Math.min(100, Number(detail.paymentPercentage || 0)))}%`; track.append(bar); summary.append(track);
         const values = createNode('div', 'cp-payment-summary');
@@ -222,7 +266,9 @@
             summary.append(payBtn);
         }
         section.append(summary);
-        const history = createNode('article', 'cp-detail-card'); history.append(createNode('h3', '', 'Lịch sử giao dịch (chỉ đọc)'));
+        const history = createNode('article', 'cp-detail-card');
+        const historyHead = createNode('header', 'cp-detail-card-head'); const historyIcon = createNode('span'); historyIcon.append(iconNode('fa-solid fa-receipt'));
+        historyHead.append(historyIcon, createNode('h3', '', 'Lịch sử giao dịch'), createNode('small', 'cp-readonly-badge', 'Chỉ đọc')); history.append(historyHead);
         if (!detail.payments?.length) history.append(createNode('p', 'cp-pre', 'Chưa phát sinh giao dịch thanh toán.'));
         else detail.payments.forEach(payment => history.append(detailCard(`${payment.paymentType} · ${money(payment.amount)}`, [
             ['Mã giao dịch', payment.transactionCode || `#${payment.paymentId}`], ['Ngày', date(payment.paymentDate)],
@@ -232,7 +278,9 @@
     }
 
     function renderHistory(items) {
-        const section = byId('drawerHistory'); const card = createNode('article', 'cp-detail-card'); card.append(createNode('h3', '', 'Lịch sử nghiệp vụ'));
+        const section = byId('drawerHistory'); const card = createNode('article', 'cp-detail-card');
+        const cardHead = createNode('header', 'cp-detail-card-head'); const cardIcon = createNode('span'); cardIcon.append(iconNode('fa-solid fa-clock-rotate-left'));
+        cardHead.append(cardIcon, createNode('h3', '', 'Lịch sử nghiệp vụ')); card.append(cardHead);
         const timeline = createNode('div', 'cp-timeline');
         if (!items.length) timeline.append(createNode('p', 'cp-pre', 'Chưa có lịch sử.'));
         const names = { CONTRACT_CREATED: 'Tạo hợp đồng', CONTRACT_UPDATED: 'Cập nhật bản nháp', CONTRACT_ACTIVATED: 'Kích hoạt hợp đồng', CONTRACT_COMPLETED: 'Hoàn tất hợp đồng', CONTRACT_CANCELLED: 'Hủy hợp đồng' };
@@ -243,19 +291,19 @@
     function renderDrawerActions(detail) {
         const actions = byId('drawerActions'); actions.replaceChildren();
         const pdf = createNode('a', 'cp-secondary', 'In / Tải PDF'); pdf.href = `${base}/contracts/${detail.contractId}/pdf`; pdf.target = '_blank';
-        const pdfIcon = createNode('i', 'fa-solid fa-print'); pdf.prepend(pdfIcon); actions.append(pdf);
+        const pdfIcon = iconNode('fa-solid fa-print'); pdf.prepend(pdfIcon); actions.append(pdf);
         if (detail.statusCode === 'DRAFT') {
-            actions.append(actionButton('Sửa hợp đồng', 'cp-secondary', () => openEdit(detail)), actionButton('Kích hoạt', 'cp-primary', () => confirmActivate(detail)), actionButton('Hủy hợp đồng', 'cp-danger', () => confirmCancel(detail)));
+            actions.append(actionButton('Sửa hợp đồng', 'cp-secondary', () => openEdit(detail), 'fa-regular fa-pen-to-square'), actionButton('Kích hoạt', 'cp-primary', () => confirmActivate(detail), 'fa-solid fa-bolt'), actionButton('Hủy hợp đồng', 'cp-danger', () => confirmCancel(detail), 'fa-regular fa-trash-can'));
         } else if (detail.statusCode === 'ACTIVE') {
             if (detail.remainingBalance > 0) {
-                actions.append(actionButton('Thu tiền / PayOS', 'cp-primary', () => openRecordPaymentModal(detail)));
+                actions.append(actionButton('Thu tiền / PayOS', 'cp-primary', () => openRecordPaymentModal(detail), 'fa-solid fa-qrcode'));
             }
-            if (!detail.hasPaymentInconsistency && Number(detail.paidAmount) === Number(detail.totalValue)) actions.append(actionButton('Hoàn tất hợp đồng', 'cp-primary', () => confirmComplete(detail)));
-            actions.append(actionButton('Hủy hợp đồng', 'cp-danger', () => confirmCancel(detail)));
+            if (!detail.hasPaymentInconsistency && Number(detail.paidAmount) === Number(detail.totalValue)) actions.append(actionButton('Hoàn tất hợp đồng', 'cp-primary', () => confirmComplete(detail), 'fa-solid fa-circle-check'));
+            actions.append(actionButton('Hủy hợp đồng', 'cp-danger', () => confirmCancel(detail), 'fa-regular fa-trash-can'));
         }
     }
 
-    function actionButton(label, className, handler) { const button = createNode('button', className, label); button.type = 'button'; button.addEventListener('click', handler); return button; }
+    function actionButton(label, className, handler, iconClass = '') { const button = createNode('button', className, label); button.type = 'button'; if (iconClass) button.prepend(iconNode(iconClass)); button.addEventListener('click', handler); return button; }
     function closeDrawer() { byId('drawerOverlay').classList.remove('open'); byId('contractDrawer').classList.remove('open'); state.currentContract = null; }
     function switchDrawerTab(tab) {
         document.querySelectorAll('[data-drawer-tab]').forEach(button => button.classList.toggle('active', button.dataset.drawerTab === tab));
@@ -263,7 +311,12 @@
         Object.entries(map).forEach(([key, id]) => byId(id).classList.toggle('cp-hidden', key !== tab));
     }
 
-    async function openCreateModal() { openModal('createModal'); await loadEligibleBookings(); }
+    async function openCreateModal() {
+        byId('createFormError').classList.add('cp-hidden');
+        byId('createFormError').textContent = '';
+        openModal('createModal');
+        await loadEligibleBookings();
+    }
     async function loadEligibleBookings(keyword = '') {
         const container = byId('eligibleBookings'); container.replaceChildren(createNode('div', 'cp-empty', 'Đang tải booking đủ điều kiện...'));
         try {
@@ -272,7 +325,15 @@
             if (!bookings.length) { container.append(createNode('div', 'cp-empty', 'Không có booking đã xác nhận chưa có hợp đồng.')); return; }
             bookings.forEach(booking => {
                 const button = createNode('button', 'cp-booking-option'); button.type = 'button'; button.dataset.bookingId = booking.bookingId;
-                button.append(createNode('strong', '', `${booking.bookingCode} · ${booking.customerName}`), createNode('span', '', `${booking.customerPhone} · ${date(booking.eventDate)} · ${booking.hallName}`));
+                const icon = createNode('span', 'cp-booking-option-icon'); icon.setAttribute('aria-hidden', 'true'); icon.innerHTML = '<i class="fa-regular fa-calendar-check"></i>';
+                const copy = createNode('span', 'cp-booking-option-copy');
+                const heading = createNode('span', 'cp-booking-option-heading');
+                heading.append(createNode('strong', '', booking.bookingCode), createNode('b', '', booking.customerName));
+                const meta = createNode('span', 'cp-booking-option-meta');
+                meta.append(createNode('span', '', booking.customerPhone), createNode('span', '', date(booking.eventDate)), createNode('span', '', booking.hallName));
+                copy.append(heading, meta);
+                const check = createNode('span', 'cp-booking-option-check'); check.setAttribute('aria-hidden', 'true'); check.innerHTML = '<i class="fa-solid fa-check"></i>';
+                button.append(icon, copy, check);
                 button.addEventListener('click', () => selectBooking(booking, button)); container.append(button);
             });
             const initialId = Number(root.dataset.initialBookingId || 0);
@@ -284,21 +345,50 @@
         state.selectedBooking = booking;
         document.querySelectorAll('.cp-booking-option').forEach(item => item.classList.toggle('selected', item === button));
         const summary = byId('selectedBookingSummary'); summary.classList.remove('cp-hidden'); summary.replaceChildren();
-        summary.append(createNode('strong', '', `${booking.bookingCode} · ${booking.customerName}`), document.createElement('br'),
-            document.createTextNode(`${booking.customerPhone} · ${booking.customerEmail || 'Chưa có email'}`), document.createElement('br'),
-            document.createTextNode(`${date(booking.eventDate)} · ${booking.shift} · ${booking.hallName} · ${booking.guestCount} khách`), document.createElement('br'),
-            document.createTextNode(`Thực đơn: ${booking.menuName || 'Chưa chọn'} · Decor: ${booking.decorationPackageName || 'Chưa chọn'}`));
+        const summaryHead = createNode('div', 'cp-booking-summary-head');
+        const summaryTitle = createNode('div', ''); summaryTitle.append(createNode('span', '', 'BOOKING ĐÃ CHỌN'), createNode('strong', '', booking.bookingCode));
+        const summaryBadge = createNode('span', 'cp-booking-summary-badge', 'Đã xác nhận');
+        summaryHead.append(summaryTitle, summaryBadge);
+        const summaryGrid = createNode('dl', 'cp-booking-summary-grid');
+        [
+            ['Khách hàng', booking.customerName],
+            ['Liên hệ', `${booking.customerPhone} · ${booking.customerEmail || 'Chưa có email'}`],
+            ['Thời gian', `${date(booking.eventDate)} · ${booking.shift}`],
+            ['Sảnh tiệc', `${booking.hallName} · ${booking.guestCount} khách`],
+            ['Thực đơn', booking.menuName || 'Chưa chọn'],
+            ['Trang trí', booking.decorationPackageName || 'Chưa chọn']
+        ].forEach(([label, value]) => summaryGrid.append(createNode('dt', '', label), createNode('dd', '', value)));
+        summary.append(summaryHead, summaryGrid);
+        byId('createFormError').classList.add('cp-hidden');
         byId('createTotalValue').value = booking.estimatedTotal ?? 0;
         byId('createContent').value = booking.defaultContractContent || '';
         byId('createTerms').value = booking.defaultPaymentTerms || '';
     }
 
     async function saveDraft() {
-        if (!state.selectedBooking) return showToast('Vui lòng chọn booking.', true);
+        const error = byId('createFormError');
+        const saveButton = byId('saveDraft');
+        const totalValue = Number(byId('createTotalValue').value || 0);
+        const showCreateError = (message, target) => {
+            const icon = createNode('i', 'fa-solid fa-circle-exclamation'); icon.setAttribute('aria-hidden', 'true');
+            error.replaceChildren(icon, createNode('span', '', message));
+            error.classList.remove('cp-hidden');
+            target?.focus();
+        };
+        if (!state.selectedBooking) return showCreateError('Vui lòng chọn một booking đã xác nhận trước khi tạo hợp đồng.', byId('eligibleKeyword'));
+        if (totalValue <= 0) return showCreateError('Tổng giá trị hợp đồng phải lớn hơn 0 đồng.', byId('createTotalValue'));
+        error.classList.add('cp-hidden');
+        saveButton.disabled = true;
+        saveButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i><span>Đang lưu...</span>';
         try {
-            const result = await request(`${base}/contracts`, { method: 'POST', body: JSON.stringify({ bookingId: state.selectedBooking.bookingId, totalValue: Number(byId('createTotalValue').value || 0), contractContent: byId('createContent').value, paymentTerms: byId('createTerms').value }) });
+            const result = await request(`${base}/contracts`, { method: 'POST', body: JSON.stringify({ bookingId: state.selectedBooking.bookingId, totalValue, contractContent: byId('createContent').value, paymentTerms: byId('createTerms').value }) });
             closeModal('createModal'); showToast(result.message || 'Đã lưu hợp đồng bản nháp.'); state.selectedBooking = null; root.dataset.initialBookingId = ''; await loadContracts(1); await openDrawer(result.contractId);
-        } catch (error) { showToast(error.message, true); }
+        } catch (requestError) {
+            showCreateError(requestError.message || 'Không thể lưu hợp đồng. Vui lòng thử lại.');
+        } finally {
+            saveButton.disabled = false;
+            saveButton.innerHTML = '<i class="fa-regular fa-floppy-disk" aria-hidden="true"></i><span>Lưu bản nháp</span>';
+        }
     }
 
     function openEdit(detail) { byId('editTotalValue').value = detail.totalValue; byId('editContent').value = detail.contractContent; byId('editTerms').value = detail.paymentTerms; openModal('editModal'); }

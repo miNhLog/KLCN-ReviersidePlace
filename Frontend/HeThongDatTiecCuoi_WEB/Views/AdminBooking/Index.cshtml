@@ -1202,8 +1202,25 @@
             const popup = window.open('', '_blank', 'width=520,height=680');
             if (!popup) return;
             const bookingCode = document.getElementById('mdBookingCode').innerText;
-            popup.document.write(`<html><head><title>QR đánh giá ${escapeHtml(bookingCode)}</title></head><body style="font-family:Arial;text-align:center;padding:40px"><h2>Đánh giá buổi tiệc</h2><p>${escapeHtml(bookingCode)}</p><img src="${selectedReviewQrImage}" style="width:320px;height:320px" onload="window.print();window.close()"></body></html>`);
-            popup.document.close();
+            const popupDocument = popup.document;
+            popupDocument.title = `QR đánh giá ${bookingCode}`;
+            popupDocument.body.replaceChildren();
+            popupDocument.body.style.cssText = 'font-family:Arial;text-align:center;padding:40px';
+
+            const heading = popupDocument.createElement('h2');
+            heading.textContent = 'Đánh giá buổi tiệc';
+            const code = popupDocument.createElement('p');
+            code.textContent = bookingCode;
+            const qrImage = popupDocument.createElement('img');
+            qrImage.src = selectedReviewQrImage;
+            qrImage.alt = `QR đánh giá ${bookingCode}`;
+            qrImage.style.cssText = 'width:320px;height:320px';
+            qrImage.addEventListener('load', () => {
+                popup.print();
+                popup.close();
+            }, { once: true });
+
+            popupDocument.body.append(heading, code, qrImage);
         }
 
         function closeDetailModal() {
