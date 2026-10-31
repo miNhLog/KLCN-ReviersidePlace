@@ -100,7 +100,7 @@
                 </div>
             </section>
 
-            <nav class="decor-breadcrumb"
+            <nav class="public-breadcrumb public-breadcrumb--inline"
                  aria-label="Đường dẫn trang">
 
                 <div class="home-container">
@@ -109,28 +109,17 @@
                        asp-action="Index"
                        asp-route-publicSite="true">
 
-                        <span class="material-symbols-outlined"
-                              aria-hidden="true">
-                            home
-                        </span>
-
                         Trang chủ
                     </a>
 
-                    <span class="material-symbols-outlined"
-                          aria-hidden="true">
-                        chevron_right
-                    </span>
+                    <span class="public-breadcrumb-separator" aria-hidden="true">›</span>
 
                     <a asp-controller="DecorPackages"
                        asp-action="Index">
                         Gói trang trí
                     </a>
 
-                    <span class="material-symbols-outlined"
-                          aria-hidden="true">
-                        chevron_right
-                    </span>
+                    <span class="public-breadcrumb-separator" aria-hidden="true">›</span>
 
                     <span aria-current="page">
                         @Model.PackageName

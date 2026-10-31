@@ -81,12 +81,15 @@ public sealed class PayOSPaymentService : IPaymentService
                 throw new UnauthorizedAccessException("Thông tin mã đặt tiệc hoặc số điện thoại không khớp với hồ sơ.");
         }
 
-        // Kiểm tra trạng thái đơn: phải ở trạng thái PENDING và chưa thanh toán cọc
+        // Cho phép thanh toán cọc khi đơn đang chờ xác nhận hoặc đã được
+        // xác nhận nhưng chưa có tiền cọc. Quản lý có thể xác nhận đơn
+        // trước khi khách quét QR, nên chỉ chấp nhận PENDING sẽ làm khách
+        // bị kẹt khỏi luồng thanh toán.
         if (booking.PaidAmount > 0)
             throw new InvalidOperationException("Đơn đặt tiệc này đã được thanh toán cọc trước đó.");
 
-        if (booking.Status.StatusCode != BookingStatusCodes.Pending)
-            throw new InvalidOperationException($"Chỉ có thể đặt cọc khi tiệc ở trạng thái Chờ xác nhận (Hiện tại: {booking.Status.StatusName}).");
+        if (booking.Status.StatusCode is not (BookingStatusCodes.Pending or BookingStatusCodes.Confirmed))
+            throw new InvalidOperationException($"Chỉ có thể đặt cọc khi tiệc ở trạng thái Chờ xác nhận hoặc Đã xác nhận (Hiện tại: {booking.Status.StatusName}).");
 
         // 1. Tính tiền cọc nghiệp vụ (10% tổng dự toán)
         decimal totalEstimate = booking.EstimatedTotal ?? 0m;

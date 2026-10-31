@@ -70,6 +70,24 @@
         return close;
     }
 
+    function initHeaderScrollState() {
+        const header = $('.home-header--overlay');
+        if (!header) return;
+
+        let scheduled = false;
+        const update = () => {
+            header.classList.toggle('is-scrolled', window.scrollY > 40);
+            scheduled = false;
+        };
+
+        update();
+        window.addEventListener('scroll', () => {
+            if (scheduled) return;
+            scheduled = true;
+            window.requestAnimationFrame(update);
+        }, { passive: true });
+    }
+
     function initCinemaHero() {
         const hero = $('.cinema-hero');
         if (!hero) return;
@@ -353,6 +371,7 @@
 
     const showToast = initToast();
     const closeMobileMenu = initMobileNav();
+    initHeaderScrollState();
     initCinemaHero();
     initReveals();
     initImageFallback();

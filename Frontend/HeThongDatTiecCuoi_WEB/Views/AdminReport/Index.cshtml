@@ -138,10 +138,55 @@
         .matrix-scroll-container::-webkit-scrollbar-thumb:hover {
             background: linear-gradient(180deg, #B89758, #8C6D32);
         }
+
+    /* Manager BI dashboard */
+    .bi-dashboard { --bi-navy:#10294e;--bi-gold:#b88932;--bi-border:#e4e9f0;--bi-muted:#718096; }
+    .bi-hero { position:relative;overflow:hidden;min-height:180px;padding:30px 32px!important;border:1px solid #e6dcc7;border-radius:22px;background:linear-gradient(120deg,#fff 0%,#fff 58%,#fbf3df 100%);box-shadow:0 16px 40px rgba(15,23,42,.07); }
+    .bi-hero::after { position:absolute;right:-60px;top:-120px;width:300px;height:300px;border:36px solid rgba(184,137,50,.08);border-radius:50%;content:"";pointer-events:none; }
+    .bi-hero h1 { max-width:760px;margin:8px 0 8px;color:#12233d;font-size:clamp(28px,2.4vw,38px);font-weight:800;line-height:1.15;letter-spacing:-.035em; }
+    .bi-hero p { max-width:650px;color:#64748b;font-size:13px;line-height:1.65; }
+    .bi-export-btn { position:relative;z-index:1;min-height:46px!important;padding:0 18px!important;border:0!important;border-radius:12px!important;color:#fff!important;background:linear-gradient(135deg,#17365f,#10294e)!important;box-shadow:0 9px 20px rgba(16,41,78,.18)!important; }
+    .bi-filter-panel { position:sticky;top:12px;z-index:20;padding:14px 16px!important;border-color:var(--bi-border)!important;border-radius:16px!important;background:rgba(255,255,255,.94)!important;box-shadow:0 10px 28px rgba(15,23,42,.07)!important;backdrop-filter:blur(12px); }
+    .bi-filter-panel[aria-busy="true"] { opacity:.72;pointer-events:none; }
+    .bi-filter-label { display:flex;align-items:center;gap:7px;color:#26364d;font-size:11px;font-weight:800; }
+    .bi-filter-label i { color:var(--bi-gold); }
+    .bi-filter-control { min-height:44px!important;border-color:#dce3eb!important;border-radius:11px!important;background:#f8fafc!important; }
+    .bi-kpi-grid { gap:16px!important; }
+    .bi-kpi-card { --kpi-color:#315f92;--kpi-soft:#edf4fb;position:relative;min-width:0;min-height:152px;padding:19px!important;border:1px solid var(--bi-border)!important;border-radius:17px!important;background:#fff;box-shadow:0 8px 24px rgba(15,23,42,.055);transition:transform .2s ease,box-shadow .2s ease; }
+    .bi-kpi-card::before { position:absolute;inset:0 auto 0 0;width:4px;border-radius:17px 0 0 17px;background:var(--kpi-color);content:""; }
+    .bi-kpi-card:hover { transform:translateY(-2px);box-shadow:0 13px 30px rgba(15,23,42,.085); }
+    .bi-kpi-card--revenue { --kpi-color:#b88932;--kpi-soft:#fbf3df; }
+    .bi-kpi-card--contracts { --kpi-color:#315f92;--kpi-soft:#edf4fb; }
+    .bi-kpi-card--arpt { --kpi-color:#bd7818;--kpi-soft:#fff4df; }
+    .bi-kpi-card--occupancy { --kpi-color:#16815a;--kpi-soft:#e9f7f1; }
+    .bi-kpi-card .bi-kpi-icon { width:40px;height:40px;border:0!important;border-radius:12px!important;color:var(--kpi-color)!important;background:var(--kpi-soft)!important; }
+    .bi-kpi-card .bi-kpi-label { color:#65738a;font-size:10px;font-weight:800;letter-spacing:.07em; }
+    .bi-kpi-card .bi-kpi-value { margin-top:14px;color:#13233c!important;font-family:"Plus Jakarta Sans",sans-serif!important;font-size:clamp(23px,1.7vw,30px)!important;font-weight:800!important;line-height:1.1;letter-spacing:-.04em;font-variant-numeric:tabular-nums; }
+    .bi-kpi-card .bi-kpi-value span { font-size:10px!important;letter-spacing:0; }
+    .bi-kpi-card .bi-kpi-meta { margin-top:8px;color:#718096;font-size:9px;line-height:1.5; }
+    .bi-chart-grid,.bi-secondary-grid { gap:18px!important; }
+    .bi-panel { overflow:hidden;padding:0!important;border:1px solid var(--bi-border)!important;border-radius:18px!important;background:#fff;box-shadow:0 9px 26px rgba(15,23,42,.055); }
+    .bi-panel-head { min-height:78px;padding:18px 20px!important;border-bottom:1px solid #edf1f5!important;background:linear-gradient(180deg,#fff,#fcfdfe); }
+    .bi-panel-head h3 { display:flex;align-items:center;gap:9px;color:#1b2b43!important;font-family:"Plus Jakarta Sans",sans-serif!important;font-size:14px!important;font-weight:800!important; }
+    .bi-panel-head h3 i { width:30px;height:30px;display:grid;place-items:center;border-radius:9px;color:#956b1e;background:#fbf3df;font-size:11px; }
+    .bi-panel-head p { margin-top:4px!important;color:#7b8798!important;font-size:9px!important;line-height:1.5; }
+    .bi-chart-body { padding:18px 20px 20px; }
+    .bi-chart-canvas { min-height:280px; }
+    .bi-chart-unit { display:inline-flex;align-items:center;gap:7px;padding:6px 9px;border-radius:999px;color:#526177;background:#f2f5f8;font-size:9px!important;font-weight:700;white-space:nowrap; }
+    .bi-chart-unit span { width:7px!important;height:7px!important; }
+    .bi-chart-summary { display:flex;align-items:center;gap:8px;margin-top:12px;padding:10px 12px;border:1px solid #e8edf3;border-radius:10px;color:#65738a;background:#f8fafc;font-size:9px;line-height:1.5; }
+    .bi-chart-summary i { color:var(--bi-gold); }
+    .bi-structure-legend { margin:0 20px 18px;padding:12px!important;border:1px solid #edf1f5!important;border-radius:11px;background:#fafbfd; }
+    .bi-structure-legend>div { min-height:28px; }
+    .bi-recent-panel { padding:0!important; }
+    .bi-recent-panel table { min-width:700px; }
+    .bi-recent-panel thead { position:sticky;top:0;z-index:1; }
+    @@media(max-width:1024px){.bi-filter-panel{position:static}.bi-hero{min-height:160px;padding:24px!important}.bi-chart-canvas{min-height:260px}}
+    @@media(max-width:640px){.bi-page-wrapper{padding:16px!important}.bi-hero{padding:21px!important}.bi-hero h1{font-size:26px}.bi-panel-head{align-items:flex-start!important;flex-direction:column}.bi-chart-body{padding:14px}.bi-chart-canvas{min-height:240px}.bi-filter-panel>div{width:100%}.bi-filter-control{flex:1 1 100%;justify-content:space-between}.bi-export-btn{width:100%;justify-content:center}}
 </style>
 
 <!-- TOAST THÔNG BÁO TỰ ĐỘNG -->
-<div id="biToast" class="fixed top-5 right-5 z-[100000] transform translate-x-full transition-transform duration-300 flex items-center gap-3 bg-white border border-[#E5D5B8] shadow-2xl px-4 py-3 rounded-xl">
+<div id="biToast" role="status" aria-live="polite" class="fixed top-5 right-5 z-[100000] transform translate-x-full transition-transform duration-300 flex items-center gap-3 bg-white border border-[#E5D5B8] shadow-2xl px-4 py-3 rounded-xl">
     <div class="w-7 h-7 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-xs">
         <i class="fa-solid fa-circle-check"></i>
     </div>
@@ -152,20 +197,20 @@
 </div>
 
 <!-- CONTAINER CHÍNH -->
-<div class="bi-page-wrapper p-6 lg:p-8 space-y-6 w-full max-w-[1600px] mx-auto">
+<div class="bi-page-wrapper bi-dashboard p-6 lg:p-8 space-y-6 w-full max-w-[1600px] mx-auto">
 
     <!-- ================= 1. HEADER TRANG ================= -->
-    <div class="manager-section-header flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div class="manager-section-header bi-hero flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
             <span class="backoffice-hero__eyebrow"><i class="fa-solid fa-chart-line" aria-hidden="true"></i> BÁO CÁO KINH DOANH</span>
-            <h2 class="font-serif text-2xl font-bold text-slate-900 tracking-tight">
+            <h1>
                 Phân tích doanh thu &amp; hiệu suất kinh doanh (BI)
-            </h2>
-            <p>Theo dõi doanh thu và hiệu suất kinh doanh theo kỳ báo cáo.</p>
+            </h1>
+            <p>Tổng hợp doanh thu, cơ cấu nguồn thu và hiệu suất khai thác sảnh theo từng kỳ báo cáo.</p>
         </div>
 
         <div class="flex flex-wrap items-center gap-2.5">
-            <button onclick="exportReportExcel()" class="flex items-center gap-2 px-3.5 py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-lg text-xs font-semibold transition-colors border border-slate-200 focus-ring min-h-[40px] shadow-2xs">
+            <button onclick="exportReportExcel()" class="bi-export-btn flex items-center gap-2 px-3.5 py-2 text-xs font-semibold transition-colors focus-ring min-h-[40px]">
                 <i class="fa-solid fa-file-excel text-emerald-600 text-sm"></i>
                 <span>Xuất Báo Cáo Excel</span>
             </button>
@@ -173,8 +218,9 @@
     </div>
 
     <!-- ================= 2. BỘ LỌC KỲ BÁO CÁO ================= -->
-    <section class="bg-white rounded-xl p-4 border border-slate-200 card-shadow flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center justify-between gap-4">
+    <section id="biFilterPanel" aria-label="Bộ lọc kỳ báo cáo" aria-busy="false" class="bi-filter-panel bg-white rounded-xl p-4 border border-slate-200 card-shadow flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center justify-between gap-4">
         <div class="flex flex-wrap items-center gap-3">
+            <span class="bi-filter-label"><i class="fa-solid fa-sliders" aria-hidden="true"></i>Bộ lọc báo cáo</span>
             <div class="backoffice-filter-control flex items-center bg-[#FAF8F5] border border-slate-200 rounded-lg px-3 py-1.5 min-h-[40px]">
                 <i class="fa-regular fa-calendar text-[#B89758] mr-2 text-xs"></i>
                 <label for="selectYear" class="text-xs text-slate-500 mr-1.5 font-medium">Niên độ:</label>
@@ -205,73 +251,73 @@
     </section>
 
     <!-- ================= 3. BỘ THẺ KPI ================= -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="bg-white rounded-xl p-5 border border-slate-200 card-shadow relative overflow-hidden">
+    <div class="bi-kpi-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bi-kpi-card bi-kpi-card--revenue bg-white rounded-xl p-5 border border-slate-200 relative overflow-hidden">
             <div class="flex items-center justify-between">
-                <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tổng Doanh Thu (Thực Thu)</span>
-                <div class="w-8 h-8 rounded-lg bg-[#B89758]/15 border border-[#B89758]/30 flex items-center justify-center text-[#8C6D32]">
+                <span class="bi-kpi-label text-xs font-semibold text-slate-500 uppercase tracking-wider">Tổng doanh thu thực thu</span>
+                <div class="bi-kpi-icon w-8 h-8 rounded-lg flex items-center justify-center">
                     <i class="fa-solid fa-coins text-sm"></i>
                 </div>
             </div>
             <div class="mt-3">
-                <h3 id="kpiTotalRevenue" class="font-serif text-2xl font-bold text-slate-900">
+                <h3 id="kpiTotalRevenue" class="bi-kpi-value">
                     @Model.Kpi.TotalRevenue.ToString("N0") <span class="text-xs font-sans font-normal text-slate-500">VNĐ</span>
                 </h3>
-                <p id="kpiEstimatedRevenueText" class="text-[11px] text-emerald-600 font-semibold mt-1 flex items-center gap-1">
+                <p id="kpiEstimatedRevenueText" class="bi-kpi-meta text-emerald-700 font-semibold flex items-center gap-1">
                     <i class="fa-solid fa-circle-check"></i> Đã thanh toán • Dự toán: @Model.Kpi.EstimatedTotalRevenue.ToString("N0") đ
                 </p>
             </div>
             <div class="absolute -right-2 -bottom-2 w-16 h-16 bg-[#B89758]/5 rounded-full pointer-events-none"></div>
         </div>
 
-        <div class="bg-white rounded-xl p-5 border border-slate-200 card-shadow relative overflow-hidden">
+        <div class="bi-kpi-card bi-kpi-card--contracts bg-white rounded-xl p-5 border border-slate-200 relative overflow-hidden">
             <div class="flex items-center justify-between">
-                <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Hợp Đồng &amp; Sự Kiện</span>
-                <div class="w-8 h-8 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600">
+                <span class="bi-kpi-label text-xs font-semibold text-slate-500 uppercase tracking-wider">Hợp đồng &amp; sự kiện</span>
+                <div class="bi-kpi-icon w-8 h-8 rounded-lg flex items-center justify-center">
                     <i class="fa-solid fa-file-signature text-sm"></i>
                 </div>
             </div>
             <div class="mt-3">
-                <h3 id="kpiTotalContracts" class="font-serif text-2xl font-bold text-slate-900">
+                <h3 id="kpiTotalContracts" class="bi-kpi-value">
                     @Model.Kpi.TotalContracts <span class="text-xs font-sans font-normal text-slate-500">hợp đồng</span>
                 </h3>
-                <p id="kpiTotalBookingsText" class="text-[11px] text-slate-500 mt-1">
+                <p id="kpiTotalBookingsText" class="bi-kpi-meta">
                     Tiếp nhận <strong id="kpiTotalBookings">@Model.Kpi.TotalBookings</strong> đơn tiệc (<strong id="kpiTotalTables">@Model.Kpi.TotalTables</strong> bàn)
                 </p>
             </div>
             <div class="absolute -right-2 -bottom-2 w-16 h-16 bg-blue-50/50 rounded-full pointer-events-none"></div>
         </div>
 
-        <div class="bg-white rounded-xl p-5 border border-slate-200 card-shadow relative overflow-hidden">
+        <div class="bi-kpi-card bi-kpi-card--arpt bg-white rounded-xl p-5 border border-slate-200 relative overflow-hidden">
             <div class="flex items-center justify-between">
-                <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Doanh Thu / Bàn (ARPT)</span>
-                <div class="w-8 h-8 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600">
+                <span class="bi-kpi-label text-xs font-semibold text-slate-500 uppercase tracking-wider">Doanh thu / bàn (ARPT)</span>
+                <div class="bi-kpi-icon w-8 h-8 rounded-lg flex items-center justify-center">
                     <i class="fa-solid fa-utensils text-sm"></i>
                 </div>
             </div>
             <div class="mt-3">
-                <h3 id="kpiAvgPerTable" class="font-serif text-2xl font-bold text-[#8C6D32]">
+                <h3 id="kpiAvgPerTable" class="bi-kpi-value">
                     @Model.Kpi.AverageRevenuePerTable.ToString("N0") <span class="text-xs font-sans font-normal text-slate-500">VNĐ</span>
                 </h3>
-                <p id="kpiMenuPriceText" class="text-[11px] text-slate-500 mt-1" title="Bình quân trọn gói ẩm thực, sảnh và decor trên mỗi bàn tiệc">
+                <p id="kpiMenuPriceText" class="bi-kpi-meta" title="Bình quân trọn gói ẩm thực, sảnh và decor trên mỗi bàn tiệc">
                     Menu ~@Model.Kpi.AverageMenuPricePerTable.ToString("N0") đ • Trọn gói kèm sảnh, decor
                 </p>
             </div>
             <div class="absolute -right-2 -bottom-2 w-16 h-16 bg-amber-50/50 rounded-full pointer-events-none"></div>
         </div>
 
-        <div class="bg-white rounded-xl p-5 border border-slate-200 card-shadow relative overflow-hidden">
+        <div class="bi-kpi-card bi-kpi-card--occupancy bg-white rounded-xl p-5 border border-slate-200 relative overflow-hidden">
             <div class="flex items-center justify-between">
-                <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Công Suất Khai Thác</span>
-                <div class="w-8 h-8 rounded-lg bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600">
+                <span class="bi-kpi-label text-xs font-semibold text-slate-500 uppercase tracking-wider">Công suất khai thác</span>
+                <div class="bi-kpi-icon w-8 h-8 rounded-lg flex items-center justify-center">
                     <i class="fa-solid fa-chart-line text-sm"></i>
                 </div>
             </div>
             <div class="mt-3">
-                <h3 id="kpiOccupancy" class="font-serif text-2xl font-bold text-emerald-600">
+                <h3 id="kpiOccupancy" class="bi-kpi-value">
                     @Model.Kpi.AverageOccupancyRate% <span class="text-xs font-sans font-normal text-slate-500">lấp đầy</span>
                 </h3>
-                <p class="text-[11px] text-slate-500 mt-1">
+                <p class="bi-kpi-meta">
                     Chuẩn 14 ca/tuần trên 9 đại sảnh hoàng gia
                 </p>
             </div>
@@ -280,31 +326,36 @@
     </div>
 
     <!-- ================= 4. KHU VỰC BIỂU ĐỒ TRỰC QUAN ================= -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <div class="lg:col-span-8 bg-white rounded-xl p-5 border border-slate-200 card-shadow space-y-4">
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-100 pb-3">
+    <div class="bi-chart-grid grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <section class="bi-panel lg:col-span-8 bg-white rounded-xl border border-slate-200">
+            <header class="bi-panel-head flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                 <div>
-                    <h3 class="font-serif font-bold text-base text-slate-900">Xu Hướng Doanh Thu Theo Tháng</h3>
-                    <p class="text-[11px] text-slate-500">Số liệu lũy kế từ bảng DatTiec theo các tháng trong niên độ</p>
+                    <h3><i class="fa-solid fa-arrow-trend-up" aria-hidden="true"></i>Xu hướng doanh thu theo tháng</h3>
+                    <p>So sánh biến động doanh thu thực thu giữa các tháng trong kỳ.</p>
                 </div>
-                <span class="flex items-center gap-1.5 text-xs text-slate-600">
+                <span class="bi-chart-unit flex items-center gap-1.5 text-xs text-slate-600">
                     <span class="w-3 h-3 rounded-xs bg-[#B89758]"></span> Doanh thu (Triệu VNĐ)
                 </span>
+            </header>
+            <div class="bi-chart-body">
+                <div class="bi-chart-canvas h-64 sm:h-80 w-full relative">
+                    <canvas id="monthlyRevenueChart" role="img" aria-label="Biểu đồ xu hướng doanh thu thực thu theo tháng"></canvas>
+                </div>
+                <p class="bi-chart-summary" id="monthlyChartSummary"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>Đang tổng hợp xu hướng doanh thu...</span></p>
             </div>
-            <div class="h-64 sm:h-80 w-full relative">
-                <canvas id="monthlyRevenueChart"></canvas>
-            </div>
-        </div>
+        </section>
 
-        <div class="lg:col-span-4 bg-white rounded-xl p-5 border border-slate-200 card-shadow space-y-4">
-            <div class="border-b border-slate-100 pb-3">
-                <h3 class="font-serif font-bold text-base text-slate-900">Cơ Cấu Nguồn Thu</h3>
-                <p class="text-[11px] text-slate-500">Tỷ trọng đóng góp giữa Ẩm thực, Sảnh &amp; Decor</p>
+        <section class="bi-panel lg:col-span-4 bg-white rounded-xl border border-slate-200">
+            <header class="bi-panel-head">
+                <h3><i class="fa-solid fa-chart-pie" aria-hidden="true"></i>Cơ cấu nguồn thu</h3>
+                <p>Tỷ trọng đóng góp giữa ẩm thực, sảnh và trang trí.</p>
+            </header>
+            <div class="bi-chart-body">
+                <div class="bi-chart-canvas h-56 sm:h-64 relative flex items-center justify-center">
+                    <canvas id="revenueStructureChart" role="img" aria-label="Biểu đồ tỷ trọng cơ cấu nguồn thu"></canvas>
+                </div>
             </div>
-            <div class="h-56 sm:h-64 relative flex items-center justify-center">
-                <canvas id="revenueStructureChart"></canvas>
-            </div>
-            <div id="structureLegend" class="space-y-2 pt-2 border-t border-slate-100 text-xs">
+            <div id="structureLegend" class="bi-structure-legend space-y-2 pt-2 border-t border-slate-100 text-xs">
                 @foreach (var s in Model.RevenueStructures)
                 {
                     <div class="flex items-center justify-between">
@@ -316,29 +367,32 @@
                     </div>
                 }
             </div>
-        </div>
+        </section>
     </div>
 
     <!-- ================= 5. HIỆU SUẤT SẢNH & BẢNG TIỆC GẦN NHẤT ================= -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <div class="lg:col-span-6 bg-white rounded-xl p-5 border border-slate-200 card-shadow space-y-4">
-            <div class="border-b border-slate-100 pb-3">
-                <h3 class="font-serif font-bold text-base text-slate-900">Hiệu Suất Khai Thác 9 Đại Sảnh</h3>
-                <p class="text-[11px] text-slate-500">Xếp hạng doanh thu sảnh thực tế (bảng SanhTiec)</p>
+    <div class="bi-secondary-grid grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <section class="bi-panel lg:col-span-6 bg-white rounded-xl border border-slate-200">
+            <header class="bi-panel-head">
+                <h3><i class="fa-solid fa-ranking-star" aria-hidden="true"></i>Hiệu suất khai thác sảnh</h3>
+                <p>Xếp hạng doanh thu thực thu theo từng sảnh trong kỳ.</p>
+            </header>
+            <div class="bi-chart-body">
+                <div class="bi-chart-canvas h-72 sm:h-84 relative">
+                    <canvas id="hallPerformanceChart" role="img" aria-label="Biểu đồ xếp hạng doanh thu theo sảnh"></canvas>
+                </div>
+                <p class="bi-chart-summary" id="hallChartSummary"><i class="fa-solid fa-trophy" aria-hidden="true"></i><span>Đang xác định sảnh dẫn đầu...</span></p>
             </div>
-            <div class="h-72 sm:h-84 relative">
-                <canvas id="hallPerformanceChart"></canvas>
-            </div>
-        </div>
+        </section>
 
-        <div class="lg:col-span-6 bg-white rounded-xl border border-slate-200 card-shadow flex flex-col justify-between overflow-hidden">
-            <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+        <section class="bi-panel bi-recent-panel lg:col-span-6 bg-white rounded-xl border border-slate-200 flex flex-col justify-between overflow-hidden">
+            <header class="bi-panel-head flex items-center justify-between">
                 <div>
-                    <h3 class="font-serif font-bold text-base text-slate-900">Sự Kiện Tiệc Cưới Gần Nhất</h3>
-                    <p class="text-[11px] text-slate-500">Dữ liệu thực tế từ các bản ghi đặt tiệc mới nhất</p>
+                    <h3><i class="fa-regular fa-calendar-check" aria-hidden="true"></i>Sự kiện tiệc cưới gần nhất</h3>
+                    <p>Các booking mới nhất trong kỳ báo cáo đang chọn.</p>
                 </div>
                 <span class="px-2.5 py-1 bg-slate-100 text-slate-600 rounded-md text-[11px] font-semibold"><span id="recentBookingsBadgeCount">@Model.RecentBookings.Count</span> đơn đặt tiệc</span>
-            </div>
+            </header>
 
             <div class="overflow-x-auto custom-scrollbar flex-1">
                 <table class="w-full text-left border-collapse text-xs">
@@ -392,7 +446,7 @@
                     <span>Xem ma trận lịch sảnh toàn hệ thống &rarr;</span>
                 </button>
             </div>
-        </div>
+        </section>
     </div>
 
 </div>
@@ -559,6 +613,27 @@
         let structureChart = null;
         let hallChart = null;
 
+        const doughnutCenterTextPlugin = {
+            id: 'doughnutCenterText',
+            afterDraw(chart) {
+                const { ctx, chartArea } = chart;
+                if (!chartArea) return;
+                const total = chart.data.datasets[0].data.reduce((sum, value) => sum + Number(value || 0), 0);
+                const x = (chartArea.left + chartArea.right) / 2;
+                const y = (chartArea.top + chartArea.bottom) / 2;
+                ctx.save();
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillStyle = '#17233a';
+                ctx.font = '800 24px "Plus Jakarta Sans"';
+                ctx.fillText(`${Math.round(total)}%`, x, y - 5);
+                ctx.fillStyle = '#718096';
+                ctx.font = '600 9px "Plus Jakarta Sans"';
+                ctx.fillText('TỔNG TỶ TRỌNG', x, y + 17);
+                ctx.restore();
+            }
+        };
+
         document.addEventListener('DOMContentLoaded', () => {
             initCharts(reportData);
         });
@@ -573,6 +648,9 @@
 
         function initCharts(data) {
             if (!data) return;
+            Chart.defaults.font.family = '"Plus Jakarta Sans", sans-serif';
+            Chart.defaults.color = '#64748b';
+            Chart.defaults.animation.duration = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 550;
 
             // 1. Biểu đồ cột: Doanh thu theo tháng
             const monthlyRevenues = data.monthlyRevenues || data.MonthlyRevenues || [];
@@ -580,18 +658,28 @@
             const revenues = monthlyRevenues.map(m => (m.totalRevenue ?? m.TotalRevenue ?? 0) / 1000000);
 
             const ctxMonthly = document.getElementById('monthlyRevenueChart').getContext('2d');
+            const monthlyGradient = ctxMonthly.createLinearGradient(0, 0, 0, 320);
+            monthlyGradient.addColorStop(0, 'rgba(184, 137, 50, .34)');
+            monthlyGradient.addColorStop(1, 'rgba(184, 137, 50, .02)');
             if (monthlyChart) monthlyChart.destroy();
             monthlyChart = new Chart(ctxMonthly, {
-                type: 'bar',
+                type: 'line',
                 data: {
                     labels: months,
                     datasets: [{
                         label: 'Doanh thu (Triệu VNĐ)',
                         data: revenues,
-                        backgroundColor: '#B89758',
-                        hoverBackgroundColor: '#8C6D32',
-                        borderRadius: 6,
-                        maxBarThickness: 40
+                        borderColor: '#a87824',
+                        backgroundColor: monthlyGradient,
+                        borderWidth: 3,
+                        fill: true,
+                        tension: .34,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        pointBackgroundColor: '#fff',
+                        pointBorderColor: '#a87824',
+                        pointBorderWidth: 2,
+                        pointHitRadius: 12
                     }]
                 },
                 options: {
@@ -600,21 +688,35 @@
                     plugins: {
                         legend: { display: false },
                         tooltip: {
+                            displayColors: false,
+                            backgroundColor: '#10294e',
+                            titleFont: { weight: '700' },
+                            padding: 11,
+                            cornerRadius: 9,
                             callbacks: {
-                                label: (ctx) => `${ctx.parsed.y.toLocaleString('vi-VN')} Triệu VNĐ`
+                                label: (ctx) => `Doanh thu: ${ctx.parsed.y.toLocaleString('vi-VN')} triệu VNĐ`
                             }
                         }
                     },
                     scales: {
                         y: {
                             beginAtZero: true,
-                            ticks: { callback: (v) => v + ' tr' },
-                            grid: { color: '#F1F5F9' }
+                            border: { display: false },
+                            ticks: { padding: 9, font: { size: 10 }, callback: (v) => v.toLocaleString('vi-VN') + ' tr' },
+                            grid: { color: '#edf1f5', drawTicks: false }
                         },
-                        x: { grid: { display: false } }
+                        x: { border: { display: false }, ticks: { padding: 8, font: { size: 10, weight: '600' } }, grid: { display: false } }
                     }
                 }
             });
+            const monthlySummary = document.querySelector('#monthlyChartSummary span');
+            if (monthlySummary) {
+                if (!revenues.length || revenues.every(value => value === 0)) monthlySummary.textContent = 'Chưa có doanh thu được ghi nhận trong kỳ báo cáo này.';
+                else {
+                    const peak = Math.max(...revenues); const peakIndex = revenues.indexOf(peak);
+                    monthlySummary.textContent = `${months[peakIndex]} có doanh thu cao nhất: ${peak.toLocaleString('vi-VN')} triệu VNĐ.`;
+                }
+            }
 
             // 2. Biểu đồ tròn: Cơ cấu doanh thu
             const revenueStructures = data.revenueStructures || data.RevenueStructures || [];
@@ -631,17 +733,23 @@
                     datasets: [{
                         data: valuesStruct,
                         backgroundColor: colorsStruct,
-                        borderWidth: 2,
-                        borderColor: '#FFFFFF'
+                        borderWidth: 4,
+                        borderColor: '#FFFFFF',
+                        hoverOffset: 7,
+                        spacing: 1
                     }]
                 },
+                plugins: [doughnutCenterTextPlugin],
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    cutout: '70%',
+                    cutout: '72%',
                     plugins: {
                         legend: { display: false },
                         tooltip: {
+                            backgroundColor: '#10294e',
+                            padding: 11,
+                            cornerRadius: 9,
                             callbacks: {
                                 label: (ctx) => ` ${ctx.label}: ${ctx.parsed}%`
                             }
@@ -651,11 +759,13 @@
             });
 
             // 3. Biểu đồ ngang: Hiệu suất 9 đại sảnh
-            const hallPerformances = data.hallPerformances || data.HallPerformances || [];
+            const hallPerformances = [...(data.hallPerformances || data.HallPerformances || [])].sort((a, b) =>
+                Number(b.totalRevenue ?? b.TotalRevenue ?? 0) - Number(a.totalRevenue ?? a.TotalRevenue ?? 0));
             const hallNames = hallPerformances.map(h => h.hallName || h.HallName);
             const hallRevs = hallPerformances.map(h => (h.totalRevenue ?? h.TotalRevenue ?? 0) / 1000000);
 
             const ctxHall = document.getElementById('hallPerformanceChart').getContext('2d');
+            const hallColors = hallRevs.map((_, index) => index === 0 ? '#b88932' : index === 1 ? '#315f92' : '#9fb0c4');
             if (hallChart) hallChart.destroy();
             hallChart = new Chart(ctxHall, {
                 type: 'bar',
@@ -664,9 +774,11 @@
                     datasets: [{
                         label: 'Doanh thu (Triệu VNĐ)',
                         data: hallRevs,
-                        backgroundColor: '#1E293B',
-                        hoverBackgroundColor: '#B89758',
-                        borderRadius: 4
+                        backgroundColor: hallColors,
+                        hoverBackgroundColor: hallColors.map(color => color === '#9fb0c4' ? '#7f93aa' : color),
+                        borderRadius: 7,
+                        borderSkipped: false,
+                        maxBarThickness: 24
                     }]
                 },
                 options: {
@@ -676,26 +788,37 @@
                     plugins: {
                         legend: { display: false },
                         tooltip: {
+                            displayColors: false,
+                            backgroundColor: '#10294e',
+                            padding: 11,
+                            cornerRadius: 9,
                             callbacks: {
-                                label: (ctx) => `${ctx.parsed.x.toLocaleString('vi-VN')} Triệu VNĐ`
+                                label: (ctx) => `Doanh thu: ${ctx.parsed.x.toLocaleString('vi-VN')} triệu VNĐ`
                             }
                         }
                     },
                     scales: {
                         x: {
                             beginAtZero: true,
-                            ticks: { callback: (v) => v + ' tr' },
-                            grid: { color: '#F1F5F9' }
+                            border: { display: false },
+                            ticks: { padding: 8, font: { size: 9 }, callback: (v) => v.toLocaleString('vi-VN') + ' tr' },
+                            grid: { color: '#edf1f5', drawTicks: false }
                         },
-                        y: { grid: { display: false } }
+                        y: { border: { display: false }, ticks: { color: '#334155', font: { size: 10, weight: '700' } }, grid: { display: false } }
                     }
                 }
             });
+            const hallSummary = document.querySelector('#hallChartSummary span');
+            if (hallSummary) hallSummary.textContent = hallNames.length
+                ? `${hallNames[0]} đang dẫn đầu với ${hallRevs[0].toLocaleString('vi-VN')} triệu VNĐ doanh thu.`
+                : 'Chưa có dữ liệu doanh thu sảnh trong kỳ báo cáo này.';
         }
 
         async function onFilterChange() {
             const year = document.getElementById('selectYear').value;
             const quarter = document.getElementById('selectQuarter').value;
+            const filterPanel = document.getElementById('biFilterPanel');
+            filterPanel?.setAttribute('aria-busy', 'true');
 
             try {
                 const res = await fetch(`/AdminReport/GetReportData?year=${year}&quarter=${quarter}`);
@@ -723,6 +846,8 @@
             } catch (e) {
                 console.error("Lỗi khi lọc báo cáo BI:", e);
                 showBiToast('Lỗi', 'Không thể kết nối máy chủ để cập nhật dữ liệu.');
+            } finally {
+                filterPanel?.setAttribute('aria-busy', 'false');
             }
         }
 

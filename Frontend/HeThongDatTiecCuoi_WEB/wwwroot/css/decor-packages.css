@@ -74,40 +74,6 @@
     line-height: 1.7;
 }
 
-/* Breadcrumb */
-.decor-breadcrumb {
-    border-bottom: 1px solid var(--dp-hairline);
-    background: var(--dp-surface);
-}
-
-.decor-breadcrumb .home-container {
-    display: flex;
-    min-height: 52px;
-    align-items: center;
-    gap: 8px;
-    color: var(--dp-muted);
-    font-size: 11.5px;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-}
-
-.decor-breadcrumb a {
-    display: inline-flex;
-    min-height: 44px;
-    align-items: center;
-    gap: 6px;
-    color: var(--dp-muted);
-    transition: color 0.2s ease;
-}
-
-.decor-breadcrumb a:hover {
-    color: var(--dp-charcoal);
-}
-
-.decor-breadcrumb .material-symbols-outlined {
-    font-size: 15px;
-}
-
 /* Detail Main & Overview */
 .decor-catalog,
 .decor-detail-main {

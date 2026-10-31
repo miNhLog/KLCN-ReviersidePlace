@@ -21,15 +21,21 @@ public sealed class AdminBookingController : ControllerBase
     private readonly IStatusService _statusService;
     private readonly ICoordinationAssignmentService _coordinationAssignments;
     private readonly IHallPricingPolicyService _hallPricing;
+    private readonly IReviewQrService? _reviewQrService;
+    private readonly ILogger<AdminBookingController>? _logger;
 
     public AdminBookingController(ApplicationDbContext context, IStatusService statusService,
         ICoordinationAssignmentService coordinationAssignments,
-        IHallPricingPolicyService? hallPricing = null)
+        IHallPricingPolicyService? hallPricing = null,
+        IReviewQrService? reviewQrService = null,
+        ILogger<AdminBookingController>? logger = null)
     {
         _context = context;
         _statusService = statusService;
         _coordinationAssignments = coordinationAssignments;
         _hallPricing = hallPricing ?? new HallPricingPolicyService();
+        _reviewQrService = reviewQrService;
+        _logger = logger;
     }
 
     [HttpGet]
@@ -141,6 +147,9 @@ public sealed class AdminBookingController : ControllerBase
                 ContractId = b.Contract != null ? b.Contract.ContractId : null,
                 ContractCode = b.Contract != null ? b.Contract.ContractCode : null,
                 ContractStatusCode = b.Contract != null ? b.Contract.Status.StatusCode : null,
+                HasReviewQr = b.ReviewQrCode != null,
+                ReviewQrToken = b.ReviewQrCode != null ? b.ReviewQrCode.QrCode : null,
+                ReviewCount = b.ReviewQrCode != null ? b.ReviewQrCode.Reviews.Count : 0,
                 Services = b.BookingServices
                     .Where(item => item.DataStatusId == existingDataStatusId)
                     .Select(item => new BookingServiceDto
@@ -152,6 +161,22 @@ public sealed class AdminBookingController : ControllerBase
                         FinalUnitPrice = item.FinalUnitPrice
                     }).ToList()
             }).SingleOrDefaultAsync();
+
+        if (detail is not null && detail.HasReviewQr)
+        {
+            var qrStatus = await _context.ReviewQrCodes.AsNoTracking()
+                .Where(q => q.BookingId == id)
+                .Select(q => q.Status.StatusCode)
+                .SingleAsync();
+            var locked = qrStatus == "LOCKED" || detail.StatusCode == BookingStatusCodes.Cancelled;
+            var window = _reviewQrService?.GetWindow(new HallSchedule { Date = detail.EventDate, Shift = detail.Shift }, locked);
+            if (window is not null)
+            {
+                detail.ReviewQrState = window.State.ToString();
+                detail.ReviewOpensAt = window.OpensAt;
+                detail.ReviewExpiresAt = window.ExpiresAt;
+            }
+        }
 
         return detail == null ? NotFound(new { message = "Không tìm thấy đơn tiệc." }) : Ok(detail);
     }
@@ -324,6 +349,15 @@ public sealed class AdminBookingController : ControllerBase
         _context.WeddingBookings.Add(booking);
         await _context.SaveChangesAsync();
         await transaction.CommitAsync();
+        try
+        {
+            if (_reviewQrService is not null)
+                await _reviewQrService.EnsureForBookingAsync(booking.BookingId, HttpContext.RequestAborted);
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "Booking {BookingId} đã lưu nhưng tạo QR đánh giá thất bại; worker sẽ tạo bù.", booking.BookingId);
+        }
         return Ok(new { success = true, bookingId = booking.BookingId, bookingCode = booking.BookingCode });
     }
 
