@@ -796,6 +796,9 @@ public sealed class ApplicationDbContext : DbContext
                 .WithMany(x => x.Reviews)
                 .HasForeignKey(x => x.ReviewQrCodeId)
                 .OnDelete(DeleteBehavior.NoAction);
+            entity.HasIndex(x => x.ReviewQrCodeId, "UX_DanhGia_ChuTiec_MaQR")
+                .IsUnique()
+                .HasFilter("[LoaiNguoiDanhGia] = N'Chủ tiệc'");
         });
 
         modelBuilder.Entity<AuditLog>(entity =>

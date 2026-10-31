@@ -61,6 +61,8 @@ builder.Services.Configure<MailSettings>(
     builder.Configuration.GetSection(MailSettings.SectionName));
 builder.Services.Configure<PasswordResetOptions>(
     builder.Configuration.GetSection(PasswordResetOptions.SectionName));
+builder.Services.Configure<ReviewQrOptions>(
+    builder.Configuration.GetSection(ReviewQrOptions.SectionName));
 builder.Services
     .AddOptions<AccountProvisioningOptions>()
     .Bind(builder.Configuration.GetSection(AccountProvisioningOptions.SectionName))
@@ -145,6 +147,10 @@ builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IIncidentService, IncidentService>();
 builder.Services.AddScoped<ICoordinationAssignmentService, CoordinationAssignmentService>();
 builder.Services.AddScoped<ChecklistService>();
+builder.Services.AddScoped<IReviewQrEligibilityPolicy, ReviewQrEligibilityPolicy>();
+builder.Services.AddScoped<IReviewQrService, ReviewQrService>();
+builder.Services.AddScoped<IReviewStatisticsService, ReviewStatisticsService>();
+builder.Services.AddHostedService<ReviewQrBackfillWorker>();
 builder.Services.AddScoped<IHallManagerDashboardService, HallManagerDashboardService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
@@ -199,6 +205,16 @@ builder.Services.AddRateLimiter(options =>
             {
                 PermitLimit = 15,
                 Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+                AutoReplenishment = true
+            }));
+    options.AddPolicy("wedding-review", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: $"{httpContext.Connection.RemoteIpAddress}:{httpContext.Request.RouteValues["token"]}",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
+                Window = TimeSpan.FromMinutes(10),
                 QueueLimit = 0,
                 AutoReplenishment = true
             }));

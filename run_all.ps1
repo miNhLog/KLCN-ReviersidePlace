@@ -29,12 +29,12 @@ Start-Process powershell -WindowStyle Hidden -WorkingDirectory $aiDirectory -Arg
 Start-Sleep -Seconds 2
 
 Write-Host ">>> [3/4] Khoi dong Backend API (ASP.NET Core - Port 7101)..." -ForegroundColor Green
-Start-Process powershell -WindowStyle Hidden -WorkingDirectory $backendDirectory -ArgumentList "-NoProfile", "-Command", "dotnet run"
+Start-Process powershell -WindowStyle Hidden -WorkingDirectory $backendDirectory -ArgumentList "-NoProfile", "-Command", "dotnet watch --non-interactive"
 
 Start-Sleep -Seconds 3
 
 Write-Host ">>> [4/4] Khoi dong Frontend Web (ASP.NET Core MVC - Port 7102)..." -ForegroundColor Magenta
-Start-Process powershell -WindowStyle Hidden -WorkingDirectory $frontendDirectory -ArgumentList "-NoProfile", "-Command", "dotnet run"
+Start-Process powershell -WindowStyle Hidden -WorkingDirectory $frontendDirectory -ArgumentList "-NoProfile", "-Command", "dotnet watch --non-interactive"
 
 Write-Host "==============================================================================" -ForegroundColor Cyan
 Write-Host " Toan bo 3 service dang duoc khoi dong tren cac cua so rieng biet!" -ForegroundColor Cyan

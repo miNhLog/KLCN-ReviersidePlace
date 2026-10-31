@@ -580,7 +580,10 @@
                         {
                             <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;border:1px solid #E9E2D3;border-radius:12px;padding:10px 14px;font-size:13px;">
                                 <span><span class="rp-code" style="font-size:12px;">@b.BookingCode</span> · @b.HallName · @b.Shift @b.EventDate.ToString("dd/MM/yyyy") · @b.Status</span>
-                                <a asp-controller="MyBooking" asp-action="Index" asp-route-bookingCode="@b.BookingCode" asp-route-phone="@b.PhoneNumber" style="color:#B89758;font-weight:700;">Xem chi tiết →</a>
+                                <span>
+                                    <a asp-controller="MyBooking" asp-action="Index" asp-route-bookingCode="@b.BookingCode" asp-route-phone="@b.PhoneNumber" style="color:#B89758;font-weight:700;">Xem chi tiết →</a>
+                                    <a href="/danh-gia/chu-tiec/@Uri.EscapeDataString(b.BookingCode)" style="margin-left:14px;color:#8b642a;font-weight:700;">Đánh giá buổi tiệc</a>
+                                </span>
                             </div>
                         }
                     </div>

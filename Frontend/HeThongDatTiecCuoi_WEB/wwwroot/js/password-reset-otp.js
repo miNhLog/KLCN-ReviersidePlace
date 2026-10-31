@@ -11,7 +11,7 @@
 
     if (!loginForm || !flow) return;
 
-    const showFeedback = (message, success = false) => {
+    const showFeedback = (message, success = false, title = success ? 'Thành công' : 'Có lỗi xảy ra') => {
         if (!message) return;
         let region = document.querySelector('.auth-toast-region');
         if (!region) {
@@ -29,16 +29,28 @@
         icon.className = 'material-symbols-outlined';
         icon.setAttribute('aria-hidden', 'true');
         icon.textContent = success ? 'check_circle' : 'error';
-        const content = document.createElement('span');
-        content.textContent = message;
+        const content = document.createElement('div');
+        const heading = document.createElement('strong');
+        heading.textContent = title;
+        const description = document.createElement('span');
+        description.textContent = message;
+        content.append(heading, description);
         toast.append(icon, content);
-        region.replaceChildren(toast);
+        region.append(toast);
 
         window.setTimeout(() => {
             toast.classList.add('is-leaving');
             window.setTimeout(() => toast.remove(), 220);
         }, 4500);
     };
+
+    document.querySelectorAll('#authInitialMessages [data-auth-toast]').forEach(node => {
+        showFeedback(
+            node.textContent.trim(),
+            node.dataset.authToast === 'success',
+            node.dataset.authToastTitle
+        );
+    });
 
     const showStep = step => {
         [sendForm, verifyForm, completeForm].forEach((form, index) => form.hidden = index + 1 !== step);

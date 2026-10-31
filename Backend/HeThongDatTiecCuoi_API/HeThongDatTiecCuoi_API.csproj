@@ -17,6 +17,7 @@
     </PackageReference>
     <PackageReference Include="payOS" Version="2.1.0" />
     <PackageReference Include="QuestPDF" Version="2026.9.1" />
+    <PackageReference Include="QRCoder" Version="1.6.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
   </ItemGroup>
 
