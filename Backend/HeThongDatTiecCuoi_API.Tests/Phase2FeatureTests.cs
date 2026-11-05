@@ -29,7 +29,7 @@ public sealed class Phase2FeatureTests
             .Options;
 
     [Fact]
-    public async Task AuthService_Login_With_EmployeeCode_Succeeds()
+    public async Task AuthService_Login_With_Phone_Succeeds_And_EmployeeCode_Is_Rejected()
     {
         var options = CreateInMemoryOptions();
         await using var db = new ApplicationDbContext(options);
@@ -81,16 +81,24 @@ public sealed class Phase2FeatureTests
             opt,
             NullLogger<AuthService>.Instance);
 
-        // Login with lowercase employee code "ql0001"
-        var result = await authService.LoginAsync(new LoginRequest
+        var phoneResult = await authService.LoginAsync(new LoginRequest
+        {
+            Identifier = "0987654321",
+            Password = "Password123@"
+        }, default);
+
+        Assert.True(phoneResult.Succeeded);
+        Assert.NotNull(phoneResult.Value);
+        Assert.Equal("mock_token", phoneResult.Value.AccessToken);
+
+        var employeeCodeResult = await authService.LoginAsync(new LoginRequest
         {
             Identifier = "ql0001",
             Password = "Password123@"
         }, default);
 
-        Assert.True(result.Succeeded);
-        Assert.NotNull(result.Value);
-        Assert.Equal("mock_token", result.Value.AccessToken);
+        Assert.False(employeeCodeResult.Succeeded);
+        Assert.Equal(StatusCodes.Status401Unauthorized, employeeCodeResult.StatusCode);
     }
 
     [Fact]

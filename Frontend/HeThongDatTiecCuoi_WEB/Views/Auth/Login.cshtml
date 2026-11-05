@@ -55,8 +55,8 @@
                 <input asp-for="ReturnUrl" type="hidden" />
 
                 <div class="field">
-                    <label asp-for="Identifier">Email, số điện thoại hoặc mã nhân viên <i>*</i></label>
-                    <div class="input-wrap"><span class="material-symbols-outlined" aria-hidden="true">person</span><input asp-for="Identifier" autocomplete="username" placeholder="VD: QL0001, admin@riversideplace.vn..." /></div>
+                    <label asp-for="Identifier">Email hoặc số điện thoại <i>*</i></label>
+                    <div class="input-wrap"><span class="material-symbols-outlined" aria-hidden="true">person</span><input asp-for="Identifier" autocomplete="username" placeholder="VD: admin@riversideplace.vn hoặc 0901234567" /></div>
                     <span asp-validation-for="Identifier" class="field-error"></span>
                 </div>
 
@@ -71,9 +71,7 @@
                     <button class="muted-link auth-link-button" id="openForgotPassword" type="button">Quên mật khẩu?</button>
                 </div>
 
-                <button class="primary-button" type="submit"><span>Đăng nhập an toàn</span><span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span></button>
-
-                <p class="auth-security-note"><span class="material-symbols-outlined" aria-hidden="true">encrypted</span>Kết nối được mã hóa và bảo vệ theo phiên đăng nhập.</p>
+                <button class="primary-button" type="submit"><span>Đăng nhập</span><span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span></button>
 
             </form>
 

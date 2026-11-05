@@ -39,12 +39,12 @@
 
 <style>
     .bi-page-wrapper {
-        font-family: 'Plus Jakarta Sans', sans-serif;
+        font-family: 'Inter', sans-serif;
         color: #1E293B;
     }
 
         .bi-page-wrapper .font-serif {
-            font-family: 'Playfair Display', serif;
+            font-family: 'Inter', sans-serif;
         }
 
     .card-shadow {
@@ -181,6 +181,24 @@
     .bi-recent-panel { padding:0!important; }
     .bi-recent-panel table { min-width:700px; }
     .bi-recent-panel thead { position:sticky;top:0;z-index:1; }
+
+    html[data-admin-theme="dark"] .admin-metis-app .bi-page-wrapper { color:var(--rp-text); }
+    html[data-admin-theme="dark"] .admin-metis-app :is(.bi-hero,.bi-filter-panel,.bi-kpi-card,.bi-panel,#biToast) { border-color:var(--rp-border)!important;background:var(--rp-surface)!important;box-shadow:none!important; }
+    html[data-admin-theme="dark"] .admin-metis-app .bi-panel-head { border-color:var(--rp-border)!important;background:var(--rp-surface)!important; }
+    html[data-admin-theme="dark"] .admin-metis-app :is(.bi-hero h1,.bi-kpi-value,.bi-panel-head h3,.bi-filter-label) { color:var(--rp-text)!important; }
+    html[data-admin-theme="dark"] .admin-metis-app :is(.bi-hero p,.bi-kpi-label,.bi-kpi-meta,.bi-panel-head p,.bi-chart-unit,.bi-chart-summary,.bi-structure-legend) { color:var(--rp-text-secondary)!important; }
+    html[data-admin-theme="dark"] .admin-metis-app :is(.bi-chart-unit,.bi-chart-summary,.bi-structure-legend,.bi-filter-control) { border-color:var(--rp-border)!important;background:var(--rp-surface-muted)!important; }
+    html[data-admin-theme="dark"] .admin-metis-app .bi-filter-control :is(label,select) { color:var(--rp-text)!important; }
+    html[data-admin-theme="dark"] .admin-metis-app .bi-recent-panel :is(thead tr,.p-3) { border-color:var(--rp-border)!important;background:var(--rp-surface-muted)!important; }
+    html[data-admin-theme="dark"] .admin-metis-app .bi-recent-panel tbody { border-color:var(--rp-border)!important;background:var(--rp-surface)!important; }
+    html[data-admin-theme="dark"] .admin-metis-app .bi-recent-panel tbody tr:hover { background:var(--rp-surface-hover)!important; }
+    html[data-admin-theme="dark"] .admin-metis-app .bi-dashboard :is(.text-slate-900,.text-slate-800,.text-slate-700) { color:var(--rp-text)!important; }
+    html[data-admin-theme="dark"] .admin-metis-app .bi-dashboard :is(.text-slate-600,.text-slate-500,.text-slate-400) { color:var(--rp-text-secondary)!important; }
+    html[data-admin-theme="dark"] .admin-metis-app #hallMatrixModal > div { border-color:var(--rp-border)!important;background:var(--rp-surface)!important; }
+    html[data-admin-theme="dark"] .admin-metis-app #hallMatrixModal :is(header,footer,.matrix-scroll-container,#matrixLoading,#matrixLoading>div) { border-color:var(--rp-border)!important;background:var(--rp-surface)!important; }
+    html[data-admin-theme="dark"] .admin-metis-app #hallMatrixModal :is(.text-slate-900,.text-slate-800,.text-slate-700) { color:var(--rp-text)!important; }
+    html[data-admin-theme="dark"] .admin-metis-app #hallMatrixModal :is(.text-slate-600,.text-slate-500,.text-slate-400,.text-slate-300) { color:var(--rp-text-secondary)!important; }
+    html[data-admin-theme="dark"] .admin-metis-app #matrixBodyRows { background:var(--rp-surface)!important; }
     @@media(max-width:1024px){.bi-filter-panel{position:static}.bi-hero{min-height:160px;padding:24px!important}.bi-chart-canvas{min-height:260px}}
     @@media(max-width:640px){.bi-page-wrapper{padding:16px!important}.bi-hero{padding:21px!important}.bi-hero h1{font-size:26px}.bi-panel-head{align-items:flex-start!important;flex-direction:column}.bi-chart-body{padding:14px}.bi-chart-canvas{min-height:240px}.bi-filter-panel>div{width:100%}.bi-filter-control{flex:1 1 100%;justify-content:space-between}.bi-export-btn{width:100%;justify-content:center}}
 </style>
@@ -613,6 +631,24 @@
         let structureChart = null;
         let hallChart = null;
 
+        const getReportChartTheme = () => {
+            const styles = getComputedStyle(document.body);
+            const read = name => styles.getPropertyValue(name).trim();
+            const dark = document.documentElement.dataset.adminTheme === 'dark';
+            return {
+                dark,
+                text: read('--rp-text'),
+                secondary: read('--rp-text-secondary'),
+                muted: read('--rp-text-muted'),
+                panel: read('--rp-surface'),
+                grid: read('--rp-border'),
+                gold: read('--rp-gold-600') || read('--chart-role-1'),
+                palette: [1, 2, 3, 4].map(index => read(`--chart-role-${index}`)),
+                tooltip: read('--chart-tooltip-bg'),
+                tooltipText: read('--chart-tooltip-text')
+            };
+        };
+
         const doughnutCenterTextPlugin = {
             id: 'doughnutCenterText',
             afterDraw(chart) {
@@ -624,11 +660,12 @@
                 ctx.save();
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
-                ctx.fillStyle = '#17233a';
-                ctx.font = '800 24px "Plus Jakarta Sans"';
+                const theme = getReportChartTheme();
+                ctx.fillStyle = theme.text;
+                ctx.font = '800 24px "Inter"';
                 ctx.fillText(`${Math.round(total)}%`, x, y - 5);
-                ctx.fillStyle = '#718096';
-                ctx.font = '600 9px "Plus Jakarta Sans"';
+                ctx.fillStyle = theme.secondary;
+                ctx.font = '600 9px "Inter"';
                 ctx.fillText('TỔNG TỶ TRỌNG', x, y + 17);
                 ctx.restore();
             }
@@ -637,6 +674,8 @@
         document.addEventListener('DOMContentLoaded', () => {
             initCharts(reportData);
         });
+
+        window.addEventListener('admin-theme-change', () => initCharts(reportData));
 
         function showBiToast(title, msg) {
             const toast = document.getElementById('biToast');
@@ -648,8 +687,9 @@
 
         function initCharts(data) {
             if (!data) return;
-            Chart.defaults.font.family = '"Plus Jakarta Sans", sans-serif';
-            Chart.defaults.color = '#64748b';
+            const theme = getReportChartTheme();
+            Chart.defaults.font.family = '"Inter", sans-serif';
+            Chart.defaults.color = theme.secondary;
             Chart.defaults.animation.duration = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 550;
 
             // 1. Biểu đồ cột: Doanh thu theo tháng
@@ -659,8 +699,8 @@
 
             const ctxMonthly = document.getElementById('monthlyRevenueChart').getContext('2d');
             const monthlyGradient = ctxMonthly.createLinearGradient(0, 0, 0, 320);
-            monthlyGradient.addColorStop(0, 'rgba(184, 137, 50, .34)');
-            monthlyGradient.addColorStop(1, 'rgba(184, 137, 50, .02)');
+            monthlyGradient.addColorStop(0, theme.dark ? 'rgba(227, 193, 117, .30)' : 'rgba(154, 113, 39, .30)');
+            monthlyGradient.addColorStop(1, theme.dark ? 'rgba(227, 193, 117, .02)' : 'rgba(154, 113, 39, .02)');
             if (monthlyChart) monthlyChart.destroy();
             monthlyChart = new Chart(ctxMonthly, {
                 type: 'line',
@@ -669,15 +709,15 @@
                     datasets: [{
                         label: 'Doanh thu (Triệu VNĐ)',
                         data: revenues,
-                        borderColor: '#a87824',
+                        borderColor: theme.gold,
                         backgroundColor: monthlyGradient,
                         borderWidth: 3,
                         fill: true,
                         tension: .34,
                         pointRadius: 4,
                         pointHoverRadius: 6,
-                        pointBackgroundColor: '#fff',
-                        pointBorderColor: '#a87824',
+                        pointBackgroundColor: theme.panel,
+                        pointBorderColor: theme.gold,
                         pointBorderWidth: 2,
                         pointHitRadius: 12
                     }]
@@ -689,7 +729,11 @@
                         legend: { display: false },
                         tooltip: {
                             displayColors: false,
-                            backgroundColor: '#10294e',
+                            backgroundColor: theme.tooltip,
+                            titleColor: theme.tooltipText,
+                            bodyColor: theme.tooltipText,
+                            borderColor: theme.grid,
+                            borderWidth: 1,
                             titleFont: { weight: '700' },
                             padding: 11,
                             cornerRadius: 9,
@@ -702,10 +746,10 @@
                         y: {
                             beginAtZero: true,
                             border: { display: false },
-                            ticks: { padding: 9, font: { size: 10 }, callback: (v) => v.toLocaleString('vi-VN') + ' tr' },
-                            grid: { color: '#edf1f5', drawTicks: false }
+                            ticks: { color: theme.secondary, padding: 9, font: { size: 10 }, callback: (v) => v.toLocaleString('vi-VN') + ' tr' },
+                            grid: { color: theme.grid, drawTicks: false }
                         },
-                        x: { border: { display: false }, ticks: { padding: 8, font: { size: 10, weight: '600' } }, grid: { display: false } }
+                        x: { border: { display: false }, ticks: { color: theme.secondary, padding: 8, font: { size: 10, weight: '600' } }, grid: { display: false } }
                     }
                 }
             });
@@ -722,7 +766,9 @@
             const revenueStructures = data.revenueStructures || data.RevenueStructures || [];
             const labelsStruct = revenueStructures.map(s => s.categoryName || s.CategoryName);
             const valuesStruct = revenueStructures.map(s => s.percentage ?? s.Percentage ?? 0);
-            const colorsStruct = revenueStructures.map(s => s.colorHex || s.ColorHex || '#B89758');
+            const colorsStruct = theme.dark
+                ? revenueStructures.map((_, index) => theme.palette[index % theme.palette.length])
+                : revenueStructures.map((s, index) => s.colorHex || s.ColorHex || theme.palette[index % theme.palette.length]);
 
             const ctxStructure = document.getElementById('revenueStructureChart').getContext('2d');
             if (structureChart) structureChart.destroy();
@@ -734,7 +780,7 @@
                         data: valuesStruct,
                         backgroundColor: colorsStruct,
                         borderWidth: 4,
-                        borderColor: '#FFFFFF',
+                        borderColor: theme.panel,
                         hoverOffset: 7,
                         spacing: 1
                     }]
@@ -747,7 +793,11 @@
                     plugins: {
                         legend: { display: false },
                         tooltip: {
-                            backgroundColor: '#10294e',
+                            backgroundColor: theme.tooltip,
+                            titleColor: theme.tooltipText,
+                            bodyColor: theme.tooltipText,
+                            borderColor: theme.grid,
+                            borderWidth: 1,
                             padding: 11,
                             cornerRadius: 9,
                             callbacks: {
@@ -757,6 +807,7 @@
                     }
                 }
             });
+            updateStructureLegend(revenueStructures);
 
             // 3. Biểu đồ ngang: Hiệu suất 9 đại sảnh
             const hallPerformances = [...(data.hallPerformances || data.HallPerformances || [])].sort((a, b) =>
@@ -765,7 +816,7 @@
             const hallRevs = hallPerformances.map(h => (h.totalRevenue ?? h.TotalRevenue ?? 0) / 1000000);
 
             const ctxHall = document.getElementById('hallPerformanceChart').getContext('2d');
-            const hallColors = hallRevs.map((_, index) => index === 0 ? '#b88932' : index === 1 ? '#315f92' : '#9fb0c4');
+            const hallColors = hallRevs.map((_, index) => theme.palette[Math.min(index, theme.palette.length - 1)]);
             if (hallChart) hallChart.destroy();
             hallChart = new Chart(ctxHall, {
                 type: 'bar',
@@ -775,7 +826,7 @@
                         label: 'Doanh thu (Triệu VNĐ)',
                         data: hallRevs,
                         backgroundColor: hallColors,
-                        hoverBackgroundColor: hallColors.map(color => color === '#9fb0c4' ? '#7f93aa' : color),
+                        hoverBackgroundColor: hallColors,
                         borderRadius: 7,
                         borderSkipped: false,
                         maxBarThickness: 24
@@ -789,7 +840,11 @@
                         legend: { display: false },
                         tooltip: {
                             displayColors: false,
-                            backgroundColor: '#10294e',
+                            backgroundColor: theme.tooltip,
+                            titleColor: theme.tooltipText,
+                            bodyColor: theme.tooltipText,
+                            borderColor: theme.grid,
+                            borderWidth: 1,
                             padding: 11,
                             cornerRadius: 9,
                             callbacks: {
@@ -801,10 +856,10 @@
                         x: {
                             beginAtZero: true,
                             border: { display: false },
-                            ticks: { padding: 8, font: { size: 9 }, callback: (v) => v.toLocaleString('vi-VN') + ' tr' },
-                            grid: { color: '#edf1f5', drawTicks: false }
+                            ticks: { color: theme.secondary, padding: 8, font: { size: 9 }, callback: (v) => v.toLocaleString('vi-VN') + ' tr' },
+                            grid: { color: theme.grid, drawTicks: false }
                         },
-                        y: { border: { display: false }, ticks: { color: '#334155', font: { size: 10, weight: '700' } }, grid: { display: false } }
+                        y: { border: { display: false }, ticks: { color: theme.text, font: { size: 10, weight: '700' } }, grid: { display: false } }
                     }
                 }
             });
@@ -945,10 +1000,13 @@
             if (!legendContainer) return;
             legendContainer.innerHTML = '';
             const list = structures || [];
+            const theme = getReportChartTheme();
 
-            list.forEach(s => {
+            list.forEach((s, index) => {
                 const name = s.categoryName || s.CategoryName || '';
-                const color = s.colorHex || s.ColorHex || '#B89758';
+                const color = theme.dark
+                    ? theme.palette[index % theme.palette.length]
+                    : s.colorHex || s.ColorHex || theme.palette[index % theme.palette.length];
                 const pct = s.percentage ?? s.Percentage ?? 0;
 
                 legendContainer.innerHTML += `

@@ -1,0 +1,26 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "riverside-admin-ui",
+  "version": "0.1.0",
+  "description": "Guides controlled design, review, refactoring, and implementation of Riverside Palace admin and dashboard interfaces.",
+  "author": {
+    "name": "KIEULOAN"
+  },
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Riverside Admin UI",
+        "shortDescription": "Thiết kế admin Riverside",
+        "longDescription": "Thiết kế, rà soát và chỉnh sửa có kiểm soát giao diện admin/dashboard Riverside Palace, ưu tiên giữ nguyên nghiệp vụ, dữ liệu, phân quyền và kiến trúc hiện có.",
+        "developerName": "KIEULOAN",
+        "category": "Developer Tools",
+        "capabilities": ["Interactive"],
+        "defaultPrompt": [
+          "Rà soát giao diện admin hiện tại và đề xuất các cải tiến ưu tiên.",
+          "Giúp tôi chỉnh một trang admin Riverside Palace nhưng giữ nguyên nghiệp vụ và API.",
+          "Viết prompt triển khai UI admin rõ phạm vi, tiêu chí hoàn thành và kiểm thử."
+        ]
+      }
+    }
+  }
+}

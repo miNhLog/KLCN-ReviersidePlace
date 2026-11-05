@@ -6,8 +6,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!input || !icon) return;
             const isHidden = input.type === 'password';
             input.type = isHidden ? 'text' : 'password';
-            icon.classList.toggle('fa-eye', !isHidden);
-            icon.classList.toggle('fa-eye-slash', isHidden);
+            icon.classList.toggle('bi-eye', !isHidden);
+            icon.classList.toggle('bi-eye-slash', isHidden);
             button.setAttribute('aria-label', isHidden ? 'Ẩn mật khẩu' : 'Hiện mật khẩu');
         });
     });
