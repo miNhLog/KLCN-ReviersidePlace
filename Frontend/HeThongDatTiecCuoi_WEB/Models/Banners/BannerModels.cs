@@ -5,6 +5,7 @@ namespace HeThongDatTiecCuoi_WEB.Models.Banners;
 public sealed class BannerViewModel
 {
     public int BannerId { get; set; }
+    public string Placement { get; set; } = "HOME";
     public string Title { get; set; } = string.Empty;
     public string Subtitle { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
@@ -28,6 +29,7 @@ public sealed class BannerViewModel
 public sealed class BannerFormViewModel
 {
     public int? BannerId { get; set; }
+    [Required(ErrorMessage = "Vui lòng chọn vị trí hiển thị."), StringLength(30)] public string Placement { get; set; } = "HOME";
     [Required(ErrorMessage = "Vui lòng nhập tiêu đề chính."), StringLength(150)] public string Title { get; set; } = string.Empty;
     [Required(ErrorMessage = "Vui lòng nhập tiêu đề phụ."), StringLength(150)] public string Subtitle { get; set; } = string.Empty;
     [Required(ErrorMessage = "Vui lòng nhập mô tả."), StringLength(500)] public string Description { get; set; } = string.Empty;

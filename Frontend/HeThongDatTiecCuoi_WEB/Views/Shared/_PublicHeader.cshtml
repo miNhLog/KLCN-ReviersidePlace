@@ -7,7 +7,7 @@
         || User.IsInRole(RoleNames.Coordinator);
     var dashboardController = User.IsInRole(RoleNames.Admin) ? "AdminAccount" : "Home";
 }
-<header class="home-header @(activePage == "home" ? "home-header--overlay" : null)">
+<header class="home-header home-header--overlay">
     <div class="home-container header-inner">
         <a class="brand" href="/" aria-label="Riverside Palace - Trang chủ">
             <span class="brand-mark">
@@ -82,10 +82,6 @@
                     </details>
                 }
             }
-            else
-            {
-                <span class="header-avatar material-symbols-outlined" aria-hidden="true">person</span>
-            }
             <button class="mobile-menu-toggle" type="button" aria-label="Mở menu" aria-controls="mobileNavigation" aria-expanded="false">
                 <span class="material-symbols-outlined" aria-hidden="true">menu</span>
             </button>
@@ -106,3 +102,4 @@
     </nav>
 </header>
 <div class="mobile-nav-backdrop" hidden></div>
+<script src="~/js/public-header.js" asp-append-version="true" defer></script>

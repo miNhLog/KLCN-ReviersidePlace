@@ -9,6 +9,8 @@ using HeThongDatTiecCuoi_API.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
+using System.Text.Json;
 
 namespace HeThongDatTiecCuoi_API.Controllers;
 
@@ -371,8 +373,13 @@ public sealed class MenuController : ControllerBase
             DataStatusId = existingDataStatus.DataStatusId
         };
 
+        await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
         _context.Menus.Add(menu);
         await _context.SaveChangesAsync(cancellationToken);
+        AddAudit(AuditActions.MenuCreated, menu.MenuId, null,
+            new { menu.MenuCode, menu.MenuName, menu.PricePerTable, Status = activeStatus.StatusCode }, $"Tạo thực đơn {menu.MenuCode}.");
+        await _context.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
         _catalogSyncService?.SyncCatalogInBackground();
 
         return Created($"/api/menus/{menu.MenuId}", ToDto(menu, activeStatus));
@@ -412,11 +419,14 @@ public sealed class MenuController : ControllerBase
             return BadRequest(new { message = "Giá mỗi bàn không hợp lệ." });
         }
 
+        var oldData = new { menu.MenuCode, menu.MenuName, menu.PricePerTable, Status = menu.Status.StatusCode };
         menu.MenuName = request.MenuName.Trim();
         menu.Description = string.IsNullOrWhiteSpace(request.Description)
             ? null
             : request.Description.Trim();
         menu.PricePerTable = request.PricePerTable;
+        AddAudit(AuditActions.MenuUpdated, menu.MenuId, oldData,
+            new { menu.MenuCode, menu.MenuName, menu.PricePerTable, Status = menu.Status.StatusCode }, $"Cập nhật thực đơn {menu.MenuCode}.");
 
         await _context.SaveChangesAsync(cancellationToken);
         _catalogSyncService?.SyncCatalogInBackground();
@@ -457,7 +467,11 @@ public sealed class MenuController : ControllerBase
             return BadRequest(new { message = "Trạng thái thực đơn chưa được cấu hình." });
         }
 
+        if (menu.Status.StatusCode == status.StatusCode) return Ok(ToDto(menu, status));
+        var oldStatus = menu.Status.StatusCode;
         menu.StatusId = status.StatusId;
+        AddAudit(AuditActions.MenuUpdated, menu.MenuId,
+            new { menu.MenuCode, Status = oldStatus }, new { menu.MenuCode, Status = status.StatusCode }, $"Đổi trạng thái thực đơn {menu.MenuCode}: {oldStatus} → {status.StatusCode}.");
         await _context.SaveChangesAsync(cancellationToken);
         _catalogSyncService?.SyncCatalogInBackground();
 
@@ -588,6 +602,8 @@ public sealed class MenuController : ControllerBase
         {
             _context.MenuDishes.Add(menuDish);
         }
+        AddAudit(AuditActions.MenuDishesChanged, menuId, null,
+            new { AddedDishIds = new[] { request.DishId } }, $"Thêm món {dish.DishCode} vào thực đơn.");
         await _context.SaveChangesAsync(cancellationToken);
         _catalogSyncService?.SyncCatalogInBackground();
 
@@ -650,6 +666,8 @@ public sealed class MenuController : ControllerBase
                 relationship.SortOrder = ++sortOrder;
                 if (relationship.MenuDishId == 0) _context.MenuDishes.Add(relationship);
             }
+            AddAudit(AuditActions.MenuDishesChanged, menuId, null,
+                new { AddedDishIds = request.DishIds }, $"Thêm {request.DishIds.Count} món vào thực đơn.");
             await _context.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
             return Ok(new { message = $"Đã thêm {request.DishIds.Count} món vào thực đơn." });
@@ -703,6 +721,8 @@ public sealed class MenuController : ControllerBase
             DataStatusCodes.Existing,
             cancellationToken);
         menuDish.DataStatusId = deletedDataStatus.DataStatusId;
+        AddAudit(AuditActions.MenuDishesChanged, menuId,
+            new { RemovedDishIds = Array.Empty<int>() }, new { RemovedDishIds = new[] { dishId } }, $"Bỏ món #{dishId} khỏi thực đơn.");
         await _context.SaveChangesAsync(cancellationToken);
 
         await _context.MenuDishes
@@ -797,6 +817,9 @@ public sealed class MenuController : ControllerBase
                 menuDish.DataStatusId = existingDataStatus.DataStatusId;
             }
 
+            AddAudit(AuditActions.MenuDishesChanged, menuId,
+                new { DishIds = currentDishIds }, new { DishIds = request.DishIds }, "Sắp xếp lại món trong thực đơn.");
+
             await _context.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
 
@@ -817,6 +840,17 @@ public sealed class MenuController : ControllerBase
                 menu.MenuType == MenuTypes.Standard &&
                 menu.DataStatus.DataStatusCode == DataStatusCodes.Existing,
                 cancellationToken);
+
+    private void AddAudit(string action, long entityId, object? oldData, object? newData, string notes)
+    {
+        var actorId = int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var parsed) ? parsed : (int?)null;
+        _context.AuditLogs.Add(new AuditLog
+        {
+            UserId = actorId, Action = action, EntityName = AuditEntityNames.Menu, EntityId = entityId,
+            OldData = oldData is null ? null : JsonSerializer.Serialize(oldData), NewData = newData is null ? null : JsonSerializer.Serialize(newData),
+            Timestamp = DateTime.Now, Outcome = AuditOutcomes.Success, Notes = notes
+        });
+    }
 
     private async Task<bool> IsMenuInUseAsync(
         int menuId,

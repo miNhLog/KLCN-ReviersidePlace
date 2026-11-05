@@ -274,11 +274,11 @@
 }
 
 .home-header--overlay.is-scrolled {
-    border-bottom-color: rgba(255,255,255,.12);
-    background: rgba(13, 39, 65, .88);
-    box-shadow: 0 8px 28px rgba(5, 20, 36, .14);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
+    border-bottom-color: rgba(169, 131, 80, .2);
+    background: rgba(255, 255, 255, .96);
+    box-shadow: 0 8px 28px rgba(35, 31, 28, .1);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
 }
 
 .home-header--overlay .desktop-nav a,
@@ -303,6 +303,46 @@
     color: #fff;
     background: rgba(255,255,255,.08);
 }
+
+/* Trạng thái sticky sáng: giữ nguyên cấu trúc và logo, chỉ đổi tương phản. */
+.home-header--overlay.is-scrolled .desktop-nav a,
+.home-header--overlay.is-scrolled .account-menu summary { color: #3A302B; }
+.home-header--overlay.is-scrolled .desktop-nav :is(a, button)::after { background: #A98350; }
+.home-header--overlay.is-scrolled .brand-mark { color: #A98350; }
+.home-header--overlay.is-scrolled .brand-name { color: #2A2421; }
+.home-header--overlay.is-scrolled .brand-subtitle { color: #8A6A3A; }
+.home-header--overlay.is-scrolled .mobile-menu-toggle {
+    border-color: rgba(169, 131, 80, .35);
+    color: #2A2421;
+    background: rgba(255,255,255,.9);
+}
+.home-header--overlay.is-scrolled .account-menu summary > .material-symbols-outlined:first-child {
+    border-color: rgba(169, 131, 80, .35);
+    color: #6D5130;
+    background: #FBF7F0;
+}
+.home-header--overlay.is-scrolled .backoffice-link {
+    border-color: rgba(169, 131, 80, .35);
+    color: #4A3928;
+    background: #FBF7F0;
+}
+
+/* Các trang public dùng chung header nổi trên banner như Trang chủ. */
+.home-page > .home-header--overlay ~ main > .public-breadcrumb,
+.home-page > .home-header--overlay ~ .public-breadcrumb {
+    position: absolute;
+    z-index: 20;
+    top: 70px;
+    left: 0;
+    width: 100%;
+    margin-top: 0;
+    border-bottom-color: rgba(255,255,255,.2);
+    background: linear-gradient(180deg, rgba(12, 27, 43, .3), transparent);
+}
+.home-page > .home-header--overlay ~ main > .public-breadcrumb :is(a, [aria-current="page"]),
+.home-page > .home-header--overlay ~ .public-breadcrumb :is(a, [aria-current="page"]) { color: rgba(255,255,255,.9); }
+.home-page > .home-header--overlay ~ main > .public-breadcrumb .public-breadcrumb-separator,
+.home-page > .home-header--overlay ~ .public-breadcrumb .public-breadcrumb-separator { color: rgba(255,255,255,.7); }
 
 .home-header--overlay ~ main .cinema-hero {
     height: 100vh;
@@ -1745,6 +1785,8 @@
         min-height: 580px;
     }
     .home-header--overlay ~ main .cinema-hero { margin-top: 0; }
+    .home-page > .home-header--overlay ~ main > .public-breadcrumb,
+    .home-page > .home-header--overlay ~ .public-breadcrumb { top: 62px; }
 
     .innovation-intro { grid-template-columns: 1fr; gap: 20px; }
     .innovation-intro p { grid-column: auto; }

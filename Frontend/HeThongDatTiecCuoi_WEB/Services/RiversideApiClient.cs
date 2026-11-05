@@ -31,6 +31,8 @@ public sealed class RiversideApiClient : IRiversideApiClient
 {
     public Task<ApiCallResult<List<BannerViewModel>>> GetPublicBannersAsync(CancellationToken cancellationToken) =>
         SendAsync<List<BannerViewModel>>(HttpMethod.Get, "api/banners/public", null, null, cancellationToken);
+    public Task<ApiCallResult<List<BannerViewModel>>> GetPublicBannersAsync(string placement, CancellationToken cancellationToken) =>
+        SendAsync<List<BannerViewModel>>(HttpMethod.Get, $"api/banners/public?placement={Uri.EscapeDataString(placement)}", null, null, cancellationToken);
     public Task<ApiCallResult<JsonElement>> GetChecklistsAsync(string token, CancellationToken ct) =>
         SendAsync<JsonElement>(HttpMethod.Get, "api/checklists", null, token, ct);
     public Task<ApiCallResult<JsonElement>> ExecuteChecklistAsync(string token, int bookingId, string action, JsonElement command, CancellationToken ct) =>
@@ -944,6 +946,9 @@ public sealed class RiversideApiClient : IRiversideApiClient
         DateTime? fromDate,
         DateTime? toDate,
         string? keyword,
+        string? group,
+        string? outcome,
+        string? authMethod,
         CancellationToken cancellationToken)
     {
         var query = new List<string>
@@ -955,6 +960,9 @@ public sealed class RiversideApiClient : IRiversideApiClient
         if (fromDate.HasValue) query.Add($"fromDate={fromDate.Value:yyyy-MM-dd}");
         if (toDate.HasValue) query.Add($"toDate={toDate.Value:yyyy-MM-dd}");
         if (!string.IsNullOrWhiteSpace(keyword)) query.Add($"keyword={Uri.EscapeDataString(keyword)}");
+        if (!string.IsNullOrWhiteSpace(group)) query.Add($"group={Uri.EscapeDataString(group)}");
+        if (!string.IsNullOrWhiteSpace(outcome)) query.Add($"outcome={Uri.EscapeDataString(outcome)}");
+        if (!string.IsNullOrWhiteSpace(authMethod)) query.Add($"authMethod={Uri.EscapeDataString(authMethod)}");
 
         return SendAsync<AuditLogPageViewModel>(
             HttpMethod.Get,
@@ -963,6 +971,9 @@ public sealed class RiversideApiClient : IRiversideApiClient
             accessToken,
             cancellationToken);
     }
+
+    public Task<ApiCallResult<ApiMessageResponse>> RecordLogoutAsync(string accessToken, CancellationToken cancellationToken) =>
+        SendAsync<ApiMessageResponse>(HttpMethod.Post, "api/auth/logout", new { }, accessToken, cancellationToken);
 
 
     public Task<ApiCallResult<List<RoleDto>>> GetRolesAsync(

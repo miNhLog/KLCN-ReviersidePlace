@@ -63,6 +63,7 @@ public sealed class ApplicationDbContext : DbContext
             e.ToTable("BannerTrangChu", t => t.HasCheckConstraint("CK_BannerTrangChu_ThuTu", "[ThuTu] > 0"));
             e.HasKey(x => x.BannerId);
             e.Property(x => x.BannerId).HasColumnName("BannerID");
+            e.Property(x => x.Placement).HasColumnName("ViTri").HasMaxLength(30).IsRequired().HasDefaultValue("HOME");
             e.Property(x => x.Title).HasColumnName("TieuDe").HasMaxLength(150).IsRequired();
             e.Property(x => x.Subtitle).HasColumnName("TieuDePhu").HasMaxLength(150).IsRequired();
             e.Property(x => x.Description).HasColumnName("MoTa").HasMaxLength(500).IsRequired();
@@ -82,7 +83,7 @@ public sealed class ApplicationDbContext : DbContext
             e.Property(x => x.CreatedByUserId).HasColumnName("NguoiTaoID");
             e.Property(x => x.UpdatedByUserId).HasColumnName("NguoiCapNhatID");
             e.Property(x => x.RowVersion).HasColumnName("RowVersion").IsRowVersion();
-            e.HasIndex(x => x.SortOrder).HasDatabaseName("IX_BannerTrangChu_ThuTu");
+            e.HasIndex(x => new { x.Placement, x.SortOrder }).HasDatabaseName("IX_BannerTrangChu_ViTri_ThuTu");
         });
 
         modelBuilder.Entity<PartyChecklist>(e =>
@@ -808,7 +809,7 @@ public sealed class ApplicationDbContext : DbContext
             entity.Property(x => x.AuditLogId).HasColumnName("NhatKyThaoTacID");
             entity.Property(x => x.UserId).HasColumnName("TaiKhoanID");
             entity.Property(x => x.Action).HasColumnName("HanhDong")
-                .HasColumnType("varchar(30)").HasMaxLength(30).IsRequired();
+                .HasColumnType("varchar(50)").HasMaxLength(50).IsRequired();
             entity.Property(x => x.EntityName).HasColumnName("DoiTuong").HasMaxLength(100).IsRequired();
             entity.Property(x => x.EntityId).HasColumnName("DoiTuongID");
             entity.Property(x => x.OldData).HasColumnName("DuLieuCu").HasColumnType("nvarchar(max)");
@@ -816,6 +817,11 @@ public sealed class ApplicationDbContext : DbContext
             entity.Property(x => x.Timestamp).HasColumnName("ThoiGian").HasPrecision(0)
                 .HasDefaultValueSql("SYSDATETIME()");
             entity.Property(x => x.Notes).HasColumnName("GhiChu").HasMaxLength(500);
+            entity.Property(x => x.IpAddress).HasColumnName("DiaChiIP").HasMaxLength(45);
+            entity.Property(x => x.UserAgent).HasColumnName("UserAgent").HasMaxLength(500);
+            entity.Property(x => x.AuthMethod).HasColumnName("PhuongThucXacThuc").HasColumnType("varchar(30)").HasMaxLength(30);
+            entity.Property(x => x.Outcome).HasColumnName("KetQua").HasColumnType("varchar(20)").HasMaxLength(20);
+            entity.Property(x => x.CorrelationId).HasColumnName("CorrelationId").HasMaxLength(100);
             entity.HasIndex(x => new { x.Timestamp, x.AuditLogId }, "IX_NhatKyThaoTac_ThoiGian_ID").IsDescending(true, true);
             entity.HasIndex(x => new { x.Action, x.Timestamp }, "IX_NhatKyThaoTac_HanhDong_ThoiGian").IsDescending(false, true);
             entity.HasOne(x => x.User)

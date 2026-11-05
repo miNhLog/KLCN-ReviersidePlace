@@ -17,8 +17,8 @@
     color: var(--sc-body);
 }
 
-.split-catalog-page .home-header {
-    background: rgba(250, 249, 248, 0.95);
+.split-catalog-page .home-header.is-scrolled {
+    background: rgba(255, 255, 255, 0.96);
     border-bottom: 1px solid var(--sc-hairline);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
@@ -305,7 +305,7 @@
 
 @media (max-width: 767px) {
     .split-catalog-page main {
-        padding-top: 60px;
+        padding-top: 0;
     }
 
     .split-catalog-page .sc-list {

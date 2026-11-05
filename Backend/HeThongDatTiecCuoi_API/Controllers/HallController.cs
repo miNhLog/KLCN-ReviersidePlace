@@ -9,6 +9,8 @@ using HeThongDatTiecCuoi_API.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
+using System.Text.Json;
 
 namespace HeThongDatTiecCuoi_API.Controllers;
 
@@ -280,6 +282,7 @@ public sealed class HallController : ControllerBase
             StatusId = status.StatusId,
             DataStatusId = existingDataStatus.DataStatusId
         };
+        await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
         _context.Halls.Add(hall);
         await _context.SaveChangesAsync(cancellationToken);
         if (TryNormalizeImageUrl(request.ImageUrl, out var imageUrl))
@@ -296,6 +299,11 @@ public sealed class HallController : ControllerBase
             await _context.SaveChangesAsync(cancellationToken);
             hall.Images.Add(primaryImage);
         }
+        AddAudit(AuditActions.HallCreated, hall.HallId, null,
+            new { hall.HallCode, hall.HallName, hall.MinimumCapacity, hall.MaximumCapacity, hall.RentalPrice, Status = status.StatusCode },
+            $"Tạo sảnh {hall.HallCode} - {hall.HallName}.");
+        await _context.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
         _catalogSyncService?.SyncCatalogInBackground();
         return CreatedAtAction(nameof(GetHall), new { hallId = hall.HallId }, ToDto(hall, status));
     }
@@ -329,6 +337,7 @@ public sealed class HallController : ControllerBase
         var status = await ResolveStatusAsync(request.Status, cancellationToken);
         if (status is null) return BadRequest(new { message = "Trạng thái sảnh không hợp lệ." });
 
+        var oldData = new { hall.HallCode, hall.HallName, hall.MinimumCapacity, hall.MaximumCapacity, hall.RentalPrice, Status = hall.Status.StatusCode };
         hall.HallCode = request.HallCode.Trim();
         hall.HallName = request.HallName.Trim();
         hall.MinimumCapacity = request.MinimumCapacity;
@@ -338,6 +347,9 @@ public sealed class HallController : ControllerBase
         hall.StatusId = status.StatusId;
         if (!string.IsNullOrWhiteSpace(request.ImageUrl))
             await UpsertPrimaryImageAsync(hall, request.ImageUrl, cancellationToken);
+        AddAudit(AuditActions.HallUpdated, hall.HallId, oldData,
+            new { hall.HallCode, hall.HallName, hall.MinimumCapacity, hall.MaximumCapacity, hall.RentalPrice, Status = status.StatusCode },
+            $"Cập nhật sảnh {hall.HallCode} - {hall.HallName}.");
         await _context.SaveChangesAsync(cancellationToken);
         _catalogSyncService?.SyncCatalogInBackground();
         return Ok(ToDto(hall, status));
@@ -350,6 +362,7 @@ public sealed class HallController : ControllerBase
         CancellationToken cancellationToken)
     {
         var hall = await _context.Halls
+            .Include(item => item.Status)
             .Include(item => item.Images.Where(image =>
                 image.IsPrimary &&
                 image.DataStatus.DataStatusCode == DataStatusCodes.Existing))
@@ -362,7 +375,12 @@ public sealed class HallController : ControllerBase
         var status = await ResolveStatusAsync(request.Status, cancellationToken);
         if (status is null) return BadRequest(new { message = "Trạng thái sảnh không hợp lệ." });
 
+        if (hall.Status.StatusCode == status.StatusCode) return Ok(new { message = "Trạng thái sảnh không thay đổi.", hall = ToDto(hall, status) });
+        var oldStatus = hall.Status.StatusCode;
         hall.StatusId = status.StatusId;
+        AddAudit(AuditActions.HallUpdated, hall.HallId,
+            new { hall.HallCode, Status = oldStatus }, new { hall.HallCode, Status = status.StatusCode },
+            $"Đổi trạng thái sảnh {hall.HallCode}: {oldStatus} → {status.StatusCode}.");
         await _context.SaveChangesAsync(cancellationToken);
         _catalogSyncService?.SyncCatalogInBackground();
         return Ok(new { message = "Cập nhật trạng thái thành công.", hall = ToDto(hall, status) });
@@ -409,6 +427,9 @@ public sealed class HallController : ControllerBase
             return Conflict(new { message = "Không thể xóa sảnh đang hoạt động. Hãy chuyển sảnh sang trạng thái Ngừng hoạt động trước." });
 
         var deletedDataStatus = await GetDataStatusAsync(DataStatusCodes.Deleted, cancellationToken);
+        AddAudit(AuditActions.HallUpdated, hall.HallId,
+            new { hall.HallCode, DataStatus = DataStatusCodes.Existing }, new { hall.HallCode, DataStatus = DataStatusCodes.Deleted },
+            $"Xóa mềm sảnh {hall.HallCode}.");
         hall.DataStatusId = deletedDataStatus.DataStatusId;
         await _context.SaveChangesAsync(cancellationToken);
         _catalogSyncService?.SyncCatalogInBackground();
@@ -420,6 +441,17 @@ public sealed class HallController : ControllerBase
         var normalized = code?.Trim().ToUpperInvariant();
         if (string.IsNullOrWhiteSpace(normalized) || !ValidStatuses.Contains(normalized)) return null;
         return await _statusService.GetStatusAsync(StatusGroups.Hall, normalized, cancellationToken);
+    }
+
+    private void AddAudit(string action, long entityId, object? oldData, object? newData, string notes)
+    {
+        var actorId = int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var parsed) ? parsed : (int?)null;
+        _context.AuditLogs.Add(new AuditLog
+        {
+            UserId = actorId, Action = action, EntityName = AuditEntityNames.Hall, EntityId = entityId,
+            OldData = oldData is null ? null : JsonSerializer.Serialize(oldData), NewData = newData is null ? null : JsonSerializer.Serialize(newData),
+            Timestamp = DateTime.Now, Outcome = AuditOutcomes.Success, Notes = notes
+        });
     }
 
     private async Task UpsertPrimaryImageAsync(

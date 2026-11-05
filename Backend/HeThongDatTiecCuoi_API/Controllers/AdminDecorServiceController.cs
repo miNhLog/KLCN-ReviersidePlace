@@ -8,6 +8,8 @@ using HeThongDatTiecCuoi_API.Helpers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
+using System.Text.Json;
 
 namespace HeThongDatTiecCuoi_API.Controllers;
 
@@ -86,8 +88,13 @@ public sealed class AdminDecorServiceController : ControllerBase
             DataStatusId = await GetDataStatusIdAsync(DataStatusCodes.Existing)
         };
 
+        await using var transaction = await _context.Database.BeginTransactionAsync();
         _context.DecorPackages.Add(decor);
         await _context.SaveChangesAsync();
+        AddCatalogAudit(AuditActions.DecorCreated, AuditEntityNames.DecorPackage, decor.GoiTrangTriID, null,
+            new { decor.MaGoi, decor.TenGoi, decor.PhongCach, decor.Gia, request.StatusCode }, $"Tạo gói trang trí {decor.MaGoi}.");
+        await _context.SaveChangesAsync();
+        await transaction.CommitAsync();
         _catalogSyncService?.SyncCatalogInBackground();
         return Ok(new { success = true, id = decor.GoiTrangTriID, message = "Thêm gói decor thành công!" });
     }
@@ -109,12 +116,15 @@ public sealed class AdminDecorServiceController : ControllerBase
         if (statusId == null)
             return BadRequest(new { success = false, message = "Trạng thái chỉ được phép là ACTIVE hoặc INACTIVE." });
 
+        var oldData = new { decor.MaGoi, decor.TenGoi, decor.PhongCach, decor.Gia, decor.StatusId };
         decor.MaGoi = code;
         decor.TenGoi = request.PackageName.Trim();
         decor.PhongCach = request.Style.Trim();
         decor.MoTa = NormalizeOptional(request.Description);
         decor.Gia = request.Price;
         decor.StatusId = statusId.Value;
+        AddCatalogAudit(AuditActions.DecorUpdated, AuditEntityNames.DecorPackage, decor.GoiTrangTriID, oldData,
+            new { decor.MaGoi, decor.TenGoi, decor.PhongCach, decor.Gia, decor.StatusId }, $"Cập nhật gói trang trí {decor.MaGoi}.");
         await _context.SaveChangesAsync();
         _catalogSyncService?.SyncCatalogInBackground();
         return Ok(new { success = true, id = decor.GoiTrangTriID, message = "Cập nhật gói decor thành công!" });
@@ -170,8 +180,13 @@ public sealed class AdminDecorServiceController : ControllerBase
             DataStatusId = await GetDataStatusIdAsync(DataStatusCodes.Existing)
         };
 
+        await using var transaction = await _context.Database.BeginTransactionAsync();
         _context.ServiceItems.Add(service);
         await _context.SaveChangesAsync();
+        AddCatalogAudit(AuditActions.ServiceCreated, AuditEntityNames.Service, service.DichVuID, null,
+            new { service.MaDichVu, service.TenDichVu, service.LoaiDichVu, service.Gia, request.StatusCode }, $"Tạo dịch vụ {service.MaDichVu}.");
+        await _context.SaveChangesAsync();
+        await transaction.CommitAsync();
         _catalogSyncService?.SyncCatalogInBackground();
         return Ok(new { success = true, id = service.DichVuID, message = "Thêm dịch vụ thành công!" });
     }
@@ -193,12 +208,15 @@ public sealed class AdminDecorServiceController : ControllerBase
         if (statusId == null)
             return BadRequest(new { success = false, message = "Trạng thái chỉ được phép là ACTIVE hoặc INACTIVE." });
 
+        var oldData = new { service.MaDichVu, service.TenDichVu, service.LoaiDichVu, service.Gia, service.StatusId };
         service.MaDichVu = code;
         service.TenDichVu = request.ServiceName.Trim();
         service.LoaiDichVu = NormalizeOptional(request.ServiceType);
         service.MoTa = NormalizeOptional(request.Description);
         service.Gia = request.Price;
         service.StatusId = statusId.Value;
+        AddCatalogAudit(AuditActions.ServiceUpdated, AuditEntityNames.Service, service.DichVuID, oldData,
+            new { service.MaDichVu, service.TenDichVu, service.LoaiDichVu, service.Gia, service.StatusId }, $"Cập nhật dịch vụ {service.MaDichVu}.");
         await _context.SaveChangesAsync();
         _catalogSyncService?.SyncCatalogInBackground();
         return Ok(new { success = true, id = service.DichVuID, message = "Cập nhật dịch vụ thành công!" });
@@ -280,5 +298,17 @@ public sealed class AdminDecorServiceController : ControllerBase
         if (string.IsNullOrWhiteSpace(imageUrl)) return null;
         if (Uri.TryCreate(imageUrl, UriKind.Absolute, out var absolute)) return absolute.ToString();
         return $"{Request.Scheme}://{Request.Host}/{imageUrl.TrimStart('/')}";
+    }
+
+    private void AddCatalogAudit(string action, string entityName, long entityId, object? oldData, object? newData, string notes)
+    {
+        var actorId = int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var parsed) ? parsed : (int?)null;
+        _context.AuditLogs.Add(new AuditLog
+        {
+            UserId = actorId, Action = action, EntityName = entityName, EntityId = entityId,
+            OldData = oldData is null ? null : JsonSerializer.Serialize(oldData),
+            NewData = newData is null ? null : JsonSerializer.Serialize(newData),
+            Timestamp = DateTime.Now, Outcome = AuditOutcomes.Success, Notes = notes
+        });
     }
 }

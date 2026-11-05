@@ -6,6 +6,8 @@ using HeThongDatTiecCuoi_API.DTOs.PricingPolicy;
 using HeThongDatTiecCuoi_API.Constants;
 using HeThongDatTiecCuoi_API.Models;
 using HeThongDatTiecCuoi_API.Services;
+using System.Security.Claims;
+using System.Text.Json;
 
 namespace HeThongDatTiecCuoi_API.Controllers
 {
@@ -133,7 +135,21 @@ namespace HeThongDatTiecCuoi_API.Controllers
             if (req.GiaThueMoi < 0)
                 return BadRequest(new { success = false, message = "Đơn giá thuê không hợp lệ." });
 
+            var oldPrice = hall.RentalPrice;
+            if (oldPrice == req.GiaThueMoi)
+                return Ok(new { success = true, unchanged = true, message = "Đơn giá sảnh không thay đổi." });
+
             hall.RentalPrice = req.GiaThueMoi;
+            var actorId = int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var parsedActorId) ? parsedActorId : (int?)null;
+            _context.AuditLogs.Add(new AuditLog
+            {
+                UserId = actorId, Action = AuditActions.HallPriceUpdated,
+                EntityName = AuditEntityNames.Hall, EntityId = hall.HallId,
+                OldData = JsonSerializer.Serialize(new { hall.HallCode, hall.HallName, RentalPrice = oldPrice }),
+                NewData = JsonSerializer.Serialize(new { hall.HallCode, hall.HallName, RentalPrice = req.GiaThueMoi }),
+                Timestamp = DateTime.Now, Outcome = AuditOutcomes.Success,
+                Notes = $"Cập nhật giá thuê sảnh {hall.HallCode}: {oldPrice:N0} đ → {req.GiaThueMoi:N0} đ."
+            });
             await _context.SaveChangesAsync();
 
             return Ok(new { success = true, message = $"Cập nhật đơn giá sảnh {hall.HallName} thành công!" });

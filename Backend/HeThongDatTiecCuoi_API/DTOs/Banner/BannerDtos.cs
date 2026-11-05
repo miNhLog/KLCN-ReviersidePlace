@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace HeThongDatTiecCuoi_API.DTOs.Banner;
 
-public sealed record BannerDto(int BannerId, string Title, string Subtitle, string Description,
+public sealed record BannerDto(int BannerId, string Placement, string Title, string Subtitle, string Description,
     string NavigationLabel, string? ImagePath, string ImageAlt, string PrimaryActionType,
     string? PrimaryButtonLabel, string? PrimaryLink, string SecondaryActionType,
     string? SecondaryButtonLabel, string? SecondaryLink, int SortOrder, bool IsVisible,
@@ -10,6 +10,7 @@ public sealed record BannerDto(int BannerId, string Title, string Subtitle, stri
 
 public sealed class BannerUpsertRequest
 {
+    [Required, StringLength(30)] public string Placement { get; set; } = "HOME";
     [Required, StringLength(150)] public string Title { get; set; } = string.Empty;
     [Required, StringLength(150)] public string Subtitle { get; set; } = string.Empty;
     [Required, StringLength(500)] public string Description { get; set; } = string.Empty;
@@ -28,6 +29,7 @@ public sealed class BannerUpsertRequest
 
 public sealed class BannerReorderRequest
 {
+    [Required, StringLength(30)] public string Placement { get; set; } = "HOME";
     [Required, MinLength(1)] public List<int> BannerIds { get; set; } = [];
 }
 

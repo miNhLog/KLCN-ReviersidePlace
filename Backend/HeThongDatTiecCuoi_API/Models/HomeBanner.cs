@@ -3,6 +3,7 @@ namespace HeThongDatTiecCuoi_API.Models;
 public sealed class HomeBanner
 {
     public int BannerId { get; set; }
+    public string Placement { get; set; } = "HOME";
     public string Title { get; set; } = string.Empty;
     public string Subtitle { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;

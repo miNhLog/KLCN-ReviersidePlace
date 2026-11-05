@@ -614,9 +614,9 @@ public sealed class ScheduleChangeService : IScheduleChangeService
         refund.ProcessedAt = RiversideBusinessClock.Now; refund.Evidence = request.Evidence.Trim();
         _context.AuditLogs.Add(new AuditLog
         {
-            UserId = userId, Action = "SCHEDULE_CHANGE_REFUND_CONFIRMED", EntityName = "ScheduleChangeRefund",
+            UserId = userId, Action = AuditActions.ScheduleChangeRefundConfirmed, EntityName = AuditEntityNames.ScheduleChangeRefund,
             EntityId = refund.RefundId, NewData = JsonSerializer.Serialize(new { refund.Amount, refund.Status }),
-            Timestamp = RiversideBusinessClock.Now, Notes = refund.Evidence
+            Timestamp = RiversideBusinessClock.Now, Outcome = AuditOutcomes.Success, Notes = refund.Evidence
         });
         await _context.SaveChangesAsync(cancellationToken);
         return new ScheduleChangeRefundDto
@@ -1032,7 +1032,7 @@ public sealed class ScheduleChangeService : IScheduleChangeService
     private void AddAudit(int? userId, WeddingScheduleChange change, string action, string? notes) =>
         _context.AuditLogs.Add(new AuditLog
         {
-            UserId = userId, Action = action, EntityName = "ScheduleChange", EntityId = change.ScheduleChangeId,
+            UserId = userId, Action = action, EntityName = AuditEntityNames.ScheduleChange, EntityId = change.ScheduleChangeId,
             NewData = notes, Timestamp = RiversideBusinessClock.Now, Notes = notes
         });
 

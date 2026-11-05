@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Data;
 using System.Security.Claims;
+using System.Text.Json;
 
 namespace HeThongDatTiecCuoi_API.Controllers;
 
@@ -348,6 +349,23 @@ public sealed class AdminBookingController : ControllerBase
         resolvedSchedule.StatusId = bookedId;
         _context.WeddingBookings.Add(booking);
         await _context.SaveChangesAsync();
+        var actorUserId = int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var createdBy) ? createdBy : (int?)null;
+        _context.AuditLogs.Add(new AuditLog
+        {
+            UserId = actorUserId, Action = AuditActions.BookingCreated,
+            EntityName = AuditEntityNames.Booking, EntityId = booking.BookingId,
+            NewData = JsonSerializer.Serialize(new
+            {
+                booking.BookingCode, Status = BookingStatusCodes.Confirmed,
+                booking.HallScheduleId, HallId = hall.HallId, Date = resolvedSchedule.Date,
+                resolvedSchedule.Shift, request.TableCount, request.SpareTableCount,
+                booking.EstimatedTotal, booking.MenuId, booking.DecorationPackageId,
+                ServiceIds = request.Services.Select(x => x.ServiceId).ToArray()
+            }),
+            Timestamp = DateTime.Now, Outcome = AuditOutcomes.Success,
+            Notes = $"Tạo booking {booking.BookingCode} thành công."
+        });
+        await _context.SaveChangesAsync();
         await transaction.CommitAsync();
         try
         {
@@ -371,9 +389,13 @@ public sealed class AdminBookingController : ControllerBase
         await using var transaction = await _context.Database.BeginTransactionAsync();
         try
         {
-        var booking = await _context.WeddingBookings.Include(b => b.HallSchedule)
+        var booking = await _context.WeddingBookings.Include(b => b.HallSchedule).Include(b => b.Status)
             .SingleOrDefaultAsync(b => b.BookingId == id);
         if (booking == null) return NotFound(new { message = "Không tìm thấy đơn tiệc." });
+
+        var oldStatusCode = booking.Status.StatusCode;
+        if (oldStatusCode == code)
+            return Ok(new { success = true, statusCode = code, unchanged = true });
 
         booking.StatusId = await _statusService.GetStatusIdAsync(StatusGroups.Booking, code);
         booking.CancellationReason = code == BookingStatusCodes.Cancelled
@@ -391,6 +413,17 @@ public sealed class AdminBookingController : ControllerBase
             await ReleaseScheduleIfUnusedAsync(booking);
         else if (booking.HallSchedule is not null && BookingStatusCodes.OccupyingSchedule.Contains(code))
             booking.HallSchedule.StatusId = await _statusService.GetStatusIdAsync(StatusGroups.HallSchedule, HallScheduleStatusCodes.Booked);
+
+        _context.AuditLogs.Add(new AuditLog
+        {
+            UserId = actorUserId,
+            Action = code == BookingStatusCodes.Cancelled ? AuditActions.BookingCancelled : AuditActions.BookingStatusChanged,
+            EntityName = AuditEntityNames.Booking, EntityId = booking.BookingId,
+            OldData = JsonSerializer.Serialize(new { booking.BookingCode, Status = oldStatusCode }),
+            NewData = JsonSerializer.Serialize(new { booking.BookingCode, Status = code, booking.CancellationReason }),
+            Timestamp = DateTime.Now, Outcome = AuditOutcomes.Success,
+            Notes = code == BookingStatusCodes.Cancelled ? $"Hủy booking {booking.BookingCode}." : $"Chuyển trạng thái booking {booking.BookingCode}: {oldStatusCode} → {code}."
+        });
 
         await _context.SaveChangesAsync();
         await transaction.CommitAsync();

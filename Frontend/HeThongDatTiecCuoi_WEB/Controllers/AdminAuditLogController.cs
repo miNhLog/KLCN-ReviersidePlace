@@ -23,6 +23,9 @@ public sealed class AdminAuditLogController : Controller
         DateTime? fromDate = null,
         DateTime? toDate = null,
         string? keyword = null,
+        string? group = null,
+        string? outcome = null,
+        string? authMethod = null,
         CancellationToken cancellationToken = default)
     {
         var accessToken = Request.Cookies[ApiTokenCookie];
@@ -36,7 +39,7 @@ public sealed class AdminAuditLogController : Controller
         toDate = toDate?.Date;
 
         var result = await _apiClient.GetAuditLogsAsync(
-            accessToken, page, pageSize, auditAction, fromDate, toDate, keyword, cancellationToken);
+            accessToken, page, pageSize, auditAction, fromDate, toDate, keyword, group, outcome, authMethod, cancellationToken);
 
         var model = result.Succeeded && result.Value is not null
             ? result.Value
@@ -45,6 +48,9 @@ public sealed class AdminAuditLogController : Controller
         model.FromDate = fromDate;
         model.ToDate = toDate;
         model.Keyword = keyword;
+        model.Group = group;
+        model.Outcome = outcome;
+        model.AuthMethod = authMethod;
         if (!result.Succeeded) model.ErrorMessage = result.Error ?? "Không thể tải nhật ký hệ thống.";
         return View(model);
     }

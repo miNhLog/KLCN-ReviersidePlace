@@ -17,8 +17,8 @@
     color: var(--mg-body);
 }
 
-.menu-gallery-page .home-header {
-    background: rgba(250, 249, 248, 0.95);
+.menu-gallery-page .home-header.is-scrolled {
+    background: rgba(255, 255, 255, 0.96);
     border-bottom: 1px solid var(--mg-hairline);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
@@ -503,7 +503,7 @@ body.menu-image-open {
 
 @media (max-width: 767px) {
     .menu-gallery-page main {
-        padding-top: 60px;
+        padding-top: 0;
     }
 
     .menu-gallery-page .mg-grid {

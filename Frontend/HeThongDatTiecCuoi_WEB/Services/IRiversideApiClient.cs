@@ -25,6 +25,7 @@ using HeThongDatTiecCuoi_WEB.Models.Banners;
 public interface IRiversideApiClient
 {
     Task<ApiCallResult<List<BannerViewModel>>> GetPublicBannersAsync(CancellationToken cancellationToken);
+    Task<ApiCallResult<List<BannerViewModel>>> GetPublicBannersAsync(string placement, CancellationToken cancellationToken);
     Task<ApiCallResult<System.Text.Json.JsonElement>> GetChecklistsAsync(string token, CancellationToken ct);
     Task<ApiCallResult<System.Text.Json.JsonElement>> ExecuteChecklistAsync(string token, int bookingId, string action, System.Text.Json.JsonElement command, CancellationToken ct);
     Task<ApiCallResult<ChecklistSummaryViewModel>> GetChecklistSummaryAsync(string token, CancellationToken ct);
@@ -91,6 +92,7 @@ public interface IRiversideApiClient
         string accessToken,
         bool rememberMe,
         CancellationToken cancellationToken);
+    Task<ApiCallResult<ApiMessageResponse>> RecordLogoutAsync(string accessToken, CancellationToken cancellationToken);
     Task<ApiCallResult<MessageResponseDto>> ChangePasswordAsync(ChangePasswordViewModel model, string accessToken, CancellationToken cancellationToken);
     Task<ApiCallResult<FirstPasswordOtpResponseDto>> SendFirstPasswordOtpAsync(string accessToken, CancellationToken cancellationToken);
 
@@ -234,6 +236,9 @@ public interface IRiversideApiClient
         DateTime? fromDate,
         DateTime? toDate,
         string? keyword,
+        string? group,
+        string? outcome,
+        string? authMethod,
         CancellationToken cancellationToken);
 
     Task<ApiCallResult<List<RoleDto>>> GetRolesAsync(

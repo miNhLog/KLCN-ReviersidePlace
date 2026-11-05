@@ -47,6 +47,7 @@ public sealed class ManagerBannerController : Controller
         var secondaryAction = string.IsNullOrWhiteSpace(model.SecondaryActionType) ? "NONE" : model.SecondaryActionType.Trim().ToUpperInvariant();
 
         var payload = new {
+            Placement = model.Placement.Trim().ToUpperInvariant(),
             Title = model.Title.Trim(),
             Subtitle = model.Subtitle.Trim(),
             Description = model.Description.Trim(),
@@ -94,15 +95,16 @@ public sealed class ManagerBannerController : Controller
     }
 
     [HttpPost, ValidateAntiForgeryToken]
-    public async Task<IActionResult> Move(int id, int direction, CancellationToken ct)
+    public async Task<IActionResult> Move(int id, int direction, string placement, CancellationToken ct)
     {
         var list = await Send<List<BannerViewModel>>(HttpMethod.Get, "api/banners", null, ct);
         if (!list.Ok || list.Value is null) return RedirectWithError(list.Error);
-        var ordered = list.Value.OrderBy(x => x.SortOrder).Select(x => x.BannerId).ToList();
+        placement = string.IsNullOrWhiteSpace(placement) ? "HOME" : placement.Trim().ToUpperInvariant();
+        var ordered = list.Value.Where(x => x.Placement == placement).OrderBy(x => x.SortOrder).Select(x => x.BannerId).ToList();
         var index = ordered.IndexOf(id); var target = index + Math.Sign(direction);
         if (index < 0 || target < 0 || target >= ordered.Count) return RedirectToAction(nameof(Index));
         (ordered[index], ordered[target]) = (ordered[target], ordered[index]);
-        var result = await Send<JsonElement>(HttpMethod.Put, "api/banners/reorder", new { bannerIds = ordered }, ct);
+        var result = await Send<JsonElement>(HttpMethod.Put, "api/banners/reorder", new { placement, bannerIds = ordered }, ct);
         SetMessage(result.Ok, result.Ok ? "Đã cập nhật thứ tự banner." : result.Error);
         return RedirectToAction(nameof(Index));
     }

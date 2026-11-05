@@ -64,14 +64,23 @@ public sealed class AuditLogViewModel
     public string Actor { get; set; } = "Hệ thống";
     public string ActorName { get; set; } = "Hệ thống";
     public string? ActorEmail { get; set; }
+    public string? ActorRole { get; set; }
     public string Action { get; set; } = string.Empty;
-    public long TargetUserId { get; set; }
+    public long? TargetUserId { get; set; }
     public string Target { get; set; } = string.Empty;
+    public string? TargetRole { get; set; }
     public string EntityName { get; set; } = string.Empty;
     public long EntityId { get; set; }
     public string? OldData { get; set; }
     public string? NewData { get; set; }
     public string? Notes { get; set; }
+    public string? IpAddress { get; set; }
+    public string? UserAgent { get; set; }
+    public string? AuthMethod { get; set; }
+    public string? Outcome { get; set; }
+    public string? CorrelationId { get; set; }
+    public string Group { get; set; } = string.Empty;
+    public string Source { get; set; } = "Internal";
 }
 
 public sealed class AuditLogPageViewModel
@@ -86,6 +95,9 @@ public sealed class AuditLogPageViewModel
     public DateTime? FromDate { get; set; }
     public DateTime? ToDate { get; set; }
     public string? ErrorMessage { get; set; }
+    public string? Group { get; set; }
+    public string? Outcome { get; set; }
+    public string? AuthMethod { get; set; }
 }
 
 public sealed class RoleDistributionViewModel

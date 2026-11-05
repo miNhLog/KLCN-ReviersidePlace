@@ -382,12 +382,13 @@ public sealed class PayOSPaymentService : IPaymentService
             _context.AuditLogs.Add(new AuditLog
             {
                 UserId = null,
-                Action = "PAYMENT",
-                EntityName = "DatTiec",
+                Action = AuditActions.Payment,
+                EntityName = AuditEntityNames.Booking,
                 EntityId = booking.BookingId,
                 OldData = $"BookingCode={booking.BookingCode};TrangThai=PENDING;PaidAmount=0",
                 NewData = $"BookingCode={booking.BookingCode};TrangThai=CONFIRMED;PaidAmount={booking.PaidAmount};OrderCode={orderCode}",
                 Timestamp = DateTime.Now,
+                Outcome = AuditOutcomes.Success,
                 Notes = $"Khách hàng đã thanh toán cọc thành công {tx.SoTienGhiNhan:N0} đ qua VietQR PayOS. Lịch sảnh đã được khóa chính thức."
             });
 
@@ -850,12 +851,13 @@ public sealed class PayOSPaymentService : IPaymentService
             _context.AuditLogs.Add(new AuditLog
             {
                 UserId = null,
-                Action = "PAYMENT",
+                Action = AuditActions.Payment,
                 EntityName = AuditEntityNames.Contract,
                 EntityId = booking.Contract?.ContractId ?? booking.BookingId,
                 OldData = "OrderCode=" + orderCode + ";TrangThai=PENDING",
                 NewData = "OrderCode=" + orderCode + ";TrangThai=PAID;Amount=" + tx.SoTienGhiNhan,
                 Timestamp = DateTime.Now,
+                Outcome = AuditOutcomes.Success,
                 Notes = "Đã thanh toán thành công " + tx.SoTienGhiNhan.ToString("N0") + " đ qua VietQR PayOS cho hợp đồng."
             });
 

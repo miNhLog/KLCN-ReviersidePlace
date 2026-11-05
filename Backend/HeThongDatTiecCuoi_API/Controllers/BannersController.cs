@@ -14,6 +14,7 @@ public sealed class BannersController : ControllerBase
 {
     private const long MaxImageSize = 5 * 1024 * 1024;
     private static readonly HashSet<string> ActionTypes = ["NONE", "INTERNAL", "SECTION", "AI"];
+    private static readonly HashSet<string> Placements = ["HOME", "HALLS", "MENUS", "DECOR", "RECOMMENDATION", "MY_BOOKING"];
     private readonly ApplicationDbContext _db;
     private readonly IWebHostEnvironment _environment;
 
@@ -24,14 +25,18 @@ public sealed class BannersController : ControllerBase
     }
 
     [AllowAnonymous, HttpGet("public")]
-    public async Task<ActionResult<List<BannerDto>>> GetPublic(CancellationToken ct) =>
-        Ok((await _db.HomeBanners.AsNoTracking()
-            .Where(x => x.IsVisible && x.ImagePath != null && x.ImagePath != "")
+    public async Task<ActionResult<List<BannerDto>>> GetPublic([FromQuery] string placement = "HOME", CancellationToken ct = default)
+    {
+        if (!TryNormalizePlacement(placement, out var normalized))
+            return BadRequest(new { message = "Vị trí banner không hợp lệ." });
+        return Ok((await _db.HomeBanners.AsNoTracking()
+            .Where(x => x.Placement == normalized && x.IsVisible && x.ImagePath != null && x.ImagePath != "")
             .OrderBy(x => x.SortOrder).ThenBy(x => x.BannerId).ToListAsync(ct)).Select(ToDto));
+    }
 
     [Authorize(Roles = RoleNames.Manager), HttpGet]
     public async Task<ActionResult<List<BannerDto>>> GetAll(CancellationToken ct) =>
-        Ok((await _db.HomeBanners.AsNoTracking().OrderBy(x => x.SortOrder).ThenBy(x => x.BannerId)
+        Ok((await _db.HomeBanners.AsNoTracking().OrderBy(x => x.Placement).ThenBy(x => x.SortOrder).ThenBy(x => x.BannerId)
             .ToListAsync(ct)).Select(ToDto));
 
     [Authorize(Roles = RoleNames.Manager), HttpGet("{id:int}")]
@@ -44,14 +49,15 @@ public sealed class BannersController : ControllerBase
     [Authorize(Roles = RoleNames.Manager), HttpPost]
     public async Task<ActionResult<BannerDto>> Create(BannerUpsertRequest request, CancellationToken ct)
     {
-        if (!ValidateActions(request, out var error)) return BadRequest(new { message = error });
-        var maxOrder = await _db.HomeBanners.MaxAsync(x => (int?)x.SortOrder, ct) ?? 0;
+        if (!ValidateRequest(request, out var error)) return BadRequest(new { message = error });
+        var placement = request.Placement;
+        var siblings = await _db.HomeBanners.Where(x => x.Placement == placement)
+            .OrderBy(x => x.SortOrder).ThenBy(x => x.BannerId).ToListAsync(ct);
         var banner = new HomeBanner { CreatedAt = DateTime.Now, CreatedByUserId = UserId(), IsVisible = false };
         Apply(banner, request);
         banner.IsVisible = false; // Draft until an image is uploaded and Manager explicitly publishes it.
-        banner.SortOrder = Math.Min(Math.Max(1, request.SortOrder), maxOrder + 1);
-        await ShiftForInsert(banner.SortOrder, ct);
         _db.HomeBanners.Add(banner);
+        InsertAt(siblings, banner, request.SortOrder);
         await _db.SaveChangesAsync(ct);
         return CreatedAtAction(nameof(Get), new { id = banner.BannerId }, ToDto(banner));
     }
@@ -59,17 +65,35 @@ public sealed class BannersController : ControllerBase
     [Authorize(Roles = RoleNames.Manager), HttpPut("{id:int}")]
     public async Task<ActionResult<BannerDto>> Update(int id, BannerUpsertRequest request, CancellationToken ct)
     {
-        if (!ValidateActions(request, out var error)) return BadRequest(new { message = error });
+        if (!ValidateRequest(request, out var error)) return BadRequest(new { message = error });
         var banner = await _db.HomeBanners.SingleOrDefaultAsync(x => x.BannerId == id, ct);
         if (banner is null) return NotFound(new { message = "Không tìm thấy banner." });
         if (!VersionMatches(banner, request.Version)) return Conflict(new { message = "Banner vừa được người khác cập nhật. Vui lòng tải lại trang." });
         if (request.IsVisible && string.IsNullOrWhiteSpace(banner.ImagePath))
             return BadRequest(new { message = "Vui lòng tải ảnh trước khi hiển thị banner." });
+        var oldPlacement = banner.Placement;
         Apply(banner, request);
+        var targetSiblings = await _db.HomeBanners.Where(x => x.BannerId != id && x.Placement == banner.Placement)
+            .OrderBy(x => x.SortOrder).ThenBy(x => x.BannerId).ToListAsync(ct);
+        InsertAt(targetSiblings, banner, request.SortOrder);
+        if (!string.Equals(oldPlacement, banner.Placement, StringComparison.Ordinal))
+        {
+            var oldSiblings = await _db.HomeBanners.Where(x => x.BannerId != id && x.Placement == oldPlacement)
+                .OrderBy(x => x.SortOrder).ThenBy(x => x.BannerId).ToListAsync(ct);
+            for (var i = 0; i < oldSiblings.Count; i++) oldSiblings[i].SortOrder = i + 1;
+        }
+        if (banner.IsVisible && banner.Placement != "HOME")
+        {
+            foreach (var item in targetSiblings.Where(x => x.IsVisible))
+            {
+                item.IsVisible = false;
+                item.UpdatedAt = DateTime.Now;
+                item.UpdatedByUserId = UserId();
+            }
+        }
         banner.UpdatedAt = DateTime.Now;
         banner.UpdatedByUserId = UserId();
         await _db.SaveChangesAsync(ct);
-        await NormalizeOrders(ct);
         return Ok(ToDto(banner));
     }
 
@@ -102,10 +126,13 @@ public sealed class BannersController : ControllerBase
     [Authorize(Roles = RoleNames.Manager), HttpPut("reorder")]
     public async Task<IActionResult> Reorder(BannerReorderRequest request, CancellationToken ct)
     {
-        var banners = await _db.HomeBanners.OrderBy(x => x.SortOrder).ThenBy(x => x.BannerId).ToListAsync(ct);
+        if (!TryNormalizePlacement(request.Placement, out var placement))
+            return BadRequest(new { message = "Vị trí banner không hợp lệ." });
+        var banners = await _db.HomeBanners.Where(x => x.Placement == placement)
+            .OrderBy(x => x.SortOrder).ThenBy(x => x.BannerId).ToListAsync(ct);
         if (request.BannerIds.Count != banners.Count || request.BannerIds.Distinct().Count() != banners.Count ||
             banners.Any(x => !request.BannerIds.Contains(x.BannerId)))
-            return BadRequest(new { message = "Danh sách sắp xếp phải chứa chính xác tất cả banner." });
+            return BadRequest(new { message = "Danh sách sắp xếp phải chứa chính xác các banner trong cùng vị trí." });
         for (var i = 0; i < request.BannerIds.Count; i++)
         {
             var banner = banners.Single(x => x.BannerId == request.BannerIds[i]);
@@ -126,6 +153,17 @@ public sealed class BannersController : ControllerBase
             return Conflict(new { message = "Banner vừa được cập nhật. Vui lòng tải lại trang." });
         if (request.IsVisible && string.IsNullOrWhiteSpace(banner.ImagePath))
             return BadRequest(new { message = "Vui lòng tải ảnh đại diện lên trước khi bật hiển thị banner." });
+        if (request.IsVisible && banner.Placement != "HOME")
+        {
+            var otherVisible = await _db.HomeBanners
+                .Where(x => x.Placement == banner.Placement && x.BannerId != id && x.IsVisible).ToListAsync(ct);
+            foreach (var item in otherVisible)
+            {
+                item.IsVisible = false;
+                item.UpdatedAt = DateTime.Now;
+                item.UpdatedByUserId = UserId();
+            }
+        }
         banner.IsVisible = request.IsVisible;
         banner.UpdatedAt = DateTime.Now;
         banner.UpdatedByUserId = UserId();
@@ -139,9 +177,10 @@ public sealed class BannersController : ControllerBase
         var banner = await _db.HomeBanners.SingleOrDefaultAsync(x => x.BannerId == id, ct);
         if (banner is null) return NotFound(new { message = "Không tìm thấy banner." });
         var oldPath = banner.ImagePath;
+        var placement = banner.Placement;
         _db.HomeBanners.Remove(banner);
         await _db.SaveChangesAsync(ct);
-        await NormalizeOrders(ct);
+        await NormalizeOrders(placement, ct);
         DeleteUploadedFile(oldPath);
         return Ok(new { message = "Đã xóa banner." });
     }
@@ -158,21 +197,24 @@ public sealed class BannersController : ControllerBase
         return System.IO.File.Exists(path) ? PhysicalFile(path, contentType) : NotFound();
     }
 
-    private async Task ShiftForInsert(int order, CancellationToken ct)
+    private static void InsertAt(List<HomeBanner> siblings, HomeBanner banner, int requestedOrder)
     {
-        var following = await _db.HomeBanners.Where(x => x.SortOrder >= order).ToListAsync(ct);
-        foreach (var item in following) item.SortOrder++;
+        var index = Math.Clamp(requestedOrder - 1, 0, siblings.Count);
+        siblings.Insert(index, banner);
+        for (var i = 0; i < siblings.Count; i++) siblings[i].SortOrder = i + 1;
     }
 
-    private async Task NormalizeOrders(CancellationToken ct)
+    private async Task NormalizeOrders(string placement, CancellationToken ct)
     {
-        var items = await _db.HomeBanners.OrderBy(x => x.SortOrder).ThenBy(x => x.BannerId).ToListAsync(ct);
+        var items = await _db.HomeBanners.Where(x => x.Placement == placement)
+            .OrderBy(x => x.SortOrder).ThenBy(x => x.BannerId).ToListAsync(ct);
         for (var i = 0; i < items.Count; i++) items[i].SortOrder = i + 1;
         await _db.SaveChangesAsync(ct);
     }
 
     private static void Apply(HomeBanner target, BannerUpsertRequest source)
     {
+        target.Placement = source.Placement;
         target.Title = source.Title.Trim(); target.Subtitle = source.Subtitle.Trim();
         target.Description = source.Description.Trim(); target.NavigationLabel = source.NavigationLabel.Trim();
         target.ImageAlt = source.ImageAlt.Trim();
@@ -184,8 +226,10 @@ public sealed class BannersController : ControllerBase
     }
 
     private static string? Clean(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
-    private static bool ValidateActions(BannerUpsertRequest request, out string error)
+    private static bool ValidateRequest(BannerUpsertRequest request, out string error)
     {
+        if (!TryNormalizePlacement(request.Placement, out var placement)) { error = "Vị trí banner không hợp lệ."; return false; }
+        request.Placement = placement;
         request.PrimaryActionType = string.IsNullOrWhiteSpace(request.PrimaryActionType) ? "NONE" : request.PrimaryActionType.Trim().ToUpperInvariant();
         request.SecondaryActionType = string.IsNullOrWhiteSpace(request.SecondaryActionType) ? "NONE" : request.SecondaryActionType.Trim().ToUpperInvariant();
         foreach (var action in new[] { (request.PrimaryActionType, request.PrimaryButtonLabel, request.PrimaryLink), (request.SecondaryActionType, request.SecondaryButtonLabel, request.SecondaryLink) })
@@ -197,6 +241,12 @@ public sealed class BannersController : ControllerBase
             if (type == "INTERNAL" && (string.IsNullOrWhiteSpace(action.Item3) || !action.Item3.StartsWith('/') || action.Item3.StartsWith("//"))) { error = "Liên kết nội bộ phải bắt đầu bằng một dấu /."; return false; }
         }
         error = string.Empty; return true;
+    }
+
+    private static bool TryNormalizePlacement(string? value, out string placement)
+    {
+        placement = string.IsNullOrWhiteSpace(value) ? "HOME" : value.Trim().ToUpperInvariant();
+        return Placements.Contains(placement);
     }
 
     private static async Task<(string? Extension, string? Error)> ValidateImage(IFormFile? file, CancellationToken ct)
@@ -224,7 +274,7 @@ public sealed class BannersController : ControllerBase
 
     private int? UserId() => int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : null;
     private static bool VersionMatches(HomeBanner banner, string? version) => string.IsNullOrWhiteSpace(version) || Convert.ToBase64String(banner.RowVersion) == version;
-    private static BannerDto ToDto(HomeBanner x) => new(x.BannerId, x.Title, x.Subtitle, x.Description,
+    private static BannerDto ToDto(HomeBanner x) => new(x.BannerId, x.Placement, x.Title, x.Subtitle, x.Description,
         x.NavigationLabel, x.ImagePath, x.ImageAlt, x.PrimaryActionType, x.PrimaryButtonLabel, x.PrimaryLink,
         x.SecondaryActionType, x.SecondaryButtonLabel, x.SecondaryLink, x.SortOrder, x.IsVisible,
         x.CreatedAt, x.UpdatedAt, Convert.ToBase64String(x.RowVersion));

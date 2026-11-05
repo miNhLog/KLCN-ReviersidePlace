@@ -5,10 +5,10 @@
     const previewDialog = document.getElementById('bannerPreviewDialog');
     const form = document.getElementById('bannerForm');
     const field = name => form.elements.namedItem(name);
-    const openForm = banner => {
+    const openForm = (banner, requestedPlacement = 'HOME') => {
         form.reset();
         document.getElementById('bannerFormTitle').textContent = banner ? 'Chỉnh sửa Banner' : 'Thêm Banner';
-        ['BannerId','Version','Title','Subtitle','Description','NavigationLabel','ImageAlt','PrimaryActionType','PrimaryButtonLabel','PrimaryLink','SecondaryActionType','SecondaryButtonLabel','SecondaryLink','SortOrder'].forEach(name => {
+        ['BannerId','Version','Placement','Title','Subtitle','Description','NavigationLabel','ImageAlt','PrimaryActionType','PrimaryButtonLabel','PrimaryLink','SecondaryActionType','SecondaryButtonLabel','SecondaryLink','SortOrder'].forEach(name => {
             const key = name.charAt(0).toLowerCase() + name.slice(1);
             if (field(name)) {
                 if (name === 'BannerId') {
@@ -16,7 +16,10 @@
                 } else if (name === 'PrimaryActionType' || name === 'SecondaryActionType') {
                     field(name).value = banner?.[key] || 'NONE';
                 } else if (name === 'SortOrder') {
-                    field(name).value = banner?.[key] ?? (data.length + 1);
+                    const placement = banner?.placement || requestedPlacement;
+                    field(name).value = banner?.[key] ?? (data.filter(x => x.placement === placement).length + 1);
+                } else if (name === 'Placement') {
+                    field(name).value = banner?.placement || requestedPlacement;
                 } else {
                     field(name).value = banner?.[key] ?? '';
                 }
@@ -27,7 +30,7 @@
         preview.innerHTML = banner?.imageUrl ? `<img src="${banner.imageUrl}" alt="">` : '<i class="fa-regular fa-image"></i>';
         formDialog.showModal();
     };
-    document.querySelectorAll('[data-banner-create]').forEach(button => button.addEventListener('click', () => openForm(null)));
+    document.querySelectorAll('[data-banner-create]').forEach(button => button.addEventListener('click', () => openForm(null, button.dataset.placement || 'HOME')));
     document.querySelectorAll('[data-banner-edit]').forEach(button => button.addEventListener('click', () => openForm(data.find(x => x.bannerId === Number(button.dataset.bannerEdit)))));
     document.querySelectorAll('[data-banner-preview]').forEach(button => button.addEventListener('click', () => {
         const banner = data.find(x => x.bannerId === Number(button.dataset.bannerPreview));

@@ -122,6 +122,8 @@ builder.Services.AddScoped<IPasswordHasher<FirstPasswordOtp>, PasswordHasher<Fir
 builder.Services.AddScoped<IPasswordHasher<ScheduleChangeOtp>, PasswordHasher<ScheduleChangeOtp>>();
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 builder.Services.AddScoped<IStatusService, StatusService>();
 builder.Services.AddSingleton<IPaymentPolicyProvider, PaymentPolicyProvider>();
 builder.Services.AddSingleton<IHallPricingPolicyService, HallPricingPolicyService>();

@@ -199,12 +199,13 @@ public sealed class PublicBookingController : ControllerBase
             _context.AuditLogs.Add(new AuditLog
             {
                 UserId = null,
-                Action = "CANCEL",
-                EntityName = "DatTiec",
+                Action = AuditActions.BookingHoldCancelled,
+                EntityName = AuditEntityNames.Booking,
                 EntityId = booking.BookingId,
                 OldData = $"MaDatTiec={booking.BookingCode};TrangThai={oldStatusName}",
                 NewData = $"MaDatTiec={booking.BookingCode};TrangThai=Đã hủy;LyDoHuy={booking.CancellationReason}",
                 Timestamp = DateTime.Now,
+                Outcome = AuditOutcomes.Success,
                 Notes = "Khách hủy giữ chỗ online (public cancel-hold)"
             });
 

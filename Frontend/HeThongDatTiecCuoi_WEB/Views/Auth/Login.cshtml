@@ -15,23 +15,24 @@
 
 <main class="auth-shell login-page">
     <section class="auth-story" aria-label="Giới thiệu Riverside Palace">
-        <div class="brand-pill"><span></span> RIVERSIDE PALACE STAFF PORTAL</div>
+        <partial name="_AuthBrand" />
         <div class="story-content">
-        
-            <h1>Chào Mừng Trở Lại<br /><em>Riverside Palace</em></h1>
-            <p>Cổng truy cập dành cho Admin và nhân viên vận hành Riverside Palace.</p>
+            <span class="auth-story-kicker">CỔNG QUẢN LÝ NỘI BỘ</span>
+            <h1>Vận hành tinh tế.<br /><em>Trải nghiệm nhất quán.</em></h1>
+            <p>Không gian làm việc bảo mật dành cho đội ngũ vận hành Riverside Palace.</p>
             <ul>
                 <li><b><span class="material-symbols-outlined" aria-hidden="true">verified_user</span></b><span>Bảo mật thông tin hợp đồng &amp; thanh toán chuẩn quốc tế</span></li>
                 <li><b><span class="material-symbols-outlined" aria-hidden="true">smart_toy</span></b><span>Trợ lý AI tư vấn và theo dõi tiến độ sự kiện 24/7</span></li>
                 <li><b><span class="material-symbols-outlined" aria-hidden="true">admin_panel_settings</span></b><span>Phân quyền truy cập theo vai trò công việc</span></li>
             </ul>
         </div>
-        <small>© 2026 Riverside Palace. All rights reserved. Tiêu chuẩn dịch vụ hội nghị &amp; yến tiệc 5 sao.</small>
+        <small>© 2026 Riverside Palace · Hệ thống quản lý hội nghị và yến tiệc.</small>
     </section>
 
     <section class="auth-form-side">
         <div class="auth-card">
             <div class="crest"><span class="material-symbols-outlined" aria-hidden="true">login</span></div>
+            <span class="auth-card-kicker">RIVERSIDE PALACE STAFF PORTAL</span>
             <h2>Đăng Nhập</h2>
             <p class="subtitle">Đăng nhập để truy cập khu vực quản trị và vận hành</p>
 
@@ -70,7 +71,9 @@
                     <button class="muted-link auth-link-button" id="openForgotPassword" type="button">Quên mật khẩu?</button>
                 </div>
 
-                <button class="primary-button" type="submit">Đăng Nhập</button>
+                <button class="primary-button" type="submit"><span>Đăng nhập an toàn</span><span class="material-symbols-outlined" aria-hidden="true">arrow_forward</span></button>
+
+                <p class="auth-security-note"><span class="material-symbols-outlined" aria-hidden="true">encrypted</span>Kết nối được mã hóa và bảo vệ theo phiên đăng nhập.</p>
 
             </form>
 
@@ -114,7 +117,7 @@
 
                 <button class="password-reset-back" id="backToLogin" type="button">Quay lại đăng nhập</button>
             </section>
-            <footer>Hotline hỗ trợ: <strong>0933 777 888</strong> <span>│</span> 360D Bến Vân Đồn, P.1, Q.4, TP.HCM</footer>
+            <footer><span class="material-symbols-outlined" aria-hidden="true">support_agent</span><span>Hỗ trợ nội bộ <strong>0933 777 888</strong></span><i></i><span>360D Bến Vân Đồn, Q.4, TP.HCM</span></footer>
         </div>
     </section>
 </main>

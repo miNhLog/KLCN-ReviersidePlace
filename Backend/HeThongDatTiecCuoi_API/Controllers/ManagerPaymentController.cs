@@ -177,12 +177,13 @@ public sealed class ManagerPaymentController : ControllerBase
         _context.AuditLogs.Add(new AuditLog
         {
             UserId = actorId,
-            Action = "PAYMENT_RECORDED",
+            Action = AuditActions.PaymentRecorded,
             EntityName = AuditEntityNames.Contract,
             EntityId = contract.ContractId,
             OldData = JsonSerializer.Serialize(new { contract.ContractCode, PaidAmount = oldPaid }),
             NewData = JsonSerializer.Serialize(new { contract.ContractCode, PaidAmount = newPaid, PaymentType = normalizedType, Amount = request.Amount, Method = "CASH", Note = request.Note }),
             Timestamp = DateTime.Now,
+            Outcome = AuditOutcomes.Success,
             Notes = $"Quản lý ghi nhận thu tiền mặt {request.Amount:N0} đ ({normalizedType}) cho hợp đồng {contract.ContractCode}. Ghi chú: {request.Note ?? "Không có"}"
         });
 
