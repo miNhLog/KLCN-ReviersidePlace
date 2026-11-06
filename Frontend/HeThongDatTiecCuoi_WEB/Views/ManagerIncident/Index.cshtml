@@ -29,11 +29,11 @@
     }
 
     <section class="incident-kpis hall-kpis manager-incident-kpis" aria-label="Tổng quan sự cố">
-        <article><span class="kpi-icon all"><i class="fa-solid fa-shield-halved"></i></span><div><small>Tổng sự cố</small><strong>@Model.Data.Kpi.Total</strong><span>Toàn hệ thống</span></div></article>
-        <article><span class="kpi-icon pending"><i class="fa-regular fa-clock"></i></span><div><small>Chờ xử lý</small><strong>@Model.Data.Kpi.Pending</strong><span>Cần tiếp nhận</span></div></article>
-        <article><span class="kpi-icon processing"><i class="fa-solid fa-screwdriver-wrench"></i></span><div><small>Đang xử lý</small><strong>@Model.Data.Kpi.Processing</strong><span>Đang khắc phục</span></div></article>
-        <article><span class="kpi-icon resolved"><i class="fa-solid fa-circle-check"></i></span><div><small>Đã xử lý</small><strong>@Model.Data.Kpi.Resolved</strong><span>Đã hoàn tất</span></div></article>
-        <article class="critical-kpi"><span class="kpi-icon critical"><i class="fa-solid fa-triangle-exclamation"></i></span><div><small>Nghiêm trọng</small><strong>@Model.Data.Kpi.Critical</strong><span>Chưa giải quyết</span></div></article>
+        <article><span class="kpi-icon all"><i class="bi bi-shield-check" aria-hidden="true"></i></span><div><small>Tổng sự cố</small><strong>@Model.Data.Kpi.Total</strong><span>Toàn hệ thống</span></div></article>
+        <article><span class="kpi-icon pending"><i class="bi bi-clock-history" aria-hidden="true"></i></span><div><small>Chờ xử lý</small><strong>@Model.Data.Kpi.Pending</strong><span>Cần tiếp nhận</span></div></article>
+        <article><span class="kpi-icon processing"><i class="bi bi-tools" aria-hidden="true"></i></span><div><small>Đang xử lý</small><strong>@Model.Data.Kpi.Processing</strong><span>Đang khắc phục</span></div></article>
+        <article><span class="kpi-icon resolved"><i class="bi bi-check-circle" aria-hidden="true"></i></span><div><small>Đã xử lý</small><strong>@Model.Data.Kpi.Resolved</strong><span>Đã hoàn tất</span></div></article>
+        <article class="critical-kpi"><span class="kpi-icon critical"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i></span><div><small>Nghiêm trọng</small><strong>@Model.Data.Kpi.Critical</strong><span>Chưa giải quyết</span></div></article>
     </section>
 
     <section class="incident-panel manager-incident-panel">
@@ -84,7 +84,7 @@
             <span>Hiển thị @Model.Data.Items.Count / @Model.Data.TotalItems sự cố</span>
             @if (Model.Data.TotalPages > 1)
             {
-                <nav class="incident-pagination">@for (var p = 1; p <= Model.Data.TotalPages; p++) { <a asp-action="Index" asp-route-search="@Model.Search" asp-route-status="@Model.Status" asp-route-severity="@Model.Severity" asp-route-hallId="@Model.HallId" asp-route-fromDate="@Model.FromDate?.ToString("yyyy-MM-dd")" asp-route-toDate="@Model.ToDate?.ToString("yyyy-MM-dd")" asp-route-page="@p" class="@(p == Model.Data.Page ? "active" : null)">@p</a> }</nav>
+                <nav class="incident-pagination"><a class="pagination-edge @(Model.Data.Page<=1?"disabled":"")" asp-action="Index" asp-route-search="@Model.Search" asp-route-status="@Model.Status" asp-route-severity="@Model.Severity" asp-route-hallId="@Model.HallId" asp-route-fromDate="@Model.FromDate?.ToString("yyyy-MM-dd")" asp-route-toDate="@Model.ToDate?.ToString("yyyy-MM-dd")" asp-route-page="@(Model.Data.Page-1)">Trước</a>@for (var p = 1; p <= Model.Data.TotalPages; p++) { <a asp-action="Index" asp-route-search="@Model.Search" asp-route-status="@Model.Status" asp-route-severity="@Model.Severity" asp-route-hallId="@Model.HallId" asp-route-fromDate="@Model.FromDate?.ToString("yyyy-MM-dd")" asp-route-toDate="@Model.ToDate?.ToString("yyyy-MM-dd")" asp-route-page="@p" class="@(p == Model.Data.Page ? "active" : null)">@p</a> }<a class="pagination-edge @(Model.Data.Page>=Model.Data.TotalPages?"disabled":"")" asp-action="Index" asp-route-search="@Model.Search" asp-route-status="@Model.Status" asp-route-severity="@Model.Severity" asp-route-hallId="@Model.HallId" asp-route-fromDate="@Model.FromDate?.ToString("yyyy-MM-dd")" asp-route-toDate="@Model.ToDate?.ToString("yyyy-MM-dd")" asp-route-page="@(Model.Data.Page+1)">Sau</a></nav>
             }
         </footer>
     </section>

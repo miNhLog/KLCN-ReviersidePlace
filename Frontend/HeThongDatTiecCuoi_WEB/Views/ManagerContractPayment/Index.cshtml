@@ -43,50 +43,42 @@
 
     <section class="cp-kpis" aria-label="Tổng quan hợp đồng">
         <article class="cp-kpi cp-kpi--contracts">
-            <div class="cp-kpi-top">
-                <span class="cp-kpi-label">Tổng hợp đồng</span>
-                <span class="cp-kpi-icon"><i class="bi bi-file-earmark-text" aria-hidden="true"></i></span>
-            </div>
-            <div class="cp-kpi-body">
+            <span class="cp-kpi-icon"><i class="bi bi-file-earmark-text" aria-hidden="true"></i></span>
+            <div class="cp-kpi-copy">
+                <small class="cp-kpi-label">Tổng hợp đồng</small>
                 <strong id="kpiTotal">@Model.Contracts.Statistics.TotalContracts</strong>
+                <span class="cp-kpi-detail">Tất cả hợp đồng trong hệ thống</span>
             </div>
-            <span class="cp-kpi-detail">Tất cả hợp đồng trong hệ thống</span>
         </article>
         <article class="cp-kpi cp-kpi--active">
-            <div class="cp-kpi-top">
-                <span class="cp-kpi-label">Hợp đồng đang hiệu lực</span>
-                <span class="cp-kpi-icon"><i class="bi bi-check-circle" aria-hidden="true"></i></span>
-            </div>
-            <div class="cp-kpi-body">
+            <span class="cp-kpi-icon"><i class="bi bi-check-circle" aria-hidden="true"></i></span>
+            <div class="cp-kpi-copy">
+                <small class="cp-kpi-label">Hợp đồng đang hiệu lực</small>
                 <strong id="kpiActive">@Model.Contracts.Statistics.ActiveContracts</strong>
-            </div>
-            <div class="cp-kpi-progress" aria-label="Tỷ lệ hợp đồng đang hiệu lực">
-                <span class="cp-kpi-progress-track"><span id="kpiActiveBar" style="width: @(activePercent.ToString("0", CultureInfo.InvariantCulture))%"></span></span>
-                <span class="cp-kpi-detail"><b id="kpiActivePercent">@activePercent.ToString("0")%</b> trên tổng số hợp đồng</span>
+                <div class="cp-kpi-progress" aria-label="Tỷ lệ hợp đồng đang hiệu lực">
+                    <span class="cp-kpi-progress-track"><span id="kpiActiveBar" style="width: @(activePercent.ToString("0", CultureInfo.InvariantCulture))%"></span></span>
+                    <span class="cp-kpi-detail"><b id="kpiActivePercent">@activePercent.ToString("0")%</b> trên tổng số hợp đồng</span>
+                </div>
             </div>
         </article>
         <article class="cp-kpi cp-kpi--pending">
-            <div class="cp-kpi-top">
-                <span class="cp-kpi-label">Chờ thanh toán</span>
-                <span class="cp-kpi-icon"><i class="bi bi-clock-history" aria-hidden="true"></i></span>
-            </div>
-            <div class="cp-kpi-body">
+            <span class="cp-kpi-icon"><i class="bi bi-clock-history" aria-hidden="true"></i></span>
+            <div class="cp-kpi-copy">
+                <small class="cp-kpi-label">Chờ thanh toán</small>
                 <strong id="kpiAwaiting">@Model.Contracts.Statistics.AwaitingPaymentContracts</strong>
-            </div>
-            <div class="cp-kpi-progress" aria-label="Tỷ lệ hợp đồng chờ thanh toán">
-                <span class="cp-kpi-progress-track"><span id="kpiAwaitingBar" style="width: @(awaitingPercent.ToString("0", CultureInfo.InvariantCulture))%"></span></span>
-                <span class="cp-kpi-detail"><b id="kpiAwaitingPercent">@awaitingPercent.ToString("0")%</b> trên tổng số hợp đồng</span>
+                <div class="cp-kpi-progress" aria-label="Tỷ lệ hợp đồng chờ thanh toán">
+                    <span class="cp-kpi-progress-track"><span id="kpiAwaitingBar" style="width: @(awaitingPercent.ToString("0", CultureInfo.InvariantCulture))%"></span></span>
+                    <span class="cp-kpi-detail"><b id="kpiAwaitingPercent">@awaitingPercent.ToString("0")%</b> trên tổng số hợp đồng</span>
+                </div>
             </div>
         </article>
         <article class="cp-kpi cp-kpi--revenue cp-kpi-revenue">
-            <div class="cp-kpi-top">
-                <span class="cp-kpi-label">Doanh thu đã thu</span>
-                <span class="cp-kpi-icon"><i class="bi bi-bar-chart-line" aria-hidden="true"></i></span>
-            </div>
-            <div class="cp-kpi-body">
+            <span class="cp-kpi-icon"><i class="bi bi-bar-chart-line" aria-hidden="true"></i></span>
+            <div class="cp-kpi-copy">
+                <small class="cp-kpi-label">Doanh thu đã thu</small>
                 <strong id="kpiRevenue"><span class="cp-kpi-revenue-value">@Model.Contracts.Statistics.TotalCollectedRevenue.ToString("N0", vi)</span><small>đ</small></strong>
+                <span class="cp-kpi-detail">Tổng số tiền đã ghi nhận</span>
             </div>
-            <span class="cp-kpi-detail">Tổng số tiền đã ghi nhận</span>
         </article>
     </section>
 
@@ -227,7 +219,7 @@
 
 <div class="cp-modal" id="editModal" role="dialog" aria-modal="true" aria-labelledby="editModalTitle"><div class="cp-modal-card"><header class="cp-modal-head"><h2 id="editModalTitle">Sửa hợp đồng bản nháp</h2><button type="button" class="cp-drawer-close" data-close-modal="editModal"><i class="bi bi-x-lg"></i></button></header><div class="cp-modal-body"><div class="cp-form-group"><label for="editTotalValue">Tổng giá trị (đ)</label><input class="cp-input" id="editTotalValue" type="number" min="0" step="1000" /></div><div class="cp-form-group"><label for="editContent">Nội dung hợp đồng</label><textarea class="cp-textarea" id="editContent"></textarea></div><div class="cp-form-group"><label for="editTerms">Điều khoản thanh toán</label><textarea class="cp-textarea" id="editTerms"></textarea></div></div><footer class="cp-modal-actions"><button type="button" class="cp-secondary" data-close-modal="editModal">Hủy</button><button type="button" class="cp-primary" id="saveEdit">Lưu thay đổi</button></footer></div></div>
 
-<div class="cp-modal" id="confirmModal" role="dialog" aria-modal="true" aria-labelledby="confirmTitle"><div class="cp-modal-card small"><header class="cp-modal-head"><h2 id="confirmTitle">Xác nhận</h2><button type="button" class="cp-drawer-close" data-close-modal="confirmModal"><i class="bi bi-x-lg"></i></button></header><div class="cp-modal-body"><p id="confirmMessage" style="margin:0;font-size:12px;line-height:1.65;color:#42516a"></p></div><footer class="cp-modal-actions"><button type="button" class="cp-secondary" data-close-modal="confirmModal">Hủy</button><button type="button" class="cp-primary" id="confirmAction">Xác nhận</button></footer></div></div>
+<div class="cp-modal" id="confirmModal" role="dialog" aria-modal="true" aria-labelledby="confirmTitle"><div class="cp-modal-card small"><header class="cp-modal-head"><h2 id="confirmTitle">Xác nhận</h2><button type="button" class="cp-drawer-close" data-close-modal="confirmModal"><i class="bi bi-x-lg"></i></button></header><div class="cp-modal-body"><p id="confirmMessage" style="margin:0;font-size:12px;line-height:1.65;color:var(--rp-text-secondary)"></p></div><footer class="cp-modal-actions"><button type="button" class="cp-secondary" data-close-modal="confirmModal">Hủy</button><button type="button" class="cp-primary" id="confirmAction">Xác nhận</button></footer></div></div>
 
 
 <div class="cp-modal" id="recordPaymentModal" role="dialog" aria-modal="true" aria-labelledby="recordPaymentTitle">
@@ -264,7 +256,7 @@
                 <label for="recordPaymentNote">Ghi chú (Tùy chọn)</label>
                 <input class="cp-input" id="recordPaymentNote" placeholder="Ví dụ: Khách thanh toán tại quầy lễ tân..." />
             </div>
-            <div id="paymentHelperMsg" style="font-size:11.5px;color:#64748B;line-height:1.5;"></div>
+            <div id="paymentHelperMsg" style="font-size:11.5px;color:var(--rp-text-secondary);line-height:1.5;"></div>
         </div>
         <footer class="cp-modal-actions">
             <button type="button" class="cp-secondary" data-close-modal="recordPaymentModal">Hủy</button>
@@ -392,7 +384,7 @@
                 </button>
             </div>
         </div>
-        <footer class="cp-modal-actions" style="justify-content:space-between;border-top:1px solid #E2E8F0;padding:12px 20px;">
+        <footer class="cp-modal-actions" style="justify-content:space-between;border-top:1px solid var(--rp-border);padding:12px 20px;">
             <button type="button" class="cp-secondary" id="btnCopyPayosLink"><i class="bi bi-copy"></i> Sao chép link</button>
             <div style="display:flex;gap:8px;">
                 <button type="button" class="cp-secondary" data-close-modal="payosModal">Đóng</button>

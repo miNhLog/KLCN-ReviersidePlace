@@ -247,8 +247,80 @@ html.sidebar-is-collapsed .backoffice-app .sidebar-brand .sidebar-brand-emblem {
 .backoffice-app #adminMainContent :is(.cp-tabs,.cp-drawer-tabs,.hr-tabs,.event-tabs,.drawer-tabs) { border-bottom-color:var(--rp-border); }
 .backoffice-app #adminMainContent :is(.cp-tab,.cp-drawer-tabs button,.hr-tabs button,.event-tabs button,.drawer-tabs button) { min-height:46px;color:var(--rp-text-muted);font-size:13px;font-weight:700; }
 .backoffice-app #adminMainContent :is(.cp-tab.active,.cp-drawer-tabs button.active,.hr-tabs button.active,.event-tabs button.active,.drawer-tabs button.active) { color:var(--rp-text);border-color:var(--rp-gold-500); }
-.backoffice-app #adminMainContent :is(.account-pagination,.audit-pagination,.food-pagination,.cp-pages,.mm-pagination nav,.hr-pagination,.event-pagination,.notification-pagination) :is(a,button) { width:36px;height:36px;border:1px solid #dce3ea;border-radius:10px;color:#435168;background:#fff; }
-.backoffice-app #adminMainContent :is(.account-pagination,.audit-pagination,.food-pagination,.cp-pages,.mm-pagination nav,.hr-pagination,.event-pagination,.notification-pagination) :is(.active,.current) { color:#fff;border-color:var(--rp-navy-800);background:var(--rp-navy-800); }
+.backoffice-app #adminMainContent :is(
+    .account-pagination,.audit-pagination,.food-pagination,.cp-pages,
+    .mm-pagination nav,.md-pagination nav,.hr-pagination,.event-pagination,
+    .notification-pagination,.incident-pagination,.coord-pagination,#paginationWrapper
+) {
+    display:inline-flex !important;
+    max-width:100%;
+    align-items:stretch !important;
+    gap:0 !important;
+    overflow-x:auto;
+    border-radius:8px;
+    vertical-align:middle;
+}
+.backoffice-app #adminMainContent .food-page-numbers { display:contents !important; }
+.backoffice-app #adminMainContent :is(
+    .account-pagination,.audit-pagination,.food-pagination,.cp-pages,
+    .mm-pagination nav,.md-pagination nav,.hr-pagination,.event-pagination,
+    .notification-pagination,.incident-pagination,.coord-pagination,#paginationWrapper
+) :is(a,button) {
+    width:auto !important;
+    min-width:38px;
+    height:38px !important;
+    margin:0 0 0 -1px !important;
+    padding:0 13px !important;
+    border:1px solid var(--rp-border,#dce3ea) !important;
+    border-radius:0 !important;
+    color:var(--rp-text,#162033) !important;
+    background:var(--rp-surface,#fff) !important;
+    box-shadow:none !important;
+    font-size:13px !important;
+    font-weight:700 !important;
+    line-height:36px;
+    text-decoration:none !important;
+    white-space:nowrap;
+}
+.backoffice-app #adminMainContent :is(
+    .account-pagination,.audit-pagination,.food-pagination,.cp-pages,
+    .mm-pagination nav,.md-pagination nav,.hr-pagination,.event-pagination,
+    .notification-pagination,.incident-pagination,.coord-pagination,#paginationWrapper
+) :is(a,button):first-child { margin-left:0 !important; }
+.backoffice-app #adminMainContent :is(
+    .account-pagination,.audit-pagination,.food-pagination,.cp-pages,
+    .mm-pagination nav,.md-pagination nav,.hr-pagination,.event-pagination,
+    .notification-pagination,.incident-pagination,.coord-pagination,#paginationWrapper
+) :is(a,button):is(:hover,:focus-visible) {
+    position:relative;
+    z-index:2;
+    border-color:var(--rp-gold-500,#c6a15b) !important;
+    color:var(--rp-text,#18181b) !important;
+    background:var(--rp-surface-hover,#f4f4f5) !important;
+    outline:0;
+}
+.backoffice-app #adminMainContent :is(
+    .account-pagination,.audit-pagination,.food-pagination,.cp-pages,
+    .mm-pagination nav,.md-pagination nav,.hr-pagination,.event-pagination,
+    .notification-pagination,.incident-pagination,.coord-pagination,#paginationWrapper
+) :is(.active,.current,[aria-current="page"]) {
+    position:relative;
+    z-index:3;
+    border-color:var(--rp-gold-500,#c6a15b) !important;
+    color:#18181b !important;
+    background:var(--rp-gold-500,#c6a15b) !important;
+    font-weight:800 !important;
+}
+.backoffice-app #adminMainContent :is(
+    .account-pagination,.audit-pagination,.food-pagination,.cp-pages,
+    .mm-pagination nav,.md-pagination nav,.hr-pagination,.event-pagination,
+    .notification-pagination,.incident-pagination,.coord-pagination,#paginationWrapper
+) :is(.disabled,[disabled],[aria-disabled="true"]) {
+    pointer-events:none;
+    color:var(--rp-text-secondary,#52525b) !important;
+    background:var(--rp-surface-muted,#f4f4f5) !important;
+    opacity:1 !important;
+}
 
 /* Modal, drawer, dialog */
 .backoffice-app :is(.account-modal-overlay,.role-action-modal,.cp-modal,.mm-modal,.md-modal-wrap,.hr-modal-wrap,.event-modal,.event-drawer-overlay) { background:rgba(11,18,32,.58);backdrop-filter:blur(3px); }

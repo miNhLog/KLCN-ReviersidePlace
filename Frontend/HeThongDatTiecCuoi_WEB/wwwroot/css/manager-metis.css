@@ -207,6 +207,35 @@ html body.manager-metis-app #adminMainContent :is(
     font-variant-numeric: tabular-nums;
 }
 
+/* Dish statistics inherited the legacy navy page color, which becomes nearly
+   invisible on the dark canvas. Keep labels and values on semantic text tokens. */
+.manager-metis-app #adminMainContent .md-kpis article :is(small, b) {
+    color: var(--rp-text) !important;
+}
+
+.manager-metis-app #adminMainContent .md-kpis article small {
+    color: var(--rp-text-secondary) !important;
+    font-weight: 650 !important;
+}
+
+.manager-metis-app #adminMainContent .md-kpis article b {
+    font-size: 26px !important;
+    font-weight: 750 !important;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+}
+
+.manager-metis-app #adminMainContent .md-kpis article > i {
+    border: 1px solid color-mix(in srgb, var(--rp-gold-500) 38%, var(--rp-border)) !important;
+    color: var(--rp-gold-700) !important;
+    background: var(--rp-gold-100) !important;
+}
+
+html[data-admin-theme="dark"] .manager-metis-app #adminMainContent .md-kpis article > i {
+    color: #f2cf7a !important;
+    background: color-mix(in srgb, var(--rp-gold-500) 16%, var(--rp-surface)) !important;
+}
+
 .manager-metis-app #adminMainContent :is(.manager-kpi-card, .cp-kpi, .hr-kpi, .incident-kpi, .sca-kpi) em {
     color: var(--rp-text-secondary) !important;
 }
@@ -289,6 +318,218 @@ html body.manager-metis-app #adminMainContent :is(
     border-radius: var(--metis-radius-lg) !important;
     background: var(--rp-surface) !important;
     box-shadow: none !important;
+}
+
+/* Event filters size against the available content area, not the viewport.
+   This prevents the reset control from escaping when the sidebar is expanded. */
+.manager-metis-app #adminMainContent .event-panel {
+    container-type: inline-size;
+}
+
+.manager-metis-app #adminMainContent .event-filters {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    grid-template-columns:
+        minmax(0, 1.65fr)
+        minmax(0, 1fr)
+        minmax(0, 1fr)
+        minmax(0, .82fr)
+        minmax(0, .82fr)
+        minmax(106px, .58fr)
+        42px;
+}
+
+.manager-metis-app #adminMainContent .event-filters > * {
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+.manager-metis-app #adminMainContent .event-filters :is(input, select) {
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+.manager-metis-app #adminMainContent .event-filters .filter-submit {
+    white-space: nowrap;
+}
+
+.manager-metis-app #adminMainContent .event-filters label > span {
+    color: var(--rp-text-secondary) !important;
+    font-weight: 650 !important;
+}
+
+html[data-admin-theme="dark"] .manager-metis-app #adminMainContent .event-filters label > span {
+    color: #d4d4d8 !important;
+}
+
+.manager-metis-app #adminMainContent .event-filters .filter-reset {
+    width: 42px !important;
+    min-width: 42px !important;
+    max-width: 42px !important;
+    padding: 0 !important;
+    border-color: var(--rp-border-strong) !important;
+    color: var(--rp-text-secondary) !important;
+    background: var(--rp-surface-muted) !important;
+}
+
+.manager-metis-app #adminMainContent .event-filters .filter-reset:is(:hover, :focus-visible) {
+    border-color: var(--rp-gold-500) !important;
+    color: var(--rp-gold-700) !important;
+    background: var(--rp-gold-100) !important;
+}
+
+@container (max-width: 820px) {
+    .manager-metis-app #adminMainContent .event-filters {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .manager-metis-app #adminMainContent .event-filters .event-search {
+        grid-column: span 2;
+    }
+
+    .manager-metis-app #adminMainContent .event-filters .filter-reset {
+        justify-self: start;
+    }
+}
+
+@container (max-width: 640px) {
+    .manager-metis-app #adminMainContent .event-filters {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .manager-metis-app #adminMainContent .event-filters .event-search {
+        grid-column: 1 / -1;
+    }
+}
+
+@container (max-width: 480px) {
+    .manager-metis-app #adminMainContent .event-filters {
+        grid-template-columns: minmax(0, 1fr) 42px;
+    }
+
+    .manager-metis-app #adminMainContent .event-filters > label,
+    .manager-metis-app #adminMainContent .event-filters .filter-submit {
+        grid-column: 1 / -1;
+    }
+}
+
+/* Coordination calendar uses the same Metis surfaces in both themes. */
+.manager-metis-app #adminMainContent .calendar-toolbar,
+.manager-metis-app #adminMainContent .calendar-content,
+.manager-metis-app #adminMainContent .week-grid {
+    border-color: var(--rp-border) !important;
+    color: var(--rp-text) !important;
+    background: var(--rp-surface) !important;
+    box-shadow: none !important;
+}
+
+.manager-metis-app #adminMainContent .calendar-content {
+    overflow: hidden;
+    border-radius: var(--metis-radius-lg) !important;
+}
+
+.manager-metis-app #adminMainContent .week-grid {
+    border: 0 !important;
+    border-radius: 0 !important;
+}
+
+.manager-metis-app #adminMainContent .week-navigation :is(button, strong),
+.manager-metis-app #adminMainContent .calendar-filters :is(select, label) {
+    color: var(--rp-text) !important;
+}
+
+.manager-metis-app #adminMainContent .week-navigation button,
+.manager-metis-app #adminMainContent .calendar-filters select {
+    border-color: var(--rp-border-strong) !important;
+    background: var(--rp-surface-muted) !important;
+    box-shadow: none !important;
+}
+
+.manager-metis-app #adminMainContent .week-navigation button:is(:hover, :focus-visible),
+.manager-metis-app #adminMainContent .calendar-filters select:focus {
+    border-color: var(--rp-gold-500) !important;
+    color: var(--rp-text) !important;
+    background: var(--rp-surface-hover) !important;
+}
+
+.manager-metis-app #adminMainContent .week-navigation strong {
+    font-variant-numeric: tabular-nums;
+}
+
+.manager-metis-app #adminMainContent .conflict-toggle {
+    color: var(--rp-text-secondary) !important;
+}
+
+html[data-admin-theme="dark"] .manager-metis-app #adminMainContent .conflict-toggle {
+    color: #d4d4d8 !important;
+}
+
+.manager-metis-app #adminMainContent :is(.event-loading, .calendar-empty) {
+    min-height: 420px;
+    border: 0 !important;
+    color: var(--rp-text-secondary) !important;
+    background: var(--rp-surface) !important;
+}
+
+.manager-metis-app #adminMainContent :is(.event-loading, .calendar-empty) :is(i, strong) {
+    color: var(--rp-text-secondary) !important;
+}
+
+.manager-metis-app #adminMainContent .day-column {
+    border-color: var(--rp-border) !important;
+    color: var(--rp-text) !important;
+    background: var(--rp-surface) !important;
+}
+
+.manager-metis-app #adminMainContent .day-column > header {
+    border-color: var(--rp-border) !important;
+    color: var(--rp-text) !important;
+    background: var(--rp-surface-muted) !important;
+}
+
+.manager-metis-app #adminMainContent .day-column.today > header {
+    border-color: color-mix(in srgb, var(--rp-gold-500) 50%, var(--rp-border)) !important;
+    color: var(--rp-gold-700) !important;
+    background: var(--rp-gold-100) !important;
+}
+
+html[data-admin-theme="dark"] .manager-metis-app #adminMainContent .day-column.today > header {
+    color: #f2cf7a !important;
+    background: color-mix(in srgb, var(--rp-gold-500) 16%, var(--rp-surface)) !important;
+}
+
+.manager-metis-app #adminMainContent .shift-slot + .shift-slot {
+    border-color: var(--rp-border) !important;
+}
+
+.manager-metis-app #adminMainContent .shift-slot h4 {
+    color: var(--rp-text-secondary) !important;
+}
+
+.manager-metis-app #adminMainContent .calendar-event {
+    border-color: var(--rp-border-strong) !important;
+    border-left-color: var(--rp-gold-500) !important;
+    color: var(--rp-text-secondary) !important;
+    background: var(--rp-surface-muted) !important;
+}
+
+.manager-metis-app #adminMainContent .calendar-event :is(strong, span) {
+    color: var(--rp-text) !important;
+}
+
+.manager-metis-app #adminMainContent .calendar-event small {
+    color: var(--rp-text-secondary) !important;
+}
+
+.manager-metis-app #adminMainContent .calendar-event.unassigned {
+    border-left-color: var(--metis-badge-warning) !important;
+    background: color-mix(in srgb, var(--metis-badge-warning) 11%, var(--rp-surface)) !important;
+}
+
+.manager-metis-app #adminMainContent .calendar-event.conflict {
+    border-left-color: var(--metis-badge-danger) !important;
+    background: color-mix(in srgb, var(--metis-badge-danger) 11%, var(--rp-surface)) !important;
 }
 
 .manager-metis-app #adminMainContent :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
@@ -544,12 +785,13 @@ html[data-admin-theme="dark"] .manager-metis-app #adminMainContent .manager-pane
     .sca-filter-button, .bi-export-btn, .assign-event-btn, .filter-submit,
     .btn-gold, .role-submit, .banner-btn.gold, .backoffice-hero__primary-btn,
     .banner-add-compact, .drawer-action-btn.gold, .review-submit,
-    .drawer-actions .primary, .modal-actions .primary
+    .drawer-actions .primary, .modal-actions .primary, .coord-filter-submit,
+    .manager-primary-action, .food-button-gold
 ) {
     min-height: 38px;
     border: 1px solid var(--rp-gold-600) !important;
     border-radius: var(--metis-radius) !important;
-    color: #211806 !important;
+    color: #18181b !important;
     background: var(--rp-gold-500) !important;
     box-shadow: none !important;
     font-weight: 600 !important;
@@ -561,13 +803,27 @@ html[data-admin-theme="dark"] .manager-metis-app #adminMainContent .manager-pane
     .sca-filter-button, .bi-export-btn, .assign-event-btn, .filter-submit,
     .btn-gold, .role-submit, .banner-btn.gold, .backoffice-hero__primary-btn,
     .banner-add-compact, .drawer-action-btn.gold, .review-submit,
-    .drawer-actions .primary, .modal-actions .primary
+    .drawer-actions .primary, .modal-actions .primary, .coord-filter-submit,
+    .manager-primary-action, .food-button-gold
 ):hover {
     border-color: var(--rp-gold-700) !important;
-    color: #fff !important;
-    background: var(--rp-gold-700) !important;
+    color: #18181b !important;
+    background: color-mix(in srgb, var(--rp-gold-500) 84%, #fff) !important;
     box-shadow: none !important;
     transform: none !important;
+}
+
+/* Keep the label and decorative icon dark on every Manager gold action. */
+.manager-metis-app #adminMainContent :is(
+    .admin-create-button, .md-btn.gold, .md-btn.navy, .mm-btn.gold, .mm-btn.navy,
+    .cp-primary, .incident-primary, .incident-filter-button, .sca-primary,
+    .sca-filter-button, .bi-export-btn, .assign-event-btn, .filter-submit,
+    .btn-gold, .role-submit, .banner-btn.gold, .backoffice-hero__primary-btn,
+    .banner-add-compact, .drawer-action-btn.gold, .review-submit,
+    .drawer-actions .primary, .modal-actions .primary, .coord-filter-submit,
+    .manager-primary-action, .food-button-gold
+) :is(i, span) {
+    color: inherit !important;
 }
 
 .manager-metis-app #adminMainContent :is(
@@ -1255,6 +1511,69 @@ html[data-admin-theme="dark"] .manager-metis-app #adminMainContent :is(
     background: var(--rp-surface-muted) !important;
 }
 
+.manager-metis-app #createModal .cp-booking-option-heading :is(strong, b) {
+    color: var(--rp-text) !important;
+}
+
+.manager-metis-app #createModal .cp-booking-option-heading strong {
+    color: var(--manager-gold-readable, var(--rp-gold-700)) !important;
+}
+
+.manager-metis-app #createModal .cp-booking-option-meta > span + span::before {
+    color: var(--rp-text-muted) !important;
+}
+
+.manager-metis-app #createModal .cp-booking-option-check {
+    border-color: var(--rp-border-strong) !important;
+    color: transparent !important;
+    background: var(--rp-surface-muted) !important;
+}
+
+.manager-metis-app #createModal .cp-booking-option.selected .cp-booking-option-check {
+    border-color: var(--metis-badge-success) !important;
+    color: #fff !important;
+    background: var(--metis-badge-success) !important;
+}
+
+.manager-metis-app #createModal .cp-booking-summary-head > div > span {
+    color: var(--metis-badge-success) !important;
+}
+
+.manager-metis-app #createModal .cp-booking-summary-head strong,
+.manager-metis-app #createModal .cp-booking-summary-grid dd {
+    color: var(--rp-text) !important;
+}
+
+.manager-metis-app #createModal .cp-booking-summary-grid dt {
+    color: var(--rp-text-secondary) !important;
+}
+
+.manager-metis-app #createModal .cp-booking-summary-badge {
+    border: 1px solid color-mix(in srgb, var(--metis-badge-success) 38%, var(--rp-border)) !important;
+    color: var(--metis-badge-success) !important;
+    background: color-mix(in srgb, var(--metis-badge-success) 13%, var(--rp-surface)) !important;
+}
+
+.manager-metis-app #createModal :is(.cp-create-search-control > i, .cp-money-input > span) {
+    color: var(--rp-text-secondary) !important;
+}
+
+.manager-metis-app #createModal .cp-money-input > span {
+    color: var(--manager-gold-readable, var(--rp-gold-700)) !important;
+}
+
+.manager-metis-app #createModal .cp-create-draft-note {
+    color: var(--rp-text-secondary) !important;
+}
+
+.manager-metis-app #createModal .cp-create-draft-note strong {
+    color: var(--rp-text) !important;
+}
+
+.manager-metis-app #createModal .cp-create-draft-note i {
+    color: var(--manager-gold-readable, var(--rp-gold-700)) !important;
+}
+
 .manager-metis-app #contractDrawer {
     border-left: 1px solid var(--rp-border) !important;
     color: var(--rp-text) !important;
@@ -1331,6 +1650,34 @@ html[data-admin-theme="dark"] .manager-metis-app #contractDrawer .cp-drawer-tabs
     color: #241900 !important;
     font-size: 18px !important;
     -webkit-text-stroke: .25px currentColor;
+}
+
+/* The create flow uses soft, theme-aware icon tiles instead of fixed light colors. */
+.manager-metis-app #createModal :is(.cp-create-title-icon, .cp-booking-option-icon) {
+    border: 1px solid color-mix(in srgb, var(--rp-gold-500) 40%, var(--rp-border)) !important;
+    color: var(--rp-gold-700) !important;
+    background: var(--rp-gold-100) !important;
+    box-shadow: none !important;
+}
+
+.manager-metis-app #createModal :is(.cp-create-title-icon, .cp-booking-option-icon) .bi {
+    color: inherit !important;
+    -webkit-text-stroke: .25px currentColor;
+}
+
+html[data-admin-theme="dark"] .manager-metis-app #createModal :is(.cp-create-title-icon, .cp-booking-option-icon) {
+    border-color: color-mix(in srgb, var(--rp-gold-500) 46%, var(--rp-border)) !important;
+    color: #f2cf7a !important;
+    background: color-mix(in srgb, var(--rp-gold-500) 17%, var(--rp-surface)) !important;
+}
+
+html[data-admin-theme="dark"] .manager-metis-app #createModal .cp-booking-summary-badge {
+    color: #86efac !important;
+    background: color-mix(in srgb, var(--metis-badge-success) 18%, var(--rp-surface)) !important;
+}
+
+html[data-admin-theme="dark"] .manager-metis-app #createModal .cp-booking-summary-head > div > span {
+    color: #86efac !important;
 }
 
 .manager-metis-app #contractDrawer .cp-contract-metric-icon {
@@ -1429,6 +1776,54 @@ html[data-admin-theme="dark"] .manager-metis-app #contractDrawer .cp-drawer-tabs
 
 @keyframes cp-metis-spin {
     to { transform: rotate(360deg); }
+}
+
+/* Manager overview: theme-aware attention icons and a readable report action. */
+.manager-metis-app #adminMainContent .manager-overview-page .manager-page-header-actions > a {
+    min-height: 42px;
+    padding: 0 16px;
+    border: 1px solid var(--rp-gold-500) !important;
+    border-radius: var(--metis-radius) !important;
+    color: #18181b !important;
+    background: var(--rp-gold-500) !important;
+    box-shadow: 0 6px 16px color-mix(in srgb, var(--rp-gold-500) 22%, transparent) !important;
+    text-decoration: none !important;
+    transform: none !important;
+}
+
+.manager-metis-app #adminMainContent .manager-overview-page .manager-page-header-actions > a > i {
+    color: inherit !important;
+}
+
+.manager-metis-app #adminMainContent .manager-overview-page .manager-page-header-actions > a:is(:hover, :focus-visible) {
+    border-color: color-mix(in srgb, var(--rp-gold-500) 78%, #18181b) !important;
+    color: #09090b !important;
+    background: color-mix(in srgb, var(--rp-gold-500) 84%, #fff) !important;
+    outline: 3px solid color-mix(in srgb, var(--rp-gold-500) 24%, transparent);
+    outline-offset: 2px;
+}
+
+.manager-metis-app #adminMainContent .manager-overview-page .manager-severity {
+    border: 1px solid color-mix(in srgb, var(--metis-badge-warning) 36%, var(--rp-border)) !important;
+    color: var(--metis-badge-warning) !important;
+    background: color-mix(in srgb, var(--metis-badge-warning) 13%, var(--rp-surface)) !important;
+    box-shadow: none !important;
+}
+
+.manager-metis-app #adminMainContent .manager-overview-page .manager-severity:is(.severity-high, .severity-critical) {
+    border-color: color-mix(in srgb, var(--metis-badge-danger) 40%, var(--rp-border)) !important;
+    color: var(--metis-badge-danger) !important;
+    background: color-mix(in srgb, var(--metis-badge-danger) 13%, var(--rp-surface)) !important;
+}
+
+html[data-admin-theme="dark"] .manager-metis-app #adminMainContent .manager-overview-page .manager-severity {
+    color: #f2cf7a !important;
+    background: color-mix(in srgb, var(--metis-badge-warning) 19%, var(--rp-surface)) !important;
+}
+
+html[data-admin-theme="dark"] .manager-metis-app #adminMainContent .manager-overview-page .manager-severity:is(.severity-high, .severity-critical) {
+    color: #fca5a5 !important;
+    background: color-mix(in srgb, var(--metis-badge-danger) 19%, var(--rp-surface)) !important;
 }
 
 /* Hall & weekly schedule: keep every surface readable in both themes. */
@@ -1727,8 +2122,1237 @@ html[data-admin-theme="dark"] .manager-metis-app #adminMainContent :is(.current-
     }
 }
 
+/* Banner management: complete Metis surface and typography bridge. */
+.manager-metis-app #adminMainContent .banner-page {
+    color: var(--rp-text) !important;
+}
+
+.manager-metis-app #adminMainContent .banner-panel,
+.manager-metis-app #adminMainContent .banner-panel-head,
+.manager-metis-app #adminMainContent .banner-placement,
+.manager-metis-app #adminMainContent .banner-list,
+.manager-metis-app #adminMainContent .banner-row {
+    border-color: var(--rp-border) !important;
+    color: var(--rp-text) !important;
+    background: var(--rp-surface) !important;
+    background-image: none !important;
+}
+
+.manager-metis-app #adminMainContent .banner-panel-head :is(h2, h3),
+.manager-metis-app #adminMainContent .banner-placement__title h3,
+.manager-metis-app #adminMainContent .banner-copy h3,
+.manager-metis-app #adminMainContent .banner-order b,
+.manager-metis-app #adminMainContent .banner-empty h3 {
+    color: var(--rp-text) !important;
+    font-family: inherit !important;
+}
+
+.manager-metis-app #adminMainContent .banner-panel-head p,
+.manager-metis-app #adminMainContent .banner-placement__title p,
+.manager-metis-app #adminMainContent .banner-copy > small,
+.manager-metis-app #adminMainContent .banner-order small,
+.manager-metis-app #adminMainContent .banner-empty {
+    color: var(--rp-text-secondary) !important;
+}
+
+.manager-metis-app #adminMainContent .banner-placement-nav {
+    border-color: var(--rp-border) !important;
+    background: var(--rp-surface-muted) !important;
+}
+
+.manager-metis-app #adminMainContent .banner-placement-nav a {
+    border-color: var(--rp-border-strong) !important;
+    color: var(--rp-text-secondary) !important;
+    background: var(--rp-surface) !important;
+}
+
+.manager-metis-app #adminMainContent .banner-placement-nav a:is(:hover, :focus-visible) {
+    border-color: var(--rp-gold-500) !important;
+    color: var(--rp-text) !important;
+    background: var(--rp-surface-hover) !important;
+    outline: 3px solid color-mix(in srgb, var(--rp-gold-500) 22%, transparent);
+    outline-offset: 2px;
+}
+
+.manager-metis-app #adminMainContent .banner-placement__head {
+    border-color: var(--rp-border) !important;
+    background: var(--rp-surface-muted) !important;
+    background-image: none !important;
+}
+
+.manager-metis-app #adminMainContent .banner-placement__title > span {
+    border: 1px solid color-mix(in srgb, var(--rp-gold-500) 38%, var(--rp-border)) !important;
+    color: var(--rp-gold-500) !important;
+    background: color-mix(in srgb, var(--rp-gold-500) 12%, var(--rp-surface)) !important;
+}
+
+.manager-metis-app #adminMainContent .banner-placement__count {
+    border: 1px solid var(--rp-border) !important;
+    color: var(--rp-text-secondary) !important;
+    background: var(--rp-surface) !important;
+}
+
+.manager-metis-app #adminMainContent .banner-row > img {
+    border: 1px solid var(--rp-border) !important;
+    background: var(--rp-surface-muted) !important;
+}
+
+.manager-metis-app #adminMainContent .banner-order button {
+    border-color: var(--rp-border-strong) !important;
+    color: var(--rp-text-secondary) !important;
+    background: var(--rp-surface-muted) !important;
+}
+
+.manager-metis-app #adminMainContent .banner-order button:not(:disabled):is(:hover, :focus-visible) {
+    border-color: var(--rp-gold-500) !important;
+    color: var(--rp-text) !important;
+    background: var(--rp-surface-hover) !important;
+}
+
+.manager-metis-app #adminMainContent .banner-copy p {
+    color: var(--rp-gold-500) !important;
+}
+
+.manager-metis-app #adminMainContent .banner-status.on {
+    color: #fff !important;
+    background: var(--metis-badge-success) !important;
+}
+
+.manager-metis-app #adminMainContent .banner-status.off {
+    color: #fff !important;
+    background: var(--metis-badge-secondary) !important;
+}
+
+.manager-metis-app #adminMainContent .banner-empty--compact,
+.manager-metis-app #adminMainContent .banner-empty--compact p {
+    color: var(--rp-text-secondary) !important;
+    background: var(--rp-surface) !important;
+}
+
+.manager-metis-app .banner-dialog,
+.manager-metis-app .banner-dialog > form,
+.manager-metis-app .banner-dialog form > :is(header, footer),
+.manager-metis-app .banner-dialog .banner-form-body {
+    border-color: var(--rp-border) !important;
+    color: var(--rp-text) !important;
+    background: var(--rp-surface) !important;
+    background-image: none !important;
+}
+
+.manager-metis-app .banner-dialog:not(.preview) :is(h2, h3, b, label, legend) {
+    color: var(--rp-text) !important;
+    font-family: inherit !important;
+}
+
+.manager-metis-app .banner-dialog:not(.preview) :is(small, p) {
+    color: var(--rp-text-secondary) !important;
+}
+
+.manager-metis-app .banner-dialog:not(.preview) :is(.banner-image-preview, fieldset) {
+    border-color: var(--rp-border) !important;
+    color: var(--rp-text-secondary) !important;
+    background: var(--rp-surface-muted) !important;
+}
+
+.manager-metis-app .banner-dialog:not(.preview) :is(input, textarea, select) {
+    border-color: var(--rp-border-strong) !important;
+    color: var(--rp-text) !important;
+    background: var(--rp-surface-muted) !important;
+    box-shadow: none !important;
+}
+
+.manager-metis-app .banner-dialog:not(.preview) :is(input, textarea)::placeholder {
+    color: var(--rp-text-muted) !important;
+    opacity: 1;
+}
+
+.manager-metis-app .banner-dialog:not(.preview) select option {
+    color: var(--rp-text) !important;
+    background: var(--rp-surface) !important;
+}
+
+.manager-metis-app .banner-dialog:not(.preview) .banner-upload input[type="file"]::file-selector-button,
+.manager-metis-app .banner-dialog:not(.preview) .banner-upload input[type="file"]::-webkit-file-upload-button {
+    color: var(--rp-text) !important;
+    background: var(--rp-surface-hover) !important;
+}
+
+.manager-metis-app .banner-dialog:not(.preview) header > button,
+.manager-metis-app .banner-dialog:not(.preview) .banner-btn.light {
+    border: 1px solid var(--rp-border) !important;
+    color: var(--rp-text-secondary) !important;
+    background: var(--rp-surface-muted) !important;
+}
+
+.manager-metis-app .banner-dialog:not(.preview) header > button:is(:hover, :focus-visible),
+.manager-metis-app .banner-dialog:not(.preview) .banner-btn.light:is(:hover, :focus-visible) {
+    color: var(--rp-text) !important;
+    background: var(--rp-surface-hover) !important;
+}
+
+html[data-admin-theme="dark"] .manager-metis-app #adminMainContent .banner-panel,
+html[data-admin-theme="dark"] .manager-metis-app .banner-dialog {
+    box-shadow: 0 12px 30px rgba(0, 0, 0, .22) !important;
+}
+
+/* Pricing & policy: neutral Metis surfaces, semantic statuses and complete dark mode. */
+.manager-metis-app #adminMainContent .policy-card {
+    border-color: var(--rp-border) !important;
+    color: var(--rp-text);
+    background: var(--rp-surface) !important;
+    box-shadow: none !important;
+}
+
+.manager-metis-app #adminMainContent .policy-card:hover {
+    border-color: var(--rp-border-strong) !important;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, .06) !important;
+}
+
+.manager-metis-app #adminMainContent .policy-card.is-inactive {
+    opacity: .82;
+}
+
+.manager-metis-app #adminMainContent .policy-info-box {
+    border-color: var(--rp-border) !important;
+    color: var(--rp-text);
+    background: var(--rp-surface-muted) !important;
+    background-image: none !important;
+}
+
+.manager-metis-app #adminMainContent .policy-reference {
+    border: 1px solid var(--rp-border) !important;
+    color: var(--rp-text-secondary) !important;
+    background: var(--rp-surface-muted) !important;
+}
+
+.manager-metis-app #adminMainContent .policy-status {
+    display: inline-flex;
+    min-height: 26px;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    border: 0 !important;
+    border-radius: 999px;
+    color: #fff !important;
+    font-size: 10.5px;
+    font-weight: 700;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.manager-metis-app #adminMainContent .policy-status__dot {
+    width: 6px;
+    height: 6px;
+    flex: 0 0 6px;
+    border-radius: 50%;
+    background: currentColor !important;
+    opacity: .88;
+}
+
+.manager-metis-app #adminMainContent .policy-status--active {
+    background: var(--metis-badge-success) !important;
+}
+
+.manager-metis-app #adminMainContent .policy-status--inactive {
+    background: var(--metis-badge-secondary) !important;
+}
+
+.manager-metis-app #adminMainContent .policy-status--warning {
+    background: var(--metis-badge-warning) !important;
+}
+
+.manager-metis-app #adminMainContent .policy-status--danger {
+    background: var(--metis-badge-danger) !important;
+}
+
+.manager-metis-app #adminMainContent .policy-action {
+    border: 1px solid var(--rp-border) !important;
+    color: var(--rp-text-secondary) !important;
+    background: var(--rp-surface-muted) !important;
+    box-shadow: none !important;
+}
+
+.manager-metis-app #adminMainContent .policy-action:is(:hover, :focus-visible) {
+    border-color: var(--rp-border-strong) !important;
+    color: var(--rp-text) !important;
+    background: var(--rp-surface-hover) !important;
+}
+
+.manager-metis-app #adminMainContent .policy-action--edit {
+    color: var(--rp-gold-700) !important;
+}
+
+.manager-metis-app #adminMainContent .policy-action--success {
+    border-color: color-mix(in srgb, var(--metis-badge-success) 45%, var(--rp-border)) !important;
+    color: var(--metis-badge-success) !important;
+}
+
+.manager-metis-app #adminMainContent .policy-action--warning {
+    border-color: color-mix(in srgb, var(--metis-badge-warning) 45%, var(--rp-border)) !important;
+    color: var(--metis-badge-warning) !important;
+}
+
+.manager-metis-app #adminMainContent :is(
+    #policyModal, #detailModal, #priceModal, #confirmModal, #schedulePolicyModal
+) > div {
+    border: 1px solid var(--rp-border) !important;
+    color: var(--rp-text) !important;
+    background: var(--rp-surface) !important;
+    background-image: none !important;
+}
+
+.manager-metis-app #adminMainContent :is(
+    #policyModal, #detailModal, #priceModal, #confirmModal, #schedulePolicyModal
+) :is(form, [class*="border-b"], [class*="border-t"]) {
+    border-color: var(--rp-border) !important;
+    color: var(--rp-text) !important;
+    background-color: var(--rp-surface) !important;
+    background-image: none !important;
+}
+
+.manager-metis-app #adminMainContent :is(
+    #policyModal, #detailModal, #priceModal, #confirmModal, #schedulePolicyModal
+) :is(input, select, textarea) {
+    border-color: var(--rp-border-strong) !important;
+    color: var(--rp-text) !important;
+    background: var(--rp-surface-muted) !important;
+    box-shadow: none !important;
+    color-scheme: inherit;
+}
+
+.manager-metis-app #adminMainContent :is(
+    #policyModal, #detailModal, #priceModal, #confirmModal, #schedulePolicyModal
+) :is(input, textarea)::placeholder {
+    color: var(--rp-text-muted) !important;
+    opacity: 1;
+}
+
+.manager-metis-app #adminMainContent :is(
+    #policyModal, #detailModal, #priceModal, #confirmModal, #schedulePolicyModal
+) select option {
+    color: var(--rp-text) !important;
+    background: var(--rp-surface) !important;
+}
+
+.manager-metis-app #adminMainContent :is(
+    #policyModal, #detailModal, #priceModal, #confirmModal, #schedulePolicyModal
+) :is(button[class*="bg-white"], button[class*="bg-slate"], button[class*="bg-[#FAF8F5]"]) {
+    border-color: var(--rp-border) !important;
+    color: var(--rp-text-secondary) !important;
+    background: var(--rp-surface-muted) !important;
+}
+
+.manager-metis-app #adminMainContent :is(
+    #policyModal button[type="submit"], #priceModal button[onclick="savePrice()"],
+    #schedulePolicyModal button[type="submit"]
+) {
+    border: 1px solid var(--rp-gold-600) !important;
+    color: #18181b !important;
+    background: var(--rp-gold-500) !important;
+    background-image: none !important;
+}
+
+.manager-metis-app #adminMainContent :is(
+    #policyModal button[type="submit"], #priceModal button[onclick="savePrice()"],
+    #schedulePolicyModal button[type="submit"]
+) :is(i, span) {
+    color: inherit !important;
+}
+
+html[data-admin-theme="dark"] .manager-metis-app #adminMainContent .policy-card:hover {
+    box-shadow: 0 10px 24px rgba(0, 0, 0, .22) !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
     .manager-metis-app *,
     .manager-metis-app *::before,
     .manager-metis-app *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; }
+}
+
+/* Manager theme compatibility audit: legacy Tailwind/Razor surfaces and
+   interaction-only UI stay within the Manager shell and existing Metis tokens. */
+.manager-metis-app #adminMainContent :is(
+    #bookingDetailModal, #createBookingModal, #decorModal, #detailModal,
+    #policyModal, #priceModal, #confirmModal, #schedulePolicyModal,
+    #hallMatrixModal, #mgIncidentFormModal, #mgDetailModal,
+    .hr-modal-wrap, .event-modal, .event-drawer, .employee-drawer
+) { color: var(--rp-text); }
+
+.manager-metis-app #adminMainContent :is(
+    #bookingDetailModal, #createBookingModal, #decorModal, #detailModal,
+    #policyModal, #priceModal, #confirmModal, #schedulePolicyModal,
+    #hallMatrixModal
+) > :is(div, section, form),
+.manager-metis-app #adminMainContent :is(
+    #bookingDetailModal, #createBookingModal, #decorModal, #detailModal,
+    #policyModal, #priceModal, #confirmModal, #schedulePolicyModal,
+    #hallMatrixModal
+) :is(header, footer) {
+    border-color: var(--rp-border) !important;
+    color: var(--rp-text) !important;
+    background-color: var(--rp-surface) !important;
+    background-image: none !important;
+}
+
+.manager-metis-app #adminMainContent :is(
+    #bookingDetailModal, #createBookingModal, #decorModal, #detailModal,
+    #policyModal, #priceModal, #confirmModal, #schedulePolicyModal,
+    #hallMatrixModal, #mgIncidentFormModal, #mgDetailModal,
+    .hr-modal-wrap, .event-modal, .event-drawer, .employee-drawer
+) :is(h1, h2, h3, h4, strong, b, label, legend) { color: var(--rp-text) !important; }
+
+.manager-metis-app #adminMainContent :is(
+    #bookingDetailModal, #createBookingModal, #decorModal, #detailModal,
+    #policyModal, #priceModal, #confirmModal, #schedulePolicyModal,
+    #hallMatrixModal, #mgIncidentFormModal, #mgDetailModal,
+    .hr-modal-wrap, .event-modal, .event-drawer, .employee-drawer
+) :is(p, small, dt, .form-hint, .help-text, .muted, .drawer-loading) {
+    color: var(--rp-text-secondary) !important;
+}
+
+/* Semantic pastel utilities keep their meaning without becoming white islands. */
+html[data-admin-theme="dark"] .manager-metis-app #adminMainContent :is(.bg-blue-50, .bg-sky-50, .bg-indigo-50) {
+    border-color: color-mix(in srgb, var(--metis-badge-primary) 46%, var(--rp-border)) !important;
+    background-color: color-mix(in srgb, var(--metis-badge-primary) 16%, var(--rp-surface)) !important;
+}
+
+html[data-admin-theme="dark"] .manager-metis-app #adminMainContent :is(.bg-emerald-50, .bg-green-50, .bg-teal-50) {
+    border-color: color-mix(in srgb, var(--metis-badge-success) 46%, var(--rp-border)) !important;
+    background-color: color-mix(in srgb, var(--metis-badge-success) 15%, var(--rp-surface)) !important;
+}
+
+html[data-admin-theme="dark"] .manager-metis-app #adminMainContent :is(
+    .bg-amber-50, .bg-yellow-50, .bg-orange-50, [class*="bg-[#FAF8F5]"],
+    [class*="bg-[#FFF8E7]"], [class*="bg-[#F5EFE3]"]
+) {
+    border-color: color-mix(in srgb, var(--metis-badge-warning) 46%, var(--rp-border)) !important;
+    background-color: color-mix(in srgb, var(--metis-badge-warning) 14%, var(--rp-surface)) !important;
+    background-image: none !important;
+}
+
+html[data-admin-theme="dark"] .manager-metis-app #adminMainContent :is(.bg-red-50, .bg-rose-50) {
+    border-color: color-mix(in srgb, var(--metis-badge-danger) 46%, var(--rp-border)) !important;
+    background-color: color-mix(in srgb, var(--metis-badge-danger) 14%, var(--rp-surface)) !important;
+}
+
+html[data-admin-theme="dark"] .manager-metis-app #adminMainContent :is(
+    .text-blue-900, .text-blue-800, .text-blue-700, .text-blue-600,
+    .text-sky-900, .text-sky-800, .text-sky-700
+) { color: #93c5fd !important; }
+
+html[data-admin-theme="dark"] .manager-metis-app #adminMainContent :is(
+    .text-emerald-900, .text-emerald-800, .text-emerald-700, .text-emerald-600,
+    .text-green-900, .text-green-800, .text-green-700
+) { color: #86efac !important; }
+
+html[data-admin-theme="dark"] .manager-metis-app #adminMainContent :is(
+    .text-amber-900, .text-amber-800, .text-amber-700, .text-amber-600,
+    .text-yellow-900, .text-yellow-800, .text-orange-700
+) { color: #f2cf7a !important; }
+
+html[data-admin-theme="dark"] .manager-metis-app #adminMainContent :is(
+    .text-red-900, .text-red-800, .text-red-700, .text-red-600,
+    .text-rose-900, .text-rose-800, .text-rose-700
+) { color: #fca5a5 !important; }
+
+.manager-metis-app #adminMainContent :is(input, select, textarea):disabled,
+.manager-metis-app #adminMainContent :is(input, textarea)[readonly] {
+    border-color: var(--rp-border) !important;
+    color: var(--rp-text-secondary) !important;
+    background: var(--rp-surface-muted) !important;
+    -webkit-text-fill-color: var(--rp-text-secondary);
+    opacity: 1;
+}
+
+.manager-metis-app #adminMainContent :is(input[type="checkbox"], input[type="radio"]) { accent-color: var(--rp-gold-600); }
+.manager-metis-app #adminMainContent :is(input[type="date"], input[type="datetime-local"], input[type="time"]) { color-scheme: light; }
+html[data-admin-theme="dark"] .manager-metis-app #adminMainContent :is(input[type="date"], input[type="datetime-local"], input[type="time"]) { color-scheme: dark; }
+
+.manager-metis-app #adminMainContent :is(.field-validation-error, .validation-message, .form-error, [role="alert"].error) {
+    color: var(--metis-badge-danger) !important;
+}
+html[data-admin-theme="dark"] .manager-metis-app #adminMainContent :is(.field-validation-error, .validation-message, .form-error, [role="alert"].error) {
+    color: #fca5a5 !important;
+}
+
+.manager-metis-app #adminMainContent :is(
+    .loading-overlay, .loading-state, .detail-loading, .drawer-loading,
+    .empty-state, .manager-empty, .no-data, .table-empty
+) {
+    border-color: var(--rp-border) !important;
+    color: var(--rp-text-secondary) !important;
+    background: var(--rp-surface) !important;
+}
+.manager-metis-app #adminMainContent :is(
+    .loading-overlay, .loading-state, .detail-loading, .drawer-loading,
+    .empty-state, .manager-empty, .no-data, .table-empty
+) :is(h2, h3, strong, b) { color: var(--rp-text) !important; }
+
+.manager-metis-app #adminMainContent :is(
+    .custom-scrollbar, .cp-drawer-body, .employee-drawer, .event-drawer,
+    .modal-card, .mm-modal-box, .md-modal-box
+) { scrollbar-color: var(--rp-border-strong) var(--rp-surface-muted); }
+
+.manager-metis-app #adminMainContent :is(
+    .custom-scrollbar, .cp-drawer-body, .employee-drawer, .event-drawer,
+    .modal-card, .mm-modal-box, .md-modal-box
+)::-webkit-scrollbar-track { background: var(--rp-surface-muted) !important; }
+
+.manager-metis-app #adminMainContent :is(
+    .custom-scrollbar, .cp-drawer-body, .employee-drawer, .event-drawer,
+    .modal-card, .mm-modal-box, .md-modal-box
+)::-webkit-scrollbar-thumb {
+    border: 2px solid var(--rp-surface-muted);
+    background: var(--rp-border-strong) !important;
+}
+
+/* Open shared surfaces update immediately with the root theme attribute. */
+.manager-metis-app :is(
+    .notification-panel, .user-dropdown, .topbar-search-results,
+    .toast, .manager-toast, .popover, [role="tooltip"], [role="menu"]
+) {
+    border-color: var(--rp-border) !important;
+    color: var(--rp-text) !important;
+    background: var(--rp-surface) !important;
+}
+.manager-metis-app :is(
+    .notification-panel, .user-dropdown, .topbar-search-results,
+    .toast, .manager-toast, .popover, [role="tooltip"], [role="menu"]
+) :is(p, small, time) { color: var(--rp-text-secondary) !important; }
+
+/* Contract/payment pagination is a neutral surface; Riverside gold is reserved for the current page. */
+.manager-metis-app #adminMainContent .contract-payment-page .cp-pagination {
+    border-top: 1px solid var(--rp-border) !important;
+    color: var(--rp-text-secondary) !important;
+    background: var(--rp-surface) !important;
+    background-image: none !important;
+}
+
+.manager-metis-app #adminMainContent .contract-payment-page .cp-pagination > span {
+    color: var(--rp-text-secondary) !important;
+}
+
+.manager-metis-app #adminMainContent .contract-payment-page .cp-pages {
+    border-color: var(--rp-border) !important;
+    background: var(--rp-surface) !important;
+}
+
+.manager-metis-app #adminMainContent .contract-payment-page .cp-page-btn {
+    border-color: var(--rp-border) !important;
+    color: var(--rp-text) !important;
+    background: var(--rp-surface) !important;
+}
+
+.manager-metis-app #adminMainContent .contract-payment-page .cp-page-btn:is(:hover, :focus-visible) {
+    border-color: var(--rp-gold-500) !important;
+    color: var(--rp-text) !important;
+    background: var(--rp-surface-hover) !important;
+}
+
+.manager-metis-app #adminMainContent .contract-payment-page .cp-page-btn.active {
+    border-color: var(--rp-gold-500) !important;
+    color: #18181b !important;
+    background: var(--rp-gold-500) !important;
+}
+
+.manager-metis-app #adminMainContent .contract-payment-page .cp-page-btn:disabled {
+    border-color: var(--rp-border) !important;
+    color: var(--rp-text-muted) !important;
+    background: var(--rp-surface-muted) !important;
+    opacity: 1 !important;
+}
+
+/* Dish actions and dialogs: the full-screen layer is a backdrop, not a white modal card. */
+.manager-metis-app #adminMainContent .md-card-top details > div {
+    border-color: var(--rp-border) !important;
+    color: var(--rp-text) !important;
+    background: var(--rp-surface) !important;
+}
+
+.manager-metis-app #adminMainContent .md-card-top details button {
+    color: var(--rp-text) !important;
+    background: transparent !important;
+}
+
+.manager-metis-app #adminMainContent .md-card-top details button:is(:hover, :focus-visible) {
+    color: var(--rp-text) !important;
+    background: var(--rp-surface-hover) !important;
+    outline: 0;
+}
+
+.manager-metis-app #adminMainContent .md-modal {
+    width: auto !important;
+    max-width: none !important;
+    max-height: none !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    color: var(--rp-text) !important;
+    background: rgba(9, 13, 22, .7) !important;
+    box-shadow: none !important;
+    backdrop-filter: blur(4px);
+}
+
+.manager-metis-app #adminMainContent .md-modal-box,
+.manager-metis-app #adminMainContent .md-confirm {
+    border: 1px solid var(--rp-border) !important;
+    color: var(--rp-text) !important;
+    background: var(--rp-surface) !important;
+    box-shadow: var(--metis-shadow-float) !important;
+}
+
+.manager-metis-app #adminMainContent .md-modal :is(header, footer) {
+    border-color: var(--rp-border) !important;
+    color: var(--rp-text) !important;
+    background: var(--rp-surface) !important;
+}
+
+.manager-metis-app #adminMainContent .md-modal :is(h2, label, b, .md-delete-image) {
+    color: var(--rp-text) !important;
+}
+
+.manager-metis-app #adminMainContent .md-modal :is(small, p) {
+    color: var(--rp-text-secondary) !important;
+}
+
+.manager-metis-app #adminMainContent .md-modal header button {
+    color: var(--rp-text-secondary) !important;
+    background: transparent !important;
+}
+
+.manager-metis-app #adminMainContent .md-modal header button:is(:hover, :focus-visible) {
+    color: var(--rp-text) !important;
+    background: var(--rp-surface-hover) !important;
+    outline: 0;
+}
+
+.manager-metis-app #adminMainContent .md-modal :is(input, select) {
+    border-color: var(--rp-border-strong) !important;
+    color: var(--rp-text) !important;
+    background: var(--rp-surface) !important;
+}
+
+.manager-metis-app #adminMainContent .md-modal input:disabled {
+    color: var(--rp-text-secondary) !important;
+    background: var(--rp-surface-muted) !important;
+    -webkit-text-fill-color: var(--rp-text-secondary) !important;
+    opacity: 1 !important;
+}
+
+.manager-metis-app #adminMainContent .md-modal .md-preview {
+    border-color: var(--rp-border-strong) !important;
+    color: var(--rp-gold-700) !important;
+    background: var(--rp-surface-muted) !important;
+}
+
+html[data-admin-theme="dark"] .manager-metis-app #adminMainContent .md-modal .md-preview {
+    color: var(--manager-gold-readable) !important;
+}
+
+.manager-metis-app #adminMainContent .md-modal input[type="file"]::file-selector-button {
+    margin-right: 10px;
+    border: 1px solid var(--rp-border-strong);
+    border-radius: var(--metis-radius-sm);
+    padding: 7px 10px;
+    color: var(--rp-text);
+    background: var(--rp-surface-muted);
+    cursor: pointer;
+}
+
+.manager-metis-app #adminMainContent .md-modal .md-btn.light {
+    border: 1px solid var(--rp-border-strong) !important;
+    color: var(--rp-text) !important;
+    background: var(--rp-surface-muted) !important;
+}
+
+.manager-metis-app #adminMainContent .md-modal .md-btn.light:is(:hover, :focus-visible) {
+    border-color: var(--rp-gold-500) !important;
+    background: var(--rp-surface-hover) !important;
+}
+
+/* Menu detail is displayed in a dedicated dialog and follows both Manager themes. */
+.manager-metis-app #adminMainContent .mm-modal {
+    border: 0 !important;
+    border-radius: 0 !important;
+    color: var(--rp-text) !important;
+    background: rgba(9, 13, 22, .7) !important;
+    box-shadow: none !important;
+    backdrop-filter: blur(4px);
+}
+
+.manager-metis-app #adminMainContent .mm-modal-box {
+    border: 1px solid var(--rp-border) !important;
+    color: var(--rp-text) !important;
+    background: var(--rp-surface) !important;
+}
+
+.manager-metis-app #adminMainContent .mm-modal-box > :is(header, footer) {
+    border-color: var(--rp-border) !important;
+    color: var(--rp-text) !important;
+    background: var(--rp-surface) !important;
+}
+
+.manager-metis-app #adminMainContent .mm-detail-modal-icon {
+    border: 1px solid color-mix(in srgb, var(--rp-gold-500) 42%, var(--rp-border));
+    color: var(--rp-gold-700) !important;
+    background: var(--rp-gold-100) !important;
+}
+
+.manager-metis-app #adminMainContent .mm-detail-modal-heading small {
+    color: var(--rp-gold-700) !important;
+}
+
+.manager-metis-app #adminMainContent .mm-detail-modal :is(h2, h3, b, strong) {
+    color: var(--rp-text) !important;
+}
+
+.manager-metis-app #adminMainContent .mm-detail-modal :is(p, small) {
+    color: var(--rp-text-secondary) !important;
+}
+
+.manager-metis-app #adminMainContent .mm-detail-summary {
+    border-color: var(--rp-border) !important;
+    background: var(--rp-surface-muted) !important;
+}
+
+.manager-metis-app #adminMainContent .mm-detail-modal .mm-table-wrap {
+    border-color: var(--rp-border) !important;
+    background: var(--rp-surface) !important;
+}
+
+.manager-metis-app #adminMainContent .mm-detail-modal .mm-table :is(th, td) {
+    border-color: var(--rp-border) !important;
+}
+
+.manager-metis-app #adminMainContent .mm-detail-modal .mm-table th {
+    color: var(--rp-text-secondary) !important;
+    background: var(--rp-surface-muted) !important;
+}
+
+.manager-metis-app #adminMainContent .mm-detail-modal .mm-table td {
+    color: var(--rp-text) !important;
+    background: var(--rp-surface) !important;
+}
+
+.manager-metis-app #adminMainContent .mm-detail-modal .mm-table tbody tr:hover td {
+    background: var(--rp-surface-hover) !important;
+}
+
+.manager-metis-app #adminMainContent .mm-detail-modal .mm-btn.light {
+    border: 1px solid var(--rp-border-strong) !important;
+    color: var(--rp-text) !important;
+    background: var(--rp-surface-muted) !important;
+}
+
+html[data-admin-theme="dark"] .manager-metis-app #adminMainContent .mm-detail-modal-icon,
+html[data-admin-theme="dark"] .manager-metis-app #adminMainContent .mm-detail-modal-heading small {
+    color: var(--manager-gold-readable) !important;
+}
+
+/* Dish detail menu-type labels keep readable foregrounds on both themes. */
+.manager-metis-app #adminMainContent .md-menu-type {
+    border: 1px solid color-mix(in srgb, var(--rp-gold-500) 42%, var(--rp-border)) !important;
+    color: #7a4b00 !important;
+    background: var(--rp-gold-100) !important;
+    font-weight: 750 !important;
+}
+
+.manager-metis-app #adminMainContent .md-affected-type.standard {
+    border: 1px solid color-mix(in srgb, var(--metis-badge-primary) 42%, var(--rp-border)) !important;
+    color: #1e40af !important;
+    background: color-mix(in srgb, var(--metis-badge-primary) 12%, var(--rp-surface)) !important;
+}
+
+html[data-admin-theme="dark"] .manager-metis-app #adminMainContent .md-menu-type {
+    color: #f6d78f !important;
+    background: color-mix(in srgb, var(--rp-gold-500) 18%, var(--rp-surface)) !important;
+}
+
+html[data-admin-theme="dark"] .manager-metis-app #adminMainContent .md-affected-type.standard {
+    color: #bfdbfe !important;
+    background: color-mix(in srgb, var(--metis-badge-primary) 18%, var(--rp-surface)) !important;
+}
+
+/* ==========================================================================
+   Manager statistics + data tables — shared Metis visual language
+   ========================================================================== */
+.manager-metis-app {
+    --manager-stat-orange: #ea580c;
+    --manager-stat-blue: #2563eb;
+    --manager-stat-green: #16a34a;
+    --manager-stat-purple: #7c3aed;
+    --manager-stat-red: #dc2626;
+    --manager-stat-cyan: #0891b2;
+    --manager-table-row-height: 58px;
+}
+
+/* Every statistics collection follows the same responsive grid and spacing. */
+.manager-metis-app #adminMainContent :is(
+    .manager-kpi-grid, .cp-kpis, .mm-kpis, .md-kpis, .hr-kpis,
+    .event-kpis, .incident-kpis, .sca-kpis, .banner-kpis, .bi-kpi-grid
+) {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 248px), 1fr)) !important;
+    gap: 16px !important;
+    margin: 0 0 20px !important;
+}
+
+.manager-metis-app #adminMainContent :is(
+    .manager-kpi-card, .cp-kpi, .mm-kpis > article, .md-kpis > article,
+    .hr-kpis > article, .event-kpis > article, .incident-kpis > article,
+    .sca-kpis > article, .banner-kpis > article, .bi-kpi-card
+) {
+    position: relative !important;
+    display: flex !important;
+    min-width: 0 !important;
+    min-height: 126px !important;
+    align-items: center !important;
+    gap: 16px !important;
+    margin: 0 !important;
+    padding: 20px !important;
+    overflow: hidden !important;
+    border: 1px solid var(--rp-border) !important;
+    border-radius: var(--metis-radius-lg) !important;
+    color: var(--rp-text) !important;
+    background: var(--rp-surface) !important;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+.manager-metis-app #adminMainContent :is(
+    .manager-kpi-card, .cp-kpi, .mm-kpis > article, .md-kpis > article,
+    .hr-kpis > article, .event-kpis > article, .incident-kpis > article,
+    .sca-kpis > article, .banner-kpis > article, .bi-kpi-card
+)::before,
+.manager-metis-app #adminMainContent :is(
+    .manager-kpi-card, .cp-kpi, .mm-kpis > article, .md-kpis > article,
+    .hr-kpis > article, .event-kpis > article, .incident-kpis > article,
+    .sca-kpis > article, .banner-kpis > article, .bi-kpi-card
+)::after {
+    display: none !important;
+    content: none !important;
+}
+
+.manager-metis-app #adminMainContent :is(
+    .manager-kpi-card, .cp-kpi, .mm-kpis > article, .md-kpis > article,
+    .hr-kpis > article, .event-kpis > article, .incident-kpis > article,
+    .sca-kpis > article, .banner-kpis > article, .bi-kpi-card
+):hover {
+    border-color: var(--rp-border-strong) !important;
+    background: var(--rp-surface-hover) !important;
+    box-shadow: 0 8px 22px rgba(9, 9, 11, .06) !important;
+}
+
+/* Normalize the varied legacy icon wrappers without changing their semantics. */
+.manager-metis-app #adminMainContent :is(
+    .manager-kpi-icon, .cp-kpi-icon, .mm-kpis .icon,
+    .md-kpis > article > i, .hr-kpis > article > span,
+    .event-kpis .kpi-icon, .incident-kpis .kpi-icon,
+    .sca-kpi-icon, .banner-kpi-icon, .bi-kpi-icon
+) {
+    display: inline-flex !important;
+    width: 52px !important;
+    height: 52px !important;
+    flex: 0 0 52px !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin: 0 !important;
+    border: 0 !important;
+    border-radius: 14px !important;
+    color: #fff !important;
+    background: var(--manager-stat-orange) !important;
+    box-shadow: 0 7px 16px rgba(234, 88, 12, .20) !important;
+    font-size: 21px !important;
+    line-height: 1 !important;
+}
+
+.manager-metis-app #adminMainContent :is(
+    .manager-kpi-icon, .cp-kpi-icon, .mm-kpis .icon,
+    .md-kpis > article > i, .hr-kpis > article > span,
+    .event-kpis .kpi-icon, .incident-kpis .kpi-icon,
+    .sca-kpi-icon, .banner-kpi-icon, .bi-kpi-icon
+) > i {
+    color: inherit !important;
+    font-size: inherit !important;
+    line-height: 1 !important;
+}
+
+/* Semantic Metis palette repeats consistently across all KPI rows. */
+.manager-metis-app #adminMainContent :is(
+    .manager-kpi-grid, .cp-kpis, .mm-kpis, .md-kpis, .hr-kpis,
+    .event-kpis, .incident-kpis, .sca-kpis, .banner-kpis, .bi-kpi-grid
+) > :nth-child(2) :is(.manager-kpi-icon, .cp-kpi-icon, .icon, .kpi-icon, .sca-kpi-icon, .banner-kpi-icon, .bi-kpi-icon),
+.manager-metis-app #adminMainContent .md-kpis > :nth-child(2) > i,
+.manager-metis-app #adminMainContent .hr-kpis > :nth-child(2) > span {
+    background: var(--manager-stat-blue) !important;
+    box-shadow: 0 7px 16px rgba(37, 99, 235, .20) !important;
+}
+
+.manager-metis-app #adminMainContent :is(
+    .manager-kpi-grid, .cp-kpis, .mm-kpis, .md-kpis, .hr-kpis,
+    .event-kpis, .incident-kpis, .sca-kpis, .banner-kpis, .bi-kpi-grid
+) > :nth-child(3) :is(.manager-kpi-icon, .cp-kpi-icon, .icon, .kpi-icon, .sca-kpi-icon, .banner-kpi-icon, .bi-kpi-icon),
+.manager-metis-app #adminMainContent .md-kpis > :nth-child(3) > i,
+.manager-metis-app #adminMainContent .hr-kpis > :nth-child(3) > span {
+    background: var(--manager-stat-green) !important;
+    box-shadow: 0 7px 16px rgba(22, 163, 74, .20) !important;
+}
+
+.manager-metis-app #adminMainContent :is(
+    .manager-kpi-grid, .cp-kpis, .mm-kpis, .md-kpis, .hr-kpis,
+    .event-kpis, .incident-kpis, .sca-kpis, .banner-kpis, .bi-kpi-grid
+) > :nth-child(4) :is(.manager-kpi-icon, .cp-kpi-icon, .icon, .kpi-icon, .sca-kpi-icon, .banner-kpi-icon, .bi-kpi-icon),
+.manager-metis-app #adminMainContent .md-kpis > :nth-child(4) > i,
+.manager-metis-app #adminMainContent .hr-kpis > :nth-child(4) > span {
+    background: var(--manager-stat-purple) !important;
+    box-shadow: 0 7px 16px rgba(124, 58, 237, .20) !important;
+}
+
+.manager-metis-app #adminMainContent :is(
+    .manager-kpi-grid, .cp-kpis, .mm-kpis, .md-kpis, .hr-kpis,
+    .event-kpis, .incident-kpis, .sca-kpis, .banner-kpis, .bi-kpi-grid
+) > :nth-child(5) :is(.manager-kpi-icon, .cp-kpi-icon, .icon, .kpi-icon, .sca-kpi-icon, .banner-kpi-icon, .bi-kpi-icon) {
+    background: var(--manager-stat-cyan) !important;
+    box-shadow: 0 7px 16px rgba(8, 145, 178, .20) !important;
+}
+
+.manager-metis-app #adminMainContent :is(
+    .manager-kpi-grid, .cp-kpis, .mm-kpis, .md-kpis, .hr-kpis,
+    .event-kpis, .incident-kpis, .sca-kpis, .banner-kpis, .bi-kpi-grid
+) > :nth-child(6) :is(.manager-kpi-icon, .cp-kpi-icon, .icon, .kpi-icon, .sca-kpi-icon, .banner-kpi-icon, .bi-kpi-icon),
+.manager-metis-app #adminMainContent :is(.critical-kpi, .is-warning) :is(.manager-kpi-icon, .kpi-icon) {
+    background: var(--manager-stat-red) !important;
+    box-shadow: 0 7px 16px rgba(220, 38, 38, .20) !important;
+}
+
+.manager-metis-app #adminMainContent :is(
+    .manager-kpi-card, .mm-kpis > article, .md-kpis > article,
+    .hr-kpis > article, .event-kpis > article, .incident-kpis > article,
+    .sca-kpis > article, .banner-kpis > article, .bi-kpi-card
+) > :is(div, span:not(.manager-kpi-icon, .icon, .kpi-icon, .sca-kpi-icon, .banner-kpi-icon, .bi-kpi-icon)) {
+    min-width: 0;
+}
+
+.manager-metis-app #adminMainContent :is(
+    .manager-kpi-card, .cp-kpi, .mm-kpis > article, .md-kpis > article,
+    .hr-kpis > article, .event-kpis > article, .incident-kpis > article,
+    .sca-kpis > article, .banner-kpis > article, .bi-kpi-card
+) :is(small, .cp-kpi-label, .bi-kpi-label) {
+    display: block;
+    margin: 0 0 6px !important;
+    color: var(--rp-text-secondary) !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    letter-spacing: .035em !important;
+    line-height: 1.35 !important;
+    text-transform: uppercase !important;
+}
+
+.manager-metis-app #adminMainContent :is(
+    .manager-kpi-card > div > strong,
+    .cp-kpi .cp-kpi-body > strong,
+    .mm-kpis > article > div > strong,
+    .md-kpis > article > span > b,
+    .hr-kpis > article > div > strong,
+    .event-kpis > article > div > strong,
+    .incident-kpis > article > div > strong,
+    .sca-kpis > article > div > strong,
+    .banner-kpis > article > div > strong,
+    .bi-kpi-card .bi-kpi-value
+) {
+    display: block;
+    margin: 0 !important;
+    color: var(--rp-text) !important;
+    font-size: clamp(24px, 2vw, 30px) !important;
+    font-weight: 650 !important;
+    font-variant-numeric: tabular-nums lining-nums;
+    letter-spacing: -.025em !important;
+    line-height: 1.15 !important;
+    overflow-wrap: anywhere;
+}
+
+/* Report and contract cards have a vertical information hierarchy. */
+.manager-metis-app #adminMainContent .bi-kpi-card {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    gap: 8px !important;
+}
+
+.manager-metis-app #adminMainContent :is(.cp-kpi-top, .bi-kpi-card > .flex:first-child) {
+    display: flex !important;
+    width: 100%;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 12px !important;
+}
+
+.manager-metis-app #adminMainContent .bi-kpi-card > .mt-3 {
+    margin-top: 4px !important;
+}
+
+.manager-metis-app #adminMainContent .bi-kpi-card .bi-kpi-meta :is(strong, b),
+.manager-metis-app #adminMainContent .cp-kpi .cp-kpi-detail :is(strong, b) {
+    display: inline !important;
+    color: inherit !important;
+    font-size: inherit !important;
+    font-weight: 650 !important;
+    letter-spacing: normal !important;
+    line-height: inherit !important;
+}
+
+/* Contract KPIs use the same compact horizontal Metis card as the overview. */
+.manager-metis-app #adminMainContent .contract-payment-page .cp-kpis {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+}
+
+.manager-metis-app #adminMainContent .contract-payment-page .cp-kpi {
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 14px !important;
+    min-height: 126px !important;
+    padding: 18px !important;
+}
+
+.manager-metis-app #adminMainContent .contract-payment-page .cp-kpi-copy {
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.manager-metis-app #adminMainContent .contract-payment-page .cp-kpi-copy > .cp-kpi-label {
+    margin-bottom: 5px !important;
+}
+
+.manager-metis-app #adminMainContent .contract-payment-page .cp-kpi-copy > strong {
+    display: flex !important;
+    align-items: baseline;
+    gap: 4px;
+    margin: 0 !important;
+    color: var(--rp-text) !important;
+    font-size: clamp(22px, 1.55vw, 28px) !important;
+    font-weight: 650 !important;
+    font-variant-numeric: tabular-nums lining-nums;
+    letter-spacing: -.025em !important;
+    line-height: 1.15 !important;
+    white-space: nowrap;
+}
+
+.manager-metis-app #adminMainContent .contract-payment-page .cp-kpi-revenue-value {
+    color: inherit !important;
+    font: inherit !important;
+}
+
+.manager-metis-app #adminMainContent .contract-payment-page .cp-kpi-copy > strong > small {
+    display: inline !important;
+    margin: 0 !important;
+    color: var(--rp-text-secondary) !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    letter-spacing: normal !important;
+    text-transform: none !important;
+}
+
+.manager-metis-app #adminMainContent .contract-payment-page .cp-kpi-progress {
+    width: 100%;
+    margin-top: 8px !important;
+}
+
+.manager-metis-app #adminMainContent .contract-payment-page .cp-kpi-progress-track {
+    width: 100%;
+    height: 5px;
+    background: var(--rp-surface-sunken) !important;
+}
+
+.manager-metis-app #adminMainContent .contract-payment-page .cp-kpi-detail {
+    display: block;
+    margin-top: 7px !important;
+    white-space: normal;
+}
+
+/* The four-card features stay on one row at desktop widths. */
+@media (min-width: 1200px) {
+    .manager-metis-app #adminMainContent :is(
+        .cp-kpis, .mm-kpis, .md-kpis, .hr-kpis, .event-kpis, .bi-kpi-grid
+    ) {
+        grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    }
+}
+
+@media (min-width: 768px) and (max-width: 1199.98px) {
+    .manager-metis-app #adminMainContent :is(
+        .cp-kpis, .mm-kpis, .md-kpis, .hr-kpis, .event-kpis, .bi-kpi-grid
+    ) {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+}
+
+/* Dish KPI icons must not inherit the legacy translucent gold tiles. */
+.manager-metis-app #adminMainContent .md-kpis > article:nth-child(1) > i {
+    color: #fff !important;
+    background: var(--manager-stat-orange) !important;
+    box-shadow: 0 7px 16px rgba(234, 88, 12, .20) !important;
+}
+
+.manager-metis-app #adminMainContent .md-kpis > article:nth-child(2) > i {
+    color: #fff !important;
+    background: var(--manager-stat-blue) !important;
+    box-shadow: 0 7px 16px rgba(37, 99, 235, .20) !important;
+}
+
+.manager-metis-app #adminMainContent .md-kpis > article:nth-child(3) > i {
+    color: #fff !important;
+    background: var(--manager-stat-green) !important;
+    box-shadow: 0 7px 16px rgba(22, 163, 74, .20) !important;
+}
+
+.manager-metis-app #adminMainContent .md-kpis > article:nth-child(4) > i {
+    color: #fff !important;
+    background: var(--manager-stat-purple) !important;
+    box-shadow: 0 7px 16px rgba(124, 58, 237, .20) !important;
+}
+
+.manager-metis-app #adminMainContent :is(
+    .manager-kpi-card, .cp-kpi, .mm-kpis > article, .md-kpis > article,
+    .hr-kpis > article, .event-kpis > article, .incident-kpis > article,
+    .sca-kpis > article, .banner-kpis > article, .bi-kpi-card
+) :is(em, div > span:not(.manager-kpi-icon, .icon, .kpi-icon, .sca-kpi-icon, .banner-kpi-icon, .bi-kpi-icon), .cp-kpi-detail, .bi-kpi-meta) {
+    margin-top: 7px !important;
+    color: var(--rp-text-secondary) !important;
+    font-size: 12.5px !important;
+    font-style: normal !important;
+    font-weight: 400 !important;
+    line-height: 1.4 !important;
+}
+
+/* Tables are one neutral Metis surface, regardless of their feature stylesheet. */
+.manager-metis-app #adminMainContent :is(
+    .manager-table-wrap, .cp-table-wrap, .mm-table-wrap, .md-table-wrap,
+    .hr-table-scroll, .event-table-wrap, .incident-table-wrap, .sca-table-wrap,
+    .role-table-wrap, .table-responsive, .overflow-auto:has(> table)
+) {
+    max-width: 100%;
+    overflow-x: auto !important;
+    border: 1px solid var(--rp-border) !important;
+    border-radius: var(--metis-radius-lg) !important;
+    background: var(--rp-surface) !important;
+    box-shadow: none !important;
+    scrollbar-color: var(--rp-border-strong) var(--rp-surface-muted);
+}
+
+.manager-metis-app #adminMainContent :is(
+    .manager-data-table, .cp-table, .mm-table, .md-table, .hr-table,
+    .event-table, .incident-table, .sca-table, .role-history-table,
+    .matrix-table, table
+) {
+    width: 100% !important;
+    margin: 0 !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    color: var(--rp-text) !important;
+    background: var(--rp-surface) !important;
+    font-size: 13px !important;
+}
+
+.manager-metis-app #adminMainContent :is(
+    .manager-data-table, .cp-table, .mm-table, .md-table, .hr-table,
+    .event-table, .incident-table, .sca-table, .role-history-table,
+    .matrix-table, table
+) thead th {
+    position: relative;
+    min-height: 44px;
+    padding: 12px 16px !important;
+    border: 0 !important;
+    border-bottom: 1px solid var(--rp-border) !important;
+    color: var(--rp-text-secondary) !important;
+    background: var(--rp-surface-muted) !important;
+    font-size: 11px !important;
+    font-weight: 650 !important;
+    letter-spacing: .045em !important;
+    line-height: 1.35 !important;
+    text-align: left;
+    text-transform: uppercase !important;
+    white-space: nowrap;
+}
+
+.manager-metis-app #adminMainContent :is(
+    .manager-data-table, .cp-table, .mm-table, .md-table, .hr-table,
+    .event-table, .incident-table, .sca-table, .role-history-table,
+    .matrix-table, table
+) tbody td {
+    height: var(--manager-table-row-height);
+    padding: 12px 16px !important;
+    border: 0 !important;
+    border-bottom: 1px solid var(--rp-border) !important;
+    color: var(--rp-text-secondary) !important;
+    background: var(--rp-surface) !important;
+    font-size: 13px !important;
+    line-height: 1.45 !important;
+    vertical-align: middle !important;
+}
+
+.manager-metis-app #adminMainContent :is(
+    .manager-data-table, .cp-table, .mm-table, .md-table, .hr-table,
+    .event-table, .incident-table, .sca-table, .role-history-table,
+    .matrix-table, table
+) tbody tr:last-child td {
+    border-bottom: 0 !important;
+}
+
+.manager-metis-app #adminMainContent :is(
+    .manager-data-table, .cp-table, .mm-table, .md-table, .hr-table,
+    .event-table, .incident-table, .sca-table, .role-history-table,
+    .matrix-table, table
+) tbody tr:hover td {
+    background: var(--rp-surface-hover) !important;
+}
+
+.manager-metis-app #adminMainContent table td :is(strong, b, a:not(.icon-action, .sca-icon-action)) {
+    color: var(--rp-text) !important;
+    font-size: inherit !important;
+    font-weight: 600 !important;
+    letter-spacing: normal !important;
+}
+
+.manager-metis-app #adminMainContent table td :is(time, .currency, [class*="amount"], [class*="price"]) {
+    font-variant-numeric: tabular-nums lining-nums;
+}
+
+html[data-admin-theme="dark"] .manager-metis-app #adminMainContent :is(
+    .manager-kpi-card, .cp-kpi, .mm-kpis > article, .md-kpis > article,
+    .hr-kpis > article, .event-kpis > article, .incident-kpis > article,
+    .sca-kpis > article, .banner-kpis > article, .bi-kpi-card
+):hover {
+    box-shadow: 0 10px 26px rgba(0, 0, 0, .20) !important;
+}
+
+@media (max-width: 767.98px) {
+    .manager-metis-app #adminMainContent :is(
+        .manager-kpi-grid, .cp-kpis, .mm-kpis, .md-kpis, .hr-kpis,
+        .event-kpis, .incident-kpis, .sca-kpis, .banner-kpis, .bi-kpi-grid
+    ) {
+        grid-template-columns: 1fr !important;
+        gap: 12px !important;
+    }
+
+    .manager-metis-app #adminMainContent :is(
+        .manager-kpi-card, .cp-kpi, .mm-kpis > article, .md-kpis > article,
+        .hr-kpis > article, .event-kpis > article, .incident-kpis > article,
+        .sca-kpis > article, .banner-kpis > article, .bi-kpi-card
+    ) {
+        min-height: 112px !important;
+        padding: 16px !important;
+    }
+
+    .manager-metis-app #adminMainContent :is(
+        .manager-kpi-icon, .cp-kpi-icon, .mm-kpis .icon,
+        .md-kpis > article > i, .hr-kpis > article > span,
+        .event-kpis .kpi-icon, .incident-kpis .kpi-icon,
+        .sca-kpi-icon, .banner-kpi-icon, .bi-kpi-icon
+    ) {
+        width: 48px !important;
+        height: 48px !important;
+        flex-basis: 48px !important;
+        font-size: 19px !important;
+    }
 }

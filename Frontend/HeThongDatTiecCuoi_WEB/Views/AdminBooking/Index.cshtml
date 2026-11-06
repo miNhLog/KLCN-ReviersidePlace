@@ -1229,8 +1229,8 @@
             // Nút Previous
             const prevBtn = document.createElement('button');
             prevBtn.type = 'button';
-            prevBtn.className = `px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 font-medium ${currentPage === 1 ? 'opacity-40 cursor-not-allowed' : 'hover:bg-slate-100 cursor-pointer'}`;
-            prevBtn.innerHTML = '<i class="fa-solid fa-chevron-left text-[10px]"></i>';
+            prevBtn.className = `pagination-edge ${currentPage === 1 ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`;
+            prevBtn.textContent = 'Trước';
             if (currentPage > 1) prevBtn.onclick = () => executeFilter(currentPage - 1);
             wrapper.appendChild(prevBtn);
 
@@ -1244,9 +1244,9 @@
                 const btn = document.createElement('button');
                 btn.type = 'button';
                 if (i === currentPage) {
-                    btn.className = 'px-3 py-1.5 rounded-lg bg-[#B89758] text-white font-bold border border-[#B89758] cursor-pointer';
+                    btn.className = 'active cursor-pointer';
                 } else {
-                    btn.className = 'px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 font-medium hover:bg-slate-100 cursor-pointer';
+                    btn.className = 'cursor-pointer';
                 }
                 btn.innerText = i;
                 btn.onclick = () => executeFilter(i);
@@ -1256,8 +1256,8 @@
             // Nút Next
             const nextBtn = document.createElement('button');
             nextBtn.type = 'button';
-            nextBtn.className = `px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 font-medium ${currentPage === totalPages ? 'opacity-40 cursor-not-allowed' : 'hover:bg-slate-100 cursor-pointer'}`;
-            nextBtn.innerHTML = '<i class="fa-solid fa-chevron-right text-[10px]"></i>';
+            nextBtn.className = `pagination-edge ${currentPage === totalPages ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`;
+            nextBtn.textContent = 'Sau';
             if (currentPage < totalPages) nextBtn.onclick = () => executeFilter(currentPage + 1);
             wrapper.appendChild(nextBtn);
         }

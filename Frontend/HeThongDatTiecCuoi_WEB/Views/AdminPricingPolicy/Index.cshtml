@@ -121,6 +121,11 @@
                 <i class="fa-solid fa-file-excel text-emerald-600 text-sm"></i>
                 <span class="hidden sm:inline">Xuất Excel</span>
             </button>
+
+            <button id="btnCreate" onclick="openPolicyModal()" class="admin-create-button px-5 py-2.5 bg-gradient-to-r from-[#B89758] to-[#9E7E3F] hover:from-[#A8884A] hover:to-[#8E7035] text-white font-bold text-xs rounded-lg shadow-sm flex items-center justify-center gap-2 transition-all focus-ring min-h-[42px]">
+                <i class="fa-solid fa-plus text-xs" aria-hidden="true"></i>
+                <span id="btnCreateLabel">Thêm chính sách mới</span>
+            </button>
         </div>
     </div>
 
@@ -182,59 +187,7 @@
             </button>
         </div>
 
-        <!-- Create button -->
-        <button id="btnCreate" onclick="openPolicyModal()" class="admin-create-button px-5 py-2.5 bg-gradient-to-r from-[#B89758] to-[#9E7E3F] hover:from-[#A8884A] hover:to-[#8E7035] text-white font-bold text-xs rounded-lg shadow-sm flex items-center justify-center gap-2 transition-all focus-ring min-h-[42px] w-full lg:w-auto lg:flex-shrink-0">
-            <i class="fa-solid fa-plus text-xs"></i>
-            <span id="btnCreateLabel">Thêm chính sách mới</span>
-        </button>
     </section>
-
-    <!-- ============ 4. STATS BAR (RESPONSIVE) ============ -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <div class="bg-white rounded-xl border border-slate-200 p-4 sm:p-5 shadow-sm">
-            <div class="flex items-center justify-between mb-3">
-                <div class="w-9 h-9 rounded-lg bg-[#B89758]/15 border border-[#B89758]/30 flex items-center justify-center text-[#8C6D32]">
-                    <i class="fa-solid fa-file-signature text-sm"></i>
-                </div>
-            </div>
-            <div class="text-xl sm:text-2xl font-serif font-bold text-slate-900" id="statPolicies">0</div>
-            <div class="text-xs text-slate-500 mt-1">Điều khoản đang quản lý</div>
-            <div class="text-[11px] text-emerald-600 font-semibold mt-1.5" id="statPoliciesActive">0 đang hiệu lực</div>
-        </div>
-
-        <div class="bg-white rounded-xl border border-slate-200 p-4 sm:p-5 shadow-sm">
-            <div class="flex items-center justify-between mb-3">
-                <div class="w-9 h-9 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600">
-                    <i class="fa-solid fa-building-columns text-sm"></i>
-                </div>
-            </div>
-            <div class="text-xl sm:text-2xl font-serif font-bold text-slate-900" id="statHalls">0</div>
-            <div class="text-xs text-slate-500 mt-1">Đại sảnh hoạt động</div>
-            <div class="text-[11px] text-blue-600 font-semibold mt-1.5" id="statHallsActive">0 sẵn sàng khai thác</div>
-        </div>
-
-        <div class="bg-white rounded-xl border border-slate-200 p-4 sm:p-5 shadow-sm">
-            <div class="flex items-center justify-between mb-3">
-                <div class="w-9 h-9 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600">
-                    <i class="fa-solid fa-coins text-sm"></i>
-                </div>
-            </div>
-            <div class="text-lg sm:text-xl font-serif font-bold text-slate-900 leading-tight" id="statAvgPrice">0 đ</div>
-            <div class="text-xs text-slate-500 mt-1">Đơn giá thuê trung bình</div>
-            <div class="text-[11px] text-slate-500 font-medium mt-1.5">Chưa gồm hệ số phụ thu</div>
-        </div>
-
-        <div class="bg-white rounded-xl border border-slate-200 p-4 sm:p-5 shadow-sm">
-            <div class="flex items-center justify-between mb-3">
-                <div class="w-9 h-9 rounded-lg bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600">
-                    <i class="fa-solid fa-chart-line text-sm"></i>
-                </div>
-            </div>
-            <div class="text-xl sm:text-2xl font-serif font-bold text-emerald-600" id="statOccupancy">0%</div>
-            <div class="text-xs text-slate-500 mt-1">Công suất khai thác</div>
-            <div class="text-[11px] text-emerald-600 font-semibold mt-1.5">Bình quân 9 đại sảnh</div>
-        </div>
-    </div>
 
     <!-- ============ 5. POLICY LIST (TAB 1) ============ -->
     <div id="container-payment" class="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4"></div>
@@ -243,8 +196,8 @@
     <div id="container-pricing" class="hidden grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4"></div>
     <section id="container-schedule" class="hidden space-y-4">
         @if(ViewBag.ScheduleChangePolicyError is string policyError){<div class="bg-rose-50 text-rose-800 border border-rose-200 rounded-xl p-4">@policyError</div>}
-        @if(schedulePolicyPage.Active is { } policy){<div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm"><div class="flex justify-between flex-wrap gap-3"><div><p class="text-xs text-[#8C6D32] font-bold">@policy.PolicyCode · phiên bản @policy.Version</p><h3 class="font-serif text-xl font-bold">Chính sách thay đổi lịch đang hiệu lực</h3><p class="text-xs text-slate-500">Hiệu lực từ @policy.EffectiveFrom.ToString("dd/MM/yyyy HH:mm") · @policy.Status</p></div><button type="button" onclick="openSchedulePolicyModal()" class="px-4 py-2 bg-[#B89758] text-white rounded-lg text-xs font-bold">Tạo phiên bản mới</button></div><div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-5"><div class="bg-slate-50 p-3 rounded-lg"><small>Gửi online tối thiểu</small><b class="block">@policy.OnlineMinimumDays ngày</b></div><div class="bg-slate-50 p-3 rounded-lg"><small>Ngày mới tối thiểu</small><b class="block">@policy.NewDateMinimumDays ngày</b></div><div class="bg-slate-50 p-3 rounded-lg"><small>Thanh toán</small><b class="block">@policy.PaymentWindowMinutes phút</b></div><div class="bg-slate-50 p-3 rounded-lg"><small>Giữ chỗ tạm</small><b class="block">@policy.HoldWindowMinutes phút</b></div></div><div class="overflow-auto mt-5"><table class="w-full text-xs"><thead><tr class="text-left border-b"><th class="p-3">Khoảng ngày</th><th>Phụ phí</th><th>Khách gửi online</th></tr></thead><tbody>@foreach(var tier in policy.Tiers.OrderBy(x=>x.MinimumDays)){<tr class="border-b"><td class="p-3">@(tier.MaximumDays.HasValue?$"{tier.MinimumDays}–{tier.MaximumDays} ngày":$"Từ {tier.MinimumDays} ngày")</td><td>@tier.FeeAmount.ToString("N0") ₫</td><td>@(tier.CustomerOnlineAllowed?"Cho phép":"Không cho phép")</td></tr>}</tbody></table></div></div>}
-        <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm"><h3 class="font-serif text-lg font-bold mb-3">Lịch sử phiên bản</h3><div class="overflow-auto"><table class="w-full text-xs"><thead><tr class="text-left border-b"><th class="p-3">Phiên bản</th><th>Hiệu lực từ</th><th>Hiệu lực đến</th><th>Trạng thái</th><th>Ghi chú</th></tr></thead><tbody>@foreach(var p in schedulePolicyPage.History.OrderByDescending(x=>x.Version)){<tr class="border-b"><td class="p-3"><b>v@p.Version</b></td><td>@p.EffectiveFrom.ToString("dd/MM/yyyy HH:mm")</td><td>@(p.EffectiveTo?.ToString("dd/MM/yyyy HH:mm")??"—")</td><td>@p.Status</td><td>@p.ChangeNote</td></tr>}</tbody></table></div></div>
+        @if(schedulePolicyPage.Active is { } policy){<div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm"><div class="flex justify-between flex-wrap gap-3"><div><p class="text-xs text-[#8C6D32] font-bold">@policy.PolicyCode · phiên bản @policy.Version</p><h3 class="font-serif text-xl font-bold">Chính sách thay đổi lịch đang hiệu lực</h3><div class="flex items-center gap-2 mt-1"><p class="text-xs text-slate-500">Hiệu lực từ @policy.EffectiveFrom.ToString("dd/MM/yyyy HH:mm")</p><span class="policy-status policy-status--active"><span class="policy-status__dot"></span>@policy.Status</span></div></div><button type="button" onclick="openSchedulePolicyModal()" class="admin-create-button px-4 py-2 bg-[#B89758] text-white rounded-lg text-xs font-bold">Tạo phiên bản mới</button></div><div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-5"><div class="bg-slate-50 p-3 rounded-lg"><small>Gửi online tối thiểu</small><b class="block">@policy.OnlineMinimumDays ngày</b></div><div class="bg-slate-50 p-3 rounded-lg"><small>Ngày mới tối thiểu</small><b class="block">@policy.NewDateMinimumDays ngày</b></div><div class="bg-slate-50 p-3 rounded-lg"><small>Thanh toán</small><b class="block">@policy.PaymentWindowMinutes phút</b></div><div class="bg-slate-50 p-3 rounded-lg"><small>Giữ chỗ tạm</small><b class="block">@policy.HoldWindowMinutes phút</b></div></div><div class="overflow-auto mt-5"><table class="w-full text-xs"><thead><tr class="text-left border-b"><th class="p-3">Khoảng ngày</th><th>Phụ phí</th><th>Khách gửi online</th></tr></thead><tbody>@foreach(var tier in policy.Tiers.OrderBy(x=>x.MinimumDays)){<tr class="border-b"><td class="p-3">@(tier.MaximumDays.HasValue?$"{tier.MinimumDays}–{tier.MaximumDays} ngày":$"Từ {tier.MinimumDays} ngày")</td><td>@tier.FeeAmount.ToString("N0") ₫</td><td>@(tier.CustomerOnlineAllowed?"Cho phép":"Không cho phép")</td></tr>}</tbody></table></div></div>}
+        <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm"><h3 class="font-serif text-lg font-bold mb-3">Lịch sử phiên bản</h3><div class="overflow-auto"><table class="w-full text-xs"><thead><tr class="text-left border-b"><th class="p-3">Phiên bản</th><th>Hiệu lực từ</th><th>Hiệu lực đến</th><th>Trạng thái</th><th>Ghi chú</th></tr></thead><tbody>@foreach(var p in schedulePolicyPage.History.OrderByDescending(x=>x.Version)){<tr class="border-b"><td class="p-3"><b>v@p.Version</b></td><td>@p.EffectiveFrom.ToString("dd/MM/yyyy HH:mm")</td><td>@(p.EffectiveTo?.ToString("dd/MM/yyyy HH:mm")??"—")</td><td><span class="policy-status @(p.Status == "ACTIVE" || p.Status == "Hiệu lực" ? "policy-status--active" : "policy-status--inactive")"><span class="policy-status__dot"></span>@p.Status</span></td><td>@p.ChangeNote</td></tr>}</tbody></table></div></div>
     </section>
 
 </div>
@@ -425,7 +378,6 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             switchTab('payment');
-            updateStats();
 
             document.getElementById('confirmOkBtn').addEventListener('click', () => {
                 if (confirmCallback) confirmCallback();
@@ -436,22 +388,6 @@
         function showToast(title, msg, ok = true) {
             if (ok) window.RiversideToast?.success(msg, { title });
             else window.RiversideToast?.error(msg, { title });
-        }
-
-        function updateStats() {
-            const activeP = paymentPolicies.filter(p => p.trangThai === 'Hiệu lực').length;
-            document.getElementById('statPolicies').innerText = paymentPolicies.length;
-            document.getElementById('statPoliciesActive').innerText = `${activeP} đang hiệu lực`;
-
-            const activeH = hallPricing.filter(h => h.trangThai === 'Hoạt động').length;
-            document.getElementById('statHalls').innerText = hallPricing.length;
-            document.getElementById('statHallsActive').innerText = `${activeH} sẵn sàng khai thác`;
-
-            if (hallPricing.length > 0) {
-                const avg = hallPricing.reduce((s, h) => s + h.giaGoc, 0) / hallPricing.length;
-                document.getElementById('statAvgPrice').innerHTML = `${avg.toLocaleString('vi-VN')}<span class="text-xs text-slate-500 font-sans font-normal"> đ</span>`;
-            }
-            document.getElementById('statOccupancy').innerHTML = `65%`;
         }
 
         function switchTab(tab) {
@@ -561,29 +497,29 @@
             list.forEach(p => {
                 const inactive = p.trangThai !== 'Hiệu lực';
                 const card = document.createElement('div');
-                card.className = `bg-white rounded-xl border ${inactive ? 'border-slate-200 bg-slate-50/40' : 'border-slate-200'} p-4 sm:p-5 shadow-sm hover:border-[#B89758]/50 hover:shadow-md transition-all`;
+                card.className = `policy-card bg-white rounded-xl border ${inactive ? 'is-inactive' : ''} p-4 sm:p-5 shadow-sm transition-all`;
 
                 card.innerHTML = `
                     <div class="flex items-start justify-between gap-3 mb-3 flex-wrap">
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center gap-2 mb-1.5 flex-wrap">
                                 <span class="font-mono text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">${p.ma}</span>
-                                <span class="text-[10px] bg-[#B89758]/10 text-[#8C6D32] border border-[#B89758]/30 px-2 py-0.5 rounded font-semibold">${p.canCu}</span>
+                                <span class="policy-reference text-[10px] px-2 py-0.5 rounded font-semibold">${p.canCu}</span>
                             </div>
                             <h4 class="font-serif font-bold text-sm sm:text-base text-slate-900 leading-tight">${p.ten}</h4>
                         </div>
                         ${inactive
-                            ? `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-bold bg-slate-100 text-slate-600 border border-slate-300 flex-shrink-0"><span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>Tạm ngưng</span>`
-                            : `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex-shrink-0"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Hiệu lực</span>`
+                            ? `<span class="policy-status policy-status--inactive"><span class="policy-status__dot"></span>Tạm ngưng</span>`
+                            : `<span class="policy-status policy-status--active"><span class="policy-status__dot"></span>Hiệu lực</span>`
                         }
                     </div>
 
                     <div class="grid grid-cols-2 gap-2.5 mb-3">
-                        <div class="bg-[#FAF8F5] rounded-lg p-2.5 border border-slate-100 min-w-0">
+                        <div class="policy-info-box rounded-lg p-2.5 border min-w-0">
                             <span class="text-[10px] uppercase font-bold text-slate-400 block tracking-wider mb-0.5">Định mức</span>
                             <span class="font-serif font-bold text-[#8C6D32] text-xs sm:text-sm block truncate">${p.dinhMuc}</span>
                         </div>
-                        <div class="bg-[#FAF8F5] rounded-lg p-2.5 border border-slate-100 min-w-0">
+                        <div class="policy-info-box rounded-lg p-2.5 border min-w-0">
                             <span class="text-[10px] uppercase font-bold text-slate-400 block tracking-wider mb-0.5">Thời hạn</span>
                             <span class="font-semibold text-slate-800 text-[11px] sm:text-xs block truncate">${p.thoiHan}</span>
                         </div>
@@ -592,15 +528,15 @@
                     <p class="text-xs text-slate-600 leading-relaxed line-clamp-2 mb-3.5">${p.moTa}</p>
 
                     <div class="flex items-center justify-end gap-1.5 pt-3 border-t border-slate-100 flex-wrap">
-                        <button onclick="viewPolicyDetail(${p.id})" class="h-8 px-2.5 sm:px-3 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] sm:text-xs font-semibold flex items-center gap-1.5 transition-colors" title="Xem chi tiết">
+                        <button onclick="viewPolicyDetail(${p.id})" class="policy-action h-8 px-2.5 sm:px-3 rounded-lg text-[11px] sm:text-xs font-semibold flex items-center gap-1.5 transition-colors" title="Xem chi tiết">
                             <i class="fa-regular fa-eye text-xs"></i>
                             <span>Chi tiết</span>
                         </button>
-                        <button onclick="editPolicy(${p.id})" class="h-8 px-2.5 sm:px-3 rounded-lg bg-[#B89758]/10 hover:bg-[#B89758]/20 text-[#8C6D32] text-[11px] sm:text-xs font-semibold flex items-center gap-1.5 transition-colors" title="Chỉnh sửa">
+                        <button onclick="editPolicy(${p.id})" class="policy-action policy-action--edit h-8 px-2.5 sm:px-3 rounded-lg text-[11px] sm:text-xs font-semibold flex items-center gap-1.5 transition-colors" title="Chỉnh sửa">
                             <i class="fa-regular fa-pen-to-square text-xs"></i>
                             <span>Sửa</span>
                         </button>
-                        <button onclick="togglePolicyStatus(${p.id})" class="h-8 px-2.5 sm:px-3 rounded-lg ${inactive ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200' : 'bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200'} text-[11px] sm:text-xs font-semibold flex items-center gap-1.5 transition-colors" title="${inactive ? 'Mở' : 'Khóa'}">
+                        <button onclick="togglePolicyStatus(${p.id})" class="policy-action ${inactive ? 'policy-action--success' : 'policy-action--warning'} h-8 px-2.5 sm:px-3 rounded-lg text-[11px] sm:text-xs font-semibold flex items-center gap-1.5 transition-colors" title="${inactive ? 'Mở' : 'Khóa'}">
                             <i class="fa-solid ${inactive ? 'fa-rotate-left' : 'fa-ban'} text-xs"></i>
                             <span>${inactive ? 'Mở' : 'Khóa'}</span>
                         </button>
@@ -622,13 +558,12 @@
                 const inactive = h.trangThai === 'Ngừng hoạt động';
                 const maintenance = h.trangThai === 'Bảo trì';
 
-                let badgeCls = 'bg-emerald-50 text-emerald-700 border-emerald-200';
-                let dotCls = 'bg-emerald-500';
-                if (maintenance) { badgeCls = 'bg-amber-50 text-amber-800 border-amber-300'; dotCls = 'bg-amber-500'; }
-                if (inactive) { badgeCls = 'bg-rose-50 text-rose-700 border-rose-200'; dotCls = 'bg-rose-500'; }
+                let badgeCls = 'policy-status--active';
+                if (maintenance) badgeCls = 'policy-status--warning';
+                if (inactive) badgeCls = 'policy-status--danger';
 
                 const card = document.createElement('div');
-                card.className = `bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm hover:border-[#B89758]/50 hover:shadow-md transition-all ${inactive ? 'opacity-80' : ''}`;
+                card.className = `policy-card policy-hall-card bg-white rounded-xl border overflow-hidden shadow-sm transition-all ${inactive ? 'is-inactive' : ''}`;
 
                 card.innerHTML = `
                     <div class="p-4 sm:p-5">
@@ -641,13 +576,13 @@
                                     ${h.sucChuaToiThieu} - ${h.sucChuaToiDa} khách
                                 </p>
                             </div>
-                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-bold border ${badgeCls} flex-shrink-0">
-                                <span class="w-1.5 h-1.5 rounded-full ${dotCls}"></span>
+                            <span class="policy-status ${badgeCls}">
+                                <span class="policy-status__dot"></span>
                                 ${h.trangThai}
                             </span>
                         </div>
 
-                        <div class="bg-[#FAF8F5] rounded-lg p-3 sm:p-3.5 border border-slate-100 mb-4">
+                        <div class="policy-info-box rounded-lg p-3 sm:p-3.5 border mb-4">
                             <div class="flex items-baseline justify-between pb-2.5 border-b border-dashed border-slate-200 mb-2.5 gap-2">
                                 <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider flex-shrink-0">Đơn giá cơ sở</span>
                                 <span class="font-serif font-bold text-base sm:text-lg text-slate-900 ${inactive ? 'line-through text-slate-400' : ''} truncate">
@@ -681,7 +616,7 @@
                         </div>
 
                         <div class="flex items-center justify-end gap-1.5 flex-wrap">
-                            <button onclick="viewHallDetail(${h.sanhTiecId})" class="h-9 px-3 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors">
+                            <button onclick="viewHallDetail(${h.sanhTiecId})" class="policy-action h-9 px-3 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors">
                                 <i class="fa-regular fa-eye text-xs"></i>
                                 <span>Chi tiết</span>
                             </button>
@@ -690,7 +625,7 @@
                                     <i class="fa-solid fa-lock text-xs"></i>
                                     <span>Khóa giá</span>
                                   </button>`
-                                : `<button onclick="openPriceModal(${h.sanhTiecId}, '${h.tenSanh}', ${h.giaGoc})" class="h-9 px-3 rounded-lg bg-amber-50 hover:bg-amber-100 text-[#8C6D32] text-xs font-semibold border border-amber-200 transition-colors flex items-center gap-1.5">
+                                : `<button onclick="openPriceModal(${h.sanhTiecId}, '${h.tenSanh}', ${h.giaGoc})" class="policy-action policy-action--edit h-9 px-3 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5">
                                     <i class="fa-regular fa-pen-to-square text-xs"></i>
                                     <span>Đổi giá</span>
                                   </button>`
@@ -708,13 +643,13 @@
 
             document.getElementById('detailTitle').innerText = `Chi tiết: ${p.ma}`;
             document.getElementById('detailBody').innerHTML = `
-                <div class="p-3 sm:p-4 bg-[#FAF8F5] rounded-lg border border-[#E5D5B8]">
+                <div class="policy-info-box p-3 sm:p-4 rounded-lg border">
                     <div class="flex items-start justify-between gap-3 mb-2 flex-wrap">
                         <div class="min-w-0">
                             <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Tên quy định</span>
                             <h4 class="font-serif font-bold text-sm sm:text-base text-slate-900 mt-0.5">${p.ten}</h4>
                         </div>
-                        <span class="text-[11px] bg-[#B89758]/10 text-[#8C6D32] border border-[#B89758]/30 px-2 py-0.5 rounded font-semibold whitespace-nowrap">${p.phanLoai}</span>
+                        <span class="policy-reference text-[11px] px-2 py-0.5 rounded font-semibold whitespace-nowrap">${p.phanLoai}</span>
                     </div>
                 </div>
 
@@ -741,7 +676,7 @@
                     </div>
                     <div class="p-3 bg-slate-50 rounded-lg border border-slate-200">
                         <span class="text-[10px] uppercase font-bold text-slate-400 block tracking-wider mb-1">Trạng thái</span>
-                        <span class="font-semibold ${p.trangThai === 'Hiệu lực' ? 'text-emerald-600' : 'text-slate-500'} text-xs">${p.trangThai}</span>
+                        <span class="policy-status ${p.trangThai === 'Hiệu lực' ? 'policy-status--active' : 'policy-status--inactive'}"><span class="policy-status__dot"></span>${p.trangThai}</span>
                     </div>
                 </div>
             `;
@@ -760,7 +695,7 @@
 
             document.getElementById('detailTitle').innerText = `Chi tiết: ${h.tenSanh} (${h.maSanh})`;
             document.getElementById('detailBody').innerHTML = `
-                <div class="p-3 sm:p-4 bg-[#FAF8F5] rounded-lg border border-[#E5D5B8] flex items-start justify-between gap-3 flex-wrap">
+                <div class="policy-info-box p-3 sm:p-4 rounded-lg border flex items-start justify-between gap-3 flex-wrap">
                     <div class="min-w-0">
                         <h4 class="font-serif font-bold text-sm sm:text-base text-slate-900">Đại sảnh ${h.tenSanh}</h4>
                         <p class="text-[11px] text-slate-500 mt-1">Sức chứa: ${h.sucChuaToiThieu} - ${h.sucChuaToiDa} khách mời</p>
@@ -861,7 +796,6 @@
             closePolicyModal();
             populateFilter();
             applyFilters();
-            updateStats();
         }
 
         function togglePolicyStatus(id) {
@@ -881,7 +815,6 @@
                     onConfirm: () => {
                         p.trangThai = 'Tạm ngưng';
                         applyFilters();
-                        updateStats();
                         showToast('Thành công', `${p.ma} đã được tạm ngưng hiệu lực.`);
                     }
                 });
@@ -897,7 +830,6 @@
                     onConfirm: () => {
                         p.trangThai = 'Hiệu lực';
                         applyFilters();
-                        updateStats();
                         showToast('Thành công', `${p.ma} đã được kích hoạt trở lại.`);
                     }
                 });
@@ -932,7 +864,6 @@
                 h.giaCuoiTuan = v * 1.25;
                 closePriceModal();
                 applyFilters();
-                updateStats();
                 showToast('Thành công', `Đã cập nhật giá sảnh ${h.tenSanh} thành ${v.toLocaleString('vi-VN')} đ`);
             }
         }

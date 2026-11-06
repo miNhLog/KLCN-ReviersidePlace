@@ -16,11 +16,11 @@
     @if (ViewBag.Error is string error) { <div class="sca-alert error"><i class="fa-solid fa-circle-exclamation"></i><span>@error</span></div> }
 
     <section class="sca-kpis" aria-label="Tổng quan phê duyệt đổi lịch">
-        <article><span class="sca-kpi-icon pending"><i class="fa-regular fa-clock"></i></span><div><small>Chờ duyệt</small><strong>@Model.Items.Count(x => x.Status == "UNDER_REVIEW")</strong><span>Cần lập báo giá</span></div></article>
-        <article><span class="sca-kpi-icon quote"><i class="fa-solid fa-file-invoice-dollar"></i></span><div><small>Chờ khách xác nhận</small><strong>@Model.Items.Count(x => x.Status == "AWAITING_QUOTE_ACCEPTANCE")</strong><span>Báo giá đã gửi</span></div></article>
-        <article><span class="sca-kpi-icon payment"><i class="fa-solid fa-qrcode"></i></span><div><small>Chờ thanh toán</small><strong>@Model.Items.Count(x => x.Status == "PAYMENT_PENDING")</strong><span>Đang chờ PayOS</span></div></article>
-        <article><span class="sca-kpi-icon success"><i class="fa-solid fa-circle-check"></i></span><div><small>Đã hoàn tất</small><strong>@Model.Items.Count(x => x.Status == "APPROVED")</strong><span>Đã chuyển lịch</span></div></article>
-        <article><span class="sca-kpi-icon reconcile"><i class="fa-solid fa-scale-balanced"></i></span><div><small>Cần đối soát</small><strong>@Model.Items.Count(x => x.Status == "RECONCILIATION_REQUIRED")</strong><span>Cần ưu tiên xử lý</span></div></article>
+        <article><span class="sca-kpi-icon pending"><i class="bi bi-clock-history" aria-hidden="true"></i></span><div><small>Chờ duyệt</small><strong>@Model.Items.Count(x => x.Status == "UNDER_REVIEW")</strong><span>Cần lập báo giá</span></div></article>
+        <article><span class="sca-kpi-icon quote"><i class="bi bi-file-earmark-text" aria-hidden="true"></i></span><div><small>Chờ khách xác nhận</small><strong>@Model.Items.Count(x => x.Status == "AWAITING_QUOTE_ACCEPTANCE")</strong><span>Báo giá đã gửi</span></div></article>
+        <article><span class="sca-kpi-icon payment"><i class="bi bi-qr-code" aria-hidden="true"></i></span><div><small>Chờ thanh toán</small><strong>@Model.Items.Count(x => x.Status == "PAYMENT_PENDING")</strong><span>Đang chờ PayOS</span></div></article>
+        <article><span class="sca-kpi-icon success"><i class="bi bi-check-circle" aria-hidden="true"></i></span><div><small>Đã hoàn tất</small><strong>@Model.Items.Count(x => x.Status == "APPROVED")</strong><span>Đã chuyển lịch</span></div></article>
+        <article><span class="sca-kpi-icon reconcile"><i class="bi bi-calculator" aria-hidden="true"></i></span><div><small>Cần đối soát</small><strong>@Model.Items.Count(x => x.Status == "RECONCILIATION_REQUIRED")</strong><span>Cần ưu tiên xử lý</span></div></article>
     </section>
 
     <section class="sca-panel">

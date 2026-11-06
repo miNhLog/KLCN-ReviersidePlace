@@ -13,31 +13,31 @@
     <section class="manager-dashboard manager-overview-page">
         <header class="manager-page-header">
             <div>
-                <span class="backoffice-hero__eyebrow"><i class="fa-solid fa-chart-pie" aria-hidden="true"></i> TỔNG QUAN ĐIỀU HÀNH</span>
+                <span class="backoffice-hero__eyebrow"><i class="bi bi-pie-chart" aria-hidden="true"></i> TỔNG QUAN ĐIỀU HÀNH</span>
                 <h1>Tổng quan quản lý</h1>
                 <p>Theo dõi hoạt động kinh doanh và vận hành trên toàn hệ thống</p>
             </div>
             <div class="manager-page-header-actions">
                 @if (Model.GeneratedAt != default)
                 {
-                    <small><i class="fa-regular fa-clock"></i> Cập nhật @Model.GeneratedAt.ToString("HH:mm, dd/MM/yyyy")</small>
+                    <small><i class="bi bi-clock" aria-hidden="true"></i> Cập nhật @Model.GeneratedAt.ToString("HH:mm, dd/MM/yyyy")</small>
                 }
-                <a asp-controller="AdminReport" asp-action="Index"><i class="fa-solid fa-chart-line"></i> Mở báo cáo thống kê</a>
+                <a asp-controller="AdminReport" asp-action="Index"><i class="bi bi-graph-up-arrow" aria-hidden="true"></i> Mở báo cáo thống kê</a>
             </div>
         </header>
 
         @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
         {
-            <div class="manager-data-alert" role="alert"><i class="fa-solid fa-circle-exclamation"></i><span>@Model.ErrorMessage</span></div>
+            <div class="manager-data-alert" role="alert"><i class="bi bi-exclamation-circle" aria-hidden="true"></i><span>@Model.ErrorMessage</span></div>
         }
 
         <div class="manager-kpi-grid" aria-label="Chỉ số vận hành">
-            <article class="manager-kpi-card"><span class="manager-kpi-icon"><i class="fa-solid fa-champagne-glasses"></i></span><div><small>Tiệc hôm nay</small><strong>@Model.TodayEventCount</strong><em>Theo lịch sảnh đang hiệu lực</em></div></article>
-            <article class="manager-kpi-card"><span class="manager-kpi-icon"><i class="fa-solid fa-calendar-week"></i></span><div><small>Tiệc trong 7 ngày tới</small><strong>@Model.UpcomingEventCount</strong><em>Từ ngày mai</em></div></article>
-            <article class="manager-kpi-card"><span class="manager-kpi-icon"><i class="fa-solid fa-hourglass-half"></i></span><div><small>Booking chờ xử lý</small><strong>@Model.PendingBookingCount</strong><em>@Model.NewBookingCount booking mới trong 7 ngày</em></div></article>
-            <article class="manager-kpi-card"><span class="manager-kpi-icon"><i class="fa-solid fa-wallet"></i></span><div><small>Doanh thu tháng này</small><strong class="manager-kpi-money">@Model.RevenueThisMonth.ToString("N0", viCulture) ₫</strong><em>Chỉ gồm thanh toán thành công</em></div></article>
-            <article class="manager-kpi-card"><span class="manager-kpi-icon"><i class="fa-solid fa-file-invoice-dollar"></i></span><div><small>Công nợ hợp đồng</small><strong class="manager-kpi-money">@Model.OutstandingDebt.ToString("N0", viCulture) ₫</strong><em>Giá trị hợp đồng còn phải thu</em></div></article>
-            <article class="manager-kpi-card @(Model.OpenIncidentCount > 0 ? "is-warning" : string.Empty)"><span class="manager-kpi-icon"><i class="fa-solid fa-triangle-exclamation"></i></span><div><small>Sự cố cần xử lý</small><strong>@Model.OpenIncidentCount</strong><em>Đang chờ hoặc đang xử lý</em></div></article>
+            <article class="manager-kpi-card"><span class="manager-kpi-icon"><i class="bi bi-cup-straw" aria-hidden="true"></i></span><div><small>Tiệc hôm nay</small><strong>@Model.TodayEventCount</strong><em>Theo lịch sảnh đang hiệu lực</em></div></article>
+            <article class="manager-kpi-card"><span class="manager-kpi-icon"><i class="bi bi-calendar-week" aria-hidden="true"></i></span><div><small>Tiệc trong 7 ngày tới</small><strong>@Model.UpcomingEventCount</strong><em>Từ ngày mai</em></div></article>
+            <article class="manager-kpi-card"><span class="manager-kpi-icon"><i class="bi bi-hourglass-split" aria-hidden="true"></i></span><div><small>Booking chờ xử lý</small><strong>@Model.PendingBookingCount</strong><em>@Model.NewBookingCount booking mới trong 7 ngày</em></div></article>
+            <article class="manager-kpi-card"><span class="manager-kpi-icon"><i class="bi bi-wallet2" aria-hidden="true"></i></span><div><small>Doanh thu tháng này</small><strong class="manager-kpi-money">@Model.RevenueThisMonth.ToString("N0", viCulture) ₫</strong><em>Chỉ gồm thanh toán thành công</em></div></article>
+            <article class="manager-kpi-card"><span class="manager-kpi-icon"><i class="bi bi-file-earmark-text" aria-hidden="true"></i></span><div><small>Công nợ hợp đồng</small><strong class="manager-kpi-money">@Model.OutstandingDebt.ToString("N0", viCulture) ₫</strong><em>Giá trị hợp đồng còn phải thu</em></div></article>
+            <article class="manager-kpi-card @(Model.OpenIncidentCount > 0 ? "is-warning" : string.Empty)"><span class="manager-kpi-icon"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i></span><div><small>Sự cố cần xử lý</small><strong>@Model.OpenIncidentCount</strong><em>Đang chờ hoặc đang xử lý</em></div></article>
         </div>
 
         <div class="manager-operational-grid">

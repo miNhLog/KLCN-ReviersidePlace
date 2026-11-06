@@ -9,7 +9,7 @@
 <main class="event-page" data-event-page>
     <header class="event-header">
         <div class="backoffice-hero__content">
-            <span class="backoffice-hero__eyebrow"><i class="fa-solid fa-people-arrows" aria-hidden="true"></i> ĐIỀU HÀNH SỰ KIỆN</span>
+            <span class="backoffice-hero__eyebrow"><i class="bi bi-diagram-3" aria-hidden="true"></i> ĐIỀU HÀNH SỰ KIỆN</span>
             <h1>Tiệc &amp; Điều phối</h1>
             <p>Theo dõi tình trạng các tiệc cưới và điều phối nhân sự trên toàn hệ thống</p>
         </div>
@@ -23,10 +23,10 @@
     <section class="event-panel active" data-main-panel="list">
         @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage)) { <div class="event-alert"><i class="fa-solid fa-circle-exclamation"></i> @Model.ErrorMessage</div> }
         <div class="event-kpis">
-            <article><span class="kpi-icon gold"><i class="fa-regular fa-calendar"></i></span><div><small>Tiệc sắp diễn ra</small><strong>@Model.Data.Kpi.UpcomingCount</strong><em>Trong 7 ngày tới</em></div></article>
-            <article><span class="kpi-icon red"><i class="fa-solid fa-user-xmark"></i></span><div><small>Chưa có điều phối</small><strong>@Model.Data.Kpi.UnassignedCount</strong><em>Cần được phân công</em></div></article>
-            <article><span class="kpi-icon blue"><i class="fa-solid fa-gears"></i></span><div><small>Đang chuẩn bị</small><strong>@Model.Data.Kpi.PreparingCount</strong><em>Tiệc đang triển khai</em></div></article>
-            <article><span class="kpi-icon purple"><i class="fa-solid fa-triangle-exclamation"></i></span><div><small>Có sự cố cần chú ý</small><strong>@Model.Data.Kpi.IncidentAttentionCount</strong><em>Tiệc có sự cố đang mở</em></div></article>
+            <article><span class="kpi-icon gold"><i class="bi bi-calendar-event" aria-hidden="true"></i></span><div><small>Tiệc sắp diễn ra</small><strong>@Model.Data.Kpi.UpcomingCount</strong><em>Trong 7 ngày tới</em></div></article>
+            <article><span class="kpi-icon red"><i class="bi bi-person-x" aria-hidden="true"></i></span><div><small>Chưa có điều phối</small><strong>@Model.Data.Kpi.UnassignedCount</strong><em>Cần được phân công</em></div></article>
+            <article><span class="kpi-icon blue"><i class="bi bi-gear-wide-connected" aria-hidden="true"></i></span><div><small>Đang chuẩn bị</small><strong>@Model.Data.Kpi.PreparingCount</strong><em>Tiệc đang triển khai</em></div></article>
+            <article><span class="kpi-icon purple"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i></span><div><small>Có sự cố cần chú ý</small><strong>@Model.Data.Kpi.IncidentAttentionCount</strong><em>Tiệc có sự cố đang mở</em></div></article>
         </div>
 
         <form method="get" class="event-filters">
@@ -76,10 +76,12 @@
             @if (Model.Data.TotalPages > 1)
             {
                 <nav class="event-pagination" aria-label="Phân trang">
+                    <a class="pagination-edge @(Model.Data.Page <= 1 ? "disabled" : "")" asp-route-page="@(Model.Data.Page - 1)" asp-route-search="@Model.Search" asp-route-bookingStatus="@Model.BookingStatus" asp-route-coordinationStatus="@Model.CoordinationStatus" asp-route-fromDate="@Model.FromDate?.ToString("yyyy-MM-dd")" asp-route-toDate="@Model.ToDate?.ToString("yyyy-MM-dd")">Trước</a>
                     @for (var p = 1; p <= Model.Data.TotalPages; p++)
                     {
                         <a class="@(p == Model.Data.Page ? "active" : "")" asp-route-page="@p" asp-route-search="@Model.Search" asp-route-bookingStatus="@Model.BookingStatus" asp-route-coordinationStatus="@Model.CoordinationStatus" asp-route-fromDate="@Model.FromDate?.ToString("yyyy-MM-dd")" asp-route-toDate="@Model.ToDate?.ToString("yyyy-MM-dd")">@p</a>
                     }
+                    <a class="pagination-edge @(Model.Data.Page >= Model.Data.TotalPages ? "disabled" : "")" asp-route-page="@(Model.Data.Page + 1)" asp-route-search="@Model.Search" asp-route-bookingStatus="@Model.BookingStatus" asp-route-coordinationStatus="@Model.CoordinationStatus" asp-route-fromDate="@Model.FromDate?.ToString("yyyy-MM-dd")" asp-route-toDate="@Model.ToDate?.ToString("yyyy-MM-dd")">Sau</a>
                 </nav>
             }
         </footer>

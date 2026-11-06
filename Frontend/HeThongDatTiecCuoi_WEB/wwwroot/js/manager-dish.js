@@ -57,7 +57,7 @@
 
     function render() {
         const d = current;
-        const img = d.imageUrl ? `<img src="${esc(d.imageUrl)}" alt="${esc(d.dishName)}">` : '<div class="md-detail-hero"><i class="fa-solid fa-bowl-food"></i></div>';
+        const img = d.imageUrl ? `<img src="${esc(d.imageUrl)}" alt="${esc(d.dishName)}">` : '<div class="md-detail-hero"><i class="bi bi-cup-hot" aria-hidden="true"></i></div>';
         const menus = d.menus?.length ? d.menus.map(m => `<div class="md-menu-usage"><span><b>${esc(m.menuName)}</b><small>${esc(m.menuCode)} · ${m.status === 'ACTIVE' ? 'Đang áp dụng' : 'Tạm ngưng'}</small></span><span class="md-menu-type">${m.menuType === 'STANDARD' ? 'Tiêu chuẩn' : 'Tùy chỉnh'}</span></div>`).join('') : '<p>Món ăn chưa được sử dụng trong thực đơn nào.</p>';
         detail.innerHTML = `<div class="md-detail-content">${img}<div class="md-detail-body"><small>${esc(d.dishCode)}</small><h2>${esc(d.dishName)}</h2><p><span class="md-category">${esc(d.category)}</span> · <span class="md-status ${d.status === 'ACTIVE' ? 'active' : 'inactive'}">${d.status === 'ACTIVE' ? 'Đang phục vụ' : 'Tạm ngưng'}</span></p><div class="md-detail-price">${money(d.price)}</div><div class="md-detail-actions"><button class="md-btn light" id="detailEdit">Chỉnh sửa</button><button class="md-btn navy" id="detailStatus">${d.status === 'ACTIVE' ? 'Tạm ngưng' : 'Áp dụng lại'}</button></div><section class="md-usage"><h3>Đang được sử dụng trong thực đơn</h3><p>Món ăn đang được sử dụng trong ${d.usageCount} thực đơn.</p>${menus}</section></div></div>`;
         detail.querySelector('#detailEdit').onclick = () => edit(selected);
@@ -74,7 +74,7 @@
         f.DeleteImage.checked = false;
         f.NewImage.value = '';
         const box = f.querySelector('.md-preview');
-        box.innerHTML = card.dataset.image ? `<img src="${esc(card.dataset.image)}" alt="Ảnh hiện tại">` : '<i class="fa-solid fa-image"></i>';
+        box.innerHTML = card.dataset.image ? `<img src="${esc(card.dataset.image)}" alt="Ảnh hiện tại">` : '<i class="bi bi-image" aria-hidden="true"></i>';
         open('editDishModal');
     }
 

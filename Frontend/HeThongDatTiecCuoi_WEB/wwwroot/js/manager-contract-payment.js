@@ -164,11 +164,11 @@
             const button = createNode('button', `cp-page-btn${active ? ' active' : ''}`, label);
             button.type = 'button'; button.disabled = disabled; if (!disabled) button.addEventListener('click', () => callback(page)); container.append(button);
         };
-        add('‹', current - 1, current === 1);
+        add('Trước', current - 1, current === 1);
         const first = Math.max(1, Math.min(current - 2, total - 4));
         const last = Math.min(total, first + 4);
         for (let page = first; page <= last; page++) add(String(page), page, false, page === current);
-        add('›', current + 1, current === total);
+        add('Sau', current + 1, current === total);
     }
 
     async function openDrawer(contractId, targetTab = 'general') {
@@ -605,8 +605,8 @@
         const alertEl = byId('payosStatusAlert');
         if (alertEl) {
             alertEl.innerHTML = '<div class="rp-pay-spinner"></div><span id="payosStatusText">Đang chờ khách hàng quét mã và hệ thống ngân hàng xác nhận...</span>';
-            alertEl.style.background = '#F8FAFC';
-            alertEl.style.color = '#1E40AF';
+            alertEl.style.background = 'color-mix(in srgb, var(--metis-badge-primary) 12%, var(--rp-surface))';
+            alertEl.style.color = 'var(--metis-badge-primary)';
         }
 
         // Copy buttons

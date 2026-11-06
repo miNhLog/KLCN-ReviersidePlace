@@ -64,7 +64,7 @@
         </div>
         <footer class="incident-footer"><span>Hiển thị @Model.Data.Items.Count / @Model.Data.TotalItems sự cố</span>
             @if (Model.Data.TotalPages > 1)
-            { <nav class="incident-pagination" aria-label="Phân trang">@for(var p=1;p<=Model.Data.TotalPages;p++){<a asp-action="Index" asp-route-search="@Model.Search" asp-route-status="@Model.Status" asp-route-severity="@Model.Severity" asp-route-page="@p" class="@(p == Model.Data.Page ? "active" : null)">@p</a>}</nav> }
+            { <nav class="incident-pagination" aria-label="Phân trang"><a class="pagination-edge @(Model.Data.Page<=1?"disabled":"")" asp-action="Index" asp-route-search="@Model.Search" asp-route-status="@Model.Status" asp-route-severity="@Model.Severity" asp-route-page="@(Model.Data.Page-1)">Trước</a>@for(var p=1;p<=Model.Data.TotalPages;p++){<a asp-action="Index" asp-route-search="@Model.Search" asp-route-status="@Model.Status" asp-route-severity="@Model.Severity" asp-route-page="@p" class="@(p == Model.Data.Page ? "active" : null)">@p</a>}<a class="pagination-edge @(Model.Data.Page>=Model.Data.TotalPages?"disabled":"")" asp-action="Index" asp-route-search="@Model.Search" asp-route-status="@Model.Status" asp-route-severity="@Model.Severity" asp-route-page="@(Model.Data.Page+1)">Sau</a></nav> }
         </footer>
     </section>
 </main>

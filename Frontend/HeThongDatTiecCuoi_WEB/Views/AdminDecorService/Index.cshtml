@@ -52,8 +52,8 @@
     }
 
     .custom-row-hover:hover {
-        background-color: #FAF8F5;
-        border-color: rgba(184, 151, 88, 0.4);
+        background-color: var(--rp-surface-hover);
+        border-color: var(--rp-gold-500);
     }
 
     .focus-ring:focus-visible {
@@ -66,16 +66,16 @@
     }
 
     .custom-scrollbar::-webkit-scrollbar-track {
-        background: #F7F4EE;
+        background: var(--rp-surface-muted);
     }
 
     .custom-scrollbar::-webkit-scrollbar-thumb {
-        background: #C5A880;
+        background: var(--rp-border-strong);
         border-radius: 4px;
     }
 
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: #B89758;
+            background: var(--rp-gold-500);
         }
 
     /* Ẩn scrollbar ngang cho tabs trên mobile */
@@ -86,6 +86,225 @@
     .scrollbar-hide {
         -ms-overflow-style: none;
         scrollbar-width: none;
+    }
+
+    /* Đồng bộ Decor & Dịch vụ với design token Metis/Riverside. */
+    .decor-page-wrapper {
+        min-width: 0;
+        color: var(--rp-text) !important;
+        background: var(--rp-bg) !important;
+    }
+
+    .decor-page-wrapper .bg-white {
+        color: var(--rp-text);
+        background-color: var(--rp-surface) !important;
+    }
+
+    .decor-page-wrapper :is(.bg-slate-50, .bg-slate-100) {
+        color: var(--rp-text);
+        background-color: var(--rp-surface-muted) !important;
+    }
+
+    .decor-page-wrapper :is(.border-slate-100, .border-slate-200, .border-slate-300) {
+        border-color: var(--rp-border) !important;
+    }
+
+    .decor-page-wrapper :is(.text-slate-900, .text-slate-800, .text-slate-700) {
+        color: var(--rp-text) !important;
+    }
+
+    .decor-page-wrapper :is(.text-slate-600, .text-slate-500, .text-slate-400) {
+        color: var(--rp-text-secondary) !important;
+    }
+
+    .decor-page-wrapper :is(input, select, textarea) {
+        color: var(--rp-text) !important;
+        background: var(--rp-surface-muted) !important;
+        border-color: var(--rp-border) !important;
+    }
+
+    .decor-page-wrapper :is(input, textarea)::placeholder {
+        color: var(--rp-text-muted) !important;
+        opacity: 1;
+    }
+
+    #decorModal,
+    #detailModal {
+        position: fixed !important;
+        inset: 0 !important;
+        z-index: 2147483000 !important;
+        width: 100vw !important;
+        height: 100dvh !important;
+        box-sizing: border-box;
+        padding: clamp(12px, 2vw, 28px) !important;
+        overflow: hidden !important;
+    }
+
+    #decorModal .decor-modal-dialog,
+    #detailModal .decor-detail-dialog {
+        width: min(100%, 1040px) !important;
+        max-width: min(1040px, calc(100vw - 24px)) !important;
+        max-height: calc(100dvh - 24px) !important;
+        margin: 0 !important;
+        color: var(--rp-text) !important;
+        background: var(--rp-surface) !important;
+        border: 1px solid var(--rp-border) !important;
+        border-radius: 16px !important;
+    }
+
+    #detailModal .decor-detail-dialog {
+        width: min(100%, 680px) !important;
+        max-width: min(680px, calc(100vw - 24px)) !important;
+    }
+
+    #decorModal .decor-modal-header,
+    #detailModal .decor-detail-header,
+    #detailModal .decor-detail-footer {
+        color: var(--rp-text) !important;
+        background: var(--rp-surface) !important;
+        border-color: var(--rp-border) !important;
+    }
+
+    #decorModal .decor-modal-body,
+    #detailModal .decor-detail-body {
+        flex: 1 1 auto;
+        min-height: 0;
+        color: var(--rp-text) !important;
+        background: var(--rp-bg) !important;
+        overscroll-behavior: contain;
+    }
+
+    #decorModal .decor-modal-section,
+    #detailModal .decor-detail-panel {
+        color: var(--rp-text) !important;
+        background: var(--rp-surface) !important;
+        border-color: var(--rp-border) !important;
+        box-shadow: none !important;
+    }
+
+    #decorModal :is(h2, h3, label, .text-slate-900, .text-slate-800, .text-slate-700),
+    #detailModal :is(h3, h4, .text-slate-900, .text-slate-800, .text-slate-700) {
+        color: var(--rp-text) !important;
+    }
+
+    #decorModal :is(p, .text-slate-600, .text-slate-500, .text-slate-400),
+    #detailModal :is(p, .text-slate-600, .text-slate-500, .text-slate-400) {
+        color: var(--rp-text-secondary) !important;
+    }
+
+    #decorModal :is(input, select, textarea) {
+        color: var(--rp-text) !important;
+        background: var(--rp-surface-muted) !important;
+        border-color: var(--rp-border) !important;
+    }
+
+    html[data-admin-theme="dark"] body.backoffice-app #decorModal :is(
+        input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+        select,
+        textarea
+    ) {
+        color: var(--rp-text) !important;
+        background-color: var(--rp-surface-muted) !important;
+        background-image: none !important;
+        border-color: var(--rp-border) !important;
+        box-shadow: none !important;
+    }
+
+    html[data-admin-theme="dark"] body.backoffice-app #decorModal :is(
+        .decor-choice,
+        .decor-upload,
+        .decor-preview,
+        .decor-modal-section
+    ) {
+        color: var(--rp-text) !important;
+        background-color: var(--rp-surface) !important;
+        background-image: none !important;
+        border-color: var(--rp-border) !important;
+    }
+
+    .decor-tabs-bar {
+        color: var(--rp-text) !important;
+        background: var(--rp-surface) !important;
+        border: 1px solid var(--rp-border) !important;
+        border-radius: 12px !important;
+    }
+
+    .decor-tabs-bar button {
+        color: var(--rp-text-secondary) !important;
+    }
+
+    .decor-tabs-bar button.border-\[\#B89758\] {
+        color: var(--rp-text) !important;
+    }
+
+    #decorModal :is(input, textarea)::placeholder {
+        color: var(--rp-text-muted) !important;
+        opacity: 1;
+    }
+
+    #decorModal .decor-choice,
+    #decorModal .decor-upload,
+    #decorModal .decor-preview,
+    #detailModal .decor-detail-panel {
+        background: var(--rp-surface-muted) !important;
+        border-color: var(--rp-border) !important;
+    }
+
+    #decorModal [class*="border-[#E5D5B8]"],
+    #detailModal [class*="border-[#E5D5B8]"] {
+        border-color: var(--rp-border) !important;
+    }
+
+    .decor-page-wrapper .admin-create-button,
+    #decorModal button[type="submit"] {
+        color: #18181b !important;
+        background: var(--rp-gold-500) !important;
+        border-color: var(--rp-gold-500) !important;
+        background-image: none !important;
+    }
+
+    .decor-page-wrapper [class*="text-[#8C6D32]"],
+    #decorModal [class*="text-[#8C6D32]"] {
+        color: var(--rp-gold-700) !important;
+    }
+
+    html[data-admin-theme="dark"] .decor-page-wrapper [class*="text-[#8C6D32]"],
+    html[data-admin-theme="dark"] #decorModal [class*="text-[#8C6D32]"] {
+        color: var(--rp-gold-500) !important;
+    }
+
+    #decorModal .decor-close,
+    #detailModal .decor-close,
+    #detailModal .decor-detail-close-button {
+        color: var(--rp-text) !important;
+        background: var(--rp-surface-muted) !important;
+        border: 1px solid var(--rp-border) !important;
+    }
+
+    #decorModal .decor-close:hover,
+    #detailModal .decor-close:hover,
+    #detailModal .decor-detail-close-button:hover {
+        color: var(--rp-gold-700) !important;
+        border-color: var(--rp-gold-500) !important;
+    }
+
+    body.decor-modal-open {
+        overflow: hidden;
+    }
+
+    @@media (max-width: 767px) {
+        #decorModal,
+        #detailModal {
+            align-items: flex-end !important;
+            padding: 0 !important;
+        }
+
+        #decorModal .decor-modal-dialog,
+        #detailModal .decor-detail-dialog {
+            max-width: 100% !important;
+            max-height: 94dvh !important;
+            border-radius: 16px 16px 0 0 !important;
+        }
     }
 </style>
 
@@ -111,11 +330,16 @@
                     <i class="fa-solid fa-file-excel text-emerald-600 text-sm"></i>
                     <span class="hidden sm:inline">Xuất Excel</span>
                 </button>
+
+                <button onclick="openCreateModal()" class="admin-create-button px-5 py-2.5 bg-gradient-to-r from-[#B89758] to-[#9E7E3F] hover:from-[#A8884A] hover:to-[#8E7035] text-white font-bold text-xs rounded-lg shadow-sm flex items-center justify-center gap-2 transition-all focus-ring min-h-[42px] cursor-pointer">
+                    <i class="fa-solid fa-plus text-xs" aria-hidden="true"></i>
+                    <span id="btn-create-label">Thêm gói Decor</span>
+                </button>
             </div>
         </header>
 
         <!-- Two-Tab Catalog Workspace Header - Scroll ngang trên mobile -->
-        <div class="px-4 sm:px-6 lg:px-8 bg-white">
+        <div class="decor-tabs-bar px-4 sm:px-6 lg:px-8 bg-white">
             <div class="flex gap-5 sm:gap-8 overflow-x-auto scrollbar-hide" role="tablist">
                 <!-- Tab 1 Button -->
                 <button id="tab-btn-decor" onclick="switchMainTab('decor')" class="py-3 sm:py-4 font-bold text-xs sm:text-sm border-b-2 border-[#B89758] text-slate-900 flex items-center gap-2 flex-shrink-0 whitespace-nowrap focus-ring transition-colors">
@@ -177,11 +401,6 @@
                 </button>
             </div>
 
-            <!-- Primary Action CTA Button -->
-            <button onclick="openCreateModal()" class="admin-create-button px-5 py-2.5 bg-gradient-to-r from-[#B89758] to-[#9E7E3F] hover:from-[#A8884A] hover:to-[#8E7035] text-white font-bold text-xs rounded-lg shadow-sm flex items-center justify-center gap-2 transition-all focus-ring min-h-[42px] w-full lg:w-auto lg:flex-shrink-0 cursor-pointer">
-                <i class="fa-solid fa-plus text-xs"></i>
-                <span id="btn-create-label">Thêm gói Decor</span>
-            </button>
         </section>
 
         <!-- Status Summary Metrics Bar -->
@@ -231,8 +450,6 @@
         <div class="bg-white rounded-xl p-3 sm:p-4 border border-slate-200 custom-card-shadow flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs text-slate-600">
             <div class="flex flex-wrap items-center gap-2">
                 <span id="pagination-summary">Hiển thị <strong>1 – 6</strong> trong tổng số <strong>6</strong> gói Decor</span>
-                <span class="text-slate-300 hidden sm:inline">|</span>
-                <span class="text-slate-500">Quy chuẩn: Master Data Spec MD-RP-2026</span>
             </div>
             <div class="flex items-center gap-2 justify-end">
                 <button class="px-3 sm:px-3.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 font-medium focus-ring disabled:opacity-50" disabled>
@@ -245,44 +462,17 @@
             </div>
         </div>
 
-        <!-- Master Data Guidelines & Technical Policy Banner -->
-        <div class="p-3 sm:p-4 rounded-xl bg-amber-50/50 border border-[#B89758]/30 flex items-start gap-3 text-xs">
-            <div class="w-6 h-6 rounded-full bg-[#B89758]/20 flex items-center justify-center text-[#967638] flex-shrink-0 mt-0.5">
-                <i class="fa-solid fa-circle-info text-xs"></i>
-            </div>
-            <div class="space-y-1 min-w-0">
-                <h5 class="font-bold text-[#1E242B]">Quy định cấu hình Danh mục Master Data Riverside Palace:</h5>
-                <p class="text-slate-600 leading-relaxed">
-                    Theo quy chuẩn vận hành, hệ thống không cho phép xóa vĩnh viễn dữ liệu gói decor và dịch vụ đã từng phát sinh giao dịch trên các hợp đồng tiệc cưới. Quản trị viên sử dụng thao tác <strong>Khóa (Tạm ngưng)</strong> để bảo toàn toàn vẹn dữ liệu kế toán và lịch sử kiểm toán hợp đồng.
-                </p>
-            </div>
-        </div>
-
     </div>
-
-    <!-- Admin Footer -->
-    <footer class="mt-auto bg-white border-t border-slate-200 px-4 sm:px-6 lg:px-8 py-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between text-xs text-slate-500 gap-2">
-        <div>
-            © 2026 Riverside Palace Convention &amp; Wedding Center. Quản Trị Hệ Thống Master Data v4.2.
-        </div>
-        <div class="flex flex-wrap items-center gap-2 sm:gap-4">
-            <span class="flex items-center gap-1 text-slate-600">
-                <i class="fa-solid fa-shield-halved text-[#B89758]"></i> Phân quyền: Administrator Level 1
-            </span>
-            <span class="hidden sm:inline text-slate-300">•</span>
-            <span>Hotline Kỹ thuật &amp; IT nội bộ: Ext 888</span>
-        </div>
-    </footer>
 </div>
 
 <!-- ========================================================================= -->
 <!-- ================= MODAL CHÍNH: THÊM GÓI DECOR MỚI ======================== -->
 <!-- ========================================================================= -->
-<div id="decorModal" class="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 hidden p-3 sm:p-6 overflow-y-auto">
-    <div class="bg-white border border-[#E5D5B8] rounded-2xl w-full max-w-4xl shadow-2xl flex flex-col max-h-[95vh] sm:max-h-[92vh] overflow-hidden my-auto">
+<div id="decorModal" class="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 hidden p-3 sm:p-6" role="dialog" aria-modal="true" aria-labelledby="decor-modal-title">
+    <div class="decor-modal-dialog bg-white rounded-2xl w-full shadow-2xl flex flex-col overflow-hidden">
 
         <!-- Modal Header -->
-        <div class="px-4 sm:px-8 py-4 sm:py-5 border-b border-slate-200 bg-[#FAF8F5] flex items-center justify-between flex-shrink-0">
+        <div class="decor-modal-header px-4 sm:px-8 py-4 sm:py-5 border-b flex items-center justify-between flex-shrink-0">
             <div class="flex items-center space-x-2.5 sm:space-x-3 min-w-0">
                 <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#B89758]/15 border border-[#E5D5B8] flex items-center justify-center text-[#B89758] flex-shrink-0">
                     <i class="fa-solid fa-wand-magic-sparkles text-sm"></i>
@@ -290,22 +480,21 @@
                 <div class="min-w-0">
                     <div class="flex items-center space-x-2 sm:space-x-2.5 flex-wrap">
                         <h2 id="decor-modal-title" class="font-serif text-base sm:text-xl font-bold text-slate-900 truncate">Thêm gói Decor mới</h2>
-                        <span class="hidden sm:inline-block px-2 py-0.5 rounded-full bg-[#B89758]/15 border border-[#B89758]/30 text-[10px] font-bold text-[#8C6D32] tracking-wider uppercase">MASTER DATA</span>
                     </div>
                     <p class="text-[11px] sm:text-xs text-slate-500 mt-0.5 line-clamp-1">Cấu hình thông tin danh mục, định mức giá và hình ảnh nhận diện gói trang trí tiệc cưới.</p>
                 </div>
             </div>
-            <button onclick="closeDecorModal()" class="w-9 h-9 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-800 hover:bg-slate-200 transition-colors focus-ring flex-shrink-0" type="button" aria-label="Đóng">
+            <button onclick="closeDecorModal()" class="decor-close w-9 h-9 rounded-lg flex items-center justify-center transition-colors focus-ring flex-shrink-0" type="button" aria-label="Đóng">
                 <i class="fa-solid fa-xmark text-base"></i>
             </button>
         </div>
 
         <!-- Modal Body -->
-        <form id="decorForm" onsubmit="handleDecorFormSubmit(event)" class="p-4 sm:p-6 lg:p-8 overflow-y-auto custom-scrollbar space-y-4 sm:space-y-6 bg-[#FDFBF7] text-xs">
+        <form id="decorForm" onsubmit="handleDecorFormSubmit(event)" class="decor-modal-body p-4 sm:p-6 lg:p-8 overflow-y-auto custom-scrollbar space-y-4 sm:space-y-6 text-xs">
             <input type="hidden" id="decor-form-id" value="0" />
 
             <!-- PHẦN 1: THÔNG TIN CƠ BẢN & ĐỊNH MỨC KINH DOANH -->
-            <div class="bg-white rounded-xl p-4 sm:p-6 border border-[#E5D5B8] shadow-xs space-y-4 sm:space-y-5">
+            <div class="decor-modal-section bg-white rounded-xl p-4 sm:p-6 border shadow-xs space-y-4 sm:space-y-5">
                 <div class="flex items-center justify-between border-b border-slate-200 pb-3 flex-wrap gap-2">
                     <div class="flex items-center space-x-2">
                         <i class="fa-solid fa-sliders text-[#B89758] text-sm"></i>
@@ -318,7 +507,7 @@
                     <!-- Mã gói decor (Tự động) -->
                     <div class="md:col-span-3">
                         <label class="block font-semibold text-slate-700 mb-1" for="decor-code">
-                            Mã gói decor <span class="text-slate-400 font-normal">(Tự động)</span>
+                            <span id="decor-code-label">Mã gói decor</span> <span class="text-slate-400 font-normal">(Tự động)</span>
                         </label>
                         <div class="relative">
                             <input id="decor-code" class="w-full bg-slate-100 border border-slate-200 text-slate-700 font-mono font-bold rounded-lg px-3 py-2 text-xs cursor-not-allowed select-all focus:outline-none" readonly type="text" value="DC-ROY-07" />
@@ -329,7 +518,7 @@
                     <!-- Tên gói Decor* -->
                     <div class="md:col-span-5">
                         <label class="block font-semibold text-slate-800 mb-1" for="decor-name">
-                            Tên gói Decor <span class="text-red-500">*</span>
+                            <span id="decor-name-label">Tên gói Decor</span> <span class="text-red-500">*</span>
                         </label>
                         <input id="decor-name" required class="w-full bg-[#FAF8F5] border border-slate-200 focus:border-[#B89758] focus:bg-white focus:ring-1 focus:ring-[#B89758] rounded-lg px-3 py-2 text-xs text-slate-800 font-medium outline-none transition-all" placeholder="Nhập tên gói sang trọng..." type="text" value="Hoàng Kim Dạ Yến" />
                     </div>
@@ -337,7 +526,7 @@
                     <!-- Phong cách decor* Dropdown -->
                     <div class="md:col-span-4">
                         <label class="block font-semibold text-slate-800 mb-1" for="decor-style">
-                            Phong cách decor <span class="text-red-500">*</span>
+                            <span id="decor-style-label">Phong cách decor</span> <span class="text-red-500">*</span>
                         </label>
                         <select id="decor-style" class="w-full bg-[#FAF8F5] border border-slate-200 focus:border-[#B89758] focus:bg-white focus:ring-1 focus:ring-[#B89758] rounded-lg px-3 py-2 text-xs text-slate-800 outline-none cursor-pointer">
                             <option selected>Hoàng gia (Royal Luxury)</option>
@@ -350,28 +539,28 @@
                     </div>
 
                     <!-- Hạng mục chính bao gồm (5 Checkboxes) -->
-                    <div class="md:col-span-12">
+                    <div id="decor-items-field" class="md:col-span-12">
                         <label class="block font-semibold text-slate-800 mb-2">
                             Hạng mục chính đi kèm <span class="text-slate-500 font-normal">(Được tích hợp mặc định trong gói)</span>
                         </label>
                         <div class="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-5 gap-2.5">
-                            <label class="flex items-center space-x-2 p-2 rounded-lg border border-slate-200 bg-[#FAF8F5] hover:border-[#B89758] cursor-pointer transition-colors">
+                            <label class="decor-choice flex items-center space-x-2 p-2 rounded-lg border cursor-pointer transition-colors">
                                 <input id="chk-backdrop" type="checkbox" checked class="w-3.5 h-3.5 text-[#B89758] focus:ring-[#B89758] rounded border-slate-300 flex-shrink-0">
                                 <span class="text-xs text-slate-700 font-medium">Backdrop sân khấu</span>
                             </label>
-                            <label class="flex items-center space-x-2 p-2 rounded-lg border border-slate-200 bg-[#FAF8F5] hover:border-[#B89758] cursor-pointer transition-colors">
+                            <label class="decor-choice flex items-center space-x-2 p-2 rounded-lg border cursor-pointer transition-colors">
                                 <input id="chk-loidi" type="checkbox" checked class="w-3.5 h-3.5 text-[#B89758] focus:ring-[#B89758] rounded border-slate-300 flex-shrink-0">
                                 <span class="text-xs text-slate-700 font-medium">Lối đi hoa tươi</span>
                             </label>
-                            <label class="flex items-center space-x-2 p-2 rounded-lg border border-slate-200 bg-[#FAF8F5] hover:border-[#B89758] cursor-pointer transition-colors">
+                            <label class="decor-choice flex items-center space-x-2 p-2 rounded-lg border cursor-pointer transition-colors">
                                 <input id="chk-gallery" type="checkbox" checked class="w-3.5 h-3.5 text-[#B89758] focus:ring-[#B89758] rounded border-slate-300 flex-shrink-0">
                                 <span class="text-xs text-slate-700 font-medium">Bàn gallery đón khách</span>
                             </label>
-                            <label class="flex items-center space-x-2 p-2 rounded-lg border border-slate-200 bg-[#FAF8F5] hover:border-[#B89758] cursor-pointer transition-colors">
+                            <label class="decor-choice flex items-center space-x-2 p-2 rounded-lg border cursor-pointer transition-colors">
                                 <input id="chk-conghoa" type="checkbox" checked class="w-3.5 h-3.5 text-[#B89758] focus:ring-[#B89758] rounded border-slate-300 flex-shrink-0">
                                 <span class="text-xs text-slate-700 font-medium">Cổng hoa vòm LED</span>
                             </label>
-                            <label class="flex items-center space-x-2 p-2 rounded-lg border border-slate-200 bg-[#FAF8F5] hover:border-[#B89758] cursor-pointer transition-colors">
+                            <label class="decor-choice flex items-center space-x-2 p-2 rounded-lg border cursor-pointer transition-colors">
                                 <input id="chk-phale" type="checkbox" checked class="w-3.5 h-3.5 text-[#B89758] focus:ring-[#B89758] rounded border-slate-300 flex-shrink-0">
                                 <span class="text-xs text-slate-700 font-medium">Đèn chùm pha lê</span>
                             </label>
@@ -420,10 +609,10 @@
                         </div>
                     </div>
 
-                    <!-- Mô tả chi tiết concept & Quy chuẩn vật liệu -->
+                    <!-- Mô tả chi tiết concept -->
                     <div class="md:col-span-12">
                         <label class="block font-semibold text-slate-800 mb-1" for="decor-desc">
-                            Mô tả chi tiết concept &amp; Quy chuẩn vật liệu
+                            Mô tả chi tiết concept
                         </label>
                         <textarea id="decor-desc" rows="3" class="w-full bg-[#FAF8F5] border border-slate-200 focus:border-[#B89758] focus:bg-white rounded-lg p-3 text-xs text-slate-800 leading-relaxed outline-none resize-none" placeholder="Tóm tắt phong cách thiết kế, sắc độ hoa chủ đạo, hệ đèn chiếu...">Gói trang trí Hoàng Kim Dạ Yến sử dụng gam màu vàng Champagne kết hợp trắng ngà thanh thoát, hoa lan hồ điệp tươi kết hợp hoa hồng nhập khẩu. Điểm nhấn là vòm cổng pha lê cao cấp và hệ đèn chandelier lộng lẫy kiến tạo không gian đại sảnh đẳng cấp quý tộc.</textarea>
                     </div>
@@ -431,7 +620,7 @@
             </div>
 
             <!-- PHẦN 2: HÌNH ẢNH ĐẠI DIỆN (COVER PHOTO) -->
-            <div class="bg-white rounded-xl p-4 sm:p-6 border border-[#E5D5B8] shadow-xs space-y-4">
+            <div class="decor-modal-section bg-white rounded-xl p-4 sm:p-6 border shadow-xs space-y-4">
                 <div class="flex items-center justify-between border-b border-slate-200 pb-3 flex-wrap gap-2">
                     <div class="min-w-0">
                         <div class="flex items-center space-x-2">
@@ -444,7 +633,7 @@
                 </div>
 
                 <!-- Dropzone Kéo Thả Ảnh -->
-                <div id="decor-dropzone" onclick="document.getElementById('decor-file-input').click()" class="border-2 border-dashed border-[#E5D5B8] hover:border-[#B89758] rounded-xl p-4 sm:p-6 text-center bg-[#FAF8F5]/80 hover:bg-white transition-all cursor-pointer flex flex-col items-center justify-center">
+                <div id="decor-dropzone" onclick="document.getElementById('decor-file-input').click()" class="decor-upload border-2 border-dashed rounded-xl p-4 sm:p-6 text-center transition-all cursor-pointer flex flex-col items-center justify-center">
                     <input type="file" id="decor-file-input" accept="image/*" class="hidden" onchange="handleImageSelected(event)" />
                     <div class="w-12 h-12 rounded-full bg-white border border-[#E5D5B8] flex items-center justify-center text-[#B89758] shadow-xs mb-2">
                         <i class="fa-solid fa-cloud-arrow-up text-lg"></i>
@@ -454,7 +643,7 @@
                 </div>
 
                 <!-- Card Xem Trước Ảnh (Preview Card) -->
-                <div id="decor-image-preview-card" class="bg-[#FAF8F5] rounded-xl border border-[#E5D5B8] p-3 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-2xs">
+                <div id="decor-image-preview-card" class="decor-preview rounded-xl border p-3 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-2xs">
                     <div class="flex items-center space-x-3 w-full sm:w-auto min-w-0">
                         <div class="relative w-24 h-16 rounded-lg overflow-hidden border border-slate-200 flex-shrink-0 bg-slate-900 shadow-inner">
                             <img id="decor-preview-img" src="https://lh3.googleusercontent.com/aida/AEtjO1UlG53VliMfYaOPGWYTFo5zD5pEzc698JZZ3xtxh3ZJzk9TH4CKxNGW6GRCm35bJ5pSfaMfASYwgstAXnJfCb4pb8Ri73BetKzuyD9A1ZBVRo0tyUm1tOg7LoWxE_EwngYzmPNjYi7IYvP3Zxc0rUiuzJwCq8CIR3R327AKzJ6fz-C8v6WzJjdkOdsvUKVODnM21hg2IkUq4BQYQeXrPz_QG7aMOPFALohu5Lp2kFCu2PsDU5TivtSPHqU" class="w-full h-full object-cover" alt="Preview" />
@@ -494,7 +683,7 @@
                     </button>
                     <button type="submit" class="h-10 px-6 rounded-lg bg-gradient-to-r from-[#B89758] to-[#9E7E3F] hover:from-[#A8884A] hover:to-[#8E7035] text-white font-bold tracking-wide shadow-sm flex items-center justify-center space-x-2 transition-all focus-ring w-full sm:w-auto">
                         <i class="fa-solid fa-check text-xs"></i>
-                        <span>LƯU GÓI DECOR</span>
+                        <span id="decor-submit-label">LƯU GÓI DECOR</span>
                     </button>
                 </div>
             </div>
@@ -503,22 +692,22 @@
 </div>
 
 <!-- ================= MODAL CHI TIẾT GÓI DECOR / DỊCH VỤ ================= -->
-<div id="detailModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center z-50 hidden p-3 sm:p-4">
-    <div class="bg-white rounded-2xl w-full max-w-lg border border-[#E5D5B8] shadow-2xl overflow-hidden max-h-[95vh] flex flex-col">
-        <div class="bg-[#FAF8F5] px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-200 flex items-center justify-between flex-shrink-0">
+<div id="detailModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center z-50 hidden p-3 sm:p-4" role="dialog" aria-modal="true" aria-labelledby="detail-title">
+    <div class="decor-detail-dialog bg-white rounded-2xl w-full shadow-2xl overflow-hidden flex flex-col">
+        <div class="decor-detail-header px-4 sm:px-6 py-3 sm:py-4 border-b flex items-center justify-between flex-shrink-0">
             <h3 class="font-serif font-bold text-base sm:text-lg text-slate-900 flex items-center gap-2 min-w-0">
                 <i class="fa-solid fa-crown text-[#B89758] text-sm flex-shrink-0"></i>
                 <span id="detail-title" class="truncate">Chi Tiết Hạng Mục</span>
             </h3>
-            <button onclick="closeDetailModal()" class="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-200 transition-colors flex-shrink-0">
+            <button onclick="closeDetailModal()" class="decor-close w-9 h-9 flex items-center justify-center rounded-lg transition-colors flex-shrink-0" aria-label="Đóng">
                 <i class="fa-solid fa-xmark text-base"></i>
             </button>
         </div>
-        <div id="detail-content" class="p-4 sm:p-6 space-y-4 text-xs overflow-y-auto custom-scrollbar flex-1">
+        <div id="detail-content" class="decor-detail-body p-4 sm:p-6 space-y-4 text-xs overflow-y-auto custom-scrollbar flex-1">
             <!-- Rendered by JS -->
         </div>
-        <div class="bg-slate-50 px-4 sm:px-6 py-3 border-t border-slate-100 text-right flex-shrink-0">
-            <button onclick="closeDetailModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-lg font-semibold transition-colors">Đóng Cửa Sổ</button>
+        <div class="decor-detail-footer px-4 sm:px-6 py-3 border-t text-right flex-shrink-0">
+            <button onclick="closeDetailModal()" class="decor-detail-close-button px-4 py-2 rounded-lg font-semibold transition-colors">Đóng</button>
         </div>
     </div>
 </div>
@@ -750,8 +939,31 @@
         }
 
         document.addEventListener('DOMContentLoaded', async () => {
+            const decorModal = document.getElementById('decorModal');
+            const detailModal = document.getElementById('detailModal');
+            if (decorModal?.parentElement !== document.body) document.body.appendChild(decorModal);
+            if (detailModal?.parentElement !== document.body) document.body.appendChild(detailModal);
+
             await loadCatalogData();
             switchMainTab('decor');
+
+            decorModal?.addEventListener('click', event => {
+                if (event.target === event.currentTarget) closeDecorModal();
+            });
+            detailModal?.addEventListener('click', event => {
+                if (event.target === event.currentTarget) closeDetailModal();
+            });
+        });
+
+        document.addEventListener('keydown', event => {
+            if (event.key !== 'Escape') return;
+            if (!document.getElementById('detailModal')?.classList.contains('hidden')) {
+                closeDetailModal();
+                return;
+            }
+            if (!document.getElementById('decorModal')?.classList.contains('hidden')) {
+                closeDecorModal();
+            }
         });
 
         // 3. CHUYỂN ĐỔI TAB
@@ -1055,12 +1267,49 @@
         }
 
         // 9. KHÓA / MỞ TRẠNG THÁI RECORD
-        function toggleStatus(id) {
+        async function toggleStatus(id) {
             const list = currentTab === 'decor' ? decorData : serviceData;
             const target = list.find(x => x.id === id);
-            if (target) {
-                target.trangThai = target.trangThai === 'Áp dụng' ? 'Ngừng áp dụng' : 'Áp dụng';
+            if (!target) return;
+
+            const isDecor = currentTab === 'decor';
+            const nextStatusCode = target.trangThai === 'Áp dụng' ? 'INACTIVE' : 'ACTIVE';
+            const endpoint = isDecor
+                ? `/AdminDecorService/data/decor/${id}`
+                : `/AdminDecorService/data/service/${id}`;
+            const payload = isDecor
+                ? {
+                    packageCode: target.ma,
+                    packageName: target.ten,
+                    style: target.phanLoai,
+                    description: target.moTa,
+                    price: target.gia,
+                    statusCode: nextStatusCode
+                }
+                : {
+                    serviceCode: target.ma,
+                    serviceName: target.ten,
+                    serviceType: target.phanLoai,
+                    description: target.moTa,
+                    price: target.gia,
+                    statusCode: nextStatusCode
+                };
+
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                if (!response.ok || !result.success) {
+                    throw new Error(result.message || 'Không thể cập nhật trạng thái.');
+                }
+
+                await loadCatalogData();
                 applyFilters();
+            } catch (error) {
+                alert(error.message || 'Không thể cập nhật trạng thái danh mục.');
             }
         }
 
@@ -1072,7 +1321,7 @@
 
             document.getElementById('detail-title').innerText = currentTab === 'decor' ? `Chi Tiết Gói Decor: ${item.ma}` : `Chi Tiết Dịch Vụ: ${item.ma}`;
             document.getElementById('detail-content').innerHTML = `
-                <div class="p-3 bg-slate-50 rounded-lg border border-slate-200 flex justify-between items-center gap-3 flex-wrap">
+                <div class="decor-detail-panel p-3 rounded-lg border flex justify-between items-center gap-3 flex-wrap">
                     <div class="min-w-0">
                         <h4 class="font-bold text-sm text-slate-800">${item.ten}</h4>
                         <span class="text-[11px] text-[#B89758] font-semibold">${item.phanLoai}</span>
@@ -1083,36 +1332,66 @@
                 </div>
                 <div>
                     <span class="font-bold text-slate-700 block mb-1">Mô tả cấu hình:</span>
-                    <p class="text-slate-600 leading-relaxed bg-white p-3 rounded-lg border border-slate-100">${item.moTa}</p>
+                    <p class="decor-detail-panel text-slate-600 leading-relaxed p-3 rounded-lg border">${item.moTa}</p>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div class="p-2.5 bg-slate-50 rounded-lg border border-slate-200">
+                    <div class="decor-detail-panel p-2.5 rounded-lg border">
                         <span class="text-[10px] uppercase font-bold text-slate-400 block">${currentTab === 'decor' ? 'Hạng mục chính' : 'Nhân sự vận hành'}</span>
                         <span class="font-semibold text-slate-800">${item.spec1 || 'Tiêu chuẩn'}</span>
                     </div>
-                    <div class="p-2.5 bg-slate-50 rounded-lg border border-slate-200">
+                    <div class="decor-detail-panel p-2.5 rounded-lg border">
                         <span class="text-[10px] uppercase font-bold text-slate-400 block">${currentTab === 'decor' ? 'Thời gian set-up' : 'Thời gian phục vụ'}</span>
                         <span class="font-semibold text-slate-800">${item.spec2 || 'Theo ca tiệc'}</span>
                     </div>
                 </div>
-                <div class="flex items-center justify-between text-[11px] text-slate-500 pt-2 flex-wrap gap-2">
+                <div class="flex items-center text-[11px] text-slate-500 pt-2 flex-wrap gap-2">
                     <span>Tình trạng niêm yết: <strong class="${item.trangThai === 'Áp dụng' ? 'text-emerald-600' : 'text-slate-500'} font-bold">${item.trangThai}</strong></span>
-                    <span>Mã quy chuẩn: <strong>MD-RP-2026</strong></span>
                 </div>
             `;
             document.getElementById('detailModal').classList.remove('hidden');
+            document.body.classList.add('decor-modal-open');
         }
 
         function closeDetailModal() {
             document.getElementById('detailModal').classList.add('hidden');
+            document.body.classList.remove('decor-modal-open');
         }
 
         // 11. MODAL THÊM MỚI / CHỈNH SỬA
+        function configureCatalogForm(isDecor) {
+            document.getElementById('decor-code-label').textContent = isDecor ? 'Mã gói decor' : 'Mã dịch vụ';
+            document.getElementById('decor-name-label').textContent = isDecor ? 'Tên gói Decor' : 'Tên dịch vụ';
+            document.getElementById('decor-style-label').textContent = isDecor ? 'Phong cách decor' : 'Phân loại dịch vụ';
+            document.getElementById('decor-submit-label').textContent = isDecor ? 'LƯU GÓI DECOR' : 'LƯU DỊCH VỤ';
+            document.getElementById('decor-items-field').classList.toggle('hidden', !isDecor);
+
+            const decorStyles = [
+                'Hoàng gia (Royal Luxury)',
+                'Tối giản & Hiện đại (Minimalist)',
+                'Cổ điển (Vintage Romance)',
+                'Dạ khúc Ánh sao (Celestial)',
+                'Sang trọng bờ sông (Riverside Luxe)',
+                'Venice Lãng mạn'
+            ];
+            const serviceTypes = [...new Set([
+                ...serviceData.map(item => item.phanLoai).filter(Boolean),
+                'Âm thanh', 'Ánh sáng', 'Nhân sự', 'Thiết bị', 'Khác'
+            ])];
+            const select = document.getElementById('decor-style');
+            select.replaceChildren(...(isDecor ? decorStyles : serviceTypes).map(value => {
+                const option = document.createElement('option');
+                option.value = value;
+                option.textContent = value;
+                return option;
+            }));
+        }
+
         function openCreateModal() {
             document.getElementById('decorForm').reset();
             document.getElementById('decor-file-input').value = '';
             document.getElementById('decor-form-id').value = '0';
             document.getElementById('decor-modal-title').innerText = currentTab === 'decor' ? 'Thêm gói Decor mới' : 'Thêm Dịch Vụ Mới';
+            configureCatalogForm(currentTab === 'decor');
 
             if (currentTab === 'decor') {
                 document.getElementById('decor-code').value = 'DC-' + Date.now();
@@ -1131,6 +1410,7 @@
             document.getElementById('radio-decor-active').checked = true;
             document.getElementById('decor-image-preview-card').classList.add('hidden');
             document.getElementById('decorModal').classList.remove('hidden');
+            document.body.classList.add('decor-modal-open');
         }
 
         function editDecorItem(id) {
@@ -1138,10 +1418,14 @@
             const item = list.find(x => x.id === id);
             if (!item) return;
 
+            configureCatalogForm(currentTab === 'decor');
             document.getElementById('decor-form-id').value = item.id;
             document.getElementById('decor-modal-title').innerText = currentTab === 'decor' ? 'Chỉnh sửa gói Decor' : 'Chỉnh sửa Dịch vụ';
             document.getElementById('decor-code').value = item.ma;
             document.getElementById('decor-name').value = item.ten;
+            if (![...document.getElementById('decor-style').options].some(option => option.value === item.phanLoai)) {
+                document.getElementById('decor-style').add(new Option(item.phanLoai, item.phanLoai));
+            }
             document.getElementById('decor-style').value = item.phanLoai;
             document.getElementById('decor-price').value = item.gia;
             document.getElementById('decor-setup-time').value = item.spec2 || '4.0 giờ trước ca tiệc';
@@ -1162,10 +1446,12 @@
             }
 
             document.getElementById('decorModal').classList.remove('hidden');
+            document.body.classList.add('decor-modal-open');
         }
 
         function closeDecorModal() {
             document.getElementById('decorModal').classList.add('hidden');
+            document.body.classList.remove('decor-modal-open');
             const form = document.getElementById('decorForm');
             if (form) form.reset();
             removeImagePreview();

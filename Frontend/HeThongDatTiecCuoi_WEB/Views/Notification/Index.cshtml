@@ -65,10 +65,12 @@
     @if (Model.TotalPages > 1)
     {
         <nav class="notification-pagination" aria-label="Phân trang thông báo">
+            <a class="pagination-edge @(Model.CurrentPage <= 1 ? "disabled" : "")" asp-action="Index" asp-route-page="@(Model.CurrentPage - 1)" asp-route-readStatus="@Model.ReadStatus">Trước</a>
             @for (var pageNumber = 1; pageNumber <= Model.TotalPages; pageNumber++)
             {
                 <a asp-action="Index" asp-route-page="@pageNumber" asp-route-readStatus="@Model.ReadStatus" class="@(pageNumber == Model.CurrentPage ? "active" : "")">@pageNumber</a>
             }
+            <a class="pagination-edge @(Model.CurrentPage >= Model.TotalPages ? "disabled" : "")" asp-action="Index" asp-route-page="@(Model.CurrentPage + 1)" asp-route-readStatus="@Model.ReadStatus">Sau</a>
         </nav>
     }
 </main>

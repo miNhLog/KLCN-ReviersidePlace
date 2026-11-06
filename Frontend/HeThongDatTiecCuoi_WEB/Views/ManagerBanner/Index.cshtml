@@ -20,13 +20,13 @@
 
 <section class="banner-page">
     <header class="manager-section-header">
-        <div><span class="backoffice-hero__eyebrow"><i class="fa-regular fa-images"></i> QUẢN LÝ NỘI DUNG WEBSITE</span><h1>Quản lý Banner</h1><p>Quản lý tập trung banner trang chủ và ảnh bìa của các trang chức năng.</p></div>
-        <button class="backoffice-hero__primary-btn" type="button" data-banner-create data-placement="HOME"><i class="fa-solid fa-plus"></i> Thêm Banner</button>
+        <div><span class="backoffice-hero__eyebrow"><i class="bi bi-images" aria-hidden="true"></i> QUẢN LÝ NỘI DUNG WEBSITE</span><h1>Quản lý Banner</h1><p>Quản lý tập trung banner trang chủ và ảnh bìa của các trang chức năng.</p></div>
+        <button class="backoffice-hero__primary-btn" type="button" data-banner-create data-placement="HOME"><i class="bi bi-plus-lg" aria-hidden="true"></i> Thêm Banner</button>
     </header>
     <div class="banner-kpis">
-        <article><span class="banner-kpi-icon"><i class="fa-regular fa-images"></i></span><div><small>Tổng banner</small><strong>@Model.Banners.Count</strong></div></article>
-        <article><span class="banner-kpi-icon visible"><i class="fa-regular fa-eye"></i></span><div><small>Đang hiển thị</small><strong>@Model.Banners.Count(x => x.IsVisible)</strong></div></article>
-        <article><span class="banner-kpi-icon hidden"><i class="fa-solid fa-layer-group"></i></span><div><small>Trang đã phủ banner</small><strong>@Model.Banners.Where(x => x.Placement != "HOME").Select(x => x.Placement).Distinct().Count()/5</strong></div></article>
+        <article><span class="banner-kpi-icon"><i class="bi bi-images" aria-hidden="true"></i></span><div><small>Tổng banner</small><strong>@Model.Banners.Count</strong></div></article>
+        <article><span class="banner-kpi-icon visible"><i class="bi bi-eye" aria-hidden="true"></i></span><div><small>Đang hiển thị</small><strong>@Model.Banners.Count(x => x.IsVisible)</strong></div></article>
+        <article><span class="banner-kpi-icon hidden"><i class="bi bi-layers" aria-hidden="true"></i></span><div><small>Trang đã phủ banner</small><strong>@Model.Banners.Where(x => x.Placement != "HOME").Select(x => x.Placement).Distinct().Count()/5</strong></div></article>
     </div>
     <div class="banner-panel">
         <div class="banner-panel-head"><div><h2>Thư viện banner theo vị trí</h2><p>Trang chủ có thể dùng nhiều slide; mỗi trang chức năng chỉ hiển thị một banner đang bật.</p></div></div>
