@@ -38,12 +38,12 @@
 
 <style>
     .booking-page-wrapper {
-        font-family: 'Plus Jakarta Sans', sans-serif;
-        color: #1E293B;
+        font-family: 'Inter', sans-serif;
+        color: var(--rp-text);
     }
 
         .booking-page-wrapper .font-serif {
-            font-family: 'Playfair Display', serif;
+            font-family: 'Inter', sans-serif;
         }
 
     .card-shadow {
@@ -90,8 +90,8 @@
     }
 
         .booking-row:hover {
-            background-color: #FAF8F5;
-            box-shadow: inset 3px 0 0 #B89758;
+            background-color: var(--rp-surface-hover);
+            box-shadow: inset 3px 0 0 var(--rp-gold-600);
         }
 
     /* Avatar khách hàng */
@@ -110,24 +110,25 @@
     }
 
     .booking-action-trigger {
-        width: 36px;
-        height: 34px;
+        width: 72px;
+        height: 38px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        border: 1px solid #dce3ea;
-        border-radius: 10px;
-        color: #475569;
-        background: #fff;
+        gap: 11px;
+        border: 1px solid var(--rp-border);
+        border-radius: var(--metis-radius);
+        color: var(--rp-text-secondary);
+        background: var(--rp-surface);
         cursor: pointer;
         transition: border-color .18s ease, color .18s ease, background .18s ease;
     }
 
     .booking-action-trigger:hover,
     .booking-action-trigger[aria-expanded="true"] {
-        border-color: #c6a15b;
-        color: #8c6d32;
-        background: #fffaf0;
+        border-color: var(--rp-gold-600);
+        color: var(--rp-gold-700);
+        background: var(--rp-surface-hover);
     }
 
     .booking-action-popover {
@@ -136,10 +137,11 @@
         width: 210px;
         margin: 0;
         padding: 6px;
-        border: 1px solid #e2e8f0;
+        border: 1px solid var(--rp-border);
         border-radius: 12px;
-        background: #fff;
-        box-shadow: 0 16px 38px rgba(15, 23, 42, .16);
+        color: var(--rp-text);
+        background: var(--rp-surface);
+        box-shadow: var(--metis-shadow-float);
         z-index: 100000;
     }
 
@@ -156,7 +158,7 @@
         padding: 8px 10px;
         border: 0;
         border-radius: 8px;
-        color: #334155;
+        color: var(--rp-text);
         background: transparent;
         font: inherit;
         font-size: 12px;
@@ -167,12 +169,12 @@
     }
 
     .booking-action-item:hover {
-        background: #f8fafc;
+        background: var(--rp-surface-hover);
     }
 
     .booking-action-item i {
         width: 18px;
-        color: #9a7127;
+        color: var(--rp-gold-600);
         text-align: center;
     }
 
@@ -182,6 +184,179 @@
 
     .booking-action-item.danger i {
         color: inherit;
+    }
+
+    .booking-status {
+        display: inline-flex;
+        min-height: 26px;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        padding: 4px 9px !important;
+        border: 0 !important;
+        border-radius: var(--metis-radius-sm) !important;
+        color: #fff !important;
+        background: var(--metis-badge-secondary) !important;
+        font-size: 10.5px !important;
+        font-weight: 650 !important;
+        line-height: 1.2;
+        white-space: nowrap;
+    }
+
+    .booking-status--pending { background: var(--metis-badge-warning) !important; }
+    .booking-status--confirmed { background: var(--metis-badge-primary) !important; }
+    .booking-status--preparing { background: #d97706 !important; }
+    .booking-status--completed { background: var(--metis-badge-success) !important; }
+    .booking-status--cancelled { background: var(--metis-badge-danger) !important; }
+
+    .booking-page-wrapper .status-tab-btn.active {
+        color: #211806 !important;
+        background: var(--rp-gold-500) !important;
+        box-shadow: none !important;
+    }
+
+    .booking-page-wrapper .status-tab-btn:not(.active) {
+        color: var(--rp-text-secondary) !important;
+        background: transparent !important;
+    }
+
+    .booking-page-wrapper .status-tab-btn:not(.active):hover {
+        color: var(--rp-text) !important;
+        background: var(--rp-surface-hover) !important;
+        transform: none;
+    }
+
+    .booking-page-wrapper .status-tab-btn:not(.active) > span:last-child {
+        color: var(--rp-text) !important;
+        background: var(--rp-surface-hover) !important;
+    }
+
+    .booking-page-wrapper .status-tab-btn.active > span:last-child {
+        color: #211806 !important;
+        background: rgba(255, 255, 255, .42) !important;
+    }
+
+    html[data-admin-theme="dark"] .manager-metis-app :is(.booking-page-wrapper, #bookingDetailModal, #createBookingModal) {
+        color: var(--rp-text);
+        font-family: 'Inter', sans-serif !important;
+    }
+
+    html[data-admin-theme="dark"] .manager-metis-app .booking-page-wrapper :is(
+        .bg-white, .bg-slate-50, .bg-slate-100, [class*="bg-[#FAF8F5]"]
+    ),
+    html[data-admin-theme="dark"] .manager-metis-app :is(#bookingDetailModal, #createBookingModal) :is(
+        .bg-white, [class*="from-slate-50"], [class*="from-[#FAF8F5]"], [class*="to-[#F5EFE3]"]
+    ) {
+        background: var(--rp-surface) !important;
+        background-image: none !important;
+    }
+
+    html[data-admin-theme="dark"] .manager-metis-app .booking-page-wrapper :is(.bg-slate-50\/60, .bg-slate-50\/70),
+    html[data-admin-theme="dark"] .manager-metis-app :is(#bookingDetailModal, #createBookingModal) :is(.bg-slate-50\/60, .bg-slate-50\/70) {
+        background: var(--rp-surface-muted) !important;
+    }
+
+    html[data-admin-theme="dark"] .manager-metis-app :is(.booking-page-wrapper, #bookingDetailModal, #createBookingModal) :is(
+        .text-slate-950, .text-slate-900, .text-slate-800, .text-slate-700
+    ) { color: var(--rp-text) !important; }
+
+    html[data-admin-theme="dark"] .manager-metis-app :is(.booking-page-wrapper, #bookingDetailModal, #createBookingModal) :is(
+        .text-slate-600, .text-slate-500, .text-slate-400, .text-slate-300
+    ) { color: var(--rp-text-secondary) !important; }
+
+    html[data-admin-theme="dark"] .manager-metis-app :is(.booking-page-wrapper, #bookingDetailModal, #createBookingModal) :is(
+        .border-slate-100, .border-slate-200, .border-slate-200\/70, .border-slate-300, [class*="border-[#E5D5B8]"]
+    ) { border-color: var(--rp-border) !important; }
+
+    html[data-admin-theme="dark"] .manager-metis-app :is(.booking-page-wrapper, #bookingDetailModal, #createBookingModal) :is(
+        .divide-slate-100, .divide-slate-200
+    ) > :not([hidden]) ~ :not([hidden]) {
+        border-color: var(--rp-border) !important;
+    }
+
+    html[data-admin-theme="dark"] .manager-metis-app .booking-page-wrapper :is(input, select),
+    html[data-admin-theme="dark"] .manager-metis-app #createBookingModal :is(input:not([type="checkbox"]), select, textarea) {
+        border-color: var(--rp-border) !important;
+        color: var(--rp-text) !important;
+        background: var(--rp-surface-muted) !important;
+        color-scheme: dark;
+    }
+
+    html[data-admin-theme="dark"] .manager-metis-app :is(.booking-page-wrapper, #createBookingModal) :is(input, textarea)::placeholder {
+        color: var(--rp-text-muted) !important;
+        opacity: 1;
+    }
+
+    html[data-admin-theme="dark"] .manager-metis-app :is(.booking-page-wrapper, #createBookingModal) select option {
+        color: var(--rp-text) !important;
+        background: var(--rp-surface) !important;
+    }
+
+    html[data-admin-theme="dark"] .manager-metis-app :is(.booking-page-wrapper, #createBookingModal) :is(input, select, textarea):focus {
+        border-color: var(--rp-gold-500) !important;
+        outline: 0 !important;
+        box-shadow: 0 0 0 2px rgba(198, 161, 91, .18) !important;
+    }
+
+    html[data-admin-theme="dark"] .manager-metis-app #createBookingModal :is(input, select, textarea):disabled {
+        color: var(--rp-text-muted) !important;
+        background: var(--rp-surface-hover) !important;
+        opacity: .72;
+    }
+
+    html[data-admin-theme="dark"] .manager-metis-app #createBookingModal input[type="checkbox"] {
+        accent-color: var(--metis-badge-primary);
+    }
+
+    html[data-admin-theme="dark"] .manager-metis-app .booking-page-wrapper thead,
+    html[data-admin-theme="dark"] .manager-metis-app #bookingDetailModal :is(thead, tfoot) {
+        border-color: var(--rp-border) !important;
+        color: var(--rp-text) !important;
+        background: var(--metis-heading-bg) !important;
+    }
+
+    html[data-admin-theme="dark"] .manager-metis-app .booking-page-wrapper tbody,
+    html[data-admin-theme="dark"] .manager-metis-app #bookingDetailModal tbody {
+        border-color: var(--rp-border) !important;
+        color: var(--rp-text) !important;
+        background: var(--rp-surface) !important;
+    }
+
+    html[data-admin-theme="dark"] .manager-metis-app .booking-row:hover,
+    html[data-admin-theme="dark"] .manager-metis-app #bookingDetailModal tbody tr:hover {
+        background: var(--rp-surface-hover) !important;
+    }
+
+    html[data-admin-theme="dark"] .manager-metis-app :is(#bookingDetailModal, #createBookingModal) > div {
+        border-color: var(--rp-border) !important;
+        color: var(--rp-text);
+        background: var(--rp-surface) !important;
+        box-shadow: var(--metis-shadow-float) !important;
+    }
+
+    html[data-admin-theme="dark"] .manager-metis-app :is(#bookingDetailModal, #createBookingModal) :is(header, footer) {
+        border-color: var(--rp-border) !important;
+        background: var(--rp-surface) !important;
+        background-image: none !important;
+    }
+
+    html[data-admin-theme="dark"] .manager-metis-app #bookingDetailModal #mdReviewQrImage {
+        border-radius: var(--metis-radius-sm);
+        background: #fff;
+    }
+
+    html[data-admin-theme="dark"] .manager-metis-app .booking-action-popover {
+        border-color: var(--rp-border);
+        color: var(--rp-text);
+        background: var(--rp-surface);
+    }
+
+    html[data-admin-theme="dark"] .manager-metis-app .custom-scrollbar::-webkit-scrollbar-track {
+        background: var(--rp-surface-muted);
+    }
+
+    html[data-admin-theme="dark"] .manager-metis-app .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: var(--rp-border-strong);
     }
 </style>
 
@@ -369,39 +544,40 @@
                                 <td class="py-3.5 px-3 text-center">
                                     @if (b.Status == "Hoàn tất")
                                     {
-                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-300">
-                                            <i class="fa-solid fa-circle-check text-[9px]"></i> Hoàn tất
+                                        <span class="booking-status booking-status--completed">
+                                            Hoàn tất
                                         </span>
                                     }
                                     else if (b.StatusCode == "PREPARING")
                                     {
-                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-bold bg-amber-50 text-amber-800 border border-amber-300">
-                                            <i class="fa-solid fa-list-check text-[9px]"></i> Đang chuẩn bị
+                                        <span class="booking-status booking-status--preparing">
+                                            Đang chuẩn bị
                                         </span>
                                     }
                                     else if (b.Status == "Đã xác nhận")
                                     {
-                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
-                                            <i class="fa-solid fa-check-double text-[9px]"></i> Đã xác nhận
+                                        <span class="booking-status booking-status--confirmed">
+                                            Đã xác nhận
                                         </span>
                                     }
                                     else if (b.Status == "Đã hủy")
                                     {
-                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
-                                            <i class="fa-solid fa-ban text-[9px]"></i> Đã hủy
+                                        <span class="booking-status booking-status--cancelled">
+                                            Đã hủy
                                         </span>
                                     }
                                     else
                                     {
-                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                                            <i class="fa-regular fa-clock text-[9px]"></i> Chờ xác nhận
+                                        <span class="booking-status booking-status--pending">
+                                            Chờ xác nhận
                                         </span>
                                     }
                                 </td>
                                 <td class="py-3.5 px-4 text-center">
                                     <div class="inline-flex">
                                         <button type="button" class="booking-action-trigger" onclick="toggleBookingActions(event, 'bookingActions-@b.BookingId')" aria-controls="bookingActions-@b.BookingId" aria-expanded="false" aria-label="Mở thao tác cho booking @b.BookingCode" title="Thao tác">
-                                            <i class="fa-solid fa-ellipsis-vertical"></i>
+                                            <i class="bi bi-three-dots"></i>
+                                            <i class="bi bi-chevron-down text-[10px]" aria-hidden="true"></i>
                                         </button>
                                         <div id="bookingActions-@b.BookingId" class="booking-action-popover" popover="auto" role="menu">
                                             <button type="button" class="booking-action-item" onclick="closeBookingActions(); viewBookingDetail(@b.BookingId)" role="menuitem"><i class="fa-regular fa-eye"></i><span>Xem chi tiết</span></button>
@@ -454,7 +630,7 @@
 </div>
 
 <!-- ================= MODAL CHI TIẾT HỢP ĐỒNG & THANH TOÁN ================= -->
-<div id="bookingDetailModal" class="fixed inset-0 hidden items-center justify-center bg-slate-950/75 backdrop-blur-xs p-2 sm:p-4 md:p-6 transition-all duration-300" style="z-index: 99999; font-family: 'Plus Jakarta Sans', sans-serif;">
+<div id="bookingDetailModal" class="fixed inset-0 hidden items-center justify-center bg-slate-950/75 backdrop-blur-xs p-2 sm:p-4 md:p-6 transition-all duration-300" style="z-index: 99999; font-family: 'Inter', sans-serif;">
     <div class="bg-white w-full max-w-4xl max-h-[92vh] rounded-2xl shadow-2xl flex flex-col border border-[#E5D5B8] overflow-hidden">
 
         <!-- Header Modal -->
@@ -601,7 +777,7 @@
         <footer class="p-3.5 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs">
             <span class="text-slate-500 flex items-center gap-1.5">
                 Trạng thái hiện tại:
-                <strong id="mdStatusBadge" class="text-slate-800">---</strong>
+                <strong id="mdStatusBadge" class="booking-status">---</strong>
             </span>
             <button type="button" onclick="closeDetailModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg font-semibold cursor-pointer transition-colors">
                 Đóng
@@ -612,7 +788,7 @@
 </div>
 
 <!-- ================= MODAL TẠO MỚI ĐẶT TIỆC (CREATE BOOKING) ================= -->
-<div id="createBookingModal" class="fixed inset-0 hidden items-center justify-center bg-slate-950/75 backdrop-blur-xs p-2 sm:p-4 transition-all duration-300" style="z-index: 99999; font-family: 'Plus Jakarta Sans', sans-serif;">
+<div id="createBookingModal" class="fixed inset-0 hidden items-center justify-center bg-slate-950/75 backdrop-blur-xs p-2 sm:p-4 transition-all duration-300" style="z-index: 99999; font-family: 'Inter', sans-serif;">
     <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col border border-[#E5D5B8] overflow-hidden max-h-[92vh]">
         <header class="p-4 sm:p-5 border-b border-slate-200 bg-gradient-to-r from-[#FAF8F5] via-white to-[#FAF8F5] flex items-center justify-between shrink-0">
             <div class="flex items-center gap-3">
@@ -953,11 +1129,11 @@
                 const safeInitial = escapeHtml(initial);
                 const safeContractCode = escapeHtml(contractCode);
 
-                let badge = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-bold bg-blue-50 text-blue-700 border border-blue-200"><i class="fa-regular fa-clock text-[9px]"></i> Chờ xác nhận</span>`;
-                if (statusCode === 'COMPLETED') badge = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-300"><i class="fa-solid fa-circle-check text-[9px]"></i> Hoàn tất</span>`;
-                else if (statusCode === 'PREPARING') badge = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-bold bg-amber-50 text-amber-800 border border-amber-300"><i class="fa-solid fa-list-check text-[9px]"></i> Đang chuẩn bị</span>`;
-                else if (statusCode === 'CONFIRMED') badge = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200"><i class="fa-solid fa-check-double text-[9px]"></i> Đã xác nhận</span>`;
-                else if (statusCode === 'CANCELLED') badge = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-bold bg-rose-50 text-rose-700 border border-rose-200"><i class="fa-solid fa-ban text-[9px]"></i> Đã hủy</span>`;
+                let badge = `<span class="booking-status booking-status--pending">Chờ xác nhận</span>`;
+                if (statusCode === 'COMPLETED') badge = `<span class="booking-status booking-status--completed">Hoàn tất</span>`;
+                else if (statusCode === 'PREPARING') badge = `<span class="booking-status booking-status--preparing">Đang chuẩn bị</span>`;
+                else if (statusCode === 'CONFIRMED') badge = `<span class="booking-status booking-status--confirmed">Đã xác nhận</span>`;
+                else if (statusCode === 'CANCELLED') badge = `<span class="booking-status booking-status--cancelled">Đã hủy</span>`;
 
                 let shiftIcon = shift === 'Ca tối'
                     ? '<i class="fa-regular fa-moon text-indigo-500 mr-1"></i>'
@@ -1024,7 +1200,7 @@
                         <td class="py-3.5 px-3 text-center">${badge}</td>
                         <td class="py-3.5 px-4 text-center">
                             <div class="inline-flex">
-                                <button type="button" class="booking-action-trigger" onclick="toggleBookingActions(event, 'bookingActions-${id}')" aria-controls="bookingActions-${id}" aria-expanded="false" aria-label="Mở thao tác cho booking ${safeCode}" title="Thao tác"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+                                <button type="button" class="booking-action-trigger" onclick="toggleBookingActions(event, 'bookingActions-${id}')" aria-controls="bookingActions-${id}" aria-expanded="false" aria-label="Mở thao tác cho booking ${safeCode}" title="Thao tác"><i class="bi bi-three-dots"></i><i class="bi bi-chevron-down text-[10px]" aria-hidden="true"></i></button>
                                 <div id="bookingActions-${id}" class="booking-action-popover" popover="auto" role="menu">${actionBtns}</div>
                             </div>
                         </td>
@@ -1135,7 +1311,16 @@
                     const hasContract = b.hasContract ?? b.HasContract ?? false;
                     const contractId = b.contractId ?? b.ContractId;
                     const contractCode = b.contractCode || b.ContractCode || '';
-                    document.getElementById('mdStatusBadge').innerText = status;
+                    const detailStatusBadge = document.getElementById('mdStatusBadge');
+                    detailStatusBadge.innerText = status;
+                    const detailStatusClass = {
+                        PENDING: 'booking-status--pending',
+                        CONFIRMED: 'booking-status--confirmed',
+                        PREPARING: 'booking-status--preparing',
+                        COMPLETED: 'booking-status--completed',
+                        CANCELLED: 'booking-status--cancelled'
+                    }[statusCode] || '';
+                    detailStatusBadge.className = `booking-status ${detailStatusClass}`.trim();
                     document.getElementById('mdMenuName').innerText = b.menuName || b.MenuName || 'Chưa chọn thực đơn';
                     document.getElementById('mdDecorName').innerText = b.decorationPackageName || b.DecorationPackageName || 'Chưa chọn gói trang trí';
 

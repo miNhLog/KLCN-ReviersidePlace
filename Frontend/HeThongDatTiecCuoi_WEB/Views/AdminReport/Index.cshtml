@@ -1,11 +1,10 @@
 @model HeThongDatTiecCuoi_WEB.Models.AdminReport.RevenueBiViewModel
 @{
-    ViewData["Title"] = "Báo Cáo Doanh Thu & Thống Kê BI";
+    ViewData["Title"] = "Thống kê và báo cáo";
     Layout = "_AdminLayout";
 }
 
-<!-- Font dùng chung được nạp bởi _AdminLayout; FontAwesome, Chart.js & SheetJS vẫn giữ nguyên. -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<!-- Font và Bootstrap Icons dùng chung được nạp bởi _AdminLayout; Chart.js & SheetJS vẫn giữ nguyên. -->
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
@@ -165,18 +164,18 @@
     .bi-kpi-card .bi-kpi-value span { font-size:10px!important;letter-spacing:0; }
     .bi-kpi-card .bi-kpi-meta { margin-top:8px;color:#718096;font-size:9px;line-height:1.5; }
     .bi-chart-grid,.bi-secondary-grid { gap:18px!important; }
-    .bi-panel { overflow:hidden;padding:0!important;border:1px solid var(--bi-border)!important;border-radius:18px!important;background:#fff;box-shadow:0 9px 26px rgba(15,23,42,.055); }
-    .bi-panel-head { min-height:78px;padding:18px 20px!important;border-bottom:1px solid #edf1f5!important;background:linear-gradient(180deg,#fff,#fcfdfe); }
-    .bi-panel-head h3 { display:flex;align-items:center;gap:9px;color:#1b2b43!important;font-family:"Plus Jakarta Sans",sans-serif!important;font-size:14px!important;font-weight:800!important; }
-    .bi-panel-head h3 i { width:30px;height:30px;display:grid;place-items:center;border-radius:9px;color:#956b1e;background:#fbf3df;font-size:11px; }
-    .bi-panel-head p { margin-top:4px!important;color:#7b8798!important;font-size:9px!important;line-height:1.5; }
-    .bi-chart-body { padding:18px 20px 20px; }
+    .bi-panel { overflow:hidden;padding:0!important;border:1px solid var(--rp-border)!important;border-radius:var(--metis-radius-lg)!important;background:var(--rp-surface);box-shadow:var(--metis-shadow-card); }
+    .bi-panel-head { min-height:66px;padding:15px 18px!important;border-bottom:1px solid var(--rp-border)!important;background:var(--rp-surface); }
+    .bi-panel-head h3 { display:flex;align-items:center;gap:9px;color:var(--rp-text)!important;font-family:"Inter",sans-serif!important;font-size:15px!important;font-weight:650!important;letter-spacing:-.01em; }
+    .bi-panel-head h3 i { width:30px;height:30px;display:grid;place-items:center;border-radius:var(--metis-radius-sm);color:var(--metis-badge-primary);background:color-mix(in srgb,var(--metis-badge-primary) 12%,transparent);font-size:14px; }
+    .bi-panel-head p { margin-top:3px!important;color:var(--rp-text-secondary)!important;font-size:10px!important;line-height:1.5; }
+    .bi-chart-body { padding:20px 20px 18px; }
     .bi-chart-canvas { min-height:280px; }
-    .bi-chart-unit { display:inline-flex;align-items:center;gap:7px;padding:6px 9px;border-radius:999px;color:#526177;background:#f2f5f8;font-size:9px!important;font-weight:700;white-space:nowrap; }
-    .bi-chart-unit span { width:7px!important;height:7px!important; }
-    .bi-chart-summary { display:flex;align-items:center;gap:8px;margin-top:12px;padding:10px 12px;border:1px solid #e8edf3;border-radius:10px;color:#65738a;background:#f8fafc;font-size:9px;line-height:1.5; }
+    .bi-chart-unit { display:inline-flex;align-items:center;gap:7px;padding:6px 9px;border:1px solid var(--rp-border);border-radius:var(--metis-radius-sm);color:var(--rp-text-secondary);background:var(--rp-surface-muted);font-size:9px!important;font-weight:650;white-space:nowrap; }
+    .bi-chart-unit span { width:7px!important;height:7px!important;background:var(--metis-badge-primary)!important; }
+    .bi-chart-summary { display:flex;align-items:center;gap:8px;margin-top:12px;padding:10px 12px;border:1px solid var(--rp-border);border-radius:var(--metis-radius-sm);color:var(--rp-text-secondary);background:var(--rp-surface-muted);font-size:9px;line-height:1.5; }
     .bi-chart-summary i { color:var(--bi-gold); }
-    .bi-structure-legend { margin:0 20px 18px;padding:12px!important;border:1px solid #edf1f5!important;border-radius:11px;background:#fafbfd; }
+    .bi-structure-legend { margin:0 20px 18px;padding:12px!important;border:1px solid var(--rp-border)!important;border-radius:var(--metis-radius-sm);color:var(--rp-text-secondary);background:var(--rp-surface-muted); }
     .bi-structure-legend>div { min-height:28px; }
     .bi-recent-panel { padding:0!important; }
     .bi-recent-panel table { min-width:700px; }
@@ -206,7 +205,7 @@
 <!-- TOAST THÔNG BÁO TỰ ĐỘNG -->
 <div id="biToast" role="status" aria-live="polite" class="fixed top-5 right-5 z-[100000] transform translate-x-full transition-transform duration-300 flex items-center gap-3 bg-white border border-[#E5D5B8] shadow-2xl px-4 py-3 rounded-xl">
     <div class="w-7 h-7 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-xs">
-        <i class="fa-solid fa-circle-check"></i>
+        <i class="bi bi-check-circle"></i>
     </div>
     <div>
         <p class="text-xs font-bold text-slate-900" id="biToastTitle">Thông báo</p>
@@ -220,17 +219,17 @@
     <!-- ================= 1. HEADER TRANG ================= -->
     <div class="manager-section-header bi-hero flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-            <span class="backoffice-hero__eyebrow"><i class="fa-solid fa-chart-line" aria-hidden="true"></i> BÁO CÁO KINH DOANH</span>
+            <span class="backoffice-hero__eyebrow"><i class="bi bi-bar-chart-line" aria-hidden="true"></i> PHÂN TÍCH KINH DOANH</span>
             <h1>
-                Phân tích doanh thu &amp; hiệu suất kinh doanh (BI)
+                Thống kê và báo cáo
             </h1>
             <p>Tổng hợp doanh thu, cơ cấu nguồn thu và hiệu suất khai thác sảnh theo từng kỳ báo cáo.</p>
         </div>
 
         <div class="flex flex-wrap items-center gap-2.5">
             <button onclick="exportReportExcel()" class="bi-export-btn flex items-center gap-2 px-3.5 py-2 text-xs font-semibold transition-colors focus-ring min-h-[40px]">
-                <i class="fa-solid fa-file-excel text-emerald-600 text-sm"></i>
-                <span>Xuất Báo Cáo Excel</span>
+                <i class="bi bi-file-earmark-excel text-emerald-600 text-sm"></i>
+                <span>Xuất báo cáo Excel</span>
             </button>
         </div>
     </div>
@@ -238,9 +237,9 @@
     <!-- ================= 2. BỘ LỌC KỲ BÁO CÁO ================= -->
     <section id="biFilterPanel" aria-label="Bộ lọc kỳ báo cáo" aria-busy="false" class="bi-filter-panel bg-white rounded-xl p-4 border border-slate-200 card-shadow flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center justify-between gap-4">
         <div class="flex flex-wrap items-center gap-3">
-            <span class="bi-filter-label"><i class="fa-solid fa-sliders" aria-hidden="true"></i>Bộ lọc báo cáo</span>
+            <span class="bi-filter-label"><i class="bi bi-sliders" aria-hidden="true"></i>Bộ lọc báo cáo</span>
             <div class="backoffice-filter-control flex items-center bg-[#FAF8F5] border border-slate-200 rounded-lg px-3 py-1.5 min-h-[40px]">
-                <i class="fa-regular fa-calendar text-[#B89758] mr-2 text-xs"></i>
+                <i class="bi bi-calendar3 text-[#B89758] mr-2 text-xs"></i>
                 <label for="selectYear" class="text-xs text-slate-500 mr-1.5 font-medium">Niên độ:</label>
                 <select id="selectYear" onchange="onFilterChange()" class="bg-transparent text-xs font-bold text-slate-800 focus:outline-none cursor-pointer">
                     <option value="2026" selected>Năm 2026</option>
@@ -249,7 +248,7 @@
             </div>
 
             <div class="backoffice-filter-control flex items-center bg-[#FAF8F5] border border-slate-200 rounded-lg px-3 py-1.5 min-h-[40px]">
-                <i class="fa-solid fa-chart-pie text-[#B89758] mr-2 text-xs"></i>
+                <i class="bi bi-pie-chart text-[#B89758] mr-2 text-xs"></i>
                 <label for="selectQuarter" class="text-xs text-slate-500 mr-1.5 font-medium">Kỳ thống kê:</label>
                 <select id="selectQuarter" onchange="onFilterChange()" class="bg-transparent text-xs font-bold text-slate-800 focus:outline-none cursor-pointer">
                     <option value="0" selected>Toàn bộ 4 Quý (12 Tháng)</option>
@@ -261,7 +260,7 @@
             </div>
 
             <button onclick="resetBiFilter()" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold border border-slate-200 flex items-center gap-1.5 min-h-[40px] transition-colors">
-                <i class="fa-solid fa-arrow-rotate-left text-slate-500 text-[11px]"></i>
+                <i class="bi bi-arrow-counterclockwise text-slate-500 text-[11px]"></i>
                 <span>Mặc định</span>
             </button>
         </div>
@@ -274,7 +273,7 @@
             <div class="flex items-center justify-between">
                 <span class="bi-kpi-label text-xs font-semibold text-slate-500 uppercase tracking-wider">Tổng doanh thu thực thu</span>
                 <div class="bi-kpi-icon w-8 h-8 rounded-lg flex items-center justify-center">
-                    <i class="fa-solid fa-coins text-sm"></i>
+                    <i class="bi bi-cash-stack text-sm"></i>
                 </div>
             </div>
             <div class="mt-3">
@@ -282,7 +281,7 @@
                     @Model.Kpi.TotalRevenue.ToString("N0") <span class="text-xs font-sans font-normal text-slate-500">VNĐ</span>
                 </h3>
                 <p id="kpiEstimatedRevenueText" class="bi-kpi-meta text-emerald-700 font-semibold flex items-center gap-1">
-                    <i class="fa-solid fa-circle-check"></i> Đã thanh toán • Dự toán: @Model.Kpi.EstimatedTotalRevenue.ToString("N0") đ
+                    <i class="bi bi-check-circle"></i> Đã thanh toán • Dự toán: @Model.Kpi.EstimatedTotalRevenue.ToString("N0") đ
                 </p>
             </div>
             <div class="absolute -right-2 -bottom-2 w-16 h-16 bg-[#B89758]/5 rounded-full pointer-events-none"></div>
@@ -292,7 +291,7 @@
             <div class="flex items-center justify-between">
                 <span class="bi-kpi-label text-xs font-semibold text-slate-500 uppercase tracking-wider">Hợp đồng &amp; sự kiện</span>
                 <div class="bi-kpi-icon w-8 h-8 rounded-lg flex items-center justify-center">
-                    <i class="fa-solid fa-file-signature text-sm"></i>
+                    <i class="bi bi-file-earmark-check text-sm"></i>
                 </div>
             </div>
             <div class="mt-3">
@@ -310,7 +309,7 @@
             <div class="flex items-center justify-between">
                 <span class="bi-kpi-label text-xs font-semibold text-slate-500 uppercase tracking-wider">Doanh thu / bàn (ARPT)</span>
                 <div class="bi-kpi-icon w-8 h-8 rounded-lg flex items-center justify-center">
-                    <i class="fa-solid fa-utensils text-sm"></i>
+                    <i class="bi bi-grid-3x3-gap text-sm"></i>
                 </div>
             </div>
             <div class="mt-3">
@@ -328,7 +327,7 @@
             <div class="flex items-center justify-between">
                 <span class="bi-kpi-label text-xs font-semibold text-slate-500 uppercase tracking-wider">Công suất khai thác</span>
                 <div class="bi-kpi-icon w-8 h-8 rounded-lg flex items-center justify-center">
-                    <i class="fa-solid fa-chart-line text-sm"></i>
+                    <i class="bi bi-graph-up-arrow text-sm"></i>
                 </div>
             </div>
             <div class="mt-3">
@@ -348,7 +347,7 @@
         <section class="bi-panel lg:col-span-8 bg-white rounded-xl border border-slate-200">
             <header class="bi-panel-head flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                 <div>
-                    <h3><i class="fa-solid fa-arrow-trend-up" aria-hidden="true"></i>Xu hướng doanh thu theo tháng</h3>
+                    <h3><i class="bi bi-graph-up-arrow" aria-hidden="true"></i>Xu hướng doanh thu theo tháng</h3>
                     <p>So sánh biến động doanh thu thực thu giữa các tháng trong kỳ.</p>
                 </div>
                 <span class="bi-chart-unit flex items-center gap-1.5 text-xs text-slate-600">
@@ -359,13 +358,13 @@
                 <div class="bi-chart-canvas h-64 sm:h-80 w-full relative">
                     <canvas id="monthlyRevenueChart" role="img" aria-label="Biểu đồ xu hướng doanh thu thực thu theo tháng"></canvas>
                 </div>
-                <p class="bi-chart-summary" id="monthlyChartSummary"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>Đang tổng hợp xu hướng doanh thu...</span></p>
+                <p class="bi-chart-summary" id="monthlyChartSummary"><i class="bi bi-info-circle" aria-hidden="true"></i><span>Đang tổng hợp xu hướng doanh thu...</span></p>
             </div>
         </section>
 
         <section class="bi-panel lg:col-span-4 bg-white rounded-xl border border-slate-200">
             <header class="bi-panel-head">
-                <h3><i class="fa-solid fa-chart-pie" aria-hidden="true"></i>Cơ cấu nguồn thu</h3>
+                <h3><i class="bi bi-pie-chart" aria-hidden="true"></i>Cơ cấu nguồn thu</h3>
                 <p>Tỷ trọng đóng góp giữa ẩm thực, sảnh và trang trí.</p>
             </header>
             <div class="bi-chart-body">
@@ -392,21 +391,21 @@
     <div class="bi-secondary-grid grid grid-cols-1 lg:grid-cols-12 gap-6">
         <section class="bi-panel lg:col-span-6 bg-white rounded-xl border border-slate-200">
             <header class="bi-panel-head">
-                <h3><i class="fa-solid fa-ranking-star" aria-hidden="true"></i>Hiệu suất khai thác sảnh</h3>
+                <h3><i class="bi bi-bar-chart" aria-hidden="true"></i>Hiệu suất khai thác sảnh</h3>
                 <p>Xếp hạng doanh thu thực thu theo từng sảnh trong kỳ.</p>
             </header>
             <div class="bi-chart-body">
                 <div class="bi-chart-canvas h-72 sm:h-84 relative">
                     <canvas id="hallPerformanceChart" role="img" aria-label="Biểu đồ xếp hạng doanh thu theo sảnh"></canvas>
                 </div>
-                <p class="bi-chart-summary" id="hallChartSummary"><i class="fa-solid fa-trophy" aria-hidden="true"></i><span>Đang xác định sảnh dẫn đầu...</span></p>
+                <p class="bi-chart-summary" id="hallChartSummary"><i class="bi bi-trophy" aria-hidden="true"></i><span>Đang xác định sảnh dẫn đầu...</span></p>
             </div>
         </section>
 
         <section class="bi-panel bi-recent-panel lg:col-span-6 bg-white rounded-xl border border-slate-200 flex flex-col justify-between overflow-hidden">
             <header class="bi-panel-head flex items-center justify-between">
                 <div>
-                    <h3><i class="fa-regular fa-calendar-check" aria-hidden="true"></i>Sự kiện tiệc cưới gần nhất</h3>
+                    <h3><i class="bi bi-calendar2-check" aria-hidden="true"></i>Sự kiện tiệc cưới gần nhất</h3>
                     <p>Các booking mới nhất trong kỳ báo cáo đang chọn.</p>
                 </div>
                 <span class="px-2.5 py-1 bg-slate-100 text-slate-600 rounded-md text-[11px] font-semibold"><span id="recentBookingsBadgeCount">@Model.RecentBookings.Count</span> đơn đặt tiệc</span>
@@ -460,7 +459,7 @@
 
             <div class="p-3 bg-[#FAF8F5] border-t border-slate-100 text-center">
                 <button type="button" onclick="openHallMatrixModal()" class="text-xs text-[#8C6D32] hover:text-[#B89758] font-bold inline-flex items-center gap-1.5 transition-colors cursor-pointer">
-                    <i class="fa-solid fa-table-cells text-[#B89758]"></i>
+                    <i class="bi bi-grid-3x3-gap text-[#B89758]"></i>
                     <span>Xem ma trận lịch sảnh toàn hệ thống &rarr;</span>
                 </button>
             </div>
@@ -481,7 +480,7 @@
             <div class="px-4 sm:px-6 py-4 flex items-center justify-between gap-3">
                 <div class="flex items-center gap-3 min-w-0">
                     <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-[#B89758] to-[#8C6D32] flex items-center justify-center text-white shadow-md shrink-0">
-                        <i class="fa-solid fa-table-cells-large text-base"></i>
+                        <i class="bi bi-grid-3x3 text-base"></i>
                     </div>
                     <div class="min-w-0">
                         <h3 class="font-serif font-bold text-base sm:text-lg text-slate-900 tracking-tight truncate">
@@ -489,12 +488,12 @@
                         </h3>
                         <p class="text-[11px] text-slate-500 mt-0.5 flex items-center gap-2 flex-wrap">
                             <span class="inline-flex items-center gap-1">
-                                <i class="fa-solid fa-building-columns text-[#B89758] text-[10px]"></i>
+                                <i class="bi bi-building text-[#B89758] text-[10px]"></i>
                                 9 Đại Sảnh Hoàng Gia
                             </span>
                             <span class="text-slate-300">•</span>
                             <span class="inline-flex items-center gap-1">
-                                <i class="fa-regular fa-clock text-[#B89758] text-[10px]"></i>
+                                <i class="bi bi-clock text-[#B89758] text-[10px]"></i>
                                 Trưa 10:30–14:00 | Tối 17:30–21:30
                             </span>
                         </p>
@@ -505,13 +504,13 @@
                     <button type="button" onclick="loadMatrixCurrentWeek()"
                             class="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-[#FAF8F5] text-slate-700 rounded-lg text-xs font-semibold border border-slate-200 shadow-2xs transition-colors cursor-pointer"
                             title="Quay về tuần hiện tại">
-                        <i class="fa-solid fa-calendar-check text-[#B89758] text-[11px]"></i>
+                        <i class="bi bi-calendar2-check text-[#B89758] text-[11px]"></i>
                         <span>Tuần hiện tại</span>
                     </button>
                     <button type="button" onclick="closeHallMatrixModal()"
                             class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-slate-800 hover:bg-slate-200/70 rounded-lg transition-colors cursor-pointer"
                             title="Đóng cửa sổ">
-                        <i class="fa-solid fa-xmark text-lg"></i>
+                        <i class="bi bi-x-lg text-lg"></i>
                     </button>
                 </div>
             </div>
@@ -524,7 +523,7 @@
                         <button type="button" onclick="changeMatrixWeek(-7)"
                                 class="w-9 h-9 flex items-center justify-center text-slate-600 hover:text-[#8C6D32] hover:bg-[#FAF8F5] transition-colors border-r border-slate-200"
                                 title="Tuần trước">
-                            <i class="fa-solid fa-chevron-left text-xs"></i>
+                            <i class="bi bi-chevron-left text-xs"></i>
                         </button>
                         <span id="matrixWeekLabel"
                               class="px-4 text-xs font-bold text-slate-800 font-mono tracking-wide text-center min-w-[180px]">
@@ -533,7 +532,7 @@
                         <button type="button" onclick="changeMatrixWeek(7)"
                                 class="w-9 h-9 flex items-center justify-center text-slate-600 hover:text-[#8C6D32] hover:bg-[#FAF8F5] transition-colors border-l border-slate-200"
                                 title="Tuần sau">
-                            <i class="fa-solid fa-chevron-right text-xs"></i>
+                            <i class="bi bi-chevron-right text-xs"></i>
                         </button>
                     </div>
                 </div>
@@ -563,7 +562,7 @@
                         <th rowspan="2"
                             class="py-3 px-3 font-bold border border-slate-700 sticky left-0 z-30 bg-[#1E293B] min-w-[140px] sm:min-w-[180px] text-left">
                             <div class="flex items-center gap-2">
-                                <i class="fa-solid fa-building-columns text-[#B89758] text-xs"></i>
+                                <i class="bi bi-building text-[#B89758] text-xs"></i>
                                 <span class="text-[11px] tracking-wide uppercase">Đại Sảnh / Quy Mô</span>
                             </div>
                         </th>
@@ -582,7 +581,7 @@
                 <!-- Legend chips -->
                 <div class="flex flex-wrap items-center gap-2">
                     <span class="text-[10.5px] font-bold text-slate-700 uppercase tracking-wider mr-1 flex items-center gap-1.5">
-                        <i class="fa-solid fa-circle-info text-[#B89758] text-[11px]"></i>
+                        <i class="bi bi-info-circle text-[#B89758] text-[11px]"></i>
                         Chú thích trạng thái:
                     </span>
 
@@ -592,17 +591,17 @@
                     </div>
 
                     <div class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#B89758]/10 border border-[#B89758]/40 shadow-2xs text-[#8C6D32] font-semibold text-[11px]">
-                        <i class="fa-solid fa-calendar-check text-[#B89758] text-[10px]"></i>
+                        <i class="bi bi-calendar2-check text-[#B89758] text-[10px]"></i>
                         <span>Đã đặt tiệc</span>
                     </div>
 
                     <div class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-rose-50 border border-rose-200 shadow-2xs text-rose-700 font-semibold text-[11px]">
-                        <i class="fa-solid fa-lock text-rose-500 text-[10px]"></i>
+                        <i class="bi bi-lock text-rose-500 text-[10px]"></i>
                         <span>Tạm khóa</span>
                     </div>
 
                     <div class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-50 border border-emerald-300 shadow-2xs text-emerald-800 font-semibold text-[11px]">
-                        <i class="fa-solid fa-circle-check text-emerald-600 text-[10px]"></i>
+                        <i class="bi bi-check-circle text-emerald-600 text-[10px]"></i>
                         <span>Hoàn tất</span>
                     </div>
                 </div>
@@ -612,7 +611,7 @@
                     <button type="button"
                             onclick="closeHallMatrixModal()"
                             class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-gradient-to-r from-[#1E293B] to-[#0F172A] hover:from-[#0F172A] hover:to-black active:scale-95 text-white rounded-lg text-xs font-semibold shadow-md transition-all cursor-pointer">
-                        <i class="fa-solid fa-xmark text-slate-400 text-xs"></i>
+                        <i class="bi bi-x-lg text-slate-400 text-xs"></i>
                         <span>Đóng cửa sổ</span>
                     </button>
                 </div>
@@ -635,15 +634,19 @@
             const styles = getComputedStyle(document.body);
             const read = name => styles.getPropertyValue(name).trim();
             const dark = document.documentElement.dataset.adminTheme === 'dark';
+            // Metis chart-palette.js: fixed categorical order, separate chart chrome.
+            const categorical = dark
+                ? ['#3b82f6', '#0d9488', '#d97706', '#8b5cf6', '#ec4899', '#0891b2']
+                : ['#2563eb', '#0d9488', '#d97706', '#7c3aed', '#db2777', '#0891b2'];
             return {
                 dark,
                 text: read('--rp-text'),
-                secondary: read('--rp-text-secondary'),
+                secondary: dark ? '#a1a1aa' : '#71717a',
                 muted: read('--rp-text-muted'),
                 panel: read('--rp-surface'),
-                grid: read('--rp-border'),
-                gold: read('--rp-gold-600') || read('--chart-role-1'),
-                palette: [1, 2, 3, 4].map(index => read(`--chart-role-${index}`)),
+                grid: dark ? '#27272a' : '#e4e4e7',
+                accent: categorical[0],
+                palette: categorical,
                 tooltip: read('--chart-tooltip-bg'),
                 tooltipText: read('--chart-tooltip-text')
             };
@@ -699,8 +702,8 @@
 
             const ctxMonthly = document.getElementById('monthlyRevenueChart').getContext('2d');
             const monthlyGradient = ctxMonthly.createLinearGradient(0, 0, 0, 320);
-            monthlyGradient.addColorStop(0, theme.dark ? 'rgba(227, 193, 117, .30)' : 'rgba(154, 113, 39, .30)');
-            monthlyGradient.addColorStop(1, theme.dark ? 'rgba(227, 193, 117, .02)' : 'rgba(154, 113, 39, .02)');
+            monthlyGradient.addColorStop(0, theme.dark ? 'rgba(59, 130, 246, .24)' : 'rgba(37, 99, 235, .22)');
+            monthlyGradient.addColorStop(1, theme.dark ? 'rgba(59, 130, 246, .015)' : 'rgba(37, 99, 235, .015)');
             if (monthlyChart) monthlyChart.destroy();
             monthlyChart = new Chart(ctxMonthly, {
                 type: 'line',
@@ -709,15 +712,15 @@
                     datasets: [{
                         label: 'Doanh thu (Triệu VNĐ)',
                         data: revenues,
-                        borderColor: theme.gold,
+                        borderColor: theme.accent,
                         backgroundColor: monthlyGradient,
-                        borderWidth: 3,
+                        borderWidth: 2.5,
                         fill: true,
-                        tension: .34,
-                        pointRadius: 4,
+                        tension: .38,
+                        pointRadius: 3,
                         pointHoverRadius: 6,
                         pointBackgroundColor: theme.panel,
-                        pointBorderColor: theme.gold,
+                        pointBorderColor: theme.accent,
                         pointBorderWidth: 2,
                         pointHitRadius: 12
                     }]
@@ -728,7 +731,10 @@
                     plugins: {
                         legend: { display: false },
                         tooltip: {
-                            displayColors: false,
+                            displayColors: true,
+                            usePointStyle: true,
+                            boxWidth: 8,
+                            boxHeight: 8,
                             backgroundColor: theme.tooltip,
                             titleColor: theme.tooltipText,
                             bodyColor: theme.tooltipText,
@@ -747,7 +753,7 @@
                             beginAtZero: true,
                             border: { display: false },
                             ticks: { color: theme.secondary, padding: 9, font: { size: 10 }, callback: (v) => v.toLocaleString('vi-VN') + ' tr' },
-                            grid: { color: theme.grid, drawTicks: false }
+                            grid: { color: theme.grid, drawTicks: false, borderDash: [4, 5] }
                         },
                         x: { border: { display: false }, ticks: { color: theme.secondary, padding: 8, font: { size: 10, weight: '600' } }, grid: { display: false } }
                     }
@@ -766,9 +772,7 @@
             const revenueStructures = data.revenueStructures || data.RevenueStructures || [];
             const labelsStruct = revenueStructures.map(s => s.categoryName || s.CategoryName);
             const valuesStruct = revenueStructures.map(s => s.percentage ?? s.Percentage ?? 0);
-            const colorsStruct = theme.dark
-                ? revenueStructures.map((_, index) => theme.palette[index % theme.palette.length])
-                : revenueStructures.map((s, index) => s.colorHex || s.ColorHex || theme.palette[index % theme.palette.length]);
+            const colorsStruct = revenueStructures.map((_, index) => theme.palette[index % theme.palette.length]);
 
             const ctxStructure = document.getElementById('revenueStructureChart').getContext('2d');
             if (structureChart) structureChart.destroy();
@@ -779,17 +783,17 @@
                     datasets: [{
                         data: valuesStruct,
                         backgroundColor: colorsStruct,
-                        borderWidth: 4,
+                        borderWidth: 3,
                         borderColor: theme.panel,
-                        hoverOffset: 7,
-                        spacing: 1
+                        hoverOffset: 6,
+                        spacing: 2
                     }]
                 },
                 plugins: [doughnutCenterTextPlugin],
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    cutout: '72%',
+                    cutout: '66%',
                     plugins: {
                         legend: { display: false },
                         tooltip: {
@@ -816,7 +820,7 @@
             const hallRevs = hallPerformances.map(h => (h.totalRevenue ?? h.TotalRevenue ?? 0) / 1000000);
 
             const ctxHall = document.getElementById('hallPerformanceChart').getContext('2d');
-            const hallColors = hallRevs.map((_, index) => theme.palette[Math.min(index, theme.palette.length - 1)]);
+            const hallColors = hallRevs.map(() => theme.accent);
             if (hallChart) hallChart.destroy();
             hallChart = new Chart(ctxHall, {
                 type: 'bar',
@@ -827,7 +831,7 @@
                         data: hallRevs,
                         backgroundColor: hallColors,
                         hoverBackgroundColor: hallColors,
-                        borderRadius: 7,
+                        borderRadius: 6,
                         borderSkipped: false,
                         maxBarThickness: 24
                     }]
@@ -857,7 +861,7 @@
                             beginAtZero: true,
                             border: { display: false },
                             ticks: { color: theme.secondary, padding: 8, font: { size: 9 }, callback: (v) => v.toLocaleString('vi-VN') + ' tr' },
-                            grid: { color: theme.grid, drawTicks: false }
+                            grid: { color: theme.grid, drawTicks: false, borderDash: [4, 5] }
                         },
                         y: { border: { display: false }, ticks: { color: theme.text, font: { size: 10, weight: '700' } }, grid: { display: false } }
                     }
@@ -926,7 +930,7 @@
             document.getElementById('kpiTotalRevenue').innerHTML = `${Number(totalRevenue).toLocaleString('vi-VN')} <span class="text-xs font-sans font-normal text-slate-500">VNĐ</span>`;
             const estText = document.getElementById('kpiEstimatedRevenueText');
             if (estText) {
-                estText.innerHTML = `<i class="fa-solid fa-circle-check"></i> Đã thanh toán • Dự toán: ${Number(estimatedTotal).toLocaleString('vi-VN')} đ`;
+                estText.innerHTML = `<i class="bi bi-check-circle"></i> Đã thanh toán • Dự toán: ${Number(estimatedTotal).toLocaleString('vi-VN')} đ`;
             }
 
             const contractEl = document.getElementById('kpiTotalContracts');
@@ -1004,9 +1008,7 @@
 
             list.forEach((s, index) => {
                 const name = s.categoryName || s.CategoryName || '';
-                const color = theme.dark
-                    ? theme.palette[index % theme.palette.length]
-                    : s.colorHex || s.ColorHex || theme.palette[index % theme.palette.length];
+                const color = theme.palette[index % theme.palette.length];
                 const pct = s.percentage ?? s.Percentage ?? 0;
 
                 legendContainer.innerHTML += `
@@ -1481,7 +1483,7 @@
             headerDays.innerHTML = `
                 <th rowspan="2" class="py-3 px-3 font-bold border border-slate-700 sticky left-0 z-30 bg-[#1E293B] min-w-[140px] sm:min-w-[180px] text-left">
                     <div class="flex items-center gap-2">
-                        <i class="fa-solid fa-building-columns text-[#B89758] text-xs"></i>
+                        <i class="bi bi-building text-[#B89758] text-xs"></i>
                         <span class="text-[11px] tracking-wide uppercase">Đại Sảnh / Quy Mô</span>
                     </div>
                 </th>
@@ -1507,10 +1509,10 @@
 
                 headerShifts.innerHTML += `
                     <th class="py-2 px-2 border border-slate-700 min-w-[90px] sm:min-w-[100px] text-[10.5px] tracking-wider">
-                        <i class="fa-regular fa-sun text-amber-400 mr-1 text-[10px]"></i>Trưa
+                        <i class="bi bi-sun text-amber-400 mr-1 text-[10px]"></i>Trưa
                     </th>
                     <th class="py-2 px-2 border border-slate-700 min-w-[90px] sm:min-w-[100px] text-[10.5px] tracking-wider">
-                        <i class="fa-regular fa-moon text-indigo-300 mr-1 text-[10px]"></i>Tối
+                        <i class="bi bi-moon text-indigo-300 mr-1 text-[10px]"></i>Tối
                     </th>
                 `;
             });
@@ -1535,7 +1537,7 @@
                         <td class="py-3 px-3 sm:px-4 font-semibold text-slate-900 border border-slate-200 sticky left-0 z-10 bg-white shadow-[3px_0_8px_-3px_rgba(0,0,0,0.08)] group-hover:bg-[#FAF8F5] transition-colors">
                             <div class="flex items-center gap-2">
                                 <div class="w-7 h-7 rounded-md bg-gradient-to-br from-[#B89758]/20 to-[#8C6D32]/10 border border-[#B89758]/30 flex items-center justify-center shrink-0">
-                                    <i class="fa-solid fa-hotel text-[#B89758] text-[10px]"></i>
+                                    <i class="bi bi-building text-[#B89758] text-[10px]"></i>
                                 </div>
                                 <div class="min-w-0">
                                     <div class="font-bold text-[13px] text-[#8C6D32] truncate">${hallName}</div>
@@ -1578,7 +1580,7 @@
                                     <span class="text-[10.5px] text-slate-800 font-semibold block truncate max-w-[90px] sm:max-w-[110px] mx-auto" title="${customerName}">${customerName || 'Đã đặt tiệc'}</span>
                                     <div class="flex items-center justify-center gap-1 mt-1">
                                         <span class="inline-flex items-center gap-0.5 text-[9px] text-slate-500">
-                                            <i class="fa-solid fa-chair text-[8px]"></i>
+                                            <i class="bi bi-grid-3x3-gap text-[8px]"></i>
                                             ${tableCount > 0 ? tableCount + ' bàn' : 'Sảnh tiệc'}
                                         </span>
                                         <span class="inline-block px-1.5 py-0.5 rounded text-[8.5px] font-bold border ${badgeBg}">${bookingStatus || 'Đã đặt'}</span>
@@ -1591,7 +1593,7 @@
                             <td class="p-1.5 border border-slate-200 text-center bg-rose-50/40 align-middle">
                                 <div class="flex flex-col items-center justify-center gap-1 py-2">
                                     <div class="w-7 h-7 rounded-full bg-rose-100 border border-rose-200 flex items-center justify-center">
-                                        <i class="fa-solid fa-lock text-rose-500 text-[11px]"></i>
+                                        <i class="bi bi-lock text-rose-500 text-[11px]"></i>
                                     </div>
                                     <span class="text-[9.5px] text-rose-600 font-bold italic tracking-wide">Tạm khóa</span>
                                 </div>
@@ -1601,7 +1603,7 @@
                         rowHtml += `
                             <td class="p-1.5 border border-slate-200 text-center bg-slate-50/40 hover:bg-emerald-50/30 transition-colors align-middle group/cell cursor-default">
                                 <div class="flex flex-col items-center justify-center gap-1 py-2 opacity-60 group-hover/cell:opacity-100 transition-opacity">
-                                    <i class="fa-regular fa-circle text-slate-300 text-[13px] group-hover/cell:text-emerald-400 transition-colors"></i>
+                                    <i class="bi bi-circle text-slate-300 text-[13px] group-hover/cell:text-emerald-400 transition-colors"></i>
                                     <span class="text-[9.5px] text-slate-400 font-medium tracking-wide">Trống</span>
                                 </div>
                             </td>

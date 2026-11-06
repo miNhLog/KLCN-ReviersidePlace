@@ -239,6 +239,8 @@ public interface IRiversideApiClient
         string? group,
         string? outcome,
         string? authMethod,
+        string? mode,
+        string? importantGroup,
         CancellationToken cancellationToken);
 
     Task<ApiCallResult<List<RoleDto>>> GetRolesAsync(

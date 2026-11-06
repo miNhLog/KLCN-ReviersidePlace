@@ -3,6 +3,7 @@ using HeThongDatTiecCuoi_API.Data;
 using HeThongDatTiecCuoi_API.DTOs.AuditLog;
 using HeThongDatTiecCuoi_API.Helpers;
 using HeThongDatTiecCuoi_API.Models;
+using HeThongDatTiecCuoi_API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -21,7 +22,8 @@ public sealed class AdminAuditLogController : ControllerBase
     public async Task<ActionResult<AuditLogPageDto>> GetAuditLogs(int page = 1, int pageSize = 20,
         string? action = null, DateTime? fromDate = null, DateTime? toDate = null,
         string? keyword = null, string? group = null, string? outcome = null,
-        string? authMethod = null, CancellationToken cancellationToken = default)
+        string? authMethod = null, string? mode = null, string? importantGroup = null,
+        CancellationToken cancellationToken = default)
     {
         page = Math.Max(1, page); pageSize = Math.Clamp(pageSize, 1, 100);
         action = string.IsNullOrWhiteSpace(action) ? null : action.Trim().ToUpperInvariant();
@@ -29,16 +31,30 @@ public sealed class AdminAuditLogController : ControllerBase
         group = string.IsNullOrWhiteSpace(group) ? null : group.Trim().ToLowerInvariant();
         outcome = string.IsNullOrWhiteSpace(outcome) ? null : outcome.Trim().ToUpperInvariant();
         authMethod = string.IsNullOrWhiteSpace(authMethod) ? null : authMethod.Trim().ToUpperInvariant();
+        mode = string.IsNullOrWhiteSpace(mode) ? null : mode.Trim().ToLowerInvariant();
+        importantGroup = string.IsNullOrWhiteSpace(importantGroup) ? null : importantGroup.Trim().ToLowerInvariant();
         fromDate = fromDate?.Date; toDate = toDate?.Date;
+        var appliedDefaultPeriod = false;
+        if (mode == AuditLogModes.Important && !fromDate.HasValue && !toDate.HasValue)
+        {
+            toDate = RiversideBusinessClock.Today;
+            fromDate = toDate.Value.AddDays(-6);
+            appliedDefaultPeriod = true;
+        }
         if (fromDate.HasValue && toDate.HasValue && toDate < fromDate) return BadRequest(new { message = "Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu." });
         if (keyword?.Length > 200) return BadRequest(new { message = "Từ khóa tìm kiếm không được vượt quá 200 ký tự." });
         if (action is not null && !AuditActions.AdminVisibleActions.Contains(action)) return BadRequest(new { message = "Loại thao tác không hợp lệ." });
+        if (mode is not null && mode is not (AuditLogModes.Important or AuditLogModes.All)) return BadRequest(new { message = "Chế độ nhật ký không hợp lệ." });
         var groupActions = AuditActions.ForGroup(group);
         if (groupActions is null) return BadRequest(new { message = "Nhóm nhật ký không hợp lệ." });
+        var importantGroupActions = AuditImportantGroups.ForGroup(importantGroup);
+        if (importantGroupActions is null) return BadRequest(new { message = "Nhóm nhật ký quan trọng không hợp lệ." });
+        if (mode != AuditLogModes.Important && importantGroup is not null) return BadRequest(new { message = "Nhóm ưu tiên chỉ áp dụng cho chế độ nhật ký quan trọng." });
         if (outcome is not null && outcome is not (AuditOutcomes.Success or AuditOutcomes.Failed or AuditOutcomes.Blocked)) return BadRequest(new { message = "Kết quả không hợp lệ." });
         if (authMethod is not null && authMethod is not (AuditAuthMethods.Password or AuditAuthMethods.Google or AuditAuthMethods.Jwt or AuditAuthMethods.ResetToken)) return BadRequest(new { message = "Phương thức xác thực không hợp lệ." });
 
         var query = _context.AuditLogs.AsNoTracking().Where(log => AuditActions.AdminVisibleActions.Contains(log.Action));
+        if (mode == AuditLogModes.Important) query = query.Where(log => importantGroupActions.Contains(log.Action));
         if (group is not null) query = query.Where(log => groupActions.Contains(log.Action));
         if (action is not null) query = query.Where(log => log.Action == action);
         if (outcome is not null) query = query.Where(log => log.Outcome == outcome);
@@ -60,6 +76,15 @@ public sealed class AdminAuditLogController : ControllerBase
                 (log.EntityName == AuditEntityNames.Menu && _context.Menus.Any(x => x.MenuId == log.EntityId && (x.MenuCode.Contains(keyword) || x.MenuName.Contains(keyword)))) ||
                 (log.EntityName == AuditEntityNames.Dish && _context.Dishes.Any(x => x.DishId == log.EntityId && (x.DishCode.Contains(keyword) || x.DishName.Contains(keyword)))));
         }
+
+        var statistics = await query.GroupBy(_ => 1).Select(logs => new AuditLogStatisticsDto
+        {
+            NeedsReview = logs.Count(log => log.Action == AuditActions.LoginBlocked ||
+                (AuditImportantGroups.SensitiveActions.Contains(log.Action) &&
+                 (log.Outcome == AuditOutcomes.Failed || log.Outcome == AuditOutcomes.Blocked))),
+            RoleChanges = logs.Count(log => AuditImportantGroups.RoleChangeActions.Contains(log.Action)),
+            FinancialEvents = logs.Count(log => AuditImportantGroups.FinanceActions.Contains(log.Action))
+        }).FirstOrDefaultAsync(cancellationToken) ?? new AuditLogStatisticsDto();
 
         var totalItems = await query.CountAsync(cancellationToken);
         var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
@@ -115,6 +140,25 @@ public sealed class AdminAuditLogController : ControllerBase
                 Group = AuditActions.GroupOf(item.Action), Source = source
             };
         }).ToList();
-        return Ok(new AuditLogPageDto { Items = items, Page = page, PageSize = pageSize, TotalItems = totalItems, TotalPages = totalPages });
+        var availableActions = (mode == AuditLogModes.Important ? importantGroupActions : groupActions)
+            .Where(AuditActions.AdminVisibleActions.Contains)
+            .Distinct()
+            .OrderBy(value => value)
+            .ToList();
+
+        return Ok(new AuditLogPageDto
+        {
+            Items = items,
+            Statistics = statistics,
+            AvailableActions = availableActions,
+            Page = page,
+            PageSize = pageSize,
+            TotalItems = totalItems,
+            TotalPages = totalPages,
+            Mode = mode,
+            EffectiveFromDate = fromDate,
+            EffectiveToDate = toDate,
+            AppliedDefaultPeriod = appliedDefaultPeriod
+        });
     }
 }

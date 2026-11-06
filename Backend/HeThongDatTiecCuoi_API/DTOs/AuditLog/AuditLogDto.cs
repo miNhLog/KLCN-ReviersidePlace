@@ -30,8 +30,21 @@ public sealed class AuditLogDto
 public sealed class AuditLogPageDto
 {
     public List<AuditLogDto> Items { get; init; } = [];
+    public AuditLogStatisticsDto Statistics { get; init; } = new();
+    public List<string> AvailableActions { get; init; } = [];
     public int Page { get; init; }
     public int PageSize { get; init; }
     public int TotalItems { get; init; }
     public int TotalPages { get; init; }
+    public string? Mode { get; init; }
+    public DateTime? EffectiveFromDate { get; init; }
+    public DateTime? EffectiveToDate { get; init; }
+    public bool AppliedDefaultPeriod { get; init; }
+}
+
+public sealed class AuditLogStatisticsDto
+{
+    public int NeedsReview { get; init; }
+    public int RoleChanges { get; init; }
+    public int FinancialEvents { get; init; }
 }

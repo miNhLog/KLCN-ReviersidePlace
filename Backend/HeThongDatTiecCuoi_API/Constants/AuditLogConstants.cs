@@ -99,6 +99,9 @@ public static class AuditActions
         UnlockAccount,
         ChangeRole,
         ResetPassword,
+        RoleChangeRequested,
+        RoleChangeApproved,
+        RoleChangeRejected,
         FirstPasswordChanged,
         AdminPasswordChanged
     ];
@@ -142,6 +145,91 @@ public static class AuditActions
         CatalogActions.Contains(action) ? "catalog" :
         WorkforceActions.Contains(action) ? "workforce" :
         IncidentActions.Contains(action) ? "incident" : "other";
+}
+
+public static class AuditLogModes
+{
+    public const string Important = "important";
+    public const string All = "all";
+}
+
+public static class AuditImportantGroups
+{
+    public const string Security = "security";
+    public const string Finance = "finance";
+    public const string Booking = "booking";
+    public const string Operations = "operations";
+
+    public static readonly string[] SecurityActions =
+    [
+        AuditActions.LoginBlocked,
+        AuditActions.CreateAccount,
+        AuditActions.LockAccount,
+        AuditActions.UnlockAccount,
+        AuditActions.ChangeRole,
+        AuditActions.RoleChangeApproved,
+        AuditActions.RoleChangeRejected,
+        AuditActions.ResetPassword
+    ];
+
+    public static readonly string[] FinanceActions =
+    [
+        AuditActions.Payment,
+        AuditActions.PaymentRecorded,
+        AuditActions.ScheduleChangeRefundConfirmed,
+        AuditActions.ContractActivated,
+        AuditActions.ContractCancelled
+    ];
+
+    public static readonly string[] BookingActions =
+    [
+        AuditActions.BookingCancelled,
+        AuditActions.BookingHoldCancelled,
+        "CANCEL",
+        AuditActions.BookingStatusChanged,
+        AuditActions.ScheduleChangeApplied,
+        AuditActions.HallScheduleStatusChanged
+    ];
+
+    public static readonly string[] OperationsActions =
+    [
+        AuditActions.HallPriceUpdated,
+        AuditActions.HallManagerAssigned,
+        AuditActions.HallManagerAssignmentEnded,
+        AuditActions.IncidentCreated,
+        AuditActions.IncidentStatusChanged
+    ];
+
+    public static readonly string[] AllActions =
+        SecurityActions.Concat(FinanceActions).Concat(BookingActions).Concat(OperationsActions).Distinct().ToArray();
+
+    public static readonly string[] RoleChangeActions =
+    [
+        AuditActions.ChangeRole,
+        AuditActions.RoleChangeRequested,
+        AuditActions.RoleChangeApproved,
+        AuditActions.RoleChangeRejected
+    ];
+
+    // Sensitive actions are deliberately limited to account/security operations.
+    // LOGIN_BLOCKED is counted regardless of outcome; other actions require FAILED/BLOCKED.
+    public static readonly string[] SensitiveActions = SecurityActions;
+
+    public static string[]? ForGroup(string? group) => group switch
+    {
+        Security => SecurityActions,
+        Finance => FinanceActions,
+        Booking => BookingActions,
+        Operations => OperationsActions,
+        null => AllActions,
+        _ => null
+    };
+
+    public static bool IsImportant(string action) => AllActions.Contains(action);
+
+    public static bool RequiresReview(string action, string? outcome) =>
+        action == AuditActions.LoginBlocked ||
+        (SensitiveActions.Contains(action) && outcome is AuditOutcomes.Failed or AuditOutcomes.Blocked);
 }
 
 public static class AuditOutcomes

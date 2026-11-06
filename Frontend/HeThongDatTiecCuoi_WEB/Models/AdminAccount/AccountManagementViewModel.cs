@@ -27,6 +27,7 @@ public sealed class AccountManagementViewModel
 {
     public AccountDto? AdminAccount { get; set; }
     public List<AccountDto> Accounts { get; set; } = [];
+    public List<AccountDto> AllAccounts { get; set; } = [];
     public List<RoleDto> Roles { get; set; } = [];
     public string? Keyword { get; set; }
     public int? RoleId { get; set; }
@@ -86,6 +87,8 @@ public sealed class AuditLogViewModel
 public sealed class AuditLogPageViewModel
 {
     public List<AuditLogViewModel> Items { get; set; } = [];
+    public AuditLogStatisticsViewModel Statistics { get; set; } = new();
+    public List<string> AvailableActions { get; set; } = [];
     public int Page { get; set; }
     public int PageSize { get; set; }
     public int TotalItems { get; set; }
@@ -98,6 +101,18 @@ public sealed class AuditLogPageViewModel
     public string? Group { get; set; }
     public string? Outcome { get; set; }
     public string? AuthMethod { get; set; }
+    public string Mode { get; set; } = "important";
+    public string? ImportantGroup { get; set; }
+    public DateTime? EffectiveFromDate { get; set; }
+    public DateTime? EffectiveToDate { get; set; }
+    public bool AppliedDefaultPeriod { get; set; }
+}
+
+public sealed class AuditLogStatisticsViewModel
+{
+    public int NeedsReview { get; set; }
+    public int RoleChanges { get; set; }
+    public int FinancialEvents { get; set; }
 }
 
 public sealed class RoleDistributionViewModel

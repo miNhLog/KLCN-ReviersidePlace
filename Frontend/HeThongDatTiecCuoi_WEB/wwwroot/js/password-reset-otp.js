@@ -26,9 +26,8 @@
         toast.className = `auth-toast ${success ? 'auth-toast-success' : 'auth-toast-error'}`;
         toast.setAttribute('role', success ? 'status' : 'alert');
         const icon = document.createElement('span');
-        icon.className = 'material-symbols-outlined';
+        icon.className = success ? 'bi bi-check-circle' : 'bi bi-exclamation-circle';
         icon.setAttribute('aria-hidden', 'true');
-        icon.textContent = success ? 'check_circle' : 'error';
         const content = document.createElement('div');
         const heading = document.createElement('strong');
         heading.textContent = title;

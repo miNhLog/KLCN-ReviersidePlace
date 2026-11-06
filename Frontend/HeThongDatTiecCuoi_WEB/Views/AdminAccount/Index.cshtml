@@ -3,17 +3,23 @@
     Layout = "_AdminLayout";
     ViewData["Title"] = "Quản lý tài khoản";
 
-    var adminAccount = Model.AdminAccount;
     var employeeAccounts = Model.Accounts
-        .Where(account => account.RoleName == RoleNames.Manager
+        .Where(account => account.RoleName == RoleNames.Admin
+            || account.RoleName == RoleNames.Manager
             || account.RoleName == RoleNames.HallManager
             || account.RoleName == RoleNames.Coordinator)
         .ToList();
     var internalRoles = Model.Roles
-        .Where(role => role.RoleName == RoleNames.Manager
+        .Where(role => role.RoleName == RoleNames.Admin
+            || role.RoleName == RoleNames.Manager
             || role.RoleName == RoleNames.HallManager
             || role.RoleName == RoleNames.Coordinator)
         .ToList();
+    var allAccounts = Model.AllAccounts.Count > 0 ? Model.AllAccounts : employeeAccounts;
+    var totalAccounts = allAccounts.Count;
+    var activeAccounts = allAccounts.Count(account => account.Status == AccountStatusCodes.Active);
+    var lockedAccounts = allAccounts.Count(account => account.Status == AccountStatusCodes.Locked);
+    var mustChangePasswordAccounts = allAccounts.Count(account => account.MustChangePassword);
     var hasFilters = !string.IsNullOrWhiteSpace(Model.Keyword)
         || Model.RoleId.HasValue
         || !string.IsNullOrWhiteSpace(Model.Status)
@@ -21,6 +27,7 @@
 
     string RoleClass(string roleName) => roleName switch
     {
+        RoleNames.Admin => "is-admin",
         RoleNames.Manager => "is-manager",
         RoleNames.HallManager => "is-hall-manager",
         RoleNames.Coordinator => "is-coordinator",
@@ -29,6 +36,7 @@
 
     string RoleIcon(string roleName) => roleName switch
     {
+        RoleNames.Admin => "bi-person-badge",
         RoleNames.Manager => "bi-briefcase",
         RoleNames.HallManager => "bi-building",
         RoleNames.Coordinator => "bi-people",
@@ -56,39 +64,17 @@
         <div class="error-box account-page-error" role="alert"><i class="bi bi-exclamation-circle" aria-hidden="true"></i>@Model.ErrorMessage</div>
     }
 
-    <section class="system-admin-panel" aria-labelledby="systemAdminTitle">
-        <header class="system-admin-heading">
-            <div class="system-admin-heading-icon"><i class="bi bi-person-lock" aria-hidden="true"></i></div>
-            <div>
-                <h2 id="systemAdminTitle">Quản trị viên hệ thống</h2>
-                <p>Quản trị và vận hành hệ thống</p>
-            </div>
-            <span class="system-admin-count">@(adminAccount is null ? 0 : 1) tài khoản</span>
-        </header>
-
-        @if (adminAccount is null)
-        {
-            <div class="system-admin-empty">Không tải được thông tin tài khoản Quản trị viên.</div>
-        }
-        else
-        {
-            var adminStatusClass = adminAccount.Status == AccountStatusCodes.Active ? "is-active" : "is-locked";
-            <div class="system-admin-card">
-                <div class="system-admin-avatar"><i class="bi bi-person-badge" aria-hidden="true"></i></div>
-                <div class="system-admin-identity">
-                    <strong>@(string.IsNullOrWhiteSpace(adminAccount.FullName) ? "Quản trị viên hệ thống" : adminAccount.FullName)</strong>
-                    <span><i class="bi bi-envelope" aria-hidden="true"></i>@adminAccount.Email</span>
-                </div>
-                <div class="system-admin-badges">
-                    <span class="admin-role-badge"><i class="bi bi-award" aria-hidden="true"></i>@adminAccount.RoleName</span>
-                    <span class="admin-status-badge @adminStatusClass"><i class="bi bi-circle-fill" aria-hidden="true"></i>@(string.IsNullOrWhiteSpace(adminAccount.StatusName) ? StatusDisplayNames.GetAccountStatusName(adminAccount.Status) : adminAccount.StatusName)</span>
-                </div>
-            </div>
-        }
+    <section class="account-stat-grid" aria-label="Thống kê tài khoản">
+        <article class="account-stat-card"><span class="account-stat-icon"><i class="bi bi-people" aria-hidden="true"></i></span><div><small>Tổng tài khoản</small><strong>@totalAccounts</strong><p>Tất cả tài khoản nội bộ</p></div></article>
+        <article class="account-stat-card"><span class="account-stat-icon is-active"><i class="bi bi-person-check" aria-hidden="true"></i></span><div><small>Đang hoạt động</small><strong>@activeAccounts</strong><p>@(totalAccounts == 0 ? 0 : Math.Round(activeAccounts * 100m / totalAccounts, 0))% tổng tài khoản</p></div></article>
+        <article class="account-stat-card"><span class="account-stat-icon is-locked"><i class="bi bi-lock" aria-hidden="true"></i></span><div><small>Bị khóa</small><strong>@lockedAccounts</strong><p>@(totalAccounts == 0 ? 0 : Math.Round(lockedAccounts * 100m / totalAccounts, 0))% tổng tài khoản</p></div></article>
+        <article class="account-stat-card"><span class="account-stat-icon is-password"><i class="bi bi-key" aria-hidden="true"></i></span><div><small>Chờ đổi mật khẩu</small><strong>@mustChangePasswordAccounts</strong><p>Cần đổi mật khẩu lần đầu</p></div></article>
     </section>
 
     <section class="employee-account-panel" aria-labelledby="employeeAccountTitle">
-        <form method="get" asp-action="Index" class="employee-account-toolbar" id="accountFilterForm">
+        <header class="account-directory-header">
+            <div><h2 id="employeeAccountTitle">Danh mục tài khoản</h2><p>Quản lý vai trò và trạng thái truy cập.</p></div>
+            <form method="get" asp-action="Index" class="employee-account-toolbar" id="accountFilterForm">
             <div class="employee-search">
                 <button type="submit" title="Tìm kiếm" aria-label="Tìm kiếm">
                     <i class="bi bi-search" aria-hidden="true"></i>
@@ -116,9 +102,8 @@
             {
                 <a asp-action="Index" class="account-filter-clear" title="Xóa bộ lọc" aria-label="Xóa bộ lọc"><i class="bi bi-x-lg" aria-hidden="true"></i></a>
             }
-        </form>
-
-        <h2 class="visually-hidden" id="employeeAccountTitle">Danh sách tài khoản nội bộ</h2>
+            </form>
+        </header>
         @if (employeeAccounts.Count == 0)
         {
             <div class="employee-account-empty">
@@ -135,18 +120,18 @@
         {
             <div class="employee-account-table-wrap">
                 <table class="employee-account-table">
-                    <thead><tr><th scope="col">Tài khoản</th><th scope="col">Mã tài khoản</th><th scope="col">Vai trò</th><th scope="col">Liên hệ</th><th scope="col">Ngày tạo</th><th scope="col">Trạng thái</th><th scope="col">Thao tác</th></tr></thead>
+                    <thead><tr><th scope="col">Tài khoản</th><th scope="col">Vai trò</th><th scope="col">Liên hệ</th><th scope="col">Ngày tạo</th><th scope="col">Trạng thái</th><th scope="col">Thao tác</th></tr></thead>
                     <tbody>
                     @foreach (var account in employeeAccounts)
                     {
+                        var isAdministrator = account.RoleName == RoleNames.Admin;
                         var isActive = account.Status == AccountStatusCodes.Active;
                         var statusClass = isActive ? "is-active" : "is-locked";
                         var statusText = string.IsNullOrWhiteSpace(account.StatusName) ? StatusDisplayNames.GetAccountStatusName(account.Status) : account.StatusName;
                         var nextStatus = isActive ? AccountStatusCodes.Locked : AccountStatusCodes.Active;
                         var nextStatusText = isActive ? "Khóa tài khoản" : "Mở khóa tài khoản";
                         <tr>
-                            <td><div class="employee-identity"><span class="employee-avatar" aria-hidden="true"><i class="bi bi-person"></i></span><div><strong>@(string.IsNullOrWhiteSpace(account.FullName) ? account.Email : account.FullName)</strong><span>@account.Email</span></div></div></td>
-                            <td><strong class="employee-code">#@account.UserId.ToString("D4")</strong></td>
+                            <td><div class="employee-identity"><span class="employee-avatar" aria-hidden="true"><i class="bi bi-person"></i></span><div><strong>@(string.IsNullOrWhiteSpace(account.FullName) ? account.Email : account.FullName)</strong><span class="employee-code">#@account.UserId.ToString("D4")</span></div></div></td>
                             <td><span class="employee-role-badge @RoleClass(account.RoleName)"><i class="bi @RoleIcon(account.RoleName)" aria-hidden="true"></i>@account.RoleName</span></td>
                             <td><div class="employee-contact"><span><i class="bi bi-envelope" aria-hidden="true"></i>@account.Email</span>@if (!string.IsNullOrWhiteSpace(account.PhoneNumber)) { <span><i class="bi bi-telephone" aria-hidden="true"></i>@account.PhoneNumber</span> }</div></td>
                             <td><time datetime="@account.CreatedAt.ToString("yyyy-MM-dd")">@account.CreatedAt.ToString("dd/MM/yyyy")</time></td>
@@ -160,17 +145,24 @@
                                 </div>
                             </td>
                             <td>
-                                <details class="employee-action-menu">
-                                    <summary aria-label="Mở menu thao tác" title="Thao tác">
-                                        <i class="bi bi-three-dots" aria-hidden="true"></i>
-                                        <i class="bi bi-chevron-down action-menu-chevron" aria-hidden="true"></i>
-                                    </summary>
-                                    <div class="employee-action-menu-panel">
-                                        <button type="button" class="employee-action-button edit-account" title="Sửa tài khoản" data-user-id="@account.UserId" data-account-code="#@account.UserId.ToString("D4")" data-full-name="@account.FullName" data-email="@account.Email" data-phone-number="@account.PhoneNumber" data-role-name="@account.RoleName"><i class="bi bi-pencil-square" aria-hidden="true"></i><span>Sửa tài khoản</span></button>
-                                        <button type="button" class="employee-action-button reset-password-account" title="Đặt lại mật khẩu" data-user-id="@account.UserId" data-employee-code="@account.EmployeeCode" data-full-name="@account.FullName" data-email="@account.Email" data-role-name="@account.RoleName" data-is-locked="@((!isActive).ToString().ToLowerInvariant())"><i class="bi bi-key" aria-hidden="true"></i><span>Đặt lại mật khẩu</span></button>
-                                        <button type="button" class="employee-action-button toggle-account-status" title="@nextStatusText" data-user-id="@account.UserId" data-status="@nextStatus" data-account-name="@(string.IsNullOrWhiteSpace(account.FullName) ? account.Email : account.FullName)"><i class="bi @(isActive ? "bi-lock" : "bi-unlock")" aria-hidden="true"></i><span>@nextStatusText</span></button>
-                                    </div>
-                                </details>
+                                @if (isAdministrator)
+                                {
+                                    <span class="self-account-label" title="Không thể tự khóa tài khoản đang đăng nhập"><i class="bi bi-shield-lock" aria-hidden="true"></i>Hiện tại</span>
+                                }
+                                else
+                                {
+                                    <details class="employee-action-menu">
+                                        <summary aria-label="Mở menu thao tác" title="Thao tác">
+                                            <i class="bi bi-three-dots" aria-hidden="true"></i>
+                                            <i class="bi bi-chevron-down action-menu-chevron" aria-hidden="true"></i>
+                                        </summary>
+                                        <div class="employee-action-menu-panel">
+                                            <button type="button" class="employee-action-button edit-account" title="Sửa tài khoản" data-user-id="@account.UserId" data-account-code="#@account.UserId.ToString("D4")" data-full-name="@account.FullName" data-email="@account.Email" data-phone-number="@account.PhoneNumber" data-role-name="@account.RoleName"><i class="bi bi-pencil-square" aria-hidden="true"></i><span>Sửa tài khoản</span></button>
+                                            <button type="button" class="employee-action-button reset-password-account" title="Đặt lại mật khẩu" data-user-id="@account.UserId" data-employee-code="@account.EmployeeCode" data-full-name="@account.FullName" data-email="@account.Email" data-role-name="@account.RoleName" data-is-locked="@((!isActive).ToString().ToLowerInvariant())"><i class="bi bi-key" aria-hidden="true"></i><span>Đặt lại mật khẩu</span></button>
+                                            <button type="button" class="employee-action-button toggle-account-status" title="@nextStatusText" data-user-id="@account.UserId" data-status="@nextStatus" data-account-name="@(string.IsNullOrWhiteSpace(account.FullName) ? account.Email : account.FullName)"><i class="bi @(isActive ? "bi-lock" : "bi-unlock")" aria-hidden="true"></i><span>@nextStatusText</span></button>
+                                        </div>
+                                    </details>
+                                }
                             </td>
                         </tr>
                     }

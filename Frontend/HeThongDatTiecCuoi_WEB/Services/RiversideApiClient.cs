@@ -949,6 +949,8 @@ public sealed class RiversideApiClient : IRiversideApiClient
         string? group,
         string? outcome,
         string? authMethod,
+        string? mode,
+        string? importantGroup,
         CancellationToken cancellationToken)
     {
         var query = new List<string>
@@ -963,6 +965,8 @@ public sealed class RiversideApiClient : IRiversideApiClient
         if (!string.IsNullOrWhiteSpace(group)) query.Add($"group={Uri.EscapeDataString(group)}");
         if (!string.IsNullOrWhiteSpace(outcome)) query.Add($"outcome={Uri.EscapeDataString(outcome)}");
         if (!string.IsNullOrWhiteSpace(authMethod)) query.Add($"authMethod={Uri.EscapeDataString(authMethod)}");
+        if (!string.IsNullOrWhiteSpace(mode)) query.Add($"mode={Uri.EscapeDataString(mode)}");
+        if (!string.IsNullOrWhiteSpace(importantGroup)) query.Add($"importantGroup={Uri.EscapeDataString(importantGroup)}");
 
         return SendAsync<AuditLogPageViewModel>(
             HttpMethod.Get,
