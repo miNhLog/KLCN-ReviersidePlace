@@ -182,7 +182,7 @@
     .bi-recent-panel thead { position:sticky;top:0;z-index:1; }
 
     html[data-admin-theme="dark"] .admin-metis-app .bi-page-wrapper { color:var(--rp-text); }
-    html[data-admin-theme="dark"] .admin-metis-app :is(.bi-hero,.bi-filter-panel,.bi-kpi-card,.bi-panel,#biToast) { border-color:var(--rp-border)!important;background:var(--rp-surface)!important;box-shadow:none!important; }
+    html[data-admin-theme="dark"] .admin-metis-app :is(.bi-hero,.bi-filter-panel,.bi-kpi-card,.bi-panel) { border-color:var(--rp-border)!important;background:var(--rp-surface)!important;box-shadow:none!important; }
     html[data-admin-theme="dark"] .admin-metis-app .bi-panel-head { border-color:var(--rp-border)!important;background:var(--rp-surface)!important; }
     html[data-admin-theme="dark"] .admin-metis-app :is(.bi-hero h1,.bi-kpi-value,.bi-panel-head h3,.bi-filter-label) { color:var(--rp-text)!important; }
     html[data-admin-theme="dark"] .admin-metis-app :is(.bi-hero p,.bi-kpi-label,.bi-kpi-meta,.bi-panel-head p,.bi-chart-unit,.bi-chart-summary,.bi-structure-legend) { color:var(--rp-text-secondary)!important; }
@@ -201,17 +201,6 @@
     @@media(max-width:1024px){.bi-filter-panel{position:static}.bi-hero{min-height:160px;padding:24px!important}.bi-chart-canvas{min-height:260px}}
     @@media(max-width:640px){.bi-page-wrapper{padding:16px!important}.bi-hero{padding:21px!important}.bi-hero h1{font-size:26px}.bi-panel-head{align-items:flex-start!important;flex-direction:column}.bi-chart-body{padding:14px}.bi-chart-canvas{min-height:240px}.bi-filter-panel>div{width:100%}.bi-filter-control{flex:1 1 100%;justify-content:space-between}.bi-export-btn{width:100%;justify-content:center}}
 </style>
-
-<!-- TOAST THÔNG BÁO TỰ ĐỘNG -->
-<div id="biToast" role="status" aria-live="polite" class="fixed top-5 right-5 z-[100000] transform translate-x-full transition-transform duration-300 flex items-center gap-3 bg-white border border-[#E5D5B8] shadow-2xl px-4 py-3 rounded-xl">
-    <div class="w-7 h-7 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-xs">
-        <i class="bi bi-check-circle"></i>
-    </div>
-    <div>
-        <p class="text-xs font-bold text-slate-900" id="biToastTitle">Thông báo</p>
-        <p class="text-[11px] text-slate-500" id="biToastMsg">Nội dung</p>
-    </div>
-</div>
 
 <!-- CONTAINER CHÍNH -->
 <div class="bi-page-wrapper bi-dashboard p-6 lg:p-8 space-y-6 w-full max-w-[1600px] mx-auto">
@@ -681,11 +670,15 @@
         window.addEventListener('admin-theme-change', () => initCharts(reportData));
 
         function showBiToast(title, msg) {
-            const toast = document.getElementById('biToast');
-            document.getElementById('biToastTitle').innerText = title;
-            document.getElementById('biToastMsg').innerText = msg;
-            toast.classList.remove('translate-x-full');
-            setTimeout(() => toast.classList.add('translate-x-full'), 3000);
+            const normalizedTitle = String(title || 'Thông báo').toLocaleLowerCase('vi-VN');
+            const type = normalizedTitle.includes('lỗi')
+                ? 'error'
+                : normalizedTitle.includes('cảnh báo')
+                    ? 'warning'
+                    : normalizedTitle.includes('thành công')
+                        ? 'success'
+                        : 'info';
+            window.RiversideToast?.show(type, msg, { title });
         }
 
         function initCharts(data) {

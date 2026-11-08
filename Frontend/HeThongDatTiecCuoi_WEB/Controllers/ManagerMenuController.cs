@@ -48,6 +48,12 @@ public sealed class ManagerMenuController : Controller
     public async Task<IActionResult> Create(CreateMenuForm model, CancellationToken cancellationToken)
     {
         var token = Token(); if (token is null) return Unauthorized();
+        model.DishIds = model.DishIds.Where(dishId => dishId > 0).Distinct().ToList();
+        if (model.DishIds.Count == 0)
+        {
+            TempData["Error"] = "Vui lòng chọn ít nhất một món cho thực đơn.";
+            return RedirectToAction(nameof(Index));
+        }
         if (!ModelState.IsValid) { TempData["Error"] = "Vui lòng kiểm tra thông tin thực đơn."; return RedirectToAction(nameof(Index)); }
         var result = await _api.CreateMenuAsync(model, token, cancellationToken);
         if (result.Succeeded && result.Value is not null && model.Image is { Length: > 0 })
@@ -56,12 +62,14 @@ public sealed class ManagerMenuController : Controller
             var upload = await _api.UploadMenuImageAsync(result.Value.MenuId, stream,
                 model.Image.FileName, model.Image.ContentType, token, cancellationToken);
             TempData[upload.Succeeded ? "Success" : "Error"] = upload.Succeeded
-                ? "Thêm thực đơn và ảnh đại diện thành công."
+                ? $"Đã thêm thực đơn gồm {model.DishIds.Count} món và ảnh đại diện."
                 : "Đã thêm thực đơn nhưng tải ảnh thất bại: " + upload.Error;
         }
         else
         {
-            TempData[result.Succeeded ? "Success" : "Error"] = result.Succeeded ? "Thêm thực đơn thành công." : result.Error;
+            TempData[result.Succeeded ? "Success" : "Error"] = result.Succeeded
+                ? $"Đã thêm thực đơn gồm {model.DishIds.Count} món."
+                : result.Error;
         }
         return RedirectToAction(nameof(Index));
     }

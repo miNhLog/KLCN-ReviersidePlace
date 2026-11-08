@@ -1287,7 +1287,8 @@ public sealed class RiversideApiClient : IRiversideApiClient
             {
                 model.MenuName,
                 model.Description,
-                model.PricePerTable
+                model.PricePerTable,
+                model.DishIds
             },
             accessToken,
             cancellationToken);

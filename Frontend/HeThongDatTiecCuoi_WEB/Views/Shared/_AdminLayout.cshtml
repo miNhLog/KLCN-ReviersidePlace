@@ -11,9 +11,10 @@
         : string.Concat(nameParts.Take(2).Select(part => char.ToUpperInvariant(part[0])));
     var isAdmin = User.IsInRole(RoleNames.Admin);
     var isManager = User.IsInRole(RoleNames.Manager);
-    var usesMetisShell = isAdmin || isManager;
     var isHallManager = User.IsInRole(RoleNames.HallManager);
     var isCoordinator = User.IsInRole(RoleNames.Coordinator);
+    var usesOperationalMetis = isManager || isHallManager || isCoordinator;
+    var usesMetisShell = isAdmin || usesOperationalMetis;
     var dashboardController = isAdmin ? "AdminAccount" : "Home";
     var vietnameseCulture = CultureInfo.GetCultureInfo("vi-VN");
     var currentDateText = HeThongDatTiecCuoi_WEB.Services.VietnamTime.Now.ToString("dddd, dd 'tháng' MM 'năm' yyyy", vietnameseCulture);
@@ -87,7 +88,7 @@
     <link rel="stylesheet"
           href="~/css/admin-common.css"
           asp-append-version="true" />
-    @if (isManager) { <link rel="stylesheet" href="~/css/manager-theme.css" asp-append-version="true" /> }
+    @if (usesOperationalMetis) { <link rel="stylesheet" href="~/css/manager-theme.css" asp-append-version="true" /> }
     @if (isAdmin || isManager || isHallManager || isCoordinator)
     {
         <link rel="stylesheet" href="~/css/notifications.css" asp-append-version="true" />
@@ -99,11 +100,11 @@
     <link rel="stylesheet" href="~/css/backoffice-page-header.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/backoffice-toast.css" asp-append-version="true" />
     @if (usesMetisShell) { <link rel="stylesheet" href="~/css/admin-metis.css" asp-append-version="true" /> }
-    @if (isManager) { <link rel="stylesheet" href="~/css/manager-metis.css" asp-append-version="true" /> }
+    @if (usesOperationalMetis) { <link rel="stylesheet" href="~/css/manager-metis.css" asp-append-version="true" /> }
     @if (isAdmin || isManager || isHallManager || isCoordinator) { <link rel="stylesheet" href="~/css/admin-notifications-theme.css" asp-append-version="true" /> }
 </head>
-<body class="backoffice-app @(usesMetisShell ? "admin-metis-app" : string.Empty) @(isManager ? "manager-theme manager-metis-app" : string.Empty)">
-    <div class="admin-layout backoffice-shell @(isManager ? "manager-theme-shell" : string.Empty)">
+<body class="backoffice-app @(usesMetisShell ? "admin-metis-app" : string.Empty) @(usesOperationalMetis ? "manager-theme manager-metis-app" : string.Empty)">
+    <div class="admin-layout backoffice-shell @(usesOperationalMetis ? "manager-theme-shell" : string.Empty)">
         <button type="button"
                 class="mobile-sidebar-toggle"
                 id="mobileSidebarToggle"
@@ -310,7 +311,7 @@
                            class="sidebar-item @(IsActive("Home", "Dashboard") ? "active" : string.Empty)"
                            aria-current="@(IsActive("Home", "Dashboard") ? "page" : null)"
                            data-sidebar-tooltip="Dashboard sảnh">
-                            <span class="sidebar-icon" aria-hidden="true"><i class="fa-solid fa-gauge-high"></i></span>
+                            <span class="sidebar-icon" aria-hidden="true"><i class="bi bi-speedometer2"></i></span>
                             <span class="sidebar-label">Dashboard sảnh</span>
                         </a>
                     </nav>
@@ -322,21 +323,21 @@
                            class="sidebar-item @(IsActive("Home", "CoordinationAssignments") ? "active" : string.Empty)"
                            aria-current="@(IsActive("Home", "CoordinationAssignments") ? "page" : null)"
                            data-sidebar-tooltip="Phân công nhân viên điều phối">
-                            <span class="sidebar-icon" aria-hidden="true"><i class="fa-solid fa-user-check"></i></span>
+                            <span class="sidebar-icon" aria-hidden="true"><i class="bi bi-person-check"></i></span>
                             <span class="sidebar-label">Phân công nhân viên điều phối</span>
                         </a>
-                        <a asp-controller="Checklist" asp-action="Index" class="sidebar-item @(IsActive("Checklist") ? "active" : string.Empty)" data-sidebar-tooltip="Theo dõi điều phối"><span class="sidebar-icon" aria-hidden="true"><i class="fa-solid fa-people-arrows"></i></span><span class="sidebar-label">Theo dõi điều phối</span></a>
+                        <a asp-controller="Checklist" asp-action="Index" class="sidebar-item @(IsActive("Checklist") ? "active" : string.Empty)" data-sidebar-tooltip="Theo dõi điều phối"><span class="sidebar-icon" aria-hidden="true"><i class="bi bi-diagram-3"></i></span><span class="sidebar-label">Theo dõi điều phối</span></a>
                     </nav>
                 </section>
                 <section class="sidebar-section" aria-labelledby="hallManagerOperationsMenuTitle">
                     <h2 class="sidebar-section-title" id="hallManagerOperationsMenuTitle">Vận hành</h2>
                     <nav class="sidebar-menu" aria-label="Vận hành sảnh">
-                        <a href="/danh-gia/quan-ly" class="sidebar-item @(IsControllerActive("WeddingReview") ? "active" : string.Empty)" aria-current="@(IsControllerActive("WeddingReview") ? "page" : null)" data-sidebar-tooltip="Đánh giá"><span class="sidebar-icon" aria-hidden="true"><i class="fa-solid fa-star-half-stroke"></i></span><span class="sidebar-label">Đánh giá</span></a>
+                        <a href="/danh-gia/quan-ly" class="sidebar-item @(IsControllerActive("WeddingReview") ? "active" : string.Empty)" aria-current="@(IsControllerActive("WeddingReview") ? "page" : null)" data-sidebar-tooltip="Đánh giá"><span class="sidebar-icon" aria-hidden="true"><i class="bi bi-star-half"></i></span><span class="sidebar-label">Đánh giá</span></a>
                         <a asp-controller="HallManagerIncident" asp-action="Index"
                            class="sidebar-item @(IsActive("HallManagerIncident") ? "active" : string.Empty)"
                            aria-current="@(IsActive("HallManagerIncident") ? "page" : null)"
-                           data-sidebar-tooltip="Sự cố"><span class="sidebar-icon" aria-hidden="true"><i class="fa-solid fa-triangle-exclamation"></i></span><span class="sidebar-label">Sự cố</span></a>
-                        <a asp-controller="HallManagerScheduleChange" asp-action="Index" class="sidebar-item @(IsActive("HallManagerScheduleChange") ? "active" : string.Empty)" data-sidebar-tooltip="Thay đổi lịch"><span class="sidebar-icon" aria-hidden="true"><i class="fa-solid fa-calendar-days"></i></span><span class="sidebar-label">Thay đổi lịch</span></a>
+                           data-sidebar-tooltip="Sự cố"><span class="sidebar-icon" aria-hidden="true"><i class="bi bi-exclamation-triangle"></i></span><span class="sidebar-label">Sự cố</span></a>
+                        <a asp-controller="HallManagerScheduleChange" asp-action="Index" class="sidebar-item @(IsActive("HallManagerScheduleChange") ? "active" : string.Empty)" data-sidebar-tooltip="Thay đổi lịch"><span class="sidebar-icon" aria-hidden="true"><i class="bi bi-calendar3"></i></span><span class="sidebar-label">Thay đổi lịch</span></a>
                     </nav>
                 </section>
                 }
@@ -349,7 +350,7 @@
                            class="sidebar-item @(IsActive("Home", "Dashboard") ? "active" : string.Empty)"
                            aria-current="@(IsActive("Home", "Dashboard") ? "page" : null)"
                            data-sidebar-tooltip="Công việc hôm nay">
-                            <span class="sidebar-icon" aria-hidden="true"><i class="fa-solid fa-clipboard-list"></i></span>
+                            <span class="sidebar-icon" aria-hidden="true"><i class="bi bi-clipboard-check"></i></span>
                             <span class="sidebar-label">Công việc hôm nay</span>
                         </a>
                     </nav>
@@ -358,7 +359,7 @@
                     <h2 class="sidebar-section-title" id="coordinatorMyWorkMenuTitle">Công việc của tôi</h2>
                     <nav class="sidebar-menu" aria-label="Công việc được giao">
                         <a asp-controller="Home" asp-action="WorkSchedule" class="sidebar-item @(IsActive("Home", "WorkSchedule") ? "active" : string.Empty)" data-sidebar-tooltip="Lịch làm việc">
-                            <span class="sidebar-icon" aria-hidden="true"><i class="fa-solid fa-calendar-days"></i></span>
+                            <span class="sidebar-icon" aria-hidden="true"><i class="bi bi-calendar3"></i></span>
                             <span class="sidebar-label">Lịch làm việc</span>
                         </a>
                     </nav>
@@ -366,11 +367,11 @@
                 <section class="sidebar-section" aria-labelledby="coordinatorOperationsMenuTitle">
                     <h2 class="sidebar-section-title" id="coordinatorOperationsMenuTitle">Vận hành tiệc</h2>
                     <nav class="sidebar-menu" aria-label="Vận hành tiệc">
-                        <a asp-controller="Checklist" asp-action="Index" class="sidebar-item @(IsActive("Checklist") ? "active" : string.Empty)" data-sidebar-tooltip="Theo dõi tiến độ"><span class="sidebar-icon" aria-hidden="true"><i class="fa-solid fa-list-check"></i></span><span class="sidebar-label">Theo dõi tiến độ</span></a>
+                        <a asp-controller="Checklist" asp-action="Index" class="sidebar-item @(IsActive("Checklist") ? "active" : string.Empty)" data-sidebar-tooltip="Theo dõi tiến độ"><span class="sidebar-icon" aria-hidden="true"><i class="bi bi-list-check"></i></span><span class="sidebar-label">Theo dõi tiến độ</span></a>
                         <a asp-controller="CoordinatorIncident" asp-action="Index"
                            class="sidebar-item @(IsActive("CoordinatorIncident") ? "active" : string.Empty)"
                            aria-current="@(IsActive("CoordinatorIncident") ? "page" : null)"
-                           data-sidebar-tooltip="Sự cố"><span class="sidebar-icon" aria-hidden="true"><i class="fa-solid fa-triangle-exclamation"></i></span><span class="sidebar-label">Sự cố</span></a>
+                           data-sidebar-tooltip="Sự cố"><span class="sidebar-icon" aria-hidden="true"><i class="bi bi-exclamation-triangle"></i></span><span class="sidebar-label">Sự cố</span></a>
                     </nav>
                 </section>
                 }

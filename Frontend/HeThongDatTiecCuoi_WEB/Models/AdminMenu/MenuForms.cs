@@ -13,6 +13,8 @@ public sealed class CreateMenuForm
     [Range(0, double.MaxValue)]
     public decimal PricePerTable { get; set; }
 
+    public List<int> DishIds { get; set; } = [];
+
     public IFormFile? Image { get; set; }
 }
 

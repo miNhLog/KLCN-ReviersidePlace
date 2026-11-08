@@ -338,6 +338,36 @@ public sealed class MenuController : ControllerBase
             return BadRequest(new { message = "Giá mỗi bàn không hợp lệ." });
         }
 
+        var requestedDishIds = request.DishIds ?? [];
+        var selectedDishIds = requestedDishIds
+            .Where(dishId => dishId > 0)
+            .Distinct()
+            .ToList();
+
+        if (selectedDishIds.Count != requestedDishIds.Count)
+        {
+            return BadRequest(new { message = "Danh sách món ăn không hợp lệ hoặc bị trùng." });
+        }
+
+        var selectedDishes = await _context.Dishes
+            .AsNoTracking()
+            .Where(dish =>
+                selectedDishIds.Contains(dish.DishId) &&
+                dish.DataStatus.DataStatusCode == DataStatusCodes.Existing &&
+                dish.Status.StatusGroup == StatusGroups.Dish &&
+                dish.Status.StatusCode == DishStatusCodes.Active)
+            .Select(dish => new { dish.DishId, dish.Price })
+            .ToListAsync(cancellationToken);
+
+        if (selectedDishes.Count != selectedDishIds.Count)
+        {
+            return Conflict(new { message = "Tất cả món được chọn phải tồn tại và đang phục vụ." });
+        }
+
+        var calculatedPricePerTable = selectedDishes.Count > 0
+            ? selectedDishes.Sum(dish => dish.Price)
+            : request.PricePerTable;
+
         var menuCodes = await _context.Menus
             .AsNoTracking()
             .Select(menu => menu.MenuCode)
@@ -368,7 +398,7 @@ public sealed class MenuController : ControllerBase
             Description = string.IsNullOrWhiteSpace(request.Description)
                 ? null
                 : request.Description.Trim(),
-            PricePerTable = request.PricePerTable,
+            PricePerTable = calculatedPricePerTable,
             StatusId = activeStatus.StatusId,
             DataStatusId = existingDataStatus.DataStatusId
         };
@@ -376,8 +406,30 @@ public sealed class MenuController : ControllerBase
         await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
         _context.Menus.Add(menu);
         await _context.SaveChangesAsync(cancellationToken);
+
+        if (selectedDishIds.Count > 0)
+        {
+            _context.MenuDishes.AddRange(selectedDishIds.Select((dishId, index) => new MenuDish
+            {
+                MenuId = menu.MenuId,
+                DishId = dishId,
+                SortOrder = index + 1,
+                DataStatusId = existingDataStatus.DataStatusId
+            }));
+        }
+
         AddAudit(AuditActions.MenuCreated, menu.MenuId, null,
-            new { menu.MenuCode, menu.MenuName, menu.PricePerTable, Status = activeStatus.StatusCode }, $"Tạo thực đơn {menu.MenuCode}.");
+            new
+            {
+                menu.MenuCode,
+                menu.MenuName,
+                menu.PricePerTable,
+                DishIds = selectedDishIds,
+                Status = activeStatus.StatusCode
+            },
+            selectedDishIds.Count > 0
+                ? $"Tạo thực đơn {menu.MenuCode} với {selectedDishIds.Count} món."
+                : $"Tạo thực đơn {menu.MenuCode}.");
         await _context.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
         _catalogSyncService?.SyncCatalogInBackground();

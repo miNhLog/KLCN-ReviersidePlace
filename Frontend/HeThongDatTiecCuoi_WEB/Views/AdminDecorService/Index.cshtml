@@ -93,6 +93,19 @@
         min-width: 0;
         color: var(--rp-text) !important;
         background: var(--rp-bg) !important;
+        color-scheme: light;
+    }
+
+    html[data-admin-theme="dark"] .decor-page-wrapper,
+    html[data-admin-theme="dark"] #decorModal,
+    html[data-admin-theme="dark"] #detailModal {
+        color-scheme: dark;
+    }
+
+    .decor-page-wrapper .font-serif,
+    #decorModal .font-serif,
+    #detailModal .font-serif {
+        font-family: inherit !important;
     }
 
     .decor-page-wrapper .bg-white {
@@ -123,6 +136,12 @@
         border-color: var(--rp-border) !important;
     }
 
+    .decor-page-wrapper select option,
+    #decorModal select option {
+        color: var(--rp-text) !important;
+        background: var(--rp-surface) !important;
+    }
+
     .decor-page-wrapper :is(input, textarea)::placeholder {
         color: var(--rp-text-muted) !important;
         opacity: 1;
@@ -150,6 +169,7 @@
         background: var(--rp-surface) !important;
         border: 1px solid var(--rp-border) !important;
         border-radius: 16px !important;
+        overflow: hidden !important;
     }
 
     #detailModal .decor-detail-dialog {
@@ -171,6 +191,7 @@
         min-height: 0;
         color: var(--rp-text) !important;
         background: var(--rp-bg) !important;
+        overflow-x: hidden !important;
         overscroll-behavior: contain;
     }
 
@@ -182,9 +203,33 @@
         box-shadow: none !important;
     }
 
+    #decorModal :is(.decor-modal-header, .decor-modal-section) [class*="bg-[#B89758]"] {
+        color: var(--rp-gold-700) !important;
+        background: var(--rp-gold-100) !important;
+        border-color: var(--rp-gold-500) !important;
+    }
+
+    html[data-admin-theme="dark"] #decorModal :is(.decor-modal-header, .decor-modal-section) [class*="bg-[#B89758]"] {
+        color: var(--manager-gold-readable, #f4cf7a) !important;
+    }
+
     #decorModal :is(h2, h3, label, .text-slate-900, .text-slate-800, .text-slate-700),
     #detailModal :is(h3, h4, .text-slate-900, .text-slate-800, .text-slate-700) {
         color: var(--rp-text) !important;
+    }
+
+    #decorModal .bg-white {
+        color: var(--rp-text) !important;
+        background: var(--rp-surface) !important;
+    }
+
+    #decorModal :is(.bg-slate-50, .bg-slate-100) {
+        color: var(--rp-text) !important;
+        background: var(--rp-surface-muted) !important;
+    }
+
+    #decorModal :is(.border-slate-100, .border-slate-200, .border-slate-300) {
+        border-color: var(--rp-border) !important;
     }
 
     #decorModal :is(p, .text-slate-600, .text-slate-500, .text-slate-400),
@@ -196,6 +241,15 @@
         color: var(--rp-text) !important;
         background: var(--rp-surface-muted) !important;
         border-color: var(--rp-border) !important;
+    }
+
+    #decorModal input[readonly] {
+        color: var(--rp-text-secondary) !important;
+        background: var(--rp-surface-hover) !important;
+    }
+
+    #decorModal :is(input[type="checkbox"], input[type="radio"]) {
+        accent-color: var(--rp-gold-500);
     }
 
     html[data-admin-theme="dark"] body.backoffice-app #decorModal :is(
@@ -227,14 +281,54 @@
         background: var(--rp-surface) !important;
         border: 1px solid var(--rp-border) !important;
         border-radius: 12px !important;
+        overflow: hidden;
+    }
+
+    /* Ghi đè selector legacy trong backoffice-page-header.css đang ép tab thành #fff. */
+    html body.backoffice-app #adminMainContent .decor-page-wrapper
+    .backoffice-function-header-shell > .decor-tabs-bar {
+        color: var(--rp-text) !important;
+        background-color: var(--rp-surface) !important;
+        background-image: none !important;
+        border-color: var(--rp-border) !important;
+        box-shadow: var(--rp-shadow-sm) !important;
+    }
+
+    html[data-admin-theme="dark"] body.backoffice-app #adminMainContent
+    .decor-page-wrapper .backoffice-function-header-shell > .decor-tabs-bar {
+        color: #f4f4f5 !important;
+        background-color: #18181b !important;
+        border-color: #3f3f46 !important;
+        box-shadow: none !important;
     }
 
     .decor-tabs-bar button {
         color: var(--rp-text-secondary) !important;
     }
 
+    html[data-admin-theme="dark"] body.backoffice-app #adminMainContent
+    .decor-tabs-bar button {
+        color: #a1a1aa !important;
+    }
+
+    html[data-admin-theme="dark"] body.backoffice-app #adminMainContent
+    .decor-tabs-bar button.border-\[\#B89758\] {
+        color: #f4f4f5 !important;
+        border-bottom-color: #c6a15b !important;
+    }
+
     .decor-tabs-bar button.border-\[\#B89758\] {
         color: var(--rp-text) !important;
+    }
+
+    .decor-tabs-bar button.border-\[\#B89758\] > i,
+    .decor-tabs-bar button.border-\[\#B89758\] > span:last-child {
+        color: var(--rp-gold-700) !important;
+    }
+
+    html[data-admin-theme="dark"] .decor-tabs-bar button.border-\[\#B89758\] > i,
+    html[data-admin-theme="dark"] .decor-tabs-bar button.border-\[\#B89758\] > span:last-child {
+        color: var(--manager-gold-readable, #f4cf7a) !important;
     }
 
     #decorModal :is(input, textarea)::placeholder {
@@ -248,6 +342,18 @@
     #detailModal .decor-detail-panel {
         background: var(--rp-surface-muted) !important;
         border-color: var(--rp-border) !important;
+    }
+
+    #decorModal .decor-choice:hover,
+    #decorModal .decor-upload:hover {
+        background: var(--rp-surface-hover) !important;
+        border-color: var(--rp-gold-500) !important;
+    }
+
+    #decorModal .decor-upload > div:first-of-type {
+        color: var(--rp-gold-700) !important;
+        background: var(--rp-gold-100) !important;
+        border-color: var(--rp-gold-500) !important;
     }
 
     #decorModal [class*="border-[#E5D5B8]"],
@@ -271,6 +377,227 @@
     html[data-admin-theme="dark"] .decor-page-wrapper [class*="text-[#8C6D32]"],
     html[data-admin-theme="dark"] #decorModal [class*="text-[#8C6D32]"] {
         color: var(--rp-gold-500) !important;
+    }
+
+    /* Các khối tĩnh và khối sinh từ JavaScript đều dùng cùng token giao diện. */
+    .decor-workspace-card,
+    .decor-card,
+    .decor-empty-state,
+    .decor-pagination,
+    #container-service-tab {
+        color: var(--rp-text) !important;
+        background: var(--rp-surface) !important;
+        border-color: var(--rp-border) !important;
+        box-shadow: var(--rp-shadow-sm, none) !important;
+    }
+
+    .decor-filter-bar {
+        display: flex;
+        min-width: 0;
+    }
+
+    .decor-filter-bar :is(label, i),
+    .decor-metrics {
+        color: var(--rp-text-secondary) !important;
+    }
+
+    .decor-filter-bar input:focus,
+    .decor-filter-bar select:focus {
+        color: var(--rp-text) !important;
+        background: var(--rp-surface) !important;
+        border-color: var(--rp-gold-500) !important;
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--rp-gold-500) 18%, transparent) !important;
+    }
+
+    .decor-metrics strong,
+    .decor-pagination strong,
+    #metric-title-label {
+        color: var(--rp-text) !important;
+    }
+
+    #metric-showing,
+    .decor-tab-badge,
+    .decor-code-badge,
+    .decor-category-badge {
+        color: var(--rp-gold-700) !important;
+        background: var(--rp-gold-100) !important;
+        border-color: color-mix(in srgb, var(--rp-gold-500) 42%, var(--rp-border)) !important;
+    }
+
+    html[data-admin-theme="dark"] :is(#metric-showing, .decor-tab-badge, .decor-code-badge, .decor-category-badge) {
+        color: var(--manager-gold-readable, #f4cf7a) !important;
+    }
+
+    .decor-card {
+        isolation: isolate;
+    }
+
+    .decor-card:hover {
+        border-color: var(--rp-gold-500) !important;
+        box-shadow: 0 14px 30px color-mix(in srgb, var(--rp-gold-500) 12%, transparent) !important;
+    }
+
+    .decor-card-body,
+    .decor-card-meta,
+    .decor-card-price {
+        color: var(--rp-text) !important;
+        border-color: var(--rp-border) !important;
+    }
+
+    .decor-card-body p,
+    .decor-card-meta span:first-child,
+    .decor-card-price > span:first-child {
+        color: var(--rp-text-secondary) !important;
+    }
+
+    .decor-card-meta span:last-child,
+    .decor-card-price strong,
+    .decor-card-price .font-bold {
+        color: var(--rp-text) !important;
+    }
+
+    .decor-action {
+        color: var(--rp-text) !important;
+        background: var(--rp-surface-muted) !important;
+        border-color: var(--rp-border) !important;
+    }
+
+    .decor-action:hover {
+        color: var(--rp-gold-700) !important;
+        background: var(--rp-gold-100) !important;
+        border-color: var(--rp-gold-500) !important;
+    }
+
+    html[data-admin-theme="dark"] .decor-action:hover {
+        color: var(--manager-gold-readable, #f4cf7a) !important;
+    }
+
+    .decor-action--danger:hover {
+        color: #ef4444 !important;
+        background: color-mix(in srgb, #ef4444 12%, var(--rp-surface)) !important;
+        border-color: #ef4444 !important;
+    }
+
+    .decor-status-badge {
+        border-width: 1px;
+        border-style: solid;
+    }
+
+    .decor-status-badge--active {
+        color: #087443 !important;
+        background: #dcfce7 !important;
+        border-color: #86efac !important;
+    }
+
+    .decor-status-badge--inactive {
+        color: var(--rp-text-secondary) !important;
+        background: var(--rp-surface-muted) !important;
+        border-color: var(--rp-border-strong) !important;
+    }
+
+    .decor-service-image-placeholder {
+        color: var(--rp-text-secondary) !important;
+        background: var(--rp-surface-muted) !important;
+        border-color: var(--rp-border-strong) !important;
+    }
+
+    .decor-media-badge {
+        color: var(--rp-text) !important;
+        background: color-mix(in srgb, var(--rp-surface) 90%, transparent) !important;
+        border-color: var(--rp-border) !important;
+    }
+
+    html[data-admin-theme="dark"] .decor-media-badge {
+        color: var(--manager-gold-readable, #f4cf7a) !important;
+        background: rgba(9, 9, 11, .82) !important;
+        border-color: rgba(198, 161, 91, .42) !important;
+    }
+
+    html[data-admin-theme="dark"] .decor-status-badge--active {
+        color: #86efac !important;
+        background: rgba(22, 101, 52, .28) !important;
+        border-color: rgba(74, 222, 128, .42) !important;
+    }
+
+    #container-service-tab table {
+        color: var(--rp-text) !important;
+        background: var(--rp-surface) !important;
+    }
+
+    #container-service-tab thead tr {
+        color: var(--rp-text) !important;
+        background: var(--rp-table-head, var(--rp-surface-muted)) !important;
+        border-color: var(--rp-border) !important;
+    }
+
+    #container-service-tab tbody,
+    #container-service-tab tbody tr,
+    #container-service-tab tbody td {
+        color: var(--rp-text) !important;
+        background: transparent !important;
+        border-color: var(--rp-border) !important;
+    }
+
+    #container-service-tab tbody tr:hover {
+        background: var(--rp-surface-hover) !important;
+    }
+
+    #container-service-tab tbody :is(p, .text-slate-600, .text-slate-500, .text-slate-400) {
+        color: var(--rp-text-secondary) !important;
+    }
+
+    .decor-empty-state {
+        color: var(--rp-text-secondary) !important;
+    }
+
+    .decor-pagination button {
+        color: var(--rp-text) !important;
+        background: var(--rp-surface-muted) !important;
+        border-color: var(--rp-border) !important;
+    }
+
+    .decor-pagination button:not(:disabled):hover {
+        color: var(--rp-gold-700) !important;
+        border-color: var(--rp-gold-500) !important;
+    }
+
+    .decor-pagination button:disabled {
+        color: var(--rp-text-muted) !important;
+        opacity: .72 !important;
+    }
+
+    .decor-pagination > div:last-child > span {
+        color: #18181b !important;
+        background: var(--rp-gold-500) !important;
+        border-color: var(--rp-gold-500) !important;
+    }
+
+    #decorModal .decor-modal-body > div:last-child button[type="button"],
+    #detailModal .decor-detail-close-button {
+        color: var(--rp-text) !important;
+        background: var(--rp-surface-muted) !important;
+        border-color: var(--rp-border) !important;
+    }
+
+    #decorModal .decor-modal-body > div:last-child button[type="button"]:hover,
+    #detailModal .decor-detail-close-button:hover {
+        color: var(--rp-gold-700) !important;
+        background: var(--rp-gold-100) !important;
+        border-color: var(--rp-gold-500) !important;
+    }
+
+    #detailModal .decor-detail-body strong,
+    #detailModal .decor-detail-body .font-semibold,
+    #detailModal .decor-detail-body .font-bold {
+        color: var(--rp-text) !important;
+    }
+
+    #detailModal .decor-detail-body [class*="text-[#B89758]"] {
+        color: var(--rp-gold-700) !important;
+    }
+
+    html[data-admin-theme="dark"] #detailModal .decor-detail-body [class*="text-[#B89758]"] {
+        color: var(--manager-gold-readable, #f4cf7a) !important;
     }
 
     #decorModal .decor-close,
@@ -304,6 +631,10 @@
             max-width: 100% !important;
             max-height: 94dvh !important;
             border-radius: 16px 16px 0 0 !important;
+        }
+
+        .decor-filter-bar {
+            flex-direction: column;
         }
     }
 </style>
@@ -345,14 +676,14 @@
                 <button id="tab-btn-decor" onclick="switchMainTab('decor')" class="py-3 sm:py-4 font-bold text-xs sm:text-sm border-b-2 border-[#B89758] text-slate-900 flex items-center gap-2 flex-shrink-0 whitespace-nowrap focus-ring transition-colors">
                     <i class="fa-solid fa-wand-magic-sparkles text-[#B89758]"></i>
                     <span>Gói Decor Tiệc Cưới</span>
-                    <span id="badge-decor-active" class="bg-[#B89758]/15 text-[#8C6D32] text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-full ml-1 border border-[#B89758]/30">Đang chọn</span>
+                    <span id="badge-decor-active" class="decor-tab-badge bg-[#B89758]/15 text-[#8C6D32] text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-full ml-1 border border-[#B89758]/30">Đang chọn</span>
                 </button>
 
                 <!-- Tab 2 Button -->
                 <button id="tab-btn-service" onclick="switchMainTab('service')" class="py-3 sm:py-4 font-medium text-xs sm:text-sm text-slate-500 hover:text-slate-800 flex items-center gap-2 flex-shrink-0 whitespace-nowrap transition-colors border-b-2 border-transparent focus-ring">
                     <i class="fa-solid fa-people-arrows text-slate-400"></i>
                     <span>Dịch Vụ Đi Kèm</span>
-                    <span id="badge-service-count" class="text-[10px] sm:text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full border border-slate-200">6 dịch vụ</span>
+                    <span id="badge-service-count" class="decor-tab-badge text-[10px] sm:text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full border border-slate-200">6 dịch vụ</span>
                 </button>
             </div>
         </div>
@@ -362,7 +693,7 @@
     <div class="p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6 flex-1 w-full max-w-[1600px] mx-auto">
 
         <!-- Master Filter & Action Controls Bar -->
-        <section class="bg-white rounded-xl p-3 sm:p-4 border border-slate-200 custom-card-shadow flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+        <section class="decor-workspace-card decor-filter-bar bg-white rounded-xl p-3 sm:p-4 border border-slate-200 custom-card-shadow flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
             <div class="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2.5 flex-1 w-full">
                 <!-- Search Input -->
                 <div class="relative w-full sm:flex-1 sm:min-w-[240px] sm:max-w-sm">
@@ -404,7 +735,7 @@
         </section>
 
         <!-- Status Summary Metrics Bar -->
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 text-xs text-slate-500 px-1">
+        <div class="decor-metrics flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 text-xs text-slate-500 px-1">
             <div class="flex items-center gap-2 flex-wrap">
                 <span id="metric-title-label" class="font-medium text-slate-700">Danh mục Gói Decor đang quản lý:</span>
                 <span id="metric-showing" class="px-2.5 py-0.5 rounded-full bg-slate-200/80 font-bold text-slate-800 text-[11px]">Hiển thị 6 gói</span>
@@ -425,7 +756,7 @@
         </div>
 
         <!-- VIEW CONTAINER 2: TAB 2 (DỊCH VỤ - BẢNG VẬN HÀNH) -->
-        <div id="container-service-tab" class="bg-white rounded-xl border border-slate-200 custom-card-shadow overflow-hidden hidden">
+        <div id="container-service-tab" class="decor-workspace-card bg-white rounded-xl border border-slate-200 custom-card-shadow overflow-hidden hidden">
             <div class="overflow-x-auto custom-scrollbar">
                 <table class="w-full border-collapse text-left min-w-[800px]">
                     <thead>
@@ -447,7 +778,7 @@
         </div>
 
         <!-- Pagination / Summary Bar -->
-        <div class="bg-white rounded-xl p-3 sm:p-4 border border-slate-200 custom-card-shadow flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs text-slate-600">
+        <div class="decor-pagination bg-white rounded-xl p-3 sm:p-4 border border-slate-200 custom-card-shadow flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs text-slate-600">
             <div class="flex flex-wrap items-center gap-2">
                 <span id="pagination-summary">Hiển thị <strong>1 – 6</strong> trong tổng số <strong>6</strong> gói Decor</span>
             </div>
@@ -597,14 +928,14 @@
                         <div class="flex items-center space-x-3 pt-1 flex-wrap gap-y-2">
                             <label class="flex items-center space-x-1.5 cursor-pointer">
                                 <input id="radio-decor-active" checked name="decor_status" type="radio" value="Áp dụng" class="w-3.5 h-3.5 text-[#B89758] focus:ring-[#B89758] border-slate-300">
-                                <span class="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-[11px] font-semibold flex items-center space-x-1">
+                                <span class="decor-status-badge decor-status-badge--active px-2 py-0.5 rounded-full text-[11px] font-semibold flex items-center space-x-1">
                                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
                                     <span>Áp dụng ngay</span>
                                 </span>
                             </label>
                             <label class="flex items-center space-x-1.5 cursor-pointer">
                                 <input id="radio-decor-draft" name="decor_status" type="radio" value="Ngừng áp dụng" class="w-3.5 h-3.5 text-[#B89758] focus:ring-[#B89758] border-slate-300">
-                                <span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200 text-[11px] font-medium">Bản nháp lưu trữ</span>
+                                <span class="decor-status-badge decor-status-badge--inactive px-2 py-0.5 rounded-full text-[11px] font-medium">Bản nháp lưu trữ</span>
                             </label>
                         </div>
                     </div>
@@ -652,7 +983,7 @@
                         <div class="space-y-0.5 min-w-0">
                             <div class="flex items-center space-x-2 flex-wrap gap-y-1">
                                 <p id="decor-preview-filename" class="font-semibold text-xs text-slate-800 truncate max-w-[180px]">hoang-kim-da-yen-cover-4k.jpg</p>
-                                <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-semibold flex items-center space-x-1 whitespace-nowrap">
+                                <span class="decor-status-badge decor-status-badge--active px-2 py-0.5 rounded-full text-[10px] font-semibold flex items-center space-x-1 whitespace-nowrap">
                                     <i class="fa-solid fa-circle-check text-[10px]"></i>
                                     <span>Hợp lệ</span>
                                 </span>
@@ -982,10 +1313,10 @@
 
             if (tab === 'decor') {
                 btnDecor.className = 'py-3 sm:py-4 font-bold text-xs sm:text-sm border-b-2 border-[#B89758] text-slate-900 flex items-center gap-2 flex-shrink-0 whitespace-nowrap focus-ring transition-colors';
-                btnDecor.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles text-[#B89758]"></i><span>Gói Decor Tiệc Cưới</span><span class="bg-[#B89758]/15 text-[#8C6D32] text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-full ml-1 border border-[#B89758]/30">Đang chọn</span>`;
+                btnDecor.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles text-[#B89758]"></i><span>Gói Decor Tiệc Cưới</span><span class="decor-tab-badge bg-[#B89758]/15 text-[#8C6D32] text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-full ml-1 border border-[#B89758]/30">Đang chọn</span>`;
 
                 btnService.className = 'py-3 sm:py-4 font-medium text-xs sm:text-sm text-slate-500 hover:text-slate-800 flex items-center gap-2 flex-shrink-0 whitespace-nowrap transition-colors border-b-2 border-transparent focus-ring';
-                btnService.innerHTML = `<i class="fa-solid fa-people-arrows text-slate-400"></i><span>Dịch Vụ Đi Kèm</span><span class="text-[10px] sm:text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full border border-slate-200">${serviceData.length} dịch vụ</span>`;
+                btnService.innerHTML = `<i class="fa-solid fa-people-arrows text-slate-400"></i><span>Dịch Vụ Đi Kèm</span><span class="decor-tab-badge text-[10px] sm:text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full border border-slate-200">${serviceData.length} dịch vụ</span>`;
 
                 containerDecor.classList.remove('hidden');
                 containerService.classList.add('hidden');
@@ -998,10 +1329,10 @@
                 metricTitleLabel.innerText = 'Danh mục Gói Decor đang quản lý:';
             } else {
                 btnService.className = 'py-3 sm:py-4 font-bold text-xs sm:text-sm border-b-2 border-[#B89758] text-slate-900 flex items-center gap-2 flex-shrink-0 whitespace-nowrap focus-ring transition-colors';
-                btnService.innerHTML = `<i class="fa-solid fa-people-arrows text-[#B89758]"></i><span>Dịch Vụ Đi Kèm</span><span class="bg-[#B89758]/15 text-[#8C6D32] text-[10px] sm:text-[11px] font-bold px-2.5 py-0.5 rounded-full ml-1 border border-[#B89758]/30">Đang chọn</span>`;
+                btnService.innerHTML = `<i class="fa-solid fa-people-arrows text-[#B89758]"></i><span>Dịch Vụ Đi Kèm</span><span class="decor-tab-badge bg-[#B89758]/15 text-[#8C6D32] text-[10px] sm:text-[11px] font-bold px-2.5 py-0.5 rounded-full ml-1 border border-[#B89758]/30">Đang chọn</span>`;
 
                 btnDecor.className = 'py-3 sm:py-4 font-medium text-xs sm:text-sm text-slate-500 hover:text-slate-800 flex items-center gap-2 flex-shrink-0 whitespace-nowrap transition-colors border-b-2 border-transparent focus-ring';
-                btnDecor.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles text-slate-400"></i><span>Gói Decor Tiệc Cưới</span><span class="bg-slate-100 text-slate-600 text-[10px] sm:text-[11px] font-semibold px-2 py-0.5 rounded-full ml-1">${decorData.length} gói</span>`;
+                btnDecor.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles text-slate-400"></i><span>Gói Decor Tiệc Cưới</span><span class="decor-tab-badge bg-slate-100 text-slate-600 text-[10px] sm:text-[11px] font-semibold px-2 py-0.5 rounded-full ml-1">${decorData.length} gói</span>`;
 
                 containerService.classList.remove('hidden');
                 containerDecor.classList.add('hidden');
@@ -1078,7 +1409,7 @@
             container.innerHTML = '';
 
             if (list.length === 0) {
-                container.innerHTML = `<div class="col-span-full bg-white rounded-xl p-8 sm:p-12 text-center text-slate-400 border border-slate-200"><i class="fa-regular fa-folder-open text-3xl mb-2 text-slate-300"></i><p>Không tìm thấy gói Decor nào phù hợp với bộ lọc hiện tại.</p></div>`;
+                container.innerHTML = `<div class="decor-empty-state col-span-full bg-white rounded-xl p-8 sm:p-12 text-center text-slate-400 border border-slate-200"><i class="fa-regular fa-folder-open text-3xl mb-2"></i><p>Không tìm thấy gói Decor nào phù hợp với bộ lọc hiện tại.</p></div>`;
                 return;
             }
 
@@ -1141,7 +1472,7 @@
                                 <span class="px-2 py-0.5 rounded-md text-[10.5px] font-mono font-semibold bg-slate-700/60 text-slate-200 backdrop-blur-sm border border-slate-500/30">${item.ma}</span>
                             </div>
                             <div class="absolute bottom-3 left-3">
-                                <span class="px-2.5 py-1 rounded-md text-[11px] font-medium bg-white/90 text-slate-700 shadow-sm border border-slate-200 flex items-center gap-1">
+                                <span class="decor-media-badge px-2.5 py-1 rounded-md text-[11px] font-medium bg-white/90 text-slate-700 shadow-sm border border-slate-200 flex items-center gap-1">
                                     <i class="fa-solid fa-landmark text-[10px] text-slate-500"></i> ${item.phanLoai}
                                 </span>
                             </div>
@@ -1149,17 +1480,17 @@
                 }
 
                 const card = document.createElement('div');
-                card.className = `bg-white rounded-xl border border-slate-200 shadow-sm hover:border-[#B89758]/50 hover:shadow-md transition-all flex flex-col overflow-hidden group ${isInactive ? 'opacity-90' : ''}`;
+                card.className = `decor-card bg-white rounded-xl border border-slate-200 shadow-sm hover:border-[#B89758]/50 hover:shadow-md transition-all flex flex-col overflow-hidden group ${isInactive ? 'opacity-90' : ''}`;
                 card.innerHTML = `
                     ${mediaBlock}
-                    <div class="p-4 sm:p-5 flex-1 flex flex-col justify-between space-y-3 sm:space-y-4">
+                    <div class="decor-card-body p-4 sm:p-5 flex-1 flex flex-col justify-between space-y-3 sm:space-y-4">
                         <div>
                             <h3 class="font-serif font-bold text-base sm:text-lg text-slate-900 group-hover:text-[#8C6D32] transition-colors leading-snug">
                                 ${item.ten}
                             </h3>
                             <p class="text-xs text-slate-600 mt-2 leading-relaxed line-clamp-2">${item.moTa}</p>
 
-                            <div class="mt-3 pt-3 border-t border-dashed border-slate-200 grid grid-cols-2 gap-2 text-[11px] text-slate-500">
+                            <div class="decor-card-meta mt-3 pt-3 border-t border-dashed border-slate-200 grid grid-cols-2 gap-2 text-[11px] text-slate-500">
                                 <div class="min-w-0">
                                     <span class="block text-[10px] uppercase font-semibold tracking-wider text-slate-400">Hạng mục:</span>
                                     <span class="text-slate-700 font-medium truncate block">${item.spec1 || 'Toàn bộ sảnh tiệc'}</span>
@@ -1171,7 +1502,7 @@
                             </div>
                         </div>
 
-                        <div class="pt-3 border-t border-slate-100 flex items-baseline justify-between gap-2">
+                        <div class="decor-card-price pt-3 border-t border-slate-100 flex items-baseline justify-between gap-2">
                             <span class="text-xs text-slate-500 font-medium whitespace-nowrap">${isInactive ? 'Đơn giá lưu trữ:' : 'Đơn giá niêm yết:'}</span>
                             <div class="text-right truncate">
                                 <span class="text-base sm:text-lg font-bold text-slate-900 font-serif tracking-tight">${Number(item.gia).toLocaleString('vi-VN')}</span>
@@ -1180,13 +1511,13 @@
                         </div>
 
                         <div class="pt-1 grid grid-cols-3 gap-1.5 sm:gap-2">
-                            <button onclick="viewDetail(${item.id})" class="min-h-[40px] px-1.5 sm:px-2 py-2 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-700 text-[11px] sm:text-xs font-semibold border border-slate-200 transition-colors flex items-center justify-center gap-1 sm:gap-1.5 focus-ring" title="Xem chi tiết">
+                            <button onclick="viewDetail(${item.id})" class="decor-action min-h-[40px] px-1.5 sm:px-2 py-2 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-700 text-[11px] sm:text-xs font-semibold border border-slate-200 transition-colors flex items-center justify-center gap-1 sm:gap-1.5 focus-ring" title="Xem chi tiết">
                                 <i class="fa-regular fa-eye text-slate-500"></i><span class="hidden sm:inline">Chi tiết</span><span class="sm:hidden">Xem</span>
                             </button>
-                            <button onclick="editDecorItem(${item.id})" class="min-h-[40px] px-1.5 sm:px-2 py-2 rounded-lg bg-slate-50 hover:bg-[#B89758]/10 text-slate-800 hover:text-[#8C6D32] text-[11px] sm:text-xs font-semibold border border-slate-200 hover:border-[#B89758]/50 transition-colors flex items-center justify-center gap-1 sm:gap-1.5 focus-ring" title="Chỉnh sửa">
+                            <button onclick="editDecorItem(${item.id})" class="decor-action min-h-[40px] px-1.5 sm:px-2 py-2 rounded-lg bg-slate-50 hover:bg-[#B89758]/10 text-slate-800 hover:text-[#8C6D32] text-[11px] sm:text-xs font-semibold border border-slate-200 hover:border-[#B89758]/50 transition-colors flex items-center justify-center gap-1 sm:gap-1.5 focus-ring" title="Chỉnh sửa">
                                 <i class="fa-regular fa-pen-to-square text-[#B89758]"></i><span>Sửa</span>
                             </button>
-                            <button onclick="toggleStatus(${item.id})" class="min-h-[40px] px-1.5 sm:px-2 py-2 rounded-lg ${isInactive ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-200' : 'bg-slate-50 hover:bg-amber-50 text-slate-700 hover:text-amber-800 border-slate-200'} text-[11px] sm:text-xs font-semibold border transition-colors flex items-center justify-center gap-1 sm:gap-1.5 focus-ring" title="Thay đổi trạng thái">
+                            <button onclick="toggleStatus(${item.id})" class="decor-action ${isInactive ? '' : 'decor-action--danger'} min-h-[40px] px-1.5 sm:px-2 py-2 rounded-lg ${isInactive ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-200' : 'bg-slate-50 hover:bg-amber-50 text-slate-700 hover:text-amber-800 border-slate-200'} text-[11px] sm:text-xs font-semibold border transition-colors flex items-center justify-center gap-1 sm:gap-1.5 focus-ring" title="Thay đổi trạng thái">
                                 <i class="fa-solid ${isInactive ? 'fa-rotate-left text-emerald-600' : 'fa-lock text-slate-400'}"></i>
                                 <span class="hidden sm:inline">${isInactive ? 'Mở lại' : 'Khóa'}</span>
                                 <span class="sm:hidden">${isInactive ? 'Mở' : 'Khóa'}</span>
@@ -1204,7 +1535,7 @@
             tbody.innerHTML = '';
 
             if (list.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="text-center py-10 text-slate-400 italic">Không tìm thấy dịch vụ nào phù hợp với bộ lọc.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="7" class="decor-empty-state text-center py-10 text-slate-400 italic">Không tìm thấy dịch vụ nào phù hợp với bộ lọc.</td></tr>`;
                 return;
             }
 
@@ -1214,20 +1545,20 @@
                 tr.className = `custom-row-hover transition-colors ${isInactive ? 'bg-slate-50/40' : ''}`;
 
                 const badgeStatus = !isInactive
-                    ? `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Đang áp dụng</span>`
-                    : `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-300"><span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span> Tạm ngưng</span>`;
+                    ? `<span class="decor-status-badge decor-status-badge--active inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Đang áp dụng</span>`
+                    : `<span class="decor-status-badge decor-status-badge--inactive inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold"><span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span> Tạm ngưng</span>`;
 
                 const lockBtn = !isInactive
-                    ? `<button onclick="toggleStatus(${item.id})" class="h-[36px] px-2.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-semibold flex items-center gap-1 border border-amber-200 transition-colors" title="Khóa tạm ngưng"><i class="fa-solid fa-ban text-[11px]"></i><span>Khóa</span></button>`
-                    : `<button onclick="toggleStatus(${item.id})" class="h-[36px] px-2.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-semibold flex items-center gap-1 border border-emerald-200 transition-colors" title="Kích hoạt lại"><i class="fa-solid fa-rotate-left text-[11px]"></i><span>Mở lại</span></button>`;
+                    ? `<button onclick="toggleStatus(${item.id})" class="decor-action decor-action--danger h-[36px] px-2.5 rounded-lg text-xs font-semibold flex items-center gap-1 border transition-colors" title="Khóa tạm ngưng"><i class="fa-solid fa-ban text-[11px]"></i><span>Khóa</span></button>`
+                    : `<button onclick="toggleStatus(${item.id})" class="decor-action h-[36px] px-2.5 rounded-lg text-xs font-semibold flex items-center gap-1 border transition-colors" title="Kích hoạt lại"><i class="fa-solid fa-rotate-left text-[11px]"></i><span>Mở lại</span></button>`;
 
                 const imageThumbnail = item.hinhAnh
                     ? `<div class="w-32 h-20 rounded-lg overflow-hidden border border-gray-200 relative bg-slate-900 group"><img src="${item.hinhAnh}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" /><span class="absolute bottom-1 right-1 bg-black/70 text-white text-[9px] px-1.5 py-0.5 rounded">16:10</span></div>`
-                    : `<div class="w-32 h-20 rounded-lg border border-dashed border-slate-300 bg-[#F5F3EF] flex flex-col items-center justify-center text-slate-400 p-2 text-center"><i class="fa-regular fa-image text-lg mb-1"></i><span class="text-[9px] text-slate-500 font-medium">Chưa có ảnh</span><span class="text-[8px] text-slate-400">Đang cập nhật</span></div>`;
+                    : `<div class="decor-service-image-placeholder w-32 h-20 rounded-lg border border-dashed border-slate-300 bg-[#F5F3EF] flex flex-col items-center justify-center text-slate-400 p-2 text-center"><i class="fa-regular fa-image text-lg mb-1"></i><span class="text-[9px] text-slate-500 font-medium">Chưa có ảnh</span><span class="text-[8px] text-slate-400">Đang cập nhật</span></div>`;
 
                 tr.innerHTML = `
                     <td class="py-4 px-4 text-center">
-                        <span class="font-mono text-[11px] font-bold px-2 py-1 rounded bg-slate-100 text-slate-800 border border-slate-200">${item.ma}</span>
+                        <span class="decor-code-badge font-mono text-[11px] font-bold px-2 py-1 rounded bg-slate-100 text-slate-800 border border-slate-200">${item.ma}</span>
                     </td>
                     <td class="py-4 px-4">${imageThumbnail}</td>
                     <td class="py-4 px-5 align-middle">
@@ -1241,7 +1572,7 @@
                         </div>
                     </td>
                     <td class="py-4 px-4">
-                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-50/80 text-amber-900 border border-[#B89758]/30 text-xs font-medium">
+                        <span class="decor-category-badge inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-50/80 text-amber-900 border border-[#B89758]/30 text-xs font-medium">
                             <i class="fa-solid fa-tag text-[10px] text-[#B89758]"></i> ${item.phanLoai}
                         </span>
                     </td>
@@ -1252,10 +1583,10 @@
                     <td class="py-4 px-4 text-center">${badgeStatus}</td>
                     <td class="py-4 px-4 text-center">
                         <div class="flex items-center justify-center gap-1.5">
-                            <button onclick="viewDetail(${item.id})" class="h-[36px] px-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold flex items-center gap-1 border border-slate-200 transition-colors" title="Xem chi tiết">
+                            <button onclick="viewDetail(${item.id})" class="decor-action h-[36px] px-2.5 rounded-lg text-xs font-semibold flex items-center gap-1 border transition-colors" title="Xem chi tiết">
                                 <i class="fa-regular fa-eye text-slate-500"></i><span>Xem</span>
                             </button>
-                            <button onclick="editDecorItem(${item.id})" class="h-[36px] px-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold flex items-center gap-1 border border-slate-200 transition-colors" title="Chỉnh sửa">
+                            <button onclick="editDecorItem(${item.id})" class="decor-action h-[36px] px-2.5 rounded-lg text-xs font-semibold flex items-center gap-1 border transition-colors" title="Chỉnh sửa">
                                 <i class="fa-regular fa-pen-to-square text-[#B89758]"></i><span>Sửa</span>
                             </button>
                             ${lockBtn}
