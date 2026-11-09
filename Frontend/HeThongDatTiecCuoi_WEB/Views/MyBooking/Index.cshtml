@@ -395,7 +395,7 @@
                                     <span style="font-size:11px; text-transform:none; color:#94A3B8; font-weight:normal;">(Theo hợp đồng tiệc)</span>
                                 </div>
                                 <div class="rp-kv" style="font-size:12px; margin-bottom:6px;">
-                                    <span>Đợt 1 (Cọc 10%)</span>
+                                    <span>Đợt 1 (Cọc 20%)</span>
                                     @if (detail.DepositPaid > 0)
                                     {
                                         <b style="color:#16A34A;"><i class="fa-solid fa-check"></i> Đã hoàn tất</b>
@@ -446,7 +446,7 @@
                                 <div style="margin-top:14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
                                     <button type="button" class="rp-btn-gold" id="btnOpenDepositModal"
                                             onclick="RiversidePayment.open('@detail.BookingId', '@detail.BookingCode', '@detail.PhoneNumber', @Convert.ToInt64(detail.TotalAmount))">
-                                        <i class="fa-solid fa-qrcode"></i> Đặt cọc giữ chỗ ngay (10%)
+                                        <i class="fa-solid fa-qrcode"></i> Đặt cọc giữ chỗ ngay (20%)
                                     </button>
                                     @if (detail.CanCancelOnline)
                                     {
@@ -488,7 +488,7 @@
                                                 Đã hoàn thành Thanh toán Đợt 2 (50%)
                                             </div>
                                             <div style="color: #15803D; font-size: 12.5px; line-height: 1.5;">
-                                                Quý khách đã hoàn tất nghĩa vụ thanh toán <strong>Đợt 1 (10%)</strong> và <strong>Đợt 2 (50%)</strong>. Toàn bộ thực đơn, sảnh tiệc và điều phối nhân sự đã được chuẩn bị sẵn sàng cho ngày vui của hai bạn.<br />
+                                                Quý khách đã hoàn tất nghĩa vụ thanh toán <strong>Đợt 1 (20%)</strong> và <strong>Đợt 2 (50%)</strong>. Toàn bộ thực đơn, sảnh tiệc và điều phối nhân sự đã được chuẩn bị sẵn sàng cho ngày vui của hai bạn.<br />
                                                 Khoản tiền còn lại (<strong>@detail.RemainingDebt.ToString("N0") đ</strong>) sẽ được <strong>quyết toán trực tiếp tại sảnh tiệc sau khi kết thúc buổi tiệc</strong> (Đợt 3).
                                             </div>
                                         </div>
@@ -622,7 +622,7 @@
 
                     <div style="margin-bottom: 16px;">
                         <h4 style="font-size: 12px; text-transform: uppercase; color: #B89758; margin-bottom: 6px;">Điều Khoản &amp; Tiến Độ Thanh Toán</h4>
-                        <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px; padding: 12px; font-size: 12.5px; line-height: 1.6; white-space: pre-wrap; color: #334155;">@(detail.PaymentTerms ?? "Đợt 1: Đặt cọc 10%\nĐợt 2: Thanh toán 50% trước ngày tiệc 07 ngày\nĐợt 3: Quyết toán và phát sinh sau tiệc")</div>
+                        <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px; padding: 12px; font-size: 12.5px; line-height: 1.6; white-space: pre-wrap; color: #334155;">@(detail.PaymentTerms ?? "Đợt 1: Đặt cọc 20%\nĐợt 2: Thanh toán 50% trước ngày tiệc 07 ngày\nĐợt 3: Quyết toán và phát sinh sau tiệc")</div>
                     </div>
 
                     <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #E2E8F0; padding-top: 14px;">
