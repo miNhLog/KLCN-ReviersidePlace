@@ -2,20 +2,17 @@
 @{
     Layout = "_AdminLayout";
     ViewData["Title"] = "Công việc hôm nay";
+    string StatusClass(string status) => status.ToLowerInvariant().Replace('_', '-');
 }
 @section Styles { <link rel="stylesheet" href="~/css/coordinator-dashboard.css" asp-append-version="true" /> }
-<header class="top-header backoffice-hero coordinator-page-header">
-    <div>
-        <span class="backoffice-hero__eyebrow"><i class="fa-solid fa-list-check" aria-hidden="true"></i> ĐIỀU PHỐI TIỆC</span>
-        <h2>Công việc hôm nay</h2>
-        <p>Theo dõi lịch tiệc được phân công và tiến độ thực hiện công việc.</p>
-    </div>
-    <div class="coordinator-page-header__actions">
-        <small><i class="fa-regular fa-clock" aria-hidden="true"></i> Cập nhật @Model.GeneratedAt.ToString("HH:mm, dd/MM/yyyy")</small>
-        <a class="cd-button manager-primary-action" asp-action="Dashboard"><i class="fa-solid fa-rotate" aria-hidden="true"></i> Làm mới</a>
-    </div>
-</header>
 <section class="content coordinator-dashboard">
+    <header class="coordinator-page-header">
+        <div>
+            <span class="backoffice-hero__eyebrow"><i class="fa-solid fa-list-check" aria-hidden="true"></i> ĐIỀU PHỐI TIỆC</span>
+            <h1>Công việc hôm nay</h1>
+            <p>Theo dõi lịch tiệc được phân công và tiến độ thực hiện công việc.</p>
+        </div>
+    </header>
     @if (Model.PartiesError is not null || Model.IncidentsError is not null || Model.ChecklistError is not null)
     {
         <div class="cd-alert" role="alert">
@@ -49,7 +46,7 @@
                     <tr>
                         <td><span class="cd-shift">@party.Shift</span></td><td>@party.HallName</td>
                         <td><a asp-action="WorkSchedule" asp-route-scope="all" asp-route-bookingId="@party.BookingId"><strong>@party.BookingCode</strong></a><small class="cd-customer">@party.CustomerName</small></td>
-                        <td>@party.TableCount bàn</td><td><span class="cd-status">@party.BookingStatusName</span></td>
+                        <td>@party.TableCount bàn</td><td><span class="cd-status @StatusClass(party.BookingStatusCode)">@party.BookingStatusName</span></td>
                         <td><a class="cd-detail" asp-action="WorkSchedule" asp-route-scope="all" asp-route-bookingId="@party.BookingId">Xem chi tiết <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a></td>
                     </tr>
                 }

@@ -9,6 +9,9 @@
     var hallName = d.GetProperty("hallName").GetString();
     var eventDate = d.GetProperty("eventDate").GetDateTime();
     var shift = d.GetProperty("shift").GetString();
+    var shiftLabel = string.IsNullOrWhiteSpace(shift)
+        ? "Chưa xác định"
+        : shift.StartsWith("Ca ", StringComparison.OrdinalIgnoreCase) ? shift : $"Ca {shift}";
     var qrState = d.GetProperty("qrState").GetString();
     var qrLabel = qrState == "Pending" ? "Chờ kích hoạt" : qrState == "Active" ? "Đang hoạt động" : qrState == "Expired" ? "Hết hạn" : "Bị khóa";
 
@@ -28,7 +31,7 @@
         >= 4.0 => "Tốt",
         >= 3.0 => "Đạt yêu cầu",
         > 0 => "Cần cải thiện",
-        _ => "Chưa chấm"
+        _ => "Chưa có dữ liệu"
     };
 
     string ScoreBadgeClass(double score) => score switch {
@@ -61,7 +64,7 @@
             <div class="detail-hero-tags">
                 <span class="detail-hero-tag"><i class="fa-solid fa-hashtag"></i> <strong>@bookingCode</strong></span>
                 <span class="detail-hero-tag"><i class="fa-regular fa-calendar"></i> @eventDate.ToString("dd/MM/yyyy")</span>
-                <span class="detail-hero-tag"><i class="fa-regular fa-clock"></i> Ca @shift</span>
+                <span class="detail-hero-tag"><i class="fa-regular fa-clock"></i> @shiftLabel</span>
                 <span class="review-status status-badge-inline @qrState?.ToLowerInvariant()"><i class="status-dot"></i> @qrLabel</span>
             </div>
         </div>
@@ -80,16 +83,22 @@
             <div class="visual-metric-body">
                 <span class="visual-metric-label">Điểm trung bình</span>
                 <div class="visual-metric-value">
-                    @(avg > 0 ? avg.ToString("0.0") : "0")<small>/5.0</small>
-                </div>
-                <div class="metric-stars">
-                    @for (var s = 1; s <= 5; s++) {
-                        if (s <= Math.Floor(avg)) { <i class="fa-solid fa-star star-filled"></i> }
-                        else if (s - avg <= 0.5 && s - avg > 0) { <i class="fa-solid fa-star-half-stroke star-filled"></i> }
-                        else { <i class="fa-regular fa-star star-empty"></i> }
+                    @if (total > 0) {
+                        @avg.ToString("0.0")<small>/5.0</small>
+                    } else {
+                        <span class="metric-empty-value">Chưa có dữ liệu</span>
                     }
                 </div>
-                <span class="visual-metric-desc">@ScoreLabel(avg) · @total lượt</span>
+                @if (total > 0) {
+                    <div class="metric-stars">
+                        @for (var s = 1; s <= 5; s++) {
+                            if (s <= Math.Floor(avg)) { <i class="fa-solid fa-star star-filled"></i> }
+                            else if (s - avg <= 0.5 && s - avg > 0) { <i class="fa-solid fa-star-half-stroke star-filled"></i> }
+                            else { <i class="fa-regular fa-star star-empty"></i> }
+                        }
+                    </div>
+                }
+                <span class="visual-metric-desc">@(total > 0 ? $"{ScoreLabel(avg)} · {total} lượt" : "Chưa có lượt đánh giá")</span>
             </div>
         </article>
 
@@ -98,7 +107,11 @@
             <div class="visual-metric-body">
                 <span class="visual-metric-label">Mức độ hài lòng</span>
                 <div class="visual-metric-value">
-                    @(total > 0 ? satRate.ToString("0.0") : "0")<small>%</small>
+                    @if (total > 0) {
+                        @satRate.ToString("0.0")<small>%</small>
+                    } else {
+                        <span class="metric-empty-value">Chưa có dữ liệu</span>
+                    }
                 </div>
                 <span class="visual-metric-desc">@positiveCount đánh giá 4–5 sao</span>
             </div>
@@ -139,7 +152,7 @@
             </header>
             <div class="rating-overview-layout">
                 <div class="rating-big-badge">
-                    <strong>@(avg > 0 ? avg.ToString("0.0") : "0")</strong>
+                    <strong>@(total > 0 ? avg.ToString("0.0") : "—")</strong>
                     <div class="rating-big-stars">
                         @for (var s = 1; s <= 5; s++) {
                             if (s <= Math.Floor(avg)) { <i class="fa-solid fa-star"></i> }
@@ -191,7 +204,11 @@
                             <div class="criterion-top">
                                 <span class="criterion-title">@crit.Item2</span>
                                 <div class="criterion-tag-group">
-                                    <span class="criterion-score-text">@(score > 0 ? score.ToString("0.0") : "0")<small>/5</small></span>
+                                    @if (score > 0) {
+                                        <span class="criterion-score-text">@score.ToString("0.0")<small>/5</small></span>
+                                    } else {
+                                        <span class="criterion-score-text is-empty">Chưa có dữ liệu</span>
+                                    }
                                     <span class="criterion-badge @badgeClass">@ScoreLabel(score)</span>
                                 </div>
                             </div>

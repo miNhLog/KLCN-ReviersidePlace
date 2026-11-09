@@ -12,6 +12,8 @@
     const severity = document.getElementById('incidentSeverity');
     const occurred = document.getElementById('incidentOccurredAt');
     const description = document.getElementById('incidentDescription');
+    let formTrigger = null;
+    let detailTrigger = null;
 
     const localDateTime = () => {
         const date = new Date();
@@ -20,6 +22,7 @@
     };
     const setOpenState = () => document.body.classList.toggle('incident-modal-open', !formModal.hidden || !detailModal.hidden);
     const openForm = (data) => {
+        formTrigger = document.activeElement;
         form.reset(); errorBox.hidden = true; idInput.value = '';
         booking.disabled = false; title.textContent = 'Báo cáo sự cố'; occurred.value = localDateTime();
         document.querySelector('#saveIncident span').textContent = 'Gửi báo cáo';
@@ -31,8 +34,16 @@
         }
         formModal.hidden = false; setOpenState(); setTimeout(() => type.focus(), 30);
     };
-    const closeForm = () => { formModal.hidden = true; setOpenState(); };
-    const closeDetail = () => { detailModal.hidden = true; setOpenState(); };
+    const closeForm = () => {
+        if (formModal.hidden) return;
+        formModal.hidden = true; setOpenState();
+        if (formTrigger instanceof HTMLElement) formTrigger.focus();
+    };
+    const closeDetail = () => {
+        if (detailModal.hidden) return;
+        detailModal.hidden = true; setOpenState();
+        if (detailTrigger instanceof HTMLElement) detailTrigger.focus();
+    };
     const notify = (message, isError = false) => isError
         ? window.RiversideToast?.error(message)
         : window.RiversideToast?.success(message);
@@ -40,13 +51,26 @@
         try { const body = await response.json(); return body.message || 'Yêu cầu không thành công.'; }
         catch { return 'Không thể kết nối đến hệ thống.'; }
     };
-    const openDetail = async id => {
-        detailModal.hidden = false; setOpenState();
+    const showDetailMessage = (iconClass, message) => {
         const body = document.getElementById('incidentDetailBody');
-        body.className = 'detail-loading'; body.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang tải chi tiết...';
-        const response = await fetch(`/dieu-phoi/su-co/${id}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-        if (!response.ok) { body.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> ${await readMessage(response)}`; return; }
-        body.className = ''; body.innerHTML = await response.text();
+        const icon = document.createElement('i');
+        icon.className = iconClass;
+        body.className = 'detail-loading';
+        body.replaceChildren(icon, document.createTextNode(` ${message}`));
+    };
+    const openDetail = async id => {
+        detailTrigger = document.activeElement;
+        detailModal.hidden = false; setOpenState();
+        showDetailMessage('fa-solid fa-spinner fa-spin', 'Đang tải chi tiết...');
+        try {
+            const response = await fetch(`/dieu-phoi/su-co/${id}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+            if (!response.ok) { showDetailMessage('fa-solid fa-circle-exclamation', await readMessage(response)); return; }
+            const body = document.getElementById('incidentDetailBody');
+            body.className = ''; body.innerHTML = await response.text();
+            body.querySelector('[data-close-detail]')?.focus();
+        } catch {
+            showDetailMessage('fa-solid fa-circle-exclamation', 'Không thể kết nối đến hệ thống. Vui lòng thử lại.');
+        }
     };
     const editFromDetail = () => {
         const root = document.querySelector('.incident-detail');

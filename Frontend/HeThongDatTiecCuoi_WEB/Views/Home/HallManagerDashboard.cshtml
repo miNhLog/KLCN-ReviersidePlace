@@ -64,15 +64,15 @@
         <div id="scheduleMessage" class="hm-inline-message" hidden></div>
         <div class="hm-table-wrap">
             <table class="hm-table hm-schedule-table">
-                <thead><tr><th>Sảnh</th><th>Ca trưa</th><th>Ca tối</th><th>Ghi chú</th></tr></thead>
+                <thead><tr><th>Sảnh</th><th>Ca trưa</th><th>Ca tối</th></tr></thead>
                 <tbody id="scheduleBody">
                 @if (hasError)
                 {
-                    <tr><td colspan="4" class="hm-empty">Dữ liệu lịch chưa được tải. Vui lòng thử lại.</td></tr>
+                    <tr><td colspan="3" class="hm-empty">Dữ liệu lịch chưa được tải. Vui lòng thử lại.</td></tr>
                 }
                 else if (Model.Schedule.Halls.Count == 0)
                 {
-                    <tr><td colspan="4" class="hm-empty">Không có sảnh trong phạm vi phụ trách.</td></tr>
+                    <tr><td colspan="3" class="hm-empty">Không có sảnh trong phạm vi phụ trách.</td></tr>
                 }
                 else
                 {
@@ -82,7 +82,6 @@
                             <td><strong>@hall.HallName</strong></td>
                             <td><span class="hm-state @StatusClass(hall.Lunch.StateCode)">@hall.Lunch.StateName</span>@if (!string.IsNullOrEmpty(hall.Lunch.BookingCode)){<small>@hall.Lunch.BookingCode · @hall.Lunch.CustomerName</small>}</td>
                             <td><span class="hm-state @StatusClass(hall.Dinner.StateCode)">@hall.Dinner.StateName</span>@if (!string.IsNullOrEmpty(hall.Dinner.BookingCode)){<small>@hall.Dinner.BookingCode · @hall.Dinner.CustomerName</small>}</td>
-                            <td>@if (hall.Lunch.RequiresReview || hall.Dinner.RequiresReview){<span class="hm-review"><i class="fa-solid fa-circle-exclamation"></i> Cần đối soát</span>}else{<span class="hm-muted">Dữ liệu hợp lệ</span>}</td>
                         </tr>
                     }
                 }

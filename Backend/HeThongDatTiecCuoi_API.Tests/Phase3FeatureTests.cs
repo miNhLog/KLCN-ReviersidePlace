@@ -141,8 +141,10 @@ public sealed class Phase3FeatureTests
 
         // Verify Bookings vs Contracts count separation
         Assert.Equal(1, report.Kpi.TotalBookings);
+        Assert.Equal(1, report.Kpi.ConfirmedBookings);
         Assert.Equal(1, report.Kpi.TotalContracts);
         Assert.Equal(145000000m, report.Kpi.TotalContractValue);
+        Assert.Equal(130500000m, report.Kpi.OutstandingReceivables);
 
         // Verify Table metrics & ARPT
         Assert.Equal(20, report.Kpi.TotalTables); // 200 guests / 10 = 20 tables

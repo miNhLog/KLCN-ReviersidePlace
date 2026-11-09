@@ -52,7 +52,7 @@ public sealed record ReviewOverviewDto(
     double? PositiveRate, double? NeutralRate, double? NegativeRate,
     IReadOnlyDictionary<int, int> RatingDistribution, ReviewCriterionAveragesDto Criteria,
     IReadOnlyList<ReviewOverviewBookingDto> Bookings, IReadOnlyList<AttentionReviewDto> AttentionReviews,
-    IReadOnlyList<ReviewHallOptionDto> Halls, int Page, int PageSize, int TotalPages);
+    IReadOnlyList<ReviewHallOptionDto> Halls, int? SelectedHallId, int Page, int PageSize, int TotalPages);
 
 public sealed record ReviewHallOptionDto(int HallId, string HallName);
 

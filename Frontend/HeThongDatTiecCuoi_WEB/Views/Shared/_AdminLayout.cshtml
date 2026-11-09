@@ -101,6 +101,7 @@
     <link rel="stylesheet" href="~/css/backoffice-toast.css" asp-append-version="true" />
     @if (usesMetisShell) { <link rel="stylesheet" href="~/css/admin-metis.css" asp-append-version="true" /> }
     @if (usesOperationalMetis) { <link rel="stylesheet" href="~/css/manager-metis.css" asp-append-version="true" /> }
+    @if (isCoordinator) { <link rel="stylesheet" href="~/css/coordinator-metis.css" asp-append-version="true" /> }
     @if (isAdmin || isManager || isHallManager || isCoordinator) { <link rel="stylesheet" href="~/css/admin-notifications-theme.css" asp-append-version="true" /> }
 </head>
 <body class="backoffice-app @(usesMetisShell ? "admin-metis-app" : string.Empty) @(usesOperationalMetis ? "manager-theme manager-metis-app" : string.Empty)">
@@ -358,7 +359,7 @@
                 <section class="sidebar-section" aria-labelledby="coordinatorMyWorkMenuTitle">
                     <h2 class="sidebar-section-title" id="coordinatorMyWorkMenuTitle">Công việc của tôi</h2>
                     <nav class="sidebar-menu" aria-label="Công việc được giao">
-                        <a asp-controller="Home" asp-action="WorkSchedule" class="sidebar-item @(IsActive("Home", "WorkSchedule") ? "active" : string.Empty)" data-sidebar-tooltip="Lịch làm việc">
+                        <a asp-controller="Home" asp-action="WorkSchedule" class="sidebar-item @(IsActive("Home", "WorkSchedule") ? "active" : string.Empty)" aria-current="@(IsActive("Home", "WorkSchedule") ? "page" : null)" data-sidebar-tooltip="Lịch làm việc">
                             <span class="sidebar-icon" aria-hidden="true"><i class="bi bi-calendar3"></i></span>
                             <span class="sidebar-label">Lịch làm việc</span>
                         </a>
@@ -367,7 +368,7 @@
                 <section class="sidebar-section" aria-labelledby="coordinatorOperationsMenuTitle">
                     <h2 class="sidebar-section-title" id="coordinatorOperationsMenuTitle">Vận hành tiệc</h2>
                     <nav class="sidebar-menu" aria-label="Vận hành tiệc">
-                        <a asp-controller="Checklist" asp-action="Index" class="sidebar-item @(IsActive("Checklist") ? "active" : string.Empty)" data-sidebar-tooltip="Theo dõi tiến độ"><span class="sidebar-icon" aria-hidden="true"><i class="bi bi-list-check"></i></span><span class="sidebar-label">Theo dõi tiến độ</span></a>
+                        <a asp-controller="Checklist" asp-action="Index" class="sidebar-item @(IsActive("Checklist") ? "active" : string.Empty)" aria-current="@(IsActive("Checklist") ? "page" : null)" data-sidebar-tooltip="Theo dõi tiến độ"><span class="sidebar-icon" aria-hidden="true"><i class="bi bi-list-check"></i></span><span class="sidebar-label">Theo dõi tiến độ</span></a>
                         <a asp-controller="CoordinatorIncident" asp-action="Index"
                            class="sidebar-item @(IsActive("CoordinatorIncident") ? "active" : string.Empty)"
                            aria-current="@(IsActive("CoordinatorIncident") ? "page" : null)"

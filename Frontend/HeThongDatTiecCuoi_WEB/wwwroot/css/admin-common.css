@@ -278,6 +278,47 @@
 }
 
 /* Khu vực vận hành của Quản lý sảnh: chỉ xem và điều phối trong phạm vi được giao. */
+/* Nút xuất Excel dùng chung trên các màn hình quản trị. */
+html body #adminMainContent :is(button, a).excel-export-button {
+    min-height: 42px !important;
+    box-sizing: border-box;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 9px !important;
+    padding: 0 16px !important;
+    border: 1px solid #21a366 !important;
+    border-radius: 8px !important;
+    color: #fff !important;
+    background: #21a366 !important;
+    box-shadow: 0 6px 16px rgba(33, 163, 102, .2) !important;
+    font-size: 12px !important;
+    font-weight: 650 !important;
+    line-height: 1 !important;
+    text-decoration: none !important;
+    cursor: pointer !important;
+    transition: background-color .18s, border-color .18s, box-shadow .18s !important;
+}
+html body #adminMainContent :is(button, a).excel-export-button :is(i, span) {
+    color: #fff !important;
+}
+html body #adminMainContent :is(button, a).excel-export-button:hover {
+    border-color: #18864f !important;
+    color: #fff !important;
+    background: #18864f !important;
+    box-shadow: 0 8px 18px rgba(33, 163, 102, .28) !important;
+    filter: none !important;
+    transform: none !important;
+}
+html body #adminMainContent :is(button, a).excel-export-button:focus-visible {
+    outline: 3px solid rgba(33, 163, 102, .28) !important;
+    outline-offset: 2px;
+}
+html body #adminMainContent :is(button, a).excel-export-button:disabled {
+    cursor: not-allowed !important;
+    opacity: .62;
+}
+
 .hall-schedule-table-wrap { overflow-x: auto; background: #fff; border: 1px solid #e2e5e9; border-radius: 12px; box-shadow: 0 3px 14px rgba(0, 0, 0, .04); }
 .hall-schedule-table { width: 100%; min-width: 620px; border-collapse: collapse; }
 .hall-schedule-table th { padding: 13px 16px; background: #f8fafc; color: #64748b; font-size: 12px; font-weight: 700; text-align: left; white-space: nowrap; }

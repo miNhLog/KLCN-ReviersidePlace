@@ -33,7 +33,7 @@
         if (!data.halls?.length) {
             const row = body.insertRow();
             const cell = row.insertCell();
-            cell.colSpan = 4;
+            cell.colSpan = 3;
             cell.className = 'hm-empty';
             cell.textContent = 'Không có sảnh trong phạm vi phụ trách.';
             return;
@@ -46,14 +46,6 @@
             name.appendChild(strong);
             appendSlot(row.insertCell(), hall.lunch);
             appendSlot(row.insertCell(), hall.dinner);
-            const note = row.insertCell();
-            if (hall.lunch.requiresReview || hall.dinner.requiresReview) {
-                note.className = 'hm-review';
-                note.textContent = '⚠ Cần đối soát';
-            } else {
-                note.className = 'hm-muted';
-                note.textContent = 'Dữ liệu hợp lệ';
-            }
         });
     }
 

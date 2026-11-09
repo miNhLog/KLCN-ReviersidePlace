@@ -58,6 +58,8 @@ public class AdminReportController : ControllerBase
         // 3. Truy vấn các hợp đồng chính thức (bảng HopDong)
         var contracts = await _context.Contracts
             .Include(c => c.Status)
+            .Include(c => c.Payments)
+                .ThenInclude(p => p.Status)
             .AsNoTracking()
             .Where(c => c.CreatedDate >= rangeStart && c.CreatedDate < rangeEndExclusive &&
                         c.Status.StatusGroup == StatusGroups.Contract &&
@@ -84,7 +86,18 @@ public class AdminReportController : ControllerBase
         var totalEstimated = bookings.Sum(b => b.EstimatedTotal ?? 0m);
         var totalContractVal = contracts.Sum(c => c.TotalValue);
         var totalBookingsCount = bookings.Count;
+        var confirmedBookingsCount = bookings.Count(b =>
+            b.Status.StatusCode == BookingStatusCodes.Confirmed ||
+            b.Status.StatusCode == BookingStatusCodes.Preparing ||
+            b.Status.StatusCode == BookingStatusCodes.Completed);
         var totalContractsCount = contracts.Count;
+        var outstandingReceivables = contracts.Sum(contract => Math.Max(
+            0m,
+            contract.TotalValue - contract.Payments
+                .Where(payment =>
+                    payment.Status.StatusGroup == StatusGroups.Payment &&
+                    payment.Status.StatusCode == PaymentStatusCodes.Success)
+                .Sum(payment => payment.Amount)));
         var totalTables = bookings.Sum(b => (int)Math.Ceiling(b.GuestCount / 10m));
 
         // ARPT: Doanh thu trọn gói bình quân / bàn (gồm Ẩm thực, Sảnh và Decor)
@@ -103,8 +116,10 @@ public class AdminReportController : ControllerBase
             TotalRevenue = totalActualPaid,
             EstimatedTotalRevenue = totalEstimated,
             TotalBookings = totalBookingsCount,
+            ConfirmedBookings = confirmedBookingsCount,
             TotalContracts = totalContractsCount,
             TotalContractValue = totalContractVal,
+            OutstandingReceivables = outstandingReceivables,
             TotalTables = totalTables,
             AverageRevenuePerTable = avgRevPerTable,
             AverageMenuPricePerTable = avgMenuPrice,

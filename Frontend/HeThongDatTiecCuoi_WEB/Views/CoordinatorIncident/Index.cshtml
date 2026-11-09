@@ -49,13 +49,13 @@
                     foreach (var item in Model.Data.Items)
                     {
                         <tr>
-                            <td><button type="button" class="incident-code js-detail" data-id="@item.IncidentId">@item.BookingCode</button></td>
+                            <td><button type="button" class="incident-code js-detail" data-id="@item.IncidentId" aria-label="Xem chi tiết sự cố của tiệc @item.BookingCode">@item.BookingCode</button></td>
                             <td><span class="hall-cell"><i class="fa-regular fa-building"></i>@item.HallName</span></td>
                             <td><strong class="incident-type">@item.IncidentType</strong></td>
                             <td><span class="severity-badge @SeverityClass(item.Severity)"><i></i>@item.Severity</span></td>
                             <td><span class="status-badge @StatusClass(item.StatusCode)">@item.StatusName</span></td>
                             <td><time datetime="@item.OccurredAt.ToString("O")">@item.OccurredAt.ToString("dd/MM/yyyy")<small>@item.OccurredAt.ToString("HH:mm")</small></time></td>
-                            <td class="actions"><button type="button" class="icon-action js-detail" data-id="@item.IncidentId" title="Xem chi tiết"><i class="fa-regular fa-eye"></i></button>@if(item.CanEdit){<button type="button" class="icon-action edit js-edit" data-id="@item.IncidentId" title="Chỉnh sửa"><i class="fa-regular fa-pen-to-square"></i></button>}</td>
+                            <td class="actions"><button type="button" class="icon-action js-detail" data-id="@item.IncidentId" title="Xem chi tiết" aria-label="Xem chi tiết sự cố"><i class="fa-regular fa-eye"></i></button>@if(item.CanEdit){<button type="button" class="icon-action edit js-edit" data-id="@item.IncidentId" title="Chỉnh sửa" aria-label="Chỉnh sửa báo cáo sự cố"><i class="fa-regular fa-pen-to-square"></i></button>}</td>
                         </tr>
                     }
                 }
@@ -64,7 +64,7 @@
         </div>
         <footer class="incident-footer"><span>Hiển thị @Model.Data.Items.Count / @Model.Data.TotalItems sự cố</span>
             @if (Model.Data.TotalPages > 1)
-            { <nav class="incident-pagination" aria-label="Phân trang"><a class="pagination-edge @(Model.Data.Page<=1?"disabled":"")" asp-action="Index" asp-route-search="@Model.Search" asp-route-status="@Model.Status" asp-route-severity="@Model.Severity" asp-route-page="@(Model.Data.Page-1)">Trước</a>@for(var p=1;p<=Model.Data.TotalPages;p++){<a asp-action="Index" asp-route-search="@Model.Search" asp-route-status="@Model.Status" asp-route-severity="@Model.Severity" asp-route-page="@p" class="@(p == Model.Data.Page ? "active" : null)">@p</a>}<a class="pagination-edge @(Model.Data.Page>=Model.Data.TotalPages?"disabled":"")" asp-action="Index" asp-route-search="@Model.Search" asp-route-status="@Model.Status" asp-route-severity="@Model.Severity" asp-route-page="@(Model.Data.Page+1)">Sau</a></nav> }
+            { <nav class="incident-pagination" aria-label="Phân trang">@if(Model.Data.Page > 1){<a class="pagination-edge" asp-action="Index" asp-route-search="@Model.Search" asp-route-status="@Model.Status" asp-route-severity="@Model.Severity" asp-route-page="@(Model.Data.Page-1)">Trước</a>}else{<span class="pagination-edge disabled" aria-disabled="true">Trước</span>}@for(var p=1;p<=Model.Data.TotalPages;p++){<a asp-action="Index" asp-route-search="@Model.Search" asp-route-status="@Model.Status" asp-route-severity="@Model.Severity" asp-route-page="@p" class="@(p == Model.Data.Page ? "active" : null)" aria-current="@(p == Model.Data.Page ? "page" : null)">@p</a>}@if(Model.Data.Page < Model.Data.TotalPages){<a class="pagination-edge" asp-action="Index" asp-route-search="@Model.Search" asp-route-status="@Model.Status" asp-route-severity="@Model.Severity" asp-route-page="@(Model.Data.Page+1)">Sau</a>}else{<span class="pagination-edge disabled" aria-disabled="true">Sau</span>}</nav> }
         </footer>
     </section>
 </main>
@@ -72,7 +72,7 @@
 <div class="incident-modal" id="incidentFormModal" hidden>
     <button type="button" class="modal-backdrop" data-close-modal aria-label="Đóng"></button>
     <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="incidentFormTitle">
-        <header><div><span class="modal-icon"><i class="fa-solid fa-triangle-exclamation"></i></span><div><h2 id="incidentFormTitle">Báo cáo sự cố</h2><p>Cung cấp thông tin chính xác để bộ phận quản lý xử lý kịp thời.</p></div></div><button type="button" class="modal-close" data-close-modal><i class="fa-solid fa-xmark"></i></button></header>
+        <header><div><span class="modal-icon"><i class="fa-solid fa-triangle-exclamation"></i></span><div><h2 id="incidentFormTitle">Báo cáo sự cố</h2><p>Cung cấp thông tin chính xác để bộ phận quản lý xử lý kịp thời.</p></div></div><button type="button" class="modal-close" data-close-modal aria-label="Đóng biểu mẫu báo cáo sự cố"><i class="fa-solid fa-xmark"></i></button></header>
         <form id="incidentForm" method="post" novalidate>
             @Html.AntiForgeryToken()<input type="hidden" id="incidentId" value="" />
             <div class="form-alert" id="incidentFormError" hidden></div>

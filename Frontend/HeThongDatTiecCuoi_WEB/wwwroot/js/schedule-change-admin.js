@@ -37,7 +37,7 @@
             const button = form.querySelector('button[type="submit"], button:not([type])');
             if (button) {
                 button.disabled = true;
-                button.dataset.text = button.textContent;
+                button.dataset.html = button.innerHTML;
                 button.textContent = 'Đang xử lý...';
             }
 
@@ -63,7 +63,7 @@
             } finally {
                 if (button) {
                     button.disabled = false;
-                    button.textContent = button.dataset.text;
+                    button.innerHTML = button.dataset.html;
                 }
             }
         });

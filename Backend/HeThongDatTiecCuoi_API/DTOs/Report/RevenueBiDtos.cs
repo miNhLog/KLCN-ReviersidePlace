@@ -16,8 +16,10 @@ public class KpiSummaryDto
     public decimal TotalRevenue { get; set; }
     public decimal EstimatedTotalRevenue { get; set; }
     public int TotalBookings { get; set; }
+    public int ConfirmedBookings { get; set; }
     public int TotalContracts { get; set; }
     public decimal TotalContractValue { get; set; }
+    public decimal OutstandingReceivables { get; set; }
     public decimal AverageRevenuePerTable { get; set; }
     public decimal AverageMenuPricePerTable { get; set; }
     public int TotalTables { get; set; }

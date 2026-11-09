@@ -22,7 +22,28 @@ public sealed class ReviewStatisticsService(ApplicationDbContext context, IRevie
         DateTime? fromDate, DateTime? toDate, string? qrState, string? reviewerType,
         int page, int pageSize, CancellationToken ct)
     {
-        var query = ScopedBookings(userId, hallManager);
+        var scopedQuery = ScopedBookings(userId, hallManager);
+        List<ReviewHallOptionDto> halls;
+        if (hallManager)
+        {
+            var assignedHallIds = HallManagerQueryScope.CurrentHallIds(context, userId, RiversideBusinessClock.Today);
+            halls = await context.Halls.AsNoTracking()
+                .Where(h => assignedHallIds.Contains(h.HallId))
+                .OrderBy(h => h.HallName)
+                .Select(h => new ReviewHallOptionDto(h.HallId, h.HallName))
+                .ToListAsync(ct);
+        }
+        else
+        {
+            halls = await scopedQuery
+                .Select(b => new ReviewHallOptionDto(b.HallSchedule.HallId, b.HallSchedule.Hall.HallName))
+                .Distinct().OrderBy(h => h.HallName).ToListAsync(ct);
+        }
+
+        if (hallManager && (hallId is not > 0 || halls.All(h => h.HallId != hallId.Value)))
+            hallId = halls.FirstOrDefault()?.HallId;
+
+        var query = scopedQuery;
         if (!string.IsNullOrWhiteSpace(search))
         {
             var term = search.Trim();
@@ -47,9 +68,6 @@ public sealed class ReviewStatisticsService(ApplicationDbContext context, IRevie
         var total = reviews.Count;
         double? Rate(Func<WeddingReview, bool> predicate) => CalculateRate(reviews.Count(predicate), total);
         var distribution = Enumerable.Range(1, 5).ToDictionary(score => score, score => reviews.Count(r => r.OverallScore == score));
-        var halls = bookings.Select(b => new ReviewHallOptionDto(b.HallSchedule.HallId, b.HallSchedule.Hall.HallName))
-            .DistinctBy(h => h.HallId).OrderBy(h => h.HallName).ToList();
-
         page = Math.Max(1, page);
         pageSize = Math.Clamp(pageSize, 10, 50);
         var bookingRows = projected.Select(x => new ReviewOverviewBookingDto(
@@ -68,7 +86,7 @@ public sealed class ReviewStatisticsService(ApplicationDbContext context, IRevie
                     .Where(r => r.OverallScore <= 2)
                     .Select(r => new AttentionReviewDto(x.Booking.BookingId, x.Booking.BookingCode,
                         x.Booking.HallSchedule.Hall.HallName, r.OverallScore, r.Comment, r.ReviewedAt)))
-                .OrderByDescending(r => r.ReviewedAt).Take(5).ToList(), halls, page, pageSize, totalPages);
+                .OrderByDescending(r => r.ReviewedAt).Take(5).ToList(), halls, hallId, page, pageSize, totalPages);
     }
 
     public async Task<ReviewBookingDetailStatisticsDto?> GetBookingAsync(

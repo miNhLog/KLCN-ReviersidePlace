@@ -157,6 +157,11 @@
 .admin-metis-app .topbar-notification:hover,
 .admin-metis-app .topbar-notification:focus-visible { color: var(--rp-gold-700); border-color: transparent; outline: 0; background: var(--rp-gold-100); }
 .admin-view-tool.is-unavailable { animation: admin-tool-shake .25s linear 2; }
+.admin-view-tool.is-restore-pending {
+    border-color: color-mix(in srgb, var(--rp-gold-500) 45%, var(--rp-border));
+    color: var(--rp-gold-700);
+    background: var(--rp-gold-100);
+}
 @keyframes admin-tool-shake { 50% { transform: translateX(2px); } }
 .admin-metis-app .topbar-user { min-height: 38px; padding: 3px 6px; border: 1px solid transparent; border-radius: var(--metis-radius-sm); }
 .admin-metis-app .topbar-user:hover { border-color: var(--rp-border); background: var(--rp-surface-hover); }
@@ -1085,4 +1090,60 @@ html[data-admin-theme="dark"] .admin-metis-app :is(.audit-table tr,.employee-acc
 
 @media (prefers-reduced-motion: reduce) {
     .admin-metis-app *, .admin-metis-app *::before, .admin-metis-app *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
+}
+
+/* KPI text must stay on one line and truncate instead of wrapping. */
+.admin-metis-app #adminMainContent :is(
+    .account-stat-card, .dashboard-stat-card, .food-stat-card,
+    .manager-kpi-card, .coordinator-kpi-card, .summary-card,
+    .system-summary-card, .audit-summary-card
+) > :is(div, span:not(.account-stat-icon, .dashboard-stat-icon, .food-stat-icon, .manager-kpi-icon)) {
+    min-width: 0 !important;
+    max-width: 100%;
+}
+
+.admin-metis-app #adminMainContent :is(
+    .account-stat-card, .dashboard-stat-card, .food-stat-card,
+    .manager-kpi-card, .coordinator-kpi-card, .summary-card,
+    .system-summary-card, .audit-summary-card
+) :is(
+    small, strong, b, em, p,
+    .food-stat-label, .food-stat-note,
+    .summary-label, .summary-value, .stat-label, .stat-value
+) {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    overflow-wrap: normal !important;
+    word-break: normal !important;
+}
+
+.admin-metis-app #adminMainContent :is(
+    .account-stat-card, .dashboard-stat-card, .manager-kpi-card,
+    .coordinator-kpi-card, .summary-card, .system-summary-card,
+    .audit-summary-card
+) :is(small, strong, b, em, p, .summary-label, .summary-value, .stat-label, .stat-value) {
+    display: block !important;
+}
+
+.admin-metis-app #adminMainContent .food-stat-card > div:first-child,
+.admin-metis-app #adminMainContent .food-stat-value {
+    min-width: 0 !important;
+    max-width: 100%;
+    overflow: hidden;
+}
+
+.admin-metis-app #adminMainContent .food-stat-value {
+    flex-wrap: nowrap !important;
+}
+
+.admin-metis-app #adminMainContent .food-stat-value > strong {
+    flex: 1 1 auto;
+}
+
+.admin-metis-app #adminMainContent .food-stat-value > span {
+    flex: 0 0 auto;
+    white-space: nowrap !important;
 }

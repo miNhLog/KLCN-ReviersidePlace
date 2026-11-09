@@ -11,7 +11,6 @@
 <main class="sca-page hall-manager-schedule-page">
     <header class="sca-header">
         <div><span class="sca-eyebrow">ĐIỀU HÀNH SẢNH</span><h1>Thay đổi lịch tiệc</h1><p>Tiếp nhận, kiểm tra điều kiện vận hành và chuyển yêu cầu cho Quản lý phê duyệt.</p></div>
-        <button type="button" class="sca-primary" data-open="hmCreate"><i class="fa-solid fa-plus"></i><span>Tạo yêu cầu thay khách</span></button>
     </header>
     @if (ViewBag.Error is string error) { <div class="sca-alert error"><i class="fa-solid fa-circle-exclamation"></i><span>@error</span></div> }
 
@@ -35,7 +34,7 @@
             <div class="sca-table-wrap"><table class="sca-table">
                 <thead><tr><th>Mã booking</th><th>Lịch hiện tại</th><th>Lịch đề xuất</th><th>Nguồn</th><th>Ngày gửi</th><th>Trạng thái</th><th class="actions">Thao tác</th></tr></thead>
                 <tbody>
-                @if (Model.Items.Count == 0) { <tr><td colspan="7"><div class="sca-empty"><span><i class="fa-regular fa-calendar-xmark"></i></span><h3>Không có yêu cầu phù hợp</h3><p>Hãy thay đổi bộ lọc hoặc tạo yêu cầu mới thay khách hàng.</p></div></td></tr> }
+                @if (Model.Items.Count == 0) { <tr><td colspan="7"><div class="sca-empty"><span><i class="fa-regular fa-calendar-xmark"></i></span><h3>Không có yêu cầu phù hợp</h3><p>Hãy thử thay đổi bộ lọc để tìm yêu cầu cần xử lý.</p></div></td></tr> }
                 else { @foreach (var item in Model.Items) { <tr class="@(selected?.ScheduleChangeId == item.ScheduleChangeId ? "selected" : null)">
                     <td><a class="sca-code" asp-action="Index" asp-route-id="@item.ScheduleChangeId" asp-route-status="@Model.FilterStatus" asp-route-search="@Model.Search">@item.BookingCode</a><small>@item.CustomerName</small></td>
                     <td><strong>@item.OldDate.ToString("dd/MM/yyyy")</strong><small><i class="fa-regular fa-building"></i> @item.OldHallName · @item.OldShift</small></td>
@@ -67,20 +66,4 @@
     </section>
 </main>
 
-<div class="sca-modal" id="hmCreate" hidden><button type="button" class="sca-modal-backdrop sca-close" aria-label="Đóng"></button><section class="sca-modal-card" role="dialog" aria-modal="true" aria-labelledby="hmCreateTitle">
-    <header><div><span class="sca-modal-icon"><i class="fa-solid fa-calendar-plus"></i></span><div><h2 id="hmCreateTitle">Tạo yêu cầu thay khách</h2><p>Chỉ tạo cho booking thuộc sảnh đang phụ trách.</p></div></div><button type="button" class="sca-modal-close sca-close" aria-label="Đóng"><i class="fa-solid fa-xmark"></i></button></header>
-    <form id="hmCreateForm" class="sca-ajax" asp-action="Create" data-schedule-lookup="true" data-options-url="@Url.Action("CreateOptions")" data-availability-url="@Url.Action("Availability")">@Html.AntiForgeryToken()<div class="sca-form-grid">
-        <label class="wide"><span>Tìm tiệc</span><input id="hmBookingSearch" type="search" placeholder="Nhập mã tiệc DT-... hoặc tên khách hàng" autocomplete="off" /></label>
-        <label class="wide"><span>Tiệc cần đổi lịch <b>*</b></span><select id="hmBooking" name="BookingId" required disabled><option value="">Đang tải danh sách tiệc…</option></select></label>
-        <div id="hmBookingSummary" class="wide hm-selection-summary" hidden></div>
-        <label><span>Ngày tổ chức mới <b>*</b></span><input id="hmNewDate" type="date" name="NewDate" required /></label><label><span>Ca tổ chức <b>*</b></span><select id="hmNewShift" name="NewShift" required><option value="Ca trưa">Ca trưa (10:30–14:00)</option><option value="Ca tối">Ca tối (17:30–21:30)</option></select></label>
-        <label class="wide"><span>Sảnh mới <b>*</b></span><select id="hmNewHall" name="NewHallId" required disabled><option value="">Chọn tiệc, ngày và ca để xem sảnh trống</option></select></label>
-        <div id="hmAvailabilityStatus" class="wide hm-selection-summary" role="status" aria-live="polite">Chọn tiệc, ngày và ca để kiểm tra lịch trống.</div>
-        <div id="hmUnavailableHalls" class="wide hm-selection-summary" hidden></div>
-        <div class="wide"><button id="hmCheckAvailability" type="button" class="sca-secondary">Kiểm tra lại lịch trống</button><button id="hmRetryOptions" type="button" class="sca-secondary" hidden>Tải lại danh sách tiệc</button></div>
-        <label class="wide"><span>Lý do đổi lịch <b>*</b></span><textarea name="Reason" minlength="3" maxlength="500" required></textarea></label><label class="wide"><span>Giải trình ngoại lệ</span><textarea name="ExceptionReason" maxlength="1000" placeholder="Bắt buộc giải trình nếu còn dưới 7 ngày..."></textarea></label>
-        <label class="wide"><span>Bằng chứng khách hàng đồng ý <b>*</b></span><textarea name="CustomerConsentEvidence" minlength="3" maxlength="2000" required placeholder="Ghi nhận cuộc gọi, email hoặc văn bản xác nhận..."></textarea></label>
-    </div><div class="sca-modal-notice"><i class="fa-solid fa-circle-info"></i><span>Yêu cầu vẫn phải được Quản lý phê duyệt. Quản lý sảnh không thể tự duyệt. Kết quả lịch trống chưa giữ chỗ và sẽ được kiểm tra lại khi gửi.</span></div><footer><button type="button" class="sca-secondary sca-close">Hủy</button><button id="hmCreateSubmit" type="submit" class="sca-primary" disabled><i class="fa-solid fa-floppy-disk"></i><span>Tạo yêu cầu</span></button></footer></form>
-</section></div>
-
-@section Scripts { <script src="~/js/schedule-change-admin.js" asp-append-version="true"></script><script src="~/js/hall-manager-schedule-create.js" asp-append-version="true"></script> }
+@section Scripts { <script src="~/js/schedule-change-admin.js" asp-append-version="true"></script> }
