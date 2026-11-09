@@ -10,6 +10,8 @@ public interface IPaymentService
     Task<PaymentStatusResponseDto> GetPaymentStatusAsync(long orderCode);
     Task<PaymentStatusResponseDto> CheckContractPaymentStatusAsync(long orderCode);
     Task<bool> ProcessWebhookAsync(Webhook webhookBody);
+    Task CancelPendingDepositLinksAsync(int bookingId, string reason, CancellationToken cancellationToken = default) =>
+        Task.CompletedTask;
     Task<(byte[] PdfBytes, string FileName, InvoiceSignatureResult Signature)> GetSignedInvoicePdfAsync(string bookingCode, string phone);
     Task<CreateContractPayOsLinkResponseDto> CreateCustomerContractPaymentAsync(CreateCustomerContractPaymentRequestDto request, int? userId = null);
 }

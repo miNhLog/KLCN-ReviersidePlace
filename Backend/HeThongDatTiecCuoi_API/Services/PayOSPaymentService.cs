@@ -25,6 +25,7 @@ public sealed class PayOSPaymentService : IPaymentService
     private readonly IInvoiceDigitalSignatureService _signatureService;
     private readonly ILogger<PayOSPaymentService> _logger;
     private readonly IScheduleChangeService _scheduleChanges;
+    private readonly IPayOSPaymentLinkCancellation _paymentLinkCancellation;
 
     public PayOSPaymentService(
         ApplicationDbContext context,
@@ -35,7 +36,8 @@ public sealed class PayOSPaymentService : IPaymentService
         IInvoicePdfGenerator invoicePdfGenerator,
         IInvoiceDigitalSignatureService signatureService,
         IScheduleChangeService scheduleChanges,
-        ILogger<PayOSPaymentService> logger)
+        ILogger<PayOSPaymentService> logger,
+        IPayOSPaymentLinkCancellation? paymentLinkCancellation = null)
     {
         _context = context;
         _payOSClient = payOSClient;
@@ -46,6 +48,7 @@ public sealed class PayOSPaymentService : IPaymentService
         _signatureService = signatureService;
         _scheduleChanges = scheduleChanges;
         _logger = logger;
+        _paymentLinkCancellation = paymentLinkCancellation ?? new PayOSPaymentLinkCancellation(payOSClient);
     }
 
     public async Task<CreateDepositPaymentResponseDto> CreateDepositPaymentAsync(
@@ -209,9 +212,10 @@ public sealed class PayOSPaymentService : IPaymentService
             "Nhận Webhook PayOS hợp lệ: OrderCode={OrderCode}, Amount={Amount}, Code={Code}, Desc={Desc}",
             webhookData.OrderCode, webhookData.Amount, webhookData.Code, webhookData.Description);
 
-        // 2. Tìm bản ghi GiaoDichThanhToan theo OrderCode
+        // Chỉ đọc dữ liệu định tuyến ở ngoài transaction. Việc quyết định ghi nhận
+        // tiền luôn tải lại transaction + booking bên trong vùng khóa bảo vệ.
         var tx = await _context.PaymentTransactions
-            .Include(t => t.Booking)
+            .AsNoTracking()
             .SingleOrDefaultAsync(t => t.OrderCode == webhookData.OrderCode);
 
         if (tx == null)
@@ -227,10 +231,11 @@ public sealed class PayOSPaymentService : IPaymentService
                 JsonSerializer.Serialize(webhookBody), CancellationToken.None);
         }
 
-        // 3. Cơ chế Idempotency: nếu đã PAID thì return thành công ngay, tránh ghi nhận tiền 2 lần
-        if (tx.TrangThai == "PAID")
+        if (PaymentTransactionStatusCodes.PaymentReceived.Contains(tx.TrangThai))
         {
-            _logger.LogInformation("Giao dịch OrderCode={OrderCode} đã được xử lý PAID trước đó. Bỏ qua ghi nhận trùng lặp.", webhookData.OrderCode);
+            _logger.LogInformation(
+                "Giao dịch OrderCode={OrderCode} đã ở trạng thái kết thúc {Status}. Bỏ qua webhook trùng lặp.",
+                webhookData.OrderCode, tx.TrangThai);
             return true;
         }
 
@@ -243,20 +248,24 @@ public sealed class PayOSPaymentService : IPaymentService
                 return true;
             }
 
-            await CompletePaymentTransactionAsync(tx, webhookData.OrderCode, JsonSerializer.Serialize(webhookBody));
+            await ProcessConfirmedDepositAsync(
+                webhookData.OrderCode,
+                webhookData.Amount,
+                JsonSerializer.Serialize(webhookBody));
             return true;
         }
 
-        // Nếu mã trạng thái khác (hủy/thất bại)
-        tx.TrangThai = "FAILED";
-        tx.PayloadWebhook = JsonSerializer.Serialize(webhookBody);
-        await _context.SaveChangesAsync();
+        // Không cập nhật lùi giao dịch đã được xử lý bởi một request đồng thời.
+        await MarkFailedIfUnprocessedAsync(
+            webhookData.OrderCode,
+            JsonSerializer.Serialize(webhookBody));
         return true;
     }
 
     public async Task<PaymentStatusResponseDto> GetPaymentStatusAsync(long orderCode)
     {
         var tx = await _context.PaymentTransactions
+            .AsNoTracking()
             .Include(t => t.Booking)
             .SingleOrDefaultAsync(t => t.OrderCode == orderCode);
 
@@ -272,7 +281,7 @@ public sealed class PayOSPaymentService : IPaymentService
 
         // Fallback kiểm tra trực tiếp PayOS nếu vẫn PENDING sau một khoảng thời gian
         // (Đặc biệt hữu ích khi chạy Localhost chưa bật Webhook qua Ngrok)
-        if (tx.TrangThai == "PENDING")
+        if (tx.TrangThai == PaymentTransactionStatusCodes.Pending)
         {
             try
             {
@@ -287,13 +296,15 @@ public sealed class PayOSPaymentService : IPaymentService
                     }
                     else
                     {
-                        await CompletePaymentTransactionAsync(tx, orderCode, "Auto-polled from PayOS PaymentRequests.GetAsync");
+                        await ProcessConfirmedDepositAsync(
+                            orderCode,
+                            linkInfo.Amount,
+                            "Auto-polled from PayOS PaymentRequests.GetAsync");
                     }
                 }
                 else if (linkInfo != null && string.Equals(statusStr, "CANCELLED", StringComparison.OrdinalIgnoreCase))
                 {
-                    tx.TrangThai = "CANCELLED";
-                    await _context.SaveChangesAsync();
+                    await MarkCancelledIfPendingAsync(orderCode);
                 }
             }
             catch (Exception ex)
@@ -301,6 +312,11 @@ public sealed class PayOSPaymentService : IPaymentService
                 _logger.LogDebug(ex, "Kiểm tra PayOS fallback cho OrderCode={OrderCode} chưa có kết quả mới.", orderCode);
             }
         }
+
+        tx = await _context.PaymentTransactions
+            .AsNoTracking()
+            .Include(t => t.Booking)
+            .SingleAsync(t => t.OrderCode == orderCode);
 
         return new PaymentStatusResponseDto
         {
@@ -311,28 +327,224 @@ public sealed class PayOSPaymentService : IPaymentService
             BusinessDeposit = tx.SoTienGhiNhan,
             ActualAmount = tx.SoTienGiaoDich,
             PaidAt = tx.NgayThanhToan,
-            Message = tx.TrangThai == "PAID"
+            Message = tx.TrangThai == PaymentTransactionStatusCodes.Paid
                 ? "Thanh toán đặt cọc thành công!"
-                : (tx.TrangThai == "CANCELLED" ? "Giao dịch đã bị hủy." : "Đang chờ thanh toán...")
+                : tx.TrangThai == PaymentTransactionStatusCodes.ReconciliationRequired
+                    ? tx.ReconciliationData?.Contains(
+                        PaymentReconciliationReasons.PaidAfterBookingCancelled,
+                        StringComparison.Ordinal) == true
+                        ? "Thanh toán được ghi nhận sau khi đơn đặt tiệc đã hủy. Giao dịch đang chờ bộ phận quản lý đối soát."
+                        : "Thanh toán đã được PayOS ghi nhận nhưng cần bộ phận quản lý đối soát trước khi cập nhật đơn."
+                    : (tx.TrangThai == PaymentTransactionStatusCodes.Cancelled ? "Giao dịch đã bị hủy." : "Đang chờ thanh toán...")
         };
     }
 
-    private async Task CompletePaymentTransactionAsync(PaymentTransactionEntity tx, long orderCode, string payload)
+    private async Task MarkFailedIfUnprocessedAsync(long orderCode, string payload)
     {
-        await using var dbTransaction = await _context.Database.BeginTransactionAsync();
+        if (_context.Database.IsRelational())
+        {
+            await _context.PaymentTransactions
+                .Where(item => item.OrderCode == orderCode &&
+                    item.TrangThai != PaymentTransactionStatusCodes.Paid &&
+                    item.TrangThai != PaymentTransactionStatusCodes.Cancelled &&
+                    item.TrangThai != PaymentTransactionStatusCodes.ReconciliationRequired)
+                .ExecuteUpdateAsync(update => update
+                    .SetProperty(item => item.TrangThai, PaymentTransactionStatusCodes.Failed)
+                    .SetProperty(item => item.PayloadWebhook, payload));
+            return;
+        }
+
+        var current = await _context.PaymentTransactions.SingleAsync(item => item.OrderCode == orderCode);
+        if (!PaymentTransactionStatusCodes.Terminal.Contains(current.TrangThai))
+        {
+            current.TrangThai = PaymentTransactionStatusCodes.Failed;
+            current.PayloadWebhook = payload;
+            await _context.SaveChangesAsync();
+        }
+    }
+
+    private async Task MarkCancelledIfPendingAsync(long orderCode)
+    {
+        if (_context.Database.IsRelational())
+        {
+            await _context.PaymentTransactions
+                .Where(item => item.OrderCode == orderCode &&
+                    item.TrangThai == PaymentTransactionStatusCodes.Pending)
+                .ExecuteUpdateAsync(update => update
+                    .SetProperty(item => item.TrangThai, PaymentTransactionStatusCodes.Cancelled));
+            return;
+        }
+
+        var pending = await _context.PaymentTransactions.SingleOrDefaultAsync(item =>
+            item.OrderCode == orderCode && item.TrangThai == PaymentTransactionStatusCodes.Pending);
+        if (pending is not null)
+        {
+            pending.TrangThai = PaymentTransactionStatusCodes.Cancelled;
+            await _context.SaveChangesAsync();
+        }
+    }
+
+    public async Task CancelPendingDepositLinksAsync(
+        int bookingId,
+        string reason,
+        CancellationToken cancellationToken = default)
+    {
+        // This method must be called only after the booking cancellation transaction
+        // commits. Network I/O is deliberately kept outside SQL transactions/locks.
+        List<PaymentTransactionEntity> pendingLinks;
         try
         {
-            tx.TrangThai = "PAID";
-            tx.NgayThanhToan = DateTime.Now;
-            tx.PayloadWebhook = payload;
+            pendingLinks = await _context.PaymentTransactions
+                .AsNoTracking()
+                .Where(item => item.DatTiecId == bookingId &&
+                    item.TransactionType == PaymentTransactionTypes.Deposit &&
+                    item.TrangThai == PaymentTransactionStatusCodes.Pending)
+                .ToListAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "Không thể tải danh sách link PayOS cần hủy cho BookingId={BookingId}. Booking vẫn giữ trạng thái đã hủy.",
+                bookingId);
+            return;
+        }
+
+        foreach (var pendingLink in pendingLinks)
+        {
+            string outcome;
+            string? error = null;
+            try
+            {
+                await _paymentLinkCancellation.CancelAsync(
+                    pendingLink.OrderCode,
+                    string.IsNullOrWhiteSpace(reason) ? "Booking cancelled" : reason,
+                    cancellationToken);
+                outcome = PaymentReconciliationReasons.PayOsCancelRequested;
+            }
+            catch (Exception ex)
+            {
+                outcome = PaymentReconciliationReasons.PayOsCancelRequestFailed;
+                error = ex.Message;
+                _logger.LogWarning(ex,
+                    "Không thể gửi yêu cầu hủy PayOS OrderCode={OrderCode} sau khi BookingId={BookingId} đã hủy.",
+                    pendingLink.OrderCode, bookingId);
+            }
+
+            try
+            {
+                var current = await _context.PaymentTransactions
+                    .SingleAsync(item => item.GiaoDichId == pendingLink.GiaoDichId, cancellationToken);
+                current.ReconciliationData = JsonSerializer.Serialize(new
+                {
+                    reason = outcome,
+                    bookingId,
+                    pendingLink.OrderCode,
+                    requestedAt = DateTime.Now,
+                    error,
+                    previous = current.ReconciliationData
+                });
+                await _context.SaveChangesAsync(cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex,
+                    "Không thể lưu kết quả yêu cầu hủy PayOS OrderCode={OrderCode}. BookingId={BookingId} vẫn giữ trạng thái đã hủy.",
+                    pendingLink.OrderCode, bookingId);
+            }
+        }
+    }
+
+    public async Task ProcessConfirmedDepositAsync(
+        long orderCode,
+        decimal actualAmount,
+        string payload,
+        CancellationToken cancellationToken = default)
+    {
+        var route = await _context.PaymentTransactions
+            .AsNoTracking()
+            .Where(item => item.OrderCode == orderCode)
+            .Select(item => new { item.DatTiecId, item.TransactionType })
+            .SingleOrDefaultAsync(cancellationToken);
+        if (route is null)
+            return;
+        if (route.TransactionType != PaymentTransactionTypes.Deposit)
+            throw new InvalidOperationException("Chỉ giao dịch DEPOSIT được xử lý bởi luồng xác nhận đặt cọc.");
+
+        using var bookingLock = await BookingPaymentConcurrency.AcquireAsync(route.DatTiecId, cancellationToken);
+        await using var dbTransaction = await BookingPaymentConcurrency.BeginSerializableTransactionAsync(_context, cancellationToken);
+        try
+        {
+            await BookingPaymentConcurrency.AcquireDatabaseLockAsync(_context, route.DatTiecId, cancellationToken);
+
+            var tx = await _context.PaymentTransactions
+                .SingleAsync(item => item.OrderCode == orderCode, cancellationToken);
+
+            // Idempotency is checked after taking the booking/database lock.
+            if (PaymentTransactionStatusCodes.PaymentReceived.Contains(tx.TrangThai))
+            {
+                await dbTransaction.CommitAsync(cancellationToken);
+                return;
+            }
 
             var booking = await _context.WeddingBookings
                 .Include(b => b.Customer)
+                .Include(b => b.Status)
                 .Include(b => b.HallSchedule).ThenInclude(s => s.Hall)
                 .Include(b => b.Menu)
                 .Include(b => b.DecorationPackage)
                 .Include(b => b.Contract)
-                .SingleAsync(b => b.BookingId == tx.DatTiecId);
+                .SingleAsync(b => b.BookingId == tx.DatTiecId, cancellationToken);
+
+            var reconciliationReason = booking.Status.StatusCode == BookingStatusCodes.Cancelled
+                ? PaymentReconciliationReasons.PaidAfterBookingCancelled
+                : actualAmount != tx.SoTienGiaoDich
+                    ? PaymentReconciliationReasons.PaymentAmountMismatch
+                    : booking.Status.StatusCode is not (BookingStatusCodes.Pending or BookingStatusCodes.Confirmed)
+                        ? PaymentReconciliationReasons.BookingStatusNotEligible
+                        : null;
+
+            if (reconciliationReason is not null)
+            {
+                var previousTransactionStatus = tx.TrangThai;
+                tx.TrangThai = PaymentTransactionStatusCodes.ReconciliationRequired;
+                tx.NgayThanhToan = DateTime.Now;
+                tx.PayloadWebhook = payload;
+                tx.ReconciliationData = JsonSerializer.Serialize(new
+                {
+                    reason = reconciliationReason,
+                    orderCode,
+                    expectedAmount = tx.SoTienGiaoDich,
+                    actualAmount,
+                    bookingStatus = booking.Status.StatusCode,
+                    recordedAt = DateTime.Now
+                });
+
+                _context.AuditLogs.Add(new AuditLog
+                {
+                    UserId = null,
+                    Action = AuditActions.Payment,
+                    EntityName = AuditEntityNames.Booking,
+                    EntityId = booking.BookingId,
+                    OldData = $"OrderCode={orderCode};TransactionStatus={previousTransactionStatus}",
+                    NewData = $"OrderCode={orderCode};TransactionStatus={PaymentTransactionStatusCodes.ReconciliationRequired};Reason={reconciliationReason}",
+                    Timestamp = DateTime.Now,
+                    Outcome = AuditOutcomes.Blocked,
+                    Notes = reconciliationReason == PaymentReconciliationReasons.PaidAfterBookingCancelled
+                        ? "PayOS xác nhận đã nhận tiền sau khi booking bị hủy. Không phục hồi booking; chuyển quản lý đối soát."
+                        : "PayOS xác nhận đã nhận tiền nhưng giao dịch không đủ điều kiện ghi nhận nghiệp vụ; chuyển quản lý đối soát."
+                });
+
+                await _context.SaveChangesAsync(cancellationToken);
+                await dbTransaction.CommitAsync(cancellationToken);
+                _logger.LogWarning(
+                    "Giao dịch OrderCode={OrderCode} chuyển đối soát. Reason={Reason}, BookingId={BookingId}",
+                    orderCode, reconciliationReason, booking.BookingId);
+                return;
+            }
+
+            tx.TrangThai = PaymentTransactionStatusCodes.Paid;
+            tx.NgayThanhToan = DateTime.Now;
+            tx.PayloadWebhook = payload;
 
             // Cập nhật DatTiec: Trạng thái -> CONFIRMED, Tiền cọc & Số tiền đã thanh toán ghi nhận đủ cọc thật
             var confirmedStatusId = await _statusService.GetStatusIdAsync(StatusGroups.Booking, BookingStatusCodes.Confirmed);
@@ -366,17 +578,22 @@ public sealed class PayOSPaymentService : IPaymentService
             }
 
             var paymentSuccessStatusId = await _statusService.GetStatusIdAsync(StatusGroups.Payment, PaymentStatusCodes.Success);
-            var payment = new Payment
+            var payment = await _context.Payments
+                .SingleOrDefaultAsync(item => item.TransactionCode == orderCode.ToString(), cancellationToken);
+            if (payment is null)
             {
-                ContractId = booking.Contract.ContractId,
-                PaymentType = PaymentTypes.Deposit,
-                Amount = tx.SoTienGhiNhan,
-                PaymentDate = DateTime.Now,
-                PaymentMethod = "VIETQR_PAYOS",
-                TransactionCode = orderCode.ToString(),
-                StatusId = paymentSuccessStatusId
-            };
-            _context.Payments.Add(payment);
+                payment = new Payment
+                {
+                    ContractId = booking.Contract.ContractId,
+                    PaymentType = PaymentTypes.Deposit,
+                    Amount = tx.SoTienGhiNhan,
+                    PaymentDate = DateTime.Now,
+                    PaymentMethod = "VIETQR_PAYOS",
+                    TransactionCode = orderCode.ToString(),
+                    StatusId = paymentSuccessStatusId
+                };
+                _context.Payments.Add(payment);
+            }
 
             // Ghi nhật ký hệ thống (AuditLog)
             _context.AuditLogs.Add(new AuditLog
@@ -392,8 +609,8 @@ public sealed class PayOSPaymentService : IPaymentService
                 Notes = $"Khách hàng đã thanh toán cọc thành công {tx.SoTienGhiNhan:N0} đ qua VietQR PayOS. Lịch sảnh đã được khóa chính thức."
             });
 
-            await _context.SaveChangesAsync();
-            await dbTransaction.CommitAsync();
+            await _context.SaveChangesAsync(cancellationToken);
+            await dbTransaction.CommitAsync(cancellationToken);
 
             _logger.LogInformation(
                 "Đã hoàn tất thanh toán cọc thành công: BookingCode={BookingCode}, OrderCode={OrderCode}, Số tiền ghi nhận={Amount:N0} VNĐ",
@@ -402,10 +619,8 @@ public sealed class PayOSPaymentService : IPaymentService
             // Gửi email xác nhận đặt cọc thành công kèm Hóa đơn / Biên lai điện tử có chữ ký số (PAdES)
             if (!string.IsNullOrWhiteSpace(booking.Customer.Email))
             {
-                _ = Task.Run(async () =>
+                try
                 {
-                    try
-                    {
                         var remaining = Math.Max(0, (booking.EstimatedTotal ?? tx.SoTienGhiNhan) - booking.PaidAmount);
                         var invoiceDto = new DTOs.Invoice.InvoicePdfDto
                         {
@@ -474,12 +689,11 @@ public sealed class PayOSPaymentService : IPaymentService
                                 signResult.SignedPdfBytes,
                                 $"BienLaiDatCoc_{booking.BookingCode}.pdf");
                         }
-                    }
-                    catch (Exception mailEx)
-                    {
-                        _logger.LogWarning(mailEx, "Không thể gửi email xác nhận đặt cọc thành công cho {Email}", booking.Customer.Email);
-                    }
-                });
+                }
+                catch (Exception mailEx)
+                {
+                    _logger.LogWarning(mailEx, "Không thể gửi email xác nhận đặt cọc thành công cho {Email}", booking.Customer.Email);
+                }
             }
         }
         catch (Exception ex)

@@ -54,6 +54,27 @@ public static class PaymentTransactionTypes
     public const string Settlement = "SETTLEMENT";
 }
 
+public static class PaymentTransactionStatusCodes
+{
+    public const string Pending = "PENDING";
+    public const string Paid = "PAID";
+    public const string Cancelled = "CANCELLED";
+    public const string Failed = "FAILED";
+    public const string ReconciliationRequired = "RECONCILIATION_REQUIRED";
+
+    public static readonly string[] PaymentReceived = [Paid, ReconciliationRequired];
+    public static readonly string[] Terminal = [Paid, Cancelled, ReconciliationRequired];
+}
+
+public static class PaymentReconciliationReasons
+{
+    public const string PaidAfterBookingCancelled = "PAID_AFTER_BOOKING_CANCELLED";
+    public const string PaymentAmountMismatch = "PAYMENT_AMOUNT_MISMATCH";
+    public const string BookingStatusNotEligible = "BOOKING_STATUS_NOT_ELIGIBLE";
+    public const string PayOsCancelRequested = "PAYOS_CANCEL_REQUESTED";
+    public const string PayOsCancelRequestFailed = "PAYOS_CANCEL_REQUEST_FAILED";
+}
+
 public static class ScheduleChangePolicyStatusCodes
 {
     public const string Draft = "DRAFT";

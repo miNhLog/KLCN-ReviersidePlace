@@ -30,13 +30,15 @@ public sealed class PublicBookingController : ControllerBase
     private readonly ILogger<PublicBookingController> _logger;
     private readonly ICoordinationAssignmentService _coordinationAssignments;
     private readonly IContractPdfGenerator _contractPdfGenerator;
+    private readonly IPaymentService? _paymentService;
 
     public PublicBookingController(
         ApplicationDbContext context,
         IStatusService statusService,
         IMemoryCache cache,
         ILogger<PublicBookingController> logger,
-        ICoordinationAssignmentService coordinationAssignments, IContractPdfGenerator contractPdfGenerator)
+        ICoordinationAssignmentService coordinationAssignments, IContractPdfGenerator contractPdfGenerator,
+        IPaymentService? paymentService = null)
     {
         _context = context;
         _statusService = statusService;
@@ -44,6 +46,7 @@ public sealed class PublicBookingController : ControllerBase
         _logger = logger;
         _coordinationAssignments = coordinationAssignments;
         _contractPdfGenerator = contractPdfGenerator;
+        _paymentService = paymentService;
     }
 
     /// <summary>UC14: POST /api/v1/public/bookings/lookup — tra cứu bằng mã + email hoặc SĐT.</summary>
@@ -128,9 +131,12 @@ public sealed class PublicBookingController : ControllerBase
     [HttpPost("{id:int}/cancel-hold")]
     public async Task<IActionResult> CancelHold(int id, [FromBody] PublicBookingCancelHoldRequestDto? request)
     {
-        await using var transaction = await _context.Database.BeginTransactionAsync();
+        using var bookingLock = await BookingPaymentConcurrency.AcquireAsync(id, HttpContext.RequestAborted);
+        await using var transaction = await BookingPaymentConcurrency.BeginSerializableTransactionAsync(
+            _context, HttpContext.RequestAborted);
         try
         {
+            await BookingPaymentConcurrency.AcquireDatabaseLockAsync(_context, id, HttpContext.RequestAborted);
             if (request is null)
                 return BadRequest(new { success = false, message = "Thiếu dữ liệu hủy giữ chỗ." });
             if (!ModelState.IsValid)
@@ -173,6 +179,16 @@ public sealed class PublicBookingController : ControllerBase
                     message = "Chỉ có thể hủy online khi tiệc đang ở trạng thái Chờ xác nhận. Tiệc đã xác nhận/cọc vui lòng liên hệ nhân viên."
                 });
 
+            var paymentAlreadyReceived = await BookingPaymentConcurrency.HasRecordedDepositAsync(
+                _context, booking.BookingId, booking.PaidAmount, HttpContext.RequestAborted);
+            if (paymentAlreadyReceived)
+                return Conflict(new
+                {
+                    success = false,
+                    code = "ERR_PAID_BOOKING_REQUIRES_MANAGED_CANCELLATION",
+                    message = "Khoản cọc đã được ghi nhận. Vui lòng liên hệ quản lý để thực hiện quy trình hủy booking đã thanh toán."
+                });
+
             var oldStatusName = booking.Status.StatusName;
             booking.StatusId = await _statusService.GetStatusIdAsync(StatusGroups.Booking, BookingStatusCodes.Cancelled);
             booking.CancellationReason = string.IsNullOrWhiteSpace(request.Reason)
@@ -192,7 +208,11 @@ public sealed class PublicBookingController : ControllerBase
                 item.Status != null &&
                 item.Status.StatusGroup == StatusGroups.Booking &&
                 BookingStatusCodes.OccupyingSchedule.Contains(item.Status.StatusCode));
-            if (!hasOtherActiveBooking && booking.HallSchedule is not null)
+            var hasActiveScheduleHold = await _context.ScheduleChangeHolds.AnyAsync(hold =>
+                hold.HallScheduleId == booking.HallScheduleId &&
+                hold.Status == ScheduleChangeHoldStatusCodes.Active &&
+                hold.ExpiresAt > RiversideBusinessClock.Now);
+            if (!hasOtherActiveBooking && !hasActiveScheduleHold && booking.HallSchedule is not null)
                 booking.HallSchedule.StatusId =
                     await _statusService.GetStatusIdAsync(StatusGroups.HallSchedule, HallScheduleStatusCodes.Available);
 
@@ -211,6 +231,10 @@ public sealed class PublicBookingController : ControllerBase
 
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();
+            bookingLock.Dispose();
+            if (_paymentService is not null)
+                await _paymentService.CancelPendingDepositLinksAsync(
+                    booking.BookingId, booking.CancellationReason, CancellationToken.None);
             return Ok(new
             {
                 success = true,

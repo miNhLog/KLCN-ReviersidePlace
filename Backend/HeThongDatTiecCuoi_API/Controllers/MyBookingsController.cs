@@ -17,13 +17,15 @@ public sealed class MyBookingsController : ControllerBase
     private readonly ApplicationDbContext _context;
     private readonly IStatusService _statusService;
     private readonly ICoordinationAssignmentService _coordinationAssignments;
+    private readonly IPaymentService? _paymentService;
 
     public MyBookingsController(ApplicationDbContext context, IStatusService statusService,
-        ICoordinationAssignmentService coordinationAssignments)
+        ICoordinationAssignmentService coordinationAssignments, IPaymentService? paymentService = null)
     {
         _context = context;
         _statusService = statusService;
         _coordinationAssignments = coordinationAssignments;
+        _paymentService = paymentService;
     }
 
     [HttpGet]
@@ -124,9 +126,12 @@ public sealed class MyBookingsController : ControllerBase
             User.IsInRole(RoleNames.Coordinator) ||
             User.IsInRole(RoleNames.HallManager));
 
-        await using var transaction = await _context.Database.BeginTransactionAsync();
+        using var bookingLock = await BookingPaymentConcurrency.AcquireAsync(id, HttpContext.RequestAborted);
+        await using var transaction = await BookingPaymentConcurrency.BeginSerializableTransactionAsync(
+            _context, HttpContext.RequestAborted);
         try
         {
+            await BookingPaymentConcurrency.AcquireDatabaseLockAsync(_context, id, HttpContext.RequestAborted);
             var booking = await _context.WeddingBookings
                 .Include(item => item.Status)
                 .Include(item => item.HallSchedule)
@@ -167,6 +172,17 @@ public sealed class MyBookingsController : ControllerBase
             if (cancellationReason?.Trim().Length > 500)
                 return BadRequest(new { success = false, message = "Lý do hủy không được vượt quá 500 ký tự." });
 
+            var paymentAlreadyReceived = await BookingPaymentConcurrency.HasRecordedDepositAsync(
+                _context, booking.BookingId, booking.PaidAmount, HttpContext.RequestAborted);
+            if (paymentAlreadyReceived)
+                return Conflict(new
+                {
+                    success = false,
+                    code = "ERR_PAID_BOOKING_REQUIRES_MANAGED_CANCELLATION",
+                    message = "Khoản cọc đã được ghi nhận. Vui lòng thực hiện quy trình hủy booking đã thanh toán."
+                });
+
+            var oldStatusCode = booking.Status.StatusCode;
             booking.StatusId = await _statusService.GetStatusIdAsync(StatusGroups.Booking, BookingStatusCodes.Cancelled);
             booking.CancellationReason = string.IsNullOrWhiteSpace(cancellationReason)
                 ? "Hủy theo yêu cầu khách hàng"
@@ -180,11 +196,32 @@ public sealed class MyBookingsController : ControllerBase
                 item.Status != null &&
                 item.Status.StatusGroup == StatusGroups.Booking &&
                 BookingStatusCodes.OccupyingSchedule.Contains(item.Status.StatusCode));
-            if (!hasOtherActiveBooking && booking.HallSchedule is not null)
+            var hasActiveScheduleHold = await _context.ScheduleChangeHolds.AnyAsync(hold =>
+                hold.HallScheduleId == booking.HallScheduleId &&
+                hold.Status == ScheduleChangeHoldStatusCodes.Active &&
+                hold.ExpiresAt > RiversideBusinessClock.Now);
+            if (!hasOtherActiveBooking && !hasActiveScheduleHold && booking.HallSchedule is not null)
                 booking.HallSchedule.StatusId = await _statusService.GetStatusIdAsync(StatusGroups.HallSchedule, HallScheduleStatusCodes.Available);
+
+            _context.AuditLogs.Add(new AuditLog
+            {
+                UserId = isAuthenticated ? currentUserId : null,
+                Action = AuditActions.BookingHoldCancelled,
+                EntityName = AuditEntityNames.Booking,
+                EntityId = booking.BookingId,
+                OldData = $"BookingCode={booking.BookingCode};Status={oldStatusCode}",
+                NewData = $"BookingCode={booking.BookingCode};Status={BookingStatusCodes.Cancelled};Reason={booking.CancellationReason}",
+                Timestamp = DateTime.Now,
+                Outcome = AuditOutcomes.Success,
+                Notes = "Hủy giữ chỗ từ API my-bookings."
+            });
 
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();
+            bookingLock.Dispose();
+            if (_paymentService is not null)
+                await _paymentService.CancelPendingDepositLinksAsync(
+                    booking.BookingId, booking.CancellationReason, CancellationToken.None);
             return Ok(new { success = true, message = "Đã hủy đơn giữ chỗ tiệc cưới thành công." });
         }
         catch
