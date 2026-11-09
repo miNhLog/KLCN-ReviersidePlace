@@ -257,7 +257,17 @@ public class PublicBookingRequestViewModel
     public string? CustomMenuName { get; set; }
     public decimal? CustomMenuPricePerTable { get; set; }
     public List<string>? CustomMenuItems { get; set; }
+    public List<int>? CustomMenuDishIds { get; set; }
     public List<string>? ServiceCodes { get; set; }
+}
+
+public sealed class PublicBookingRegistrationResultViewModel
+{
+    public string? BookingCode { get; set; }
+    public string? Code { get; set; }
+    public string? Message { get; set; }
+    public decimal? OfficialMenuPricePerTable { get; set; }
+    public decimal? OfficialEstimatedTotal { get; set; }
 }
 
 public class AvailableDateItemViewModel

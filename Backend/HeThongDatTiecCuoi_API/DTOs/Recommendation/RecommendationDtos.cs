@@ -152,6 +152,8 @@ public sealed class RegisterPublicBookingDto
     public decimal? CustomMenuPricePerTable { get; set; }
     /// <summary>Danh sách món trong thực đơn tùy chỉnh ("Tên món (giá)") để lưu vào SpecialRequests. Optional.</summary>
     public List<string>? CustomMenuItems { get; set; }
+    /// <summary>Mã món khách chọn. Backend dùng các mã này để tải lại tên và giá chính thức từ database.</summary>
+    public List<int>? CustomMenuDishIds { get; set; }
     /// <summary>Mã dịch vụ khách đã chọn ở form (DV001...) để lưu BookingServices + cộng vào EstimatedTotal.</summary>
     public List<string>? ServiceCodes { get; set; }
 }

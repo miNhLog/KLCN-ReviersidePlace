@@ -2046,10 +2046,6 @@
             const hallIdNum = parseInt(selectedComboToBook.hallId, 10) || 0;
             const custom = selectedComboToBook.customMenu || null;
             let specialReq = `Đăng ký từ AI Recommendation: Ngân sách dự kiến ${currentPayload.expectedBudget.toLocaleString('vi-VN')} đ`;
-            if (custom) {
-                const itemsText = (custom.items || []).map(x => `${x.dishName} (${Number(x.price || 0).toLocaleString('vi-VN')} đ)`).join('; ');
-                specialReq += `; [${custom.customName}: ${Number(custom.customPricePerTable || 0).toLocaleString('vi-VN')} đ/bàn | ${itemsText}] (tùy chỉnh từ ${custom.originalName})`;
-            }
             const bookingPayload = {
                 customerName: currentPayload.coupleName,
                 phoneNumber: currentPayload.phoneNumber,
@@ -2069,6 +2065,7 @@
                 customMenuName: custom ? custom.customName : null,
                 customMenuPricePerTable: custom ? custom.customPricePerTable : null,
                 customMenuItems: custom ? (custom.items || []).map(x => `${x.dishName} (${Number(x.price || 0).toLocaleString('vi-VN')} đ)`) : null,
+                customMenuDishIds: custom ? (custom.items || []).map(x => Number(x.dishId)).filter(x => Number.isInteger(x) && x > 0) : null,
                 serviceCodes: Array.isArray(currentPayload.selectedServiceCodes) ? currentPayload.selectedServiceCodes : []
             };
 
@@ -2101,6 +2098,13 @@
 
                     openRecomModal('bookingSuccessModal');
                 } else {
+                    if (result.code === 'CUSTOM_MENU_PRICE_CHANGED' && custom && Number(result.officialMenuPricePerTable) > 0) {
+                        custom.customPricePerTable = Number(result.officialMenuPricePerTable);
+                        renderComboCards();
+                        const totalText = Number(result.officialEstimatedTotal || 0).toLocaleString('vi-VN');
+                        showRecomAlert(`${result.message || 'Giá thực đơn vừa được cập nhật.'}\nTổng dự toán chính thức mới: ${totalText} đ. Hai bạn vui lòng xem lại gói tiệc và nhấn Giữ chỗ để xác nhận lần nữa.`, 'Giá thực đơn đã thay đổi', 'warning');
+                        return;
+                    }
                     // Nếu khách hàng đã có đơn tiệc đang hoạt động
                     if (result.message && (result.message.includes("đã có đơn tiệc") || result.message.includes("giữ chỗ 01 phương án"))) {
                         document.getElementById('duplicateNoticeMsg').innerText = result.message;

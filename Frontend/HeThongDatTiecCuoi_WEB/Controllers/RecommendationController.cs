@@ -279,10 +279,17 @@ public class RecommendationController : Controller
                 });
             }
 
-            return Json(new { success = true, message = "Đăng ký giữ chỗ thành công!", bookingCode = result.Value });
+            return Json(new { success = true, message = "Đăng ký giữ chỗ thành công!", bookingCode = result.Value?.BookingCode });
         }
 
-        return Json(new { success = false, message = result.Error ?? "Không thể lưu đơn đăng ký tiệc." });
+        return Json(new
+        {
+            success = false,
+            message = result.Error ?? "Không thể lưu đơn đăng ký tiệc.",
+            code = result.Value?.Code,
+            officialMenuPricePerTable = result.Value?.OfficialMenuPricePerTable,
+            officialEstimatedTotal = result.Value?.OfficialEstimatedTotal
+        });
         }
         catch (Exception ex)
         {

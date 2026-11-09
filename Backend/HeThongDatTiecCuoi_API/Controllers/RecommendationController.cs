@@ -37,6 +37,7 @@ public sealed class RecommendationController : ControllerBase
     private readonly ILogger<RecommendationController> _logger;
     private readonly IEmailService? _emailService;
     private readonly IReviewQrService? _reviewQrService;
+    private readonly CustomMenuPricingService _customMenuPricing;
 
     // Python FastAPI trả snake_case (top_3, hall_id, total_estimated_cost...).
     // C# dùng PascalCase -> bắt buộc case-insensitive + JsonPropertyName đầy đủ,
@@ -55,7 +56,8 @@ public sealed class RecommendationController : ControllerBase
         ILogger<RecommendationController> logger,
         IHallPricingPolicyService? hallPricing = null,
         IEmailService? emailService = null,
-        IReviewQrService? reviewQrService = null)
+        IReviewQrService? reviewQrService = null,
+        CustomMenuPricingService? customMenuPricing = null)
     {
         _context = context;
         _statusService = statusService;
@@ -66,6 +68,7 @@ public sealed class RecommendationController : ControllerBase
         _hallPricing = hallPricing ?? new HallPricingPolicyService();
         _emailService = emailService;
         _reviewQrService = reviewQrService;
+        _customMenuPricing = customMenuPricing ?? new CustomMenuPricingService(context);
     }
 
     /// <summary>
@@ -1623,12 +1626,30 @@ public sealed class RecommendationController : ControllerBase
             (schedule.Hall.MinimumCapacity.HasValue && request.GuestCount < schedule.Hall.MinimumCapacity.Value))
             return BadRequest(new { success = false, message = "Số khách không phù hợp sức chứa sảnh." });
 
-        Menu? menu = null;
+        var customMenuRequested = !string.IsNullOrWhiteSpace(request.CustomMenuName) ||
+            request.CustomMenuPricePerTable.HasValue ||
+            request.CustomMenuItems is { Count: > 0 } ||
+            request.CustomMenuDishIds is not null;
+        if (customMenuRequested && !request.MenuId.HasValue)
+            return BadRequest(new { success = false, code = "CUSTOM_MENU_BASE_REQUIRED", message = "Phải chọn thực đơn gốc trước khi tùy chỉnh món." });
+
+        CustomMenuPricingResult? menuPricing = null;
         if (request.MenuId.HasValue)
         {
-            menu = await _context.Menus.SingleOrDefaultAsync(item =>
-                item.MenuId == request.MenuId && item.DataStatusId == existingDataStatus.DataStatusId);
-            if (menu == null) return BadRequest(new { success = false, message = "Thực đơn không tồn tại." });
+            menuPricing = await _customMenuPricing.ResolveAsync(
+                request.MenuId.Value,
+                customer.CustomerId,
+                request.CustomMenuDishIds,
+                customMenuRequested,
+                request.CustomMenuPricePerTable,
+                HttpContext.RequestAborted);
+            if (!menuPricing.IsValid)
+                return StatusCode(menuPricing.StatusCode, new
+                {
+                    success = false,
+                    code = menuPricing.ErrorCode,
+                    message = menuPricing.Message
+                });
         }
 
         DecorPackage? decor = null;
@@ -1663,23 +1684,18 @@ public sealed class RecommendationController : ControllerBase
             enrichedRequests = string.IsNullOrEmpty(enrichedRequests)
                 ? $"Phong cách mong muốn: {request.DesiredStyle.Trim()}"
                 : $"{enrichedRequests}; Phong cách mong muốn: {request.DesiredStyle.Trim()}";
-        // Thực đơn tùy chỉnh: khách tự thêm/bớt món trong Top 3 (FE gửi customMenuName +
-        // customMenuPricePerTable + customMenuItems). Lưu giá custom vào FinalMenuPrice để
-        // EstimatedTotal khớp với tổng tiền đã cập nhật ngoài card; nhúng chi tiết món
-        // vào SpecialRequests để tra cứu "Tiệc của tôi" vẫn thấy được.
+        // Thực đơn tùy chỉnh: chỉ dùng DishId để backend tải lại tên/giá từ database.
+        // Các chuỗi tên/giá cũ do client gửi chỉ còn để tương thích contract và bị bỏ qua.
         var customMenuName = (request.CustomMenuName ?? string.Empty).Trim();
-        var hasCustomMenu = !string.IsNullOrWhiteSpace(customMenuName)
-            || (request.CustomMenuPricePerTable.HasValue && request.CustomMenuPricePerTable.Value > 0);
-        var effectiveMenuPricePerTable = menu?.PricePerTable ?? 0m;
-        if (hasCustomMenu && request.CustomMenuPricePerTable.HasValue && request.CustomMenuPricePerTable.Value > 0)
-            effectiveMenuPricePerTable = request.CustomMenuPricePerTable.Value;
+        var hasCustomMenu = menuPricing?.IsCustomized == true;
+        var effectiveMenuPricePerTable = menuPricing?.OfficialPricePerTable ?? 0m;
         if (hasCustomMenu)
         {
-            var itemsText = request.CustomMenuItems is { Count: > 0 }
-                ? string.Join("; ", request.CustomMenuItems.Select(x => (x ?? string.Empty).Trim()).Where(x => x.Length > 0))
-                : string.Empty;
             var customLabel = string.IsNullOrWhiteSpace(customMenuName) ? "Thực đơn tùy chỉnh" : customMenuName;
-            var customMarker = $"[{customLabel}: {effectiveMenuPricePerTable:N0} đ/bàn{(string.IsNullOrEmpty(itemsText) ? string.Empty : " | " + itemsText)}]";
+            var itemsText = string.Join("; ", menuPricing!.SelectedDishes.Select(item =>
+                $"{item.DishName} ({item.Price:N0} đ)"));
+            enrichedRequests = RemoveLegacyCustomMenuMarkers(enrichedRequests);
+            var customMarker = $"[{customLabel}: {effectiveMenuPricePerTable:N0} đ/bàn | {itemsText}]";
             enrichedRequests = string.IsNullOrEmpty(enrichedRequests)
                 ? customMarker
                 : $"{enrichedRequests}; {customMarker}";
@@ -1722,18 +1738,47 @@ public sealed class RecommendationController : ControllerBase
             }
         }
         var effectiveHallRentalPrice = _hallPricing.CalculateHallPrice(schedule.Hall.RentalPrice, schedule.Shift, schedule.Date);
+        decimal officialEstimatedTotal;
+        try
+        {
+            officialEstimatedTotal = CustomMenuPricingService.CalculateEstimatedTotal(
+                effectiveHallRentalPrice,
+                effectiveMenuPricePerTable,
+                estimatedTableCount,
+                decor?.Gia ?? 0m,
+                servicesTotalBooking);
+        }
+        catch (Exception ex) when (ex is OverflowException or ArgumentOutOfRangeException)
+        {
+            return Conflict(new
+            {
+                success = false,
+                code = "BOOKING_ESTIMATED_TOTAL_INVALID",
+                message = "Không thể tạo booking vì tổng dự toán không hợp lệ. Vui lòng liên hệ quản lý kiểm tra dữ liệu giá."
+            });
+        }
+        if (menuPricing?.RequiresPriceConfirmation == true)
+            return Conflict(new
+            {
+                success = false,
+                code = "CUSTOM_MENU_PRICE_CHANGED",
+                message = $"Giá thực đơn đã thay đổi thành {effectiveMenuPricePerTable:N0} đ/bàn. Vui lòng kiểm tra tổng dự toán mới và xác nhận lại.",
+                officialMenuPricePerTable = effectiveMenuPricePerTable,
+                officialEstimatedTotal
+            });
+
         var booking = new WeddingBooking
         {
             BookingCode = await GenerateBookingCodeAsync(schedule.Date),
             CustomerId = customer.CustomerId,
             HallScheduleId = schedule.HallScheduleId,
-            MenuId = menu?.MenuId,
+            MenuId = menuPricing?.MenuId,
             DecorationPackageId = decor?.GoiTrangTriID,
             GuestCount = request.GuestCount,
             FinalHallPrice = effectiveHallRentalPrice,
-            FinalMenuPrice = menu == null ? (decimal?)null : effectiveMenuPricePerTable,
+            FinalMenuPrice = menuPricing is null ? (decimal?)null : effectiveMenuPricePerTable,
             FinalDecorationPrice = decor?.Gia,
-            EstimatedTotal = effectiveHallRentalPrice + (menu == null ? 0m : effectiveMenuPricePerTable) * estimatedTableCount + (decor?.Gia ?? 0m) + servicesTotalBooking,
+            EstimatedTotal = officialEstimatedTotal,
             SpecialRequests = NormalizeOptional(enrichedRequests),
             StatusId = await _statusService.GetStatusIdAsync(StatusGroups.Booking, BookingStatusCodes.Pending),
             BookedAt = DateTime.Now
@@ -1778,7 +1823,7 @@ public sealed class RecommendationController : ControllerBase
         var snapshotEventDate = schedule.Date;
         var snapshotShift = schedule.Shift;
         var snapshotHallName = schedule.Hall.HallName;
-        var snapshotMenuName = menu?.MenuName;
+        var snapshotMenuName = menuPricing?.MenuName;
         var snapshotDecorName = decor?.TenGoi;
         var snapshotTotal = booking.EstimatedTotal ?? 0m;
         var snapshotHoldExpiresAt = booking.BookedAt.AddHours(48);
@@ -1842,6 +1887,14 @@ public sealed class RecommendationController : ControllerBase
             });
         }
     }
+
+    private static string RemoveLegacyCustomMenuMarkers(string value) =>
+        System.Text.RegularExpressions.Regex.Replace(
+            value,
+            @"(?:^|;\s*)\[[^\]]*Thực đơn tùy chỉnh[^\]]*\](?:\s*\([^)]*tùy chỉnh[^)]*\))?",
+            string.Empty,
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant)
+        .Trim().Trim(';').Trim();
 
     private async Task<int?> ResolveAuthenticatedCustomerIdAsync(byte existingDataStatusId)
     {
