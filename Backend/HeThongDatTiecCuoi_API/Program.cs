@@ -125,6 +125,7 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 builder.Services.AddScoped<IStatusService, StatusService>();
+builder.Services.AddScoped<BookingStatusBusinessRules>();
 builder.Services.AddSingleton<IPaymentPolicyProvider, PaymentPolicyProvider>();
 builder.Services.AddSingleton<IHallPricingPolicyService, HallPricingPolicyService>();
 builder.Services.Configure<SmsOptions>(builder.Configuration.GetSection(SmsOptions.SectionName));

@@ -25,13 +25,15 @@ public sealed class AdminBookingController : ControllerBase
     private readonly IReviewQrService? _reviewQrService;
     private readonly ILogger<AdminBookingController>? _logger;
     private readonly IPaymentService? _paymentService;
+    private readonly BookingStatusBusinessRules _bookingStatusRules;
 
     public AdminBookingController(ApplicationDbContext context, IStatusService statusService,
         ICoordinationAssignmentService coordinationAssignments,
         IHallPricingPolicyService? hallPricing = null,
         IReviewQrService? reviewQrService = null,
         ILogger<AdminBookingController>? logger = null,
-        IPaymentService? paymentService = null)
+        IPaymentService? paymentService = null,
+        BookingStatusBusinessRules? bookingStatusRules = null)
     {
         _context = context;
         _statusService = statusService;
@@ -40,6 +42,7 @@ public sealed class AdminBookingController : ControllerBase
         _reviewQrService = reviewQrService;
         _logger = logger;
         _paymentService = paymentService;
+        _bookingStatusRules = bookingStatusRules ?? new BookingStatusBusinessRules(context);
     }
 
     [HttpGet]
@@ -385,6 +388,9 @@ public sealed class AdminBookingController : ControllerBase
     [HttpPut("{id:int}/status")]
     public async Task<IActionResult> UpdateBookingStatus(int id, [FromBody] UpdateBookingStatusRequestDto request)
     {
+        if (string.IsNullOrWhiteSpace(request.StatusCode))
+            return BadRequest(new { message = "Mã trạng thái booking không được để trống." });
+
         var code = request.StatusCode.Trim().ToUpperInvariant();
         if (!BookingStatusCodes.All.Contains(code))
             return BadRequest(new { message = "Mã trạng thái booking không hợp lệ." });
@@ -395,26 +401,28 @@ public sealed class AdminBookingController : ControllerBase
         try
         {
         await BookingPaymentConcurrency.AcquireDatabaseLockAsync(_context, id, HttpContext.RequestAborted);
-        var booking = await _context.WeddingBookings.Include(b => b.HallSchedule).Include(b => b.Status)
+        var booking = await _context.WeddingBookings
+            .Include(b => b.HallSchedule).ThenInclude(schedule => schedule.Status)
+            .Include(b => b.HallSchedule).ThenInclude(schedule => schedule.DataStatus)
+            .Include(b => b.HallSchedule).ThenInclude(schedule => schedule.Hall).ThenInclude(hall => hall.Status)
+            .Include(b => b.HallSchedule).ThenInclude(schedule => schedule.Hall).ThenInclude(hall => hall.DataStatus)
+            .Include(b => b.Status)
+            .Include(b => b.Contract).ThenInclude(contract => contract!.Status)
             .SingleOrDefaultAsync(b => b.BookingId == id);
         if (booking == null) return NotFound(new { message = "Không tìm thấy đơn tiệc." });
 
         var oldStatusCode = booking.Status.StatusCode;
-        if (oldStatusCode == code)
+        var validation = await _bookingStatusRules.ValidateAsync(
+            booking, code, HttpContext.RequestAborted);
+        if (validation.Unchanged)
             return Ok(new { success = true, statusCode = code, unchanged = true });
-
-        if (code == BookingStatusCodes.Cancelled)
-        {
-            var paymentAlreadyReceived = await BookingPaymentConcurrency.HasRecordedDepositAsync(
-                _context, booking.BookingId, booking.PaidAmount, HttpContext.RequestAborted);
-            if (paymentAlreadyReceived)
-                return Conflict(new
-                {
-                    success = false,
-                    code = "ERR_PAID_BOOKING_REQUIRES_MANAGED_CANCELLATION",
-                    message = "Booking đã ghi nhận thanh toán. Hãy sử dụng quy trình hủy booking đã thanh toán và xử lý hoàn tiền/đối soát."
-                });
-        }
+        if (!validation.Allowed)
+            return Conflict(new
+            {
+                success = false,
+                code = validation.Code,
+                message = validation.Message
+            });
 
         booking.StatusId = await _statusService.GetStatusIdAsync(StatusGroups.Booking, code);
         booking.CancellationReason = code == BookingStatusCodes.Cancelled
@@ -423,14 +431,15 @@ public sealed class AdminBookingController : ControllerBase
 
         var actorUserId = int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var parsedUserId)
             ? parsedUserId : (int?)null;
-        await _coordinationAssignments.SynchronizeBookingAssignmentsAsync(booking.BookingId, code, actorUserId,
-            booking.CancellationReason, HttpContext.RequestAborted);
+        if (code is BookingStatusCodes.Cancelled or BookingStatusCodes.Completed)
+            await _coordinationAssignments.SynchronizeBookingAssignmentsAsync(booking.BookingId, code, actorUserId,
+                booking.CancellationReason, HttpContext.RequestAborted);
 
         // BR03 trong cùng transaction: hủy -> giải phóng LichSanh về AVAILABLE (bỏ qua nếu schedule null);
         // chuyển sang trạng thái chiếm giữ -> LichSanh BOOKED.
         if (code == BookingStatusCodes.Cancelled)
             await ReleaseScheduleIfUnusedAsync(booking);
-        else if (booking.HallSchedule is not null && BookingStatusCodes.OccupyingSchedule.Contains(code))
+        else if (code is BookingStatusCodes.Confirmed or BookingStatusCodes.Preparing)
             booking.HallSchedule.StatusId = await _statusService.GetStatusIdAsync(StatusGroups.HallSchedule, HallScheduleStatusCodes.Booked);
 
         _context.AuditLogs.Add(new AuditLog
@@ -462,6 +471,9 @@ public sealed class AdminBookingController : ControllerBase
     private async Task ReleaseScheduleIfUnusedAsync(WeddingBooking booking)
     {
         if (booking.HallSchedule is null) return; // default-available: không có dòng vẫn coi trống.
+        if (booking.HallSchedule.Status?.StatusGroup == StatusGroups.HallSchedule &&
+            booking.HallSchedule.Status.StatusCode == HallScheduleStatusCodes.Locked)
+            return;
         var hasOtherActiveBooking = await _context.WeddingBookings.AnyAsync(item =>
             item.BookingId != booking.BookingId && item.HallScheduleId == booking.HallScheduleId &&
             item.Status != null &&
