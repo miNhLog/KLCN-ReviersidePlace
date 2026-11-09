@@ -106,7 +106,7 @@ public sealed class PayOSPaymentService : IPaymentService
             if (totalEstimate <= 0)
                 throw new InvalidOperationException("Tổng dự toán tiệc không hợp lệ để tính tiền cọc.");
 
-            businessDeposit = Math.Round(totalEstimate * 0.10m, 0);
+            businessDeposit = Math.Round(totalEstimate * 0.20m, 0);
             actualAmount = CalculateActualPayOsAmount(businessDeposit);
             bookingCode = booking.BookingCode;
             description = $"RSP {booking.BookingId}";
@@ -839,7 +839,7 @@ public sealed class PayOSPaymentService : IPaymentService
                     ContractCode = $"HD-{booking.BookingCode}",
                     CreatedDate = DateTime.Today,
                     TotalValue = booking.EstimatedTotal ?? tx.SoTienGhiNhan,
-                    PaymentTerms = "Đặt cọc 10% trực tuyến qua VietQR PayOS",
+                    PaymentTerms = "Đặt cọc 20% trực tuyến qua VietQR PayOS",
                     StatusId = draftContractStatusId
                 };
                 _context.Contracts.Add(contract);
@@ -899,7 +899,7 @@ public sealed class PayOSPaymentService : IPaymentService
                             CustomerName = booking.Customer.FullName,
                             CustomerPhone = booking.Customer.PhoneNumber,
                             CustomerEmail = booking.Customer.Email ?? string.Empty,
-                            PaymentType = "Đặt cọc (10%)",
+                            PaymentType = "Đặt cọc (20%)",
                             PaymentMethod = "VIETQR_PAYOS",
                             TransactionCode = orderCode.ToString(),
                             InvoiceDate = DateTime.Now,
@@ -1035,7 +1035,7 @@ public sealed class PayOSPaymentService : IPaymentService
             CustomerEmail = booking.Customer.Email ?? string.Empty,
             PaymentType = booking.PaidAmount >= (booking.EstimatedTotal ?? 0) && booking.PaidAmount > 0
                 ? "Thanh toán toàn bộ (100%)" 
-                : "Đặt cọc (10%)",
+                : "Đặt cọc (20%)",
             PaymentMethod = latestPayment?.PaymentMethod ?? "VIETQR_PAYOS",
             TransactionCode = orderCodeStr,
             InvoiceDate = paymentDate,

@@ -18,7 +18,7 @@ public sealed class PaymentController : Controller
     }
 
     /// <summary>
-    /// Proxy tạo liên kết thanh toán VietQR PayOS đặt cọc 10%.
+    /// Proxy tạo liên kết thanh toán VietQR PayOS đặt cọc 20%.
     /// </summary>
     [HttpPost("CreateDeposit")]
     public async Task<IActionResult> CreateDeposit([FromBody] CreateDepositPaymentRequestViewModel request, CancellationToken cancellationToken)

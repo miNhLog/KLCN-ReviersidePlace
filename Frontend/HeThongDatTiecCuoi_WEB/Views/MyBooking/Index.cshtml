@@ -26,25 +26,40 @@
     var myBookings = ViewBag.MyBookings as List<MyBookingViewModel> ?? new List<MyBookingViewModel>();
     string[] steps = new[] { "Chờ xác nhận", "Đã xác nhận", "Đã cọc", "Đang chuẩn bị", "Hoàn tất" };
     int currentStep = 0;
+    bool isContractCompleted = detail != null && (
+        string.Equals(detail.ContractStatusCode, "COMPLETED", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(detail.ContractStatusName, "Hoàn tất", StringComparison.OrdinalIgnoreCase));
+    bool isBookingCompleted = detail != null && (
+        string.Equals(detail.StatusCode, "COMPLETED", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(detail.StatusName, "Hoàn tất", StringComparison.OrdinalIgnoreCase));
+    bool isCompleted = isBookingCompleted || isContractCompleted;
+
     if (detail != null)
     {
-        currentStep = detail.StatusCode switch
+        if (isCompleted)
         {
-            "PENDING" => 0,
-            "CONFIRMED" => 1,
-            "PREPARING" => 3,
-            "COMPLETED" => 4,
-            "CANCELLED" => -1,
-            _ => detail.StatusName switch
+            currentStep = 5;
+        }
+        else
+        {
+            currentStep = detail.StatusCode switch
             {
-                "Chờ xác nhận" => 0,
-                "Đã xác nhận" => 1,
-                "Đang chuẩn bị" => 3,
-                "Hoàn tất" => 4,
-                _ => detail.DepositPaid > 0 ? 2 : 1
-            }
-        };
-        if (detail.DepositPaid > 0 && currentStep == 1) { currentStep = 2; }
+                "PENDING" => 0,
+                "CONFIRMED" => 1,
+                "PREPARING" => 3,
+                "COMPLETED" => 4,
+                "CANCELLED" => -1,
+                _ => detail.StatusName switch
+                {
+                    "Chờ xác nhận" => 0,
+                    "Đã xác nhận" => 1,
+                    "Đang chuẩn bị" => 3,
+                    "Hoàn tất" => 4,
+                    _ => detail.DepositPaid > 0 ? 2 : 1
+                }
+            };
+            if (detail.DepositPaid > 0 && currentStep == 1) { currentStep = 2; }
+        }
     }
 }
 
@@ -321,6 +336,10 @@
                                 {
                                     <span class="rp-badge-cancelled"><i class="fa-solid fa-ban"></i> ĐÃ HỦY</span>
                                 }
+                                else if (isCompleted)
+                                {
+                                    <span class="rp-badge-success" style="background:#ECFDF5;color:#047857;border-color:#A7F3D0;"><i class="fa-solid fa-circle-check"></i> Hoàn tất</span>
+                                }
                                 else if (detail.IsPending)
                                 {
                                     <span class="rp-badge-pending"><i class="fa-regular fa-clock"></i> Chờ xác nhận</span>
@@ -407,7 +426,7 @@
                                 </div>
                                 <div class="rp-kv" style="font-size:12px; margin-bottom:6px;">
                                     <span>Đợt 2 (50% trước 7 ngày)</span>
-                                    @if (detail.HasPaidStage2)
+                                    @if (detail.HasPaidStage2 || isCompleted)
                                     {
                                         <b style="color:#16A34A;"><i class="fa-solid fa-check"></i> Đã thanh toán</b>
                                     }
@@ -422,7 +441,7 @@
                                 </div>
                                 <div class="rp-kv" style="font-size:12px;">
                                     <span>Đợt 3 (Quyết toán sau tiệc)</span>
-                                    @if (detail.RemainingDebt <= 0)
+                                    @if (detail.RemainingDebt <= 0 || isCompleted)
                                     {
                                         <b style="color:#16A34A;"><i class="fa-solid fa-check"></i> Đã quyết toán</b>
                                     }
@@ -469,7 +488,7 @@
                                     </a>
                                 </div>
                                 @* Trạng thái và tiến độ thanh toán Đợt 2 / Đợt 3 *@
-                                @if (detail.RemainingDebt <= 0)
+                                @if (detail.RemainingDebt <= 0 || isCompleted)
                                 {
                                     <div style="background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 12px; padding: 12px 16px; margin-top: 12px; display: flex; align-items: center; gap: 12px;">
                                         <i class="fa-solid fa-shield-check" style="color: #16A34A; font-size: 22px;"></i>

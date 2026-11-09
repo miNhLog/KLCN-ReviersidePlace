@@ -7,7 +7,7 @@ public sealed class InvoicePdfDto
     public string CustomerName { get; set; } = string.Empty;
     public string CustomerPhone { get; set; } = string.Empty;
     public string CustomerEmail { get; set; } = string.Empty;
-    public string PaymentType { get; set; } = "Đặt cọc (10%)";
+    public string PaymentType { get; set; } = "Đặt cọc (20%)";
     public string PaymentMethod { get; set; } = "VIETQR_PAYOS";
     public string TransactionCode { get; set; } = string.Empty;
     public DateTime InvoiceDate { get; set; } = DateTime.Now;

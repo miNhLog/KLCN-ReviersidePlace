@@ -226,7 +226,7 @@ public class SmtpEmailService : IEmailService
         var vi = new CultureInfo("vi-VN");
         string E(string? v) => WebUtility.HtmlEncode(string.IsNullOrWhiteSpace(v) ? "—" : v.Trim());
         var totalStr = totalEstimatedCost.ToString("N0", vi) + " VNĐ";
-        var depositEstStr = Math.Round(totalEstimatedCost * 0.10m, 0).ToString("N0", vi) + " VNĐ";
+        var depositEstStr = Math.Round(totalEstimatedCost * 0.20m, 0).ToString("N0", vi) + " VNĐ";
         var eventStr = $"{eventDate:dd/MM/yyyy} · {E(shift)}";
         var scaleStr = $"{guestCount} khách ({totalTables} bàn)";
         var holdStr = holdExpiresAt.ToString("HH:mm - dd/MM/yyyy", vi);
@@ -267,7 +267,7 @@ public class SmtpEmailService : IEmailService
             <div style="border:2px dashed #B89758;border-radius:12px;padding:16px;text-align:center;background:#FDFBF7;margin:18px 0;">
               <div style="font-size:11.5px;font-weight:700;letter-spacing:1px;color:#64748B;">MÃ HỒ SƠ GIỮ CHỖ CỦA BẠN</div>
               <div style="font-size:26px;font-weight:800;letter-spacing:2px;color:#111822;margin:4px 0;">{E(bookingCode)}</div>
-              <div style="font-size:12px;color:#64748B;">Tiền cọc giữ chỗ (10%): <strong style="color:#DC2626;font-size:14px;">{depositEstStr}</strong></div>
+              <div style="font-size:12px;color:#64748B;">Tiền cọc giữ chỗ (20%): <strong style="color:#DC2626;font-size:14px;">{depositEstStr}</strong></div>
             </div>
 
             <!-- Details Table -->
@@ -283,13 +283,13 @@ public class SmtpEmailService : IEmailService
             <!-- Notice Box -->
             <div style="background:#FFFBEB;border:1px solid #FDE68A;border-left:4px solid #D97706;padding:12px 14px;border-radius:8px;margin:18px 0;font-size:12.5px;line-height:1.6;color:#92400E;">
               <strong>Thời hạn giữ chỗ 48 giờ (BR07):</strong> Hồ sơ được ưu tiên giữ đến <strong>{E(holdStr)}</strong>.<br/>
-              Sau thời gian này, nếu chưa hoàn tất thanh toán đặt cọc 10%, lịch sảnh sẽ tự động giải phóng để phục vụ các cặp đôi khác.
+              Sau thời gian này, nếu chưa hoàn tất thanh toán đặt cọc 20%, lịch sảnh sẽ tự động giải phóng để phục vụ các cặp đôi khác.
             </div>
 
             <!-- Call-To-Action Buttons -->
             <div style="text-align:center;margin:24px 0 16px;">
               <a href="{E(depositUrl)}" style="display:inline-block;background:#B89758;color:#ffffff;text-decoration:none;padding:14px 30px;border-radius:10px;font-weight:800;font-size:15px;box-shadow:0 4px 14px rgba(184,151,88,0.35);">
-                💳 Thanh toán đặt cọc VietQR ngay (10%)
+                💳 Thanh toán đặt cọc VietQR ngay (20%)
               </a>
               <div style="margin-top:12px;">
                 <a href="{E(lookupUrl)}" style="display:inline-block;background:#ffffff;border:1.5px solid #CBD5E1;color:#111822;text-decoration:none;padding:9px 22px;border-radius:8px;font-weight:700;font-size:13px;">
@@ -324,11 +324,11 @@ public class SmtpEmailService : IEmailService
         - Thực đơn: {menuName ?? "—"}
         - Trang trí: {decorName ?? "—"}
         - Tổng dự toán: {totalStr}
-        - Tiền cọc giữ chỗ (10%): {depositEstStr}
+        - Tiền cọc giữ chỗ (20%): {depositEstStr}
 
         LƯU Ý GIỮ CHỖ 48 GIỜ:
         Hồ sơ được ưu tiên giữ đến {holdStr}.
-        Sau thời gian này, nếu chưa thanh toán cọc 10%, lịch sảnh sẽ tự động giải phóng.
+        Sau thời gian này, nếu chưa thanh toán cọc 20%, lịch sảnh sẽ tự động giải phóng.
 
         ĐẶT CỌC TRỰC TUYẾN NGAY QUA VIETQR:
         {depositUrl}
@@ -374,7 +374,7 @@ public class SmtpEmailService : IEmailService
         <title>Xác nhận đặt cọc thành công #{E(bookingCode)} - Riverside Palace</title></head>
         <body style="margin:0;padding:0;background:#FDFBF7;font-family:'Plus Jakarta Sans',Arial,Helvetica,sans-serif;color:#111822;">
         <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;visibility:hidden;color:transparent;line-height:0;">
-          Xác nhận thanh toán đặt cọc 10% thành công cho hồ sơ #{E(bookingCode)} tại Riverside Palace.
+          Xác nhận thanh toán đặt cọc 20% thành công cho hồ sơ #{E(bookingCode)} tại Riverside Palace.
         </div>
         <div style="max-width:620px;margin:0 auto;padding:24px 16px;">
           <div style="background:linear-gradient(135deg, #065F46 0%, #047857 100%);color:#fff;text-align:center;padding:30px 20px;border-radius:16px 16px 0 0;border-bottom:3px solid #10B981;">
@@ -388,7 +388,7 @@ public class SmtpEmailService : IEmailService
 
             <!-- Success Box -->
             <div style="background:#ECFDF5;border:1.5px solid #A7F3D0;border-radius:12px;padding:18px;text-align:center;margin:18px 0;">
-              <div style="font-size:12px;font-weight:700;color:#065F46;">SỐ TIỀN ĐẶT CỌC ĐÃ THANH TOÁN (10%)</div>
+              <div style="font-size:12px;font-weight:700;color:#065F46;">SỐ TIỀN ĐẶT CỌC ĐÃ THANH TOÁN (20%)</div>
               <div style="font-size:28px;font-weight:800;color:#047857;margin:4px 0;">{depositStr}</div>
               <div style="font-size:12px;color:#065F46;">Mã giao dịch VietQR: <strong>#{orderCode}</strong> · Mã hồ sơ: <strong>{E(bookingCode)}</strong></div>
             </div>

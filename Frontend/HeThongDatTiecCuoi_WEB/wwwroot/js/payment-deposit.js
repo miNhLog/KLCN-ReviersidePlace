@@ -187,7 +187,7 @@ const RiversidePayment = (function () {
                     ? data.businessDeposit
                     : ((data.amount && data.amount > 0)
                         ? data.amount
-                        : (requestBody.amount || (lastBookingParams ? (lastBookingParams.remainingDebt || lastBookingParams.totalEstimate * 0.1) : 0))));
+                        : (requestBody.amount || (lastBookingParams ? (lastBookingParams.remainingDebt || lastBookingParams.totalEstimate * 0.2) : 0))));
             document.getElementById('rpPayDepositVal').innerText = formatVnd(bizAmount);
             document.getElementById('rpPayActualAmount').innerText = formatVnd(data.actualAmount);
             document.getElementById('rpPayAccountName').innerText = data.accountName || 'CONG TY CP RIVERSIDE PALACE';
@@ -260,10 +260,10 @@ const RiversidePayment = (function () {
         if (titleEl) titleEl.innerText = 'Thanh toán Đặt cọc Giữ chỗ Sảnh';
 
         const labelEl = document.querySelector('#rpPayInitialContent .rp-pay-deposit-amount span');
-        if (labelEl) labelEl.innerText = 'Tiền cọc giữ chỗ (10%):';
+        if (labelEl) labelEl.innerText = 'Tiền cọc giữ chỗ (20%):';
 
         const estTotal = Number(totalEstimate || 0);
-        const depositEst = Math.round(estTotal * 0.10);
+        const depositEst = Math.round(estTotal * 0.20);
 
         await executePaymentRequest('/Payment/CreateDeposit', {
             bookingId: parseInt(bookingId),

@@ -50,7 +50,7 @@ public interface IEmailService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Gửi email xác nhận đặt cọc thành công qua VietQR PayOS (10%).
+    /// Gửi email xác nhận đặt cọc thành công qua VietQR PayOS (20%).
     /// Lịch sảnh đã được khóa chính thức trên hệ thống Riverside Palace.
     /// Đính kèm hóa đơn / biên lai điện tử có chữ ký số (PAdES).
     /// </summary>

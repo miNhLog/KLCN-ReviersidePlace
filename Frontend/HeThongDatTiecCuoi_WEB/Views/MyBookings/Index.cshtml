@@ -326,9 +326,14 @@
                 <div style="display: flex; flex-direction: column; gap: 24px;">
                     @foreach (var item in Model)
                     {
-                        var isCancelled = item.Status == "Đã hủy";
-                        var isPending = item.Status == "Chờ xác nhận";
-                        var isConfirmed = item.Status == "Đã cọc" || item.Status == "Đã ký hợp đồng" || item.Status == "Đã xác nhận" || item.HasContract;
+                        var isCancelled = item.Status == "Đã hủy" || item.Status == "CANCELLED";
+                        var isPending = item.Status == "Chờ xác nhận" || item.Status == "PENDING";
+                        var isContractCompleted = string.Equals(item.ContractStatusCode, "COMPLETED", StringComparison.OrdinalIgnoreCase) ||
+                                                 string.Equals(item.ContractStatusName, "Hoàn tất", StringComparison.OrdinalIgnoreCase);
+                        var isBookingCompleted = item.Status == "Hoàn tất" || item.Status == "COMPLETED";
+                        var isCompleted = isBookingCompleted || isContractCompleted;
+                        var isConfirmed = item.Status == "Đã cọc" || item.Status == "Đã ký hợp đồng" || item.Status == "Đã xác nhận" || item.HasContract || isCompleted;
+                        var isPreparing = item.Status == "Đang chuẩn bị" || item.Status == "PREPARING";
 
                         <div class="myb-card">
                             <!-- Tiêu đề thẻ -->
@@ -338,13 +343,17 @@
                                         <span style="font-family: monospace; font-size: 15px; font-weight: 800; color: #B89758; background: #FFF9EE; border: 1px solid #EEDBB2; padding: 2px 8px; border-radius: 6px;">
                                             @item.BookingCode
                                         </span>
-                                        @if (isPending)
-                                        {
-                                            <span class="myb-badge-pending"><i class="fa-regular fa-clock"></i> Chờ xác nhận</span>
-                                        }
-                                        else if (isCancelled)
+                                        @if (isCancelled)
                                         {
                                             <span class="myb-badge-cancelled"><i class="fa-solid fa-ban"></i> Đã hủy</span>
+                                        }
+                                        else if (isCompleted)
+                                        {
+                                            <span class="myb-badge-success" style="background:#ECFDF5;color:#047857;border-color:#A7F3D0;"><i class="fa-solid fa-circle-check"></i> Hoàn tất</span>
+                                        }
+                                        else if (isPending)
+                                        {
+                                            <span class="myb-badge-pending"><i class="fa-regular fa-clock"></i> Chờ xác nhận</span>
                                         }
                                         else
                                         {
@@ -381,11 +390,11 @@
                                         <span style="font-size: 11px; font-weight: 600; color: #64748B;">Ký hợp đồng</span>
                                     </div>
                                     <div class="myb-step-item">
-                                        <div class="myb-step-dot myb-step-wait">4</div>
+                                        <div class="myb-step-dot @(isCompleted ? "myb-step-done" : (isPreparing ? "myb-step-active" : "myb-step-wait"))">4</div>
                                         <span style="font-size: 11px; font-weight: 600; color: #64748B;">Chuẩn bị</span>
                                     </div>
                                     <div class="myb-step-item">
-                                        <div class="myb-step-dot myb-step-wait">5</div>
+                                        <div class="myb-step-dot @(isCompleted ? "myb-step-done" : "myb-step-wait")">5</div>
                                         <span style="font-size: 11px; font-weight: 600; color: #64748B;">Hoàn tất</span>
                                     </div>
                                 </div>

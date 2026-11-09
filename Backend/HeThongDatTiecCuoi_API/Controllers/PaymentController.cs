@@ -23,7 +23,7 @@ public sealed class PaymentController : ControllerBase
     }
 
     /// <summary>
-    /// Tạo liên kết thanh toán đặt cọc VietQR PayOS (10% dự toán tiệc, có hỗ trợ Demo Scale).
+    /// Tạo liên kết thanh toán đặt cọc VietQR PayOS (20% dự toán tiệc, có hỗ trợ Demo Scale).
     /// Hỗ trợ cả người dùng đã đăng nhập hoặc khách tra cứu bằng mã đặt tiệc + SĐT.
     /// </summary>
     [HttpPost("create-deposit")]
