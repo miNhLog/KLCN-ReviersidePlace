@@ -258,7 +258,17 @@ public class PublicBookingRequestViewModel
     public decimal? CustomMenuPricePerTable { get; set; }
     public List<string>? CustomMenuItems { get; set; }
     public List<int>? CustomMenuDishIds { get; set; }
+    public decimal? ExpectedMenuPricePerTable { get; set; }
+    public decimal? ExpectedEstimatedTotal { get; set; }
     public List<string>? ServiceCodes { get; set; }
+}
+
+public sealed class OfficialBookingServicePriceViewModel
+{
+    public string ServiceCode { get; set; } = string.Empty;
+    public string ServiceName { get; set; } = string.Empty;
+    public decimal Price { get; set; }
+    public string Note { get; set; } = string.Empty;
 }
 
 public sealed class PublicBookingRegistrationResultViewModel
@@ -266,7 +276,11 @@ public sealed class PublicBookingRegistrationResultViewModel
     public string? BookingCode { get; set; }
     public string? Code { get; set; }
     public string? Message { get; set; }
+    public decimal? OfficialHallPrice { get; set; }
     public decimal? OfficialMenuPricePerTable { get; set; }
+    public decimal? OfficialDecorationPrice { get; set; }
+    public decimal? OfficialServicesTotal { get; set; }
+    public List<OfficialBookingServicePriceViewModel>? OfficialServices { get; set; }
     public decimal? OfficialEstimatedTotal { get; set; }
 }
 

@@ -23,7 +23,7 @@ public sealed class CustomMenuPricingBusinessRulesTests
     {
         await using var fixture = await Fixture.CreateAsync();
 
-        var result = await fixture.ResolveAsync(customRequested: false);
+        var result = await fixture.ResolveAsync(expectedPrice: 4_000_000m, customRequested: false);
 
         Assert.True(result.IsValid);
         Assert.False(result.IsCustomized);
@@ -263,7 +263,7 @@ public sealed class CustomMenuPricingBusinessRulesTests
     {
         await using var fixture = await Fixture.CreateAsync();
 
-        var result = await fixture.ResolveAsync([3, 1, 2], expectedPrice: 1m);
+        var result = await fixture.ResolveAsync([3, 1, 2], expectedPrice: 4_000_000m);
 
         Assert.True(result.IsValid);
         Assert.False(result.IsCustomized);
@@ -283,6 +283,141 @@ public sealed class CustomMenuPricingBusinessRulesTests
 
         Assert.False(result.IsValid);
         Assert.Equal("MENU_ACCESS_DENIED", result.ErrorCode);
+    }
+
+    [Fact]
+    public async Task Task031_OriginalMenuPriceChanged_RequiresConfirmationWithDatabasePrice()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        (await fixture.Db.Menus.FindAsync(1))!.PricePerTable = 4_200_000m;
+        await fixture.Db.SaveChangesAsync();
+        fixture.Db.ChangeTracker.Clear();
+
+        var result = await fixture.ResolveAsync(expectedPrice: 4_000_000m, customRequested: false);
+
+        Assert.True(result.IsValid);
+        Assert.True(result.RequiresPriceConfirmation);
+        Assert.Equal(4_200_000m, result.OfficialPricePerTable);
+    }
+
+    [Fact]
+    public async Task Task031_PriceConflictThenExplicitConfirmation_CreatesBookingWithoutLoop()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var request = fixture.ValidBookingRequest(100_000m);
+
+        var first = Assert.IsType<ConflictObjectResult>(
+            await fixture.Controller().RegisterPublicBooking(request));
+        var officialMenu = Value<decimal>(first.Value, "officialMenuPricePerTable");
+        var officialTotal = Value<decimal>(first.Value, "officialEstimatedTotal");
+        request.CustomMenuPricePerTable = officialMenu;
+        request.ExpectedMenuPricePerTable = officialMenu;
+        request.ExpectedEstimatedTotal = officialTotal;
+
+        var second = await fixture.Controller().RegisterPublicBooking(request);
+
+        Assert.IsType<OkObjectResult>(second);
+        var booking = await fixture.Db.WeddingBookings.AsNoTracking().SingleAsync();
+        Assert.Equal(officialMenu, booking.FinalMenuPrice);
+        Assert.Equal(officialTotal, booking.EstimatedTotal);
+    }
+
+    [Fact]
+    public async Task Task031_HallPriceChanged_RejectsStaleTotalAndReturnsOfficialComponents()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var request = fixture.ValidBookingRequest(4_300_000m);
+        (await fixture.Db.Halls.FindAsync(1))!.RentalPrice = 21_000_000m;
+        await fixture.Db.SaveChangesAsync();
+        fixture.Db.ChangeTracker.Clear();
+
+        var result = Assert.IsType<ConflictObjectResult>(
+            await fixture.Controller().RegisterPublicBooking(request));
+
+        Assert.Equal("BOOKING_PRICE_CHANGED", Value<string>(result.Value, "code"));
+        Assert.True(Value<decimal>(result.Value, "officialHallPrice") > 20_000_000m);
+        Assert.Empty(fixture.Db.WeddingBookings);
+    }
+
+    [Fact]
+    public async Task Task031_DecorationPriceChanged_RejectsStaleTotal()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var request = fixture.ValidBookingRequest(4_300_000m);
+        request.DecorationPackageId = 1;
+        request.ExpectedEstimatedTotal = fixture.ExpectedTotal(4_300_000m, decorationPrice: 18_000_000m);
+        (await fixture.Db.DecorPackages.FindAsync(1))!.Gia = 19_000_000m;
+        await fixture.Db.SaveChangesAsync();
+        fixture.Db.ChangeTracker.Clear();
+
+        var result = Assert.IsType<ConflictObjectResult>(
+            await fixture.Controller().RegisterPublicBooking(request));
+
+        Assert.Equal(19_000_000m, Value<decimal>(result.Value, "officialDecorationPrice"));
+        Assert.Empty(fixture.Db.WeddingBookings);
+    }
+
+    [Fact]
+    public async Task Task031_ServicePriceChanged_RejectsStaleTotalAndReturnsServiceSnapshot()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var request = fixture.ValidBookingRequest(4_300_000m);
+        request.ServiceCodes = ["DV002"];
+        request.ExpectedEstimatedTotal = fixture.ExpectedTotal(4_300_000m, servicesTotal: 2_000_000m);
+        (await fixture.Db.ServiceItems.FindAsync(1))!.Gia = 3_000_000m;
+        await fixture.Db.SaveChangesAsync();
+        fixture.Db.ChangeTracker.Clear();
+
+        var result = Assert.IsType<ConflictObjectResult>(
+            await fixture.Controller().RegisterPublicBooking(request));
+
+        Assert.Equal(3_000_000m, Value<decimal>(result.Value, "officialServicesTotal"));
+        Assert.Empty(fixture.Db.WeddingBookings);
+    }
+
+    [Fact]
+    public async Task Task031_StaleTotalAlone_DoesNotCreateBookingOrOccupySchedule()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var request = fixture.ValidBookingRequest(4_300_000m);
+        request.ExpectedEstimatedTotal -= 1m;
+
+        var result = await fixture.Controller().RegisterPublicBooking(request);
+
+        Assert.IsType<ConflictObjectResult>(result);
+        Assert.Empty(fixture.Db.WeddingBookings);
+        fixture.Db.ChangeTracker.Clear();
+        Assert.Equal(HallScheduleStatusCodes.Available,
+            await fixture.Db.HallSchedules.Select(item => item.Status.StatusCode).SingleAsync());
+    }
+
+    [Fact]
+    public void Task031_FrontendSynchronizesTopComboAndRejectsInvalidDishIdsBeforeFetch()
+    {
+        var source = File.ReadAllText(FindWorkspaceFile(
+            ["Frontend", "HeThongDatTiecCuoi_WEB", "Views", "Recommendation", "Index.cshtml"]));
+
+        Assert.Contains("topCombosState[comboIndex]", source);
+        Assert.Contains("combo.customMenu.customPricePerTable", source);
+        Assert.Contains("expectedEstimatedTotal", source);
+        Assert.Contains("new Set(customDishIds).size", source);
+        Assert.DoesNotContain(".map(x => Number(x.dishId)).filter", source);
+    }
+
+    private static T Value<T>(object? value, string propertyName) =>
+        (T)(value?.GetType().GetProperty(propertyName)?.GetValue(value)
+            ?? throw new Xunit.Sdk.XunitException($"Missing response property {propertyName}."));
+
+    private static string FindWorkspaceFile(
+        string[] segments,
+        [System.Runtime.CompilerServices.CallerFilePath] string sourceFile = "")
+    {
+        var directory = new DirectoryInfo(Path.GetDirectoryName(sourceFile)!);
+        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "KLCN-RiversidePalace.sln")))
+            directory = directory.Parent;
+        if (directory is null)
+            throw new DirectoryNotFoundException("Không tìm thấy workspace Riverside Palace.");
+        return Path.Combine([directory.FullName, .. segments]);
     }
 
     private sealed class Fixture : IAsyncDisposable
@@ -326,8 +461,12 @@ public sealed class CustomMenuPricingBusinessRulesTests
                 { StatusId = 32, StatusGroup = StatusGroups.HallSchedule, StatusCode = HallScheduleStatusCodes.Booked, StatusName = "Đã đặt" };
             var bookingPending = new Status
                 { StatusId = 41, StatusGroup = StatusGroups.Booking, StatusCode = BookingStatusCodes.Pending, StatusName = "Chờ" };
+            var decorationActive = new Status
+                { StatusId = 51, StatusGroup = StatusGroups.DecorationPackage, StatusCode = BusinessStatusCodes.Active, StatusName = "Hoạt động" };
+            var serviceActive = new Status
+                { StatusId = 52, StatusGroup = StatusGroups.Service, StatusCode = BusinessStatusCodes.Active, StatusName = "Hoạt động" };
             fixture.Db.AddRange(existing, deleted, menuActive, menuInactive, dishActive, dishInactive,
-                hallActive, scheduleAvailable, scheduleBooked, bookingPending);
+                hallActive, scheduleAvailable, scheduleBooked, bookingPending, decorationActive, serviceActive);
 
             var menu = new Menu
             {
@@ -363,6 +502,18 @@ public sealed class CustomMenuPricingBusinessRulesTests
                 StatusId = scheduleAvailable.StatusId, Status = scheduleAvailable,
                 DataStatusId = existing.DataStatusId, DataStatus = existing
             });
+            fixture.Db.DecorPackages.Add(new DecorPackage
+            {
+                GoiTrangTriID = 1, MaGoi = "GT01", TenGoi = "Trang trí Test", PhongCach = "Hiện đại",
+                Gia = 18_000_000m, StatusId = decorationActive.StatusId, Status = decorationActive,
+                DataStatusId = existing.DataStatusId, DataStatus = existing
+            });
+            fixture.Db.ServiceItems.Add(new ServiceItem
+            {
+                DichVuID = 1, MaDichVu = "DV002", TenDichVu = "Đón khách",
+                Gia = 2_000_000m, StatusId = serviceActive.StatusId, Status = serviceActive,
+                DataStatusId = existing.DataStatusId, DataStatus = existing
+            });
             await fixture.Db.SaveChangesAsync();
             fixture.Db.ChangeTracker.Clear();
             return fixture;
@@ -390,8 +541,22 @@ public sealed class CustomMenuPricingBusinessRulesTests
             CustomMenuName = "Thực đơn tùy chỉnh 1",
             CustomMenuDishIds = [1, 2, 4],
             CustomMenuPricePerTable = expectedCustomPrice,
+            ExpectedMenuPricePerTable = expectedCustomPrice,
+            ExpectedEstimatedTotal = ExpectedTotal(expectedCustomPrice),
             CustomMenuItems = ["Món 1 (1 đ)", "Món 2 (1 đ)", "Món 4 (1 đ)"]
         };
+
+        public decimal ExpectedTotal(
+            decimal menuPrice,
+            decimal decorationPrice = 0m,
+            decimal servicesTotal = 0m,
+            decimal hallBasePrice = 20_000_000m)
+        {
+            var hallPrice = new HallPricingPolicyService().CalculateHallPrice(
+                hallBasePrice, HallShiftNames.Dinner, EventDate);
+            return CustomMenuPricingService.CalculateEstimatedTotal(
+                hallPrice, menuPrice, 22, decorationPrice, servicesTotal);
+        }
 
         public RecommendationController Controller()
         {

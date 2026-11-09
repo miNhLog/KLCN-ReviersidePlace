@@ -1641,7 +1641,7 @@ public sealed class RecommendationController : ControllerBase
                 customer.CustomerId,
                 request.CustomMenuDishIds,
                 customMenuRequested,
-                request.CustomMenuPricePerTable,
+                request.ExpectedMenuPricePerTable ?? request.CustomMenuPricePerTable,
                 HttpContext.RequestAborted);
             if (!menuPricing.IsValid)
                 return StatusCode(menuPricing.StatusCode, new
@@ -1757,15 +1757,26 @@ public sealed class RecommendationController : ControllerBase
                 message = "Không thể tạo booking vì tổng dự toán không hợp lệ. Vui lòng liên hệ quản lý kiểm tra dữ liệu giá."
             });
         }
-        if (menuPricing?.RequiresPriceConfirmation == true)
+        var totalChanged = !CustomMenuPricingService.PriceMatches(
+            request.ExpectedEstimatedTotal, officialEstimatedTotal);
+        if (menuPricing?.RequiresPriceConfirmation == true || totalChanged)
+        {
+            var conflictCode = menuPricing is { IsCustomized: true, RequiresPriceConfirmation: true }
+                ? "CUSTOM_MENU_PRICE_CHANGED"
+                : "BOOKING_PRICE_CHANGED";
             return Conflict(new
             {
                 success = false,
-                code = "CUSTOM_MENU_PRICE_CHANGED",
-                message = $"Giá thực đơn đã thay đổi thành {effectiveMenuPricePerTable:N0} đ/bàn. Vui lòng kiểm tra tổng dự toán mới và xác nhận lại.",
+                code = conflictCode,
+                message = $"Giá gói tiệc đã thay đổi. Tổng dự toán chính thức mới là {officialEstimatedTotal:N0} đ. Vui lòng kiểm tra và xác nhận lại.",
+                officialHallPrice = effectiveHallRentalPrice,
                 officialMenuPricePerTable = effectiveMenuPricePerTable,
+                officialDecorationPrice = decor?.Gia ?? 0m,
+                officialServicesTotal = servicesTotalBooking,
+                officialServices = bookingServices,
                 officialEstimatedTotal
             });
+        }
 
         var booking = new WeddingBooking
         {

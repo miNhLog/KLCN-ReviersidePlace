@@ -154,6 +154,10 @@ public sealed class RegisterPublicBookingDto
     public List<string>? CustomMenuItems { get; set; }
     /// <summary>Mã món khách chọn. Backend dùng các mã này để tải lại tên và giá chính thức từ database.</summary>
     public List<int>? CustomMenuDishIds { get; set; }
+    /// <summary>Đơn giá menu khách vừa nhìn thấy; chỉ dùng đối chiếu, không dùng làm giá chính thức.</summary>
+    public decimal? ExpectedMenuPricePerTable { get; set; }
+    /// <summary>Tổng dự toán khách vừa xác nhận; chỉ dùng phát hiện thay đổi giá.</summary>
+    public decimal? ExpectedEstimatedTotal { get; set; }
     /// <summary>Mã dịch vụ khách đã chọn ở form (DV001...) để lưu BookingServices + cộng vào EstimatedTotal.</summary>
     public List<string>? ServiceCodes { get; set; }
 }

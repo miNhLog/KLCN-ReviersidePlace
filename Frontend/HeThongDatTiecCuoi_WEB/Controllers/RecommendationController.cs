@@ -287,7 +287,11 @@ public class RecommendationController : Controller
             success = false,
             message = result.Error ?? "Không thể lưu đơn đăng ký tiệc.",
             code = result.Value?.Code,
+            officialHallPrice = result.Value?.OfficialHallPrice,
             officialMenuPricePerTable = result.Value?.OfficialMenuPricePerTable,
+            officialDecorationPrice = result.Value?.OfficialDecorationPrice,
+            officialServicesTotal = result.Value?.OfficialServicesTotal,
+            officialServices = result.Value?.OfficialServices,
             officialEstimatedTotal = result.Value?.OfficialEstimatedTotal
         });
         }

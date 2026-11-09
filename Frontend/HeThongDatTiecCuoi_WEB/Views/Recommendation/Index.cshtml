@@ -1999,6 +1999,8 @@
                 menuId: s.menuId,
                 decorId: s.decorId,
                 totalCostStr,
+                expectedMenuPricePerTable: d.menuPriceNum,
+                expectedEstimatedTotal: d.totalCost,
                 customMenu: s.customMenu ? JSON.parse(JSON.stringify(s.customMenu)) : null
             };
 
@@ -2045,6 +2047,20 @@
             const scheduleIdNum = parseInt(selectedComboToBook.hallScheduleId, 10) || 0;
             const hallIdNum = parseInt(selectedComboToBook.hallId, 10) || 0;
             const custom = selectedComboToBook.customMenu || null;
+            let customDishIds = null;
+            if (custom) {
+                const customItems = Array.isArray(custom.items) ? custom.items : [];
+                customDishIds = customItems.map(x => Number(x.dishId));
+                const hasInvalidDishId = customDishIds.length !== customItems.length
+                    || customDishIds.some(x => !Number.isInteger(x) || x <= 0)
+                    || new Set(customDishIds).size !== customDishIds.length;
+                if (hasInvalidDishId) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<span class="material-symbols-outlined" aria-hidden="true">check</span> Gửi Thông Tin Đăng Ký Giữ Chỗ';
+                    showRecomAlert('Danh sách món tùy chỉnh có món thiếu mã hoặc mã không hợp lệ. Hai bạn vui lòng mở lại phần tùy chỉnh và chọn lại món trước khi đăng ký.', 'Dữ liệu món không hợp lệ', 'error');
+                    return;
+                }
+            }
             let specialReq = `Đăng ký từ AI Recommendation: Ngân sách dự kiến ${currentPayload.expectedBudget.toLocaleString('vi-VN')} đ`;
             const bookingPayload = {
                 customerName: currentPayload.coupleName,
@@ -2065,7 +2081,9 @@
                 customMenuName: custom ? custom.customName : null,
                 customMenuPricePerTable: custom ? custom.customPricePerTable : null,
                 customMenuItems: custom ? (custom.items || []).map(x => `${x.dishName} (${Number(x.price || 0).toLocaleString('vi-VN')} đ)`) : null,
-                customMenuDishIds: custom ? (custom.items || []).map(x => Number(x.dishId)).filter(x => Number.isInteger(x) && x > 0) : null,
+                customMenuDishIds,
+                expectedMenuPricePerTable: selectedComboToBook.expectedMenuPricePerTable,
+                expectedEstimatedTotal: selectedComboToBook.expectedEstimatedTotal,
                 serviceCodes: Array.isArray(currentPayload.selectedServiceCodes) ? currentPayload.selectedServiceCodes : []
             };
 
@@ -2098,11 +2116,31 @@
 
                     openRecomModal('bookingSuccessModal');
                 } else {
-                    if (result.code === 'CUSTOM_MENU_PRICE_CHANGED' && custom && Number(result.officialMenuPricePerTable) > 0) {
-                        custom.customPricePerTable = Number(result.officialMenuPricePerTable);
+                    if ((result.code === 'CUSTOM_MENU_PRICE_CHANGED' || result.code === 'BOOKING_PRICE_CHANGED')
+                        && Number(result.officialEstimatedTotal) >= 0) {
+                        const comboIndex = Number(selectedComboToBook.comboIndex);
+                        const combo = Number.isInteger(comboIndex) ? topCombosState[comboIndex] : null;
+                        if (combo) {
+                            if (Number(result.officialHallPrice) >= 0) combo.hallPriceNum = Number(result.officialHallPrice);
+                            if (Number(result.officialMenuPricePerTable) >= 0) {
+                                if (combo.customMenu) combo.customMenu.customPricePerTable = Number(result.officialMenuPricePerTable);
+                                else combo.menuPriceNum = Number(result.officialMenuPricePerTable);
+                            }
+                            if (Number(result.officialDecorationPrice) >= 0) combo.decorPriceNum = Number(result.officialDecorationPrice);
+                            if (Array.isArray(result.officialServices)) {
+                                combo.services = result.officialServices.map(sv => ({
+                                    serviceCode: sv.serviceCode || '',
+                                    serviceName: sv.serviceName || '',
+                                    price: Number(sv.price || 0),
+                                    note: sv.note || ''
+                                }));
+                            }
+                            combo.servicesTotalNum = Number(result.officialServicesTotal || 0);
+                            combo.totalCostNum = Number(result.officialEstimatedTotal);
+                        }
                         renderComboCards();
                         const totalText = Number(result.officialEstimatedTotal || 0).toLocaleString('vi-VN');
-                        showRecomAlert(`${result.message || 'Giá thực đơn vừa được cập nhật.'}\nTổng dự toán chính thức mới: ${totalText} đ. Hai bạn vui lòng xem lại gói tiệc và nhấn Giữ chỗ để xác nhận lần nữa.`, 'Giá thực đơn đã thay đổi', 'warning');
+                        showRecomAlert(`${result.message || 'Giá gói tiệc vừa được cập nhật.'}\nTổng dự toán chính thức mới: ${totalText} đ. Hai bạn vui lòng xem lại gói tiệc và nhấn Giữ chỗ để chủ động xác nhận lần nữa.`, 'Giá gói tiệc đã thay đổi', 'warning');
                         return;
                     }
                     // Nếu khách hàng đã có đơn tiệc đang hoạt động

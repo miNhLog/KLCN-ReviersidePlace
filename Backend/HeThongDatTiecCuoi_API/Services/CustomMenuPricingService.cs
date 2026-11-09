@@ -37,7 +37,7 @@ public sealed class CustomMenuPricingService(ApplicationDbContext context)
         int? customerId,
         IReadOnlyCollection<int>? customDishIds,
         bool customRequested,
-        decimal? expectedCustomPricePerTable,
+        decimal? expectedMenuPricePerTable,
         CancellationToken cancellationToken = default)
     {
         var menu = await context.Menus.AsNoTracking()
@@ -57,8 +57,12 @@ public sealed class CustomMenuPricingService(ApplicationDbContext context)
                 "Thực đơn này thuộc riêng một khách hàng khác.");
 
         if (!customRequested)
+        {
+            var officialPrice = Money(menu.PricePerTable);
             return new CustomMenuPricingResult(true, 200, null, null,
-                menu.MenuId, menu.MenuName, Money(menu.PricePerTable), false, false, []);
+                menu.MenuId, menu.MenuName, officialPrice, false,
+                !PriceMatches(expectedMenuPricePerTable, officialPrice), []);
+        }
 
         if (customDishIds is null)
             return CustomMenuPricingResult.Failure(400, "CUSTOM_MENU_DISH_IDS_REQUIRED",
@@ -100,8 +104,12 @@ public sealed class CustomMenuPricingService(ApplicationDbContext context)
         var originalIds = originalLinks.Select(link => link.DishId).ToHashSet();
         var restoredOriginal = selectedIds.Length == originalIds.Count && selectedIds.All(originalIds.Contains);
         if (restoredOriginal)
+        {
+            var officialPrice = Money(menu.PricePerTable);
             return new CustomMenuPricingResult(true, 200, null, null,
-                menu.MenuId, menu.MenuName, Money(menu.PricePerTable), false, false, []);
+                menu.MenuId, menu.MenuName, officialPrice, false,
+                !PriceMatches(expectedMenuPricePerTable, officialPrice), []);
+        }
 
         try
         {
@@ -115,8 +123,7 @@ public sealed class CustomMenuPricingService(ApplicationDbContext context)
 
             var snapshots = selectedIds.Select(id =>
                 new CustomMenuDishSnapshot(id, selectedById[id].DishName, Money(selectedById[id].Price))).ToList();
-            var priceChanged = !expectedCustomPricePerTable.HasValue ||
-                Money(expectedCustomPricePerTable.Value) != officialPrice;
+            var priceChanged = !PriceMatches(expectedMenuPricePerTable, officialPrice);
             return new CustomMenuPricingResult(true, 200, null, null,
                 menu.MenuId, menu.MenuName, officialPrice, true, priceChanged, snapshots);
         }
@@ -145,6 +152,9 @@ public sealed class CustomMenuPricingService(ApplicationDbContext context)
             throw new OverflowException("Tổng dự toán vượt giới hạn decimal(18,2).");
         return total;
     }
+
+    public static bool PriceMatches(decimal? expected, decimal official) =>
+        expected.HasValue && Money(expected.Value) == Money(official);
 
     private static bool ValidDish(Dish dish) =>
         dish.DataStatus is not null && dish.DataStatus.DataStatusCode == DataStatusCodes.Existing &&

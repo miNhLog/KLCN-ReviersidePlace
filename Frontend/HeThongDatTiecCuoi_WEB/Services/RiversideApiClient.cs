@@ -2435,6 +2435,8 @@ public sealed class RiversideApiClient : IRiversideApiClient
                 customMenuPricePerTable = request.CustomMenuPricePerTable,
                 customMenuItems = request.CustomMenuItems,
                 customMenuDishIds = request.CustomMenuDishIds,
+                expectedMenuPricePerTable = request.ExpectedMenuPricePerTable,
+                expectedEstimatedTotal = request.ExpectedEstimatedTotal,
                 serviceCodes = request.ServiceCodes
             };
             var response = await _httpClient.PostAsJsonAsync("api/recommendations/register-booking", backendPayload, cancellationToken);
