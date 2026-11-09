@@ -301,6 +301,40 @@ public sealed class CustomMenuPricingBusinessRulesTests
     }
 
     [Fact]
+    public async Task Task031_LegacyClientMissingExpectedPrices_GetsActionableErrorAndNoBooking()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var request = fixture.ValidBookingRequest(4_300_000m);
+        request.ExpectedMenuPricePerTable = null;
+        request.ExpectedEstimatedTotal = null;
+        request.CustomMenuPricePerTable = null;
+
+        var result = Assert.IsType<ConflictObjectResult>(
+            await fixture.Controller().RegisterPublicBooking(request));
+
+        Assert.Equal("BOOKING_PRICE_CONFIRMATION_REQUIRED", Value<string>(result.Value, "code"));
+        Assert.Equal(4_300_000m, Value<decimal>(result.Value, "officialMenuPricePerTable"));
+        Assert.True(Value<decimal>(result.Value, "officialEstimatedTotal") > 0);
+        Assert.Empty(fixture.Db.WeddingBookings);
+    }
+
+    [Fact]
+    public async Task Task031_LegacyClientWithCustomPriceOnly_StillRequiresTotalConfirmation()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var request = fixture.ValidBookingRequest(100_000m);
+        request.ExpectedMenuPricePerTable = null;
+        request.ExpectedEstimatedTotal = null;
+
+        var result = Assert.IsType<ConflictObjectResult>(
+            await fixture.Controller().RegisterPublicBooking(request));
+
+        Assert.Equal("BOOKING_PRICE_CONFIRMATION_REQUIRED", Value<string>(result.Value, "code"));
+        Assert.Equal(4_300_000m, Value<decimal>(result.Value, "officialMenuPricePerTable"));
+        Assert.Empty(fixture.Db.WeddingBookings);
+    }
+
+    [Fact]
     public async Task Task031_PriceConflictThenExplicitConfirmation_CreatesBookingWithoutLoop()
     {
         await using var fixture = await Fixture.CreateAsync();
@@ -392,16 +426,29 @@ public sealed class CustomMenuPricingBusinessRulesTests
     }
 
     [Fact]
-    public void Task031_FrontendSynchronizesTopComboAndRejectsInvalidDishIdsBeforeFetch()
+    public async Task Task031_FrontendPriceState_BehaviorPassesInNode()
     {
-        var source = File.ReadAllText(FindWorkspaceFile(
-            ["Frontend", "HeThongDatTiecCuoi_WEB", "Views", "Recommendation", "Index.cshtml"]));
-
-        Assert.Contains("topCombosState[comboIndex]", source);
-        Assert.Contains("combo.customMenu.customPricePerTable", source);
-        Assert.Contains("expectedEstimatedTotal", source);
-        Assert.Contains("new Set(customDishIds).size", source);
-        Assert.DoesNotContain(".map(x => Number(x.dishId)).filter", source);
+        var script = FindWorkspaceFile(
+            ["Backend", "HeThongDatTiecCuoi_API.Tests", "recommendation-price-state.tests.js"]);
+        using var process = new System.Diagnostics.Process
+        {
+            StartInfo = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "node",
+                Arguments = $"\"{script}\"",
+                WorkingDirectory = Path.GetDirectoryName(script)!,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            }
+        };
+        process.Start();
+        var output = await process.StandardOutput.ReadToEndAsync();
+        var error = await process.StandardError.ReadToEndAsync();
+        await process.WaitForExitAsync();
+        Assert.True(process.ExitCode == 0, $"Node test failed.\n{output}\n{error}");
+        Assert.Contains("all behavioral tests passed", output);
     }
 
     private static T Value<T>(object? value, string propertyName) =>

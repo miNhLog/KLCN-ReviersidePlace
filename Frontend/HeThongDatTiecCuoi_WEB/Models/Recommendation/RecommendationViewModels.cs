@@ -271,13 +271,23 @@ public sealed class OfficialBookingServicePriceViewModel
     public string Note { get; set; } = string.Empty;
 }
 
+public sealed class OfficialMenuDishPriceViewModel
+{
+    public int DishId { get; set; }
+    public string DishName { get; set; } = string.Empty;
+    public decimal Price { get; set; }
+}
+
 public sealed class PublicBookingRegistrationResultViewModel
 {
     public string? BookingCode { get; set; }
     public string? Code { get; set; }
     public string? Message { get; set; }
     public decimal? OfficialHallPrice { get; set; }
+    public decimal? OfficialBaseMenuPricePerTable { get; set; }
     public decimal? OfficialMenuPricePerTable { get; set; }
+    public List<OfficialMenuDishPriceViewModel>? OfficialSelectedDishes { get; set; }
+    public List<OfficialMenuDishPriceViewModel>? OfficialOriginalDishes { get; set; }
     public decimal? OfficialDecorationPrice { get; set; }
     public decimal? OfficialServicesTotal { get; set; }
     public List<OfficialBookingServicePriceViewModel>? OfficialServices { get; set; }

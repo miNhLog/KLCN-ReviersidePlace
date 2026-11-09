@@ -1759,18 +1759,29 @@ public sealed class RecommendationController : ControllerBase
         }
         var totalChanged = !CustomMenuPricingService.PriceMatches(
             request.ExpectedEstimatedTotal, officialEstimatedTotal);
-        if (menuPricing?.RequiresPriceConfirmation == true || totalChanged)
+        var missingPriceConfirmation = !request.ExpectedEstimatedTotal.HasValue ||
+            menuPricing is not null &&
+            !request.ExpectedMenuPricePerTable.HasValue &&
+            !(customMenuRequested && request.CustomMenuPricePerTable.HasValue);
+        if (missingPriceConfirmation || menuPricing?.RequiresPriceConfirmation == true || totalChanged)
         {
-            var conflictCode = menuPricing is { IsCustomized: true, RequiresPriceConfirmation: true }
-                ? "CUSTOM_MENU_PRICE_CHANGED"
-                : "BOOKING_PRICE_CHANGED";
+            var conflictCode = missingPriceConfirmation
+                ? "BOOKING_PRICE_CONFIRMATION_REQUIRED"
+                : menuPricing is { IsCustomized: true, RequiresPriceConfirmation: true }
+                    ? "CUSTOM_MENU_PRICE_CHANGED"
+                    : "BOOKING_PRICE_CHANGED";
             return Conflict(new
             {
                 success = false,
                 code = conflictCode,
-                message = $"Giá gói tiệc đã thay đổi. Tổng dự toán chính thức mới là {officialEstimatedTotal:N0} đ. Vui lòng kiểm tra và xác nhận lại.",
+                message = missingPriceConfirmation
+                    ? "Phiên bản client chưa gửi đủ thông tin xác nhận giá. Vui lòng tải lại trang hoặc cập nhật ứng dụng, xem báo giá chính thức và xác nhận lại."
+                    : $"Giá gói tiệc đã thay đổi. Tổng dự toán chính thức mới là {officialEstimatedTotal:N0} đ. Vui lòng kiểm tra và xác nhận lại.",
                 officialHallPrice = effectiveHallRentalPrice,
+                officialBaseMenuPricePerTable = menuPricing?.OfficialBaseMenuPricePerTable ?? 0m,
                 officialMenuPricePerTable = effectiveMenuPricePerTable,
+                officialSelectedDishes = menuPricing?.SelectedDishes ?? [],
+                officialOriginalDishes = menuPricing?.OriginalDishes ?? [],
                 officialDecorationPrice = decor?.Gia ?? 0m,
                 officialServicesTotal = servicesTotalBooking,
                 officialServices = bookingServices,

@@ -580,6 +580,7 @@
 </div>
 
 @section Scripts {
+    <script src="~/js/recommendation-price-state.js" asp-append-version="true"></script>
     <script>
         let currentPayload = null;
         let selectedComboToBook = null;
@@ -2050,11 +2051,9 @@
             let customDishIds = null;
             if (custom) {
                 const customItems = Array.isArray(custom.items) ? custom.items : [];
-                customDishIds = customItems.map(x => Number(x.dishId));
-                const hasInvalidDishId = customDishIds.length !== customItems.length
-                    || customDishIds.some(x => !Number.isInteger(x) || x <= 0)
-                    || new Set(customDishIds).size !== customDishIds.length;
-                if (hasInvalidDishId) {
+                const dishValidation = RecommendationPriceState.validateCustomDishIds(customItems);
+                customDishIds = dishValidation.ids;
+                if (!dishValidation.valid) {
                     btn.disabled = false;
                     btn.innerHTML = '<span class="material-symbols-outlined" aria-hidden="true">check</span> Gửi Thông Tin Đăng Ký Giữ Chỗ';
                     showRecomAlert('Danh sách món tùy chỉnh có món thiếu mã hoặc mã không hợp lệ. Hai bạn vui lòng mở lại phần tùy chỉnh và chọn lại món trước khi đăng ký.', 'Dữ liệu món không hợp lệ', 'error');
@@ -2116,27 +2115,14 @@
 
                     openRecomModal('bookingSuccessModal');
                 } else {
-                    if ((result.code === 'CUSTOM_MENU_PRICE_CHANGED' || result.code === 'BOOKING_PRICE_CHANGED')
+                    if ((result.code === 'CUSTOM_MENU_PRICE_CHANGED'
+                            || result.code === 'BOOKING_PRICE_CHANGED'
+                            || result.code === 'BOOKING_PRICE_CONFIRMATION_REQUIRED')
                         && Number(result.officialEstimatedTotal) >= 0) {
                         const comboIndex = Number(selectedComboToBook.comboIndex);
                         const combo = Number.isInteger(comboIndex) ? topCombosState[comboIndex] : null;
                         if (combo) {
-                            if (Number(result.officialHallPrice) >= 0) combo.hallPriceNum = Number(result.officialHallPrice);
-                            if (Number(result.officialMenuPricePerTable) >= 0) {
-                                if (combo.customMenu) combo.customMenu.customPricePerTable = Number(result.officialMenuPricePerTable);
-                                else combo.menuPriceNum = Number(result.officialMenuPricePerTable);
-                            }
-                            if (Number(result.officialDecorationPrice) >= 0) combo.decorPriceNum = Number(result.officialDecorationPrice);
-                            if (Array.isArray(result.officialServices)) {
-                                combo.services = result.officialServices.map(sv => ({
-                                    serviceCode: sv.serviceCode || '',
-                                    serviceName: sv.serviceName || '',
-                                    price: Number(sv.price || 0),
-                                    note: sv.note || ''
-                                }));
-                            }
-                            combo.servicesTotalNum = Number(result.officialServicesTotal || 0);
-                            combo.totalCostNum = Number(result.officialEstimatedTotal);
+                            RecommendationPriceState.applyOfficialQuote(combo, result);
                         }
                         renderComboCards();
                         const totalText = Number(result.officialEstimatedTotal || 0).toLocaleString('vi-VN');
@@ -2176,40 +2162,21 @@
             document.getElementById('menuCustomSubtitle').innerText = `Combo Top ${s.rank} • ${s.hallName} • ${s.totalTables} bàn (chuẩn 10 khách/bàn). Loại bỏ món chưa ưng ý, thêm món yêu thích — tổng tiền cập nhật trực tiếp.`;
 
             try {
+                menuCustomState = null;
                 const [menuRes, dishRes] = await Promise.all([
                     fetch(`/Recommendation/GetMenuDetail?menuId=${s.menuId}`).then(r => r.json()),
                     fetch('/Recommendation/GetPublicDishes').then(r => r.json())
                 ]);
                 const menuData = menuRes && menuRes.success ? menuRes.data : null;
                 const allDishesRaw = dishRes && dishRes.success ? (dishRes.data || []) : [];
-                const currentDishes = menuData
-                    ? (menuData.dishes || menuData.Dishes || []).map(d => ({
-                        dishId: d.dishId ?? d.DishId ?? 0,
-                        dishName: d.dishName || d.DishName || 'Món ăn',
-                        category: d.category || d.Category || 'Món khác',
-                        price: Number(d.price ?? d.Price ?? 0)
-                    }))
-                    : [];
-                const allDishes = (allDishesRaw || []).map(d => ({
-                    dishId: d.dishId ?? d.DishId ?? 0,
-                    dishCode: d.dishCode || d.DishCode || '',
-                    dishName: d.dishName || d.DishName || 'Món ăn',
-                    category: d.category || d.Category || 'Món khác',
-                    price: Number(d.price ?? d.Price ?? 0)
-                }));
-                // Nếu đã custom trước đó thì giữ lựa chọn cũ, ngược lại dùng món gốc.
-                const initialItems = s.customMenu
-                    ? JSON.parse(JSON.stringify(s.customMenu.items))
-                    : JSON.parse(JSON.stringify(currentDishes));
-                const originalItems = JSON.parse(JSON.stringify(currentDishes.length > 0 ? currentDishes : initialItems));
-                menuCustomState = {
-                    comboIndex,
-                    originalName: s.menuName,
-                    originalPricePerTable: s.menuPriceNum,
-                    originalItems,
-                    items: initialItems,
-                    allDishes
-                };
+                const refreshed = RecommendationPriceState.refreshCustomizer(s, menuData, allDishesRaw);
+                if (!refreshed.ok) {
+                    document.getElementById('menuCustomLoading').innerHTML = '<span style="color:#DC2626;">Có món đã ngừng phục vụ hoặc dữ liệu thực đơn không còn hợp lệ. Vui lòng chọn lại thực đơn.</span>';
+                    showRecomAlert(refreshed.message || 'Dữ liệu thực đơn không còn hợp lệ. Hệ thống không tự động loại món.', 'Không thể dùng dữ liệu món cũ', 'warning');
+                    return;
+                }
+                menuCustomState = refreshed.state;
+                renderComboCards();
                 document.getElementById('menuCustomLoading').style.display = 'none';
                 document.getElementById('menuCustomBody').hidden = false;
                 renderMenuCustomLists();
@@ -2233,16 +2200,7 @@
         }
 
         function calcCustomPricePerTable() {
-            if (!menuCustomState) return 0;
-            const isSameAsOriginal = menuCustomState.items.length === menuCustomState.originalItems.length
-                && menuCustomState.items.every((x, i) => x.dishId === (menuCustomState.originalItems[i] || {}).dishId);
-            if (isSameAsOriginal) {
-                return Number(menuCustomState.originalPricePerTable) || 0;
-            }
-            const origDishSum = (menuCustomState.originalItems || []).reduce((sum, x) => sum + (Number(x.price) || 0), 0);
-            const curDishSum = (menuCustomState.items || []).reduce((sum, x) => sum + (Number(x.price) || 0), 0);
-            const delta = curDishSum - origDishSum;
-            return Math.max(0, (Number(menuCustomState.originalPricePerTable) || 0) + delta);
+            return RecommendationPriceState.calculateCustomPrice(menuCustomState);
         }
 
         // Chuẩn thay món (1 đổi 1): số món tùy chỉnh không vượt quá số món gốc.
