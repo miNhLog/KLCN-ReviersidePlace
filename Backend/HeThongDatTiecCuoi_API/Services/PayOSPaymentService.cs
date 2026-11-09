@@ -26,6 +26,7 @@ public sealed class PayOSPaymentService : IPaymentService
     private readonly ILogger<PayOSPaymentService> _logger;
     private readonly IScheduleChangeService _scheduleChanges;
     private readonly IPayOSPaymentLinkCancellation _paymentLinkCancellation;
+    private readonly IPayOSDepositPaymentGateway _depositPaymentGateway;
 
     public PayOSPaymentService(
         ApplicationDbContext context,
@@ -37,7 +38,8 @@ public sealed class PayOSPaymentService : IPaymentService
         IInvoiceDigitalSignatureService signatureService,
         IScheduleChangeService scheduleChanges,
         ILogger<PayOSPaymentService> logger,
-        IPayOSPaymentLinkCancellation? paymentLinkCancellation = null)
+        IPayOSPaymentLinkCancellation? paymentLinkCancellation = null,
+        IPayOSDepositPaymentGateway? depositPaymentGateway = null)
     {
         _context = context;
         _payOSClient = payOSClient;
@@ -49,6 +51,7 @@ public sealed class PayOSPaymentService : IPaymentService
         _scheduleChanges = scheduleChanges;
         _logger = logger;
         _paymentLinkCancellation = paymentLinkCancellation ?? new PayOSPaymentLinkCancellation(payOSClient);
+        _depositPaymentGateway = depositPaymentGateway ?? new PayOSDepositPaymentGateway(payOSClient);
     }
 
     public async Task<CreateDepositPaymentResponseDto> CreateDepositPaymentAsync(
@@ -58,125 +61,179 @@ public sealed class PayOSPaymentService : IPaymentService
         if (request.BookingId <= 0)
             throw new ArgumentException("Mã đặt tiệc ID không hợp lệ.", nameof(request.BookingId));
 
-        var query = _context.WeddingBookings
-            .Include(b => b.Customer)
-            .Include(b => b.Status)
-            .Include(b => b.HallSchedule).ThenInclude(s => s.Hall)
-            .AsQueryable();
+        var accessBooking = await _context.WeddingBookings
+            .AsNoTracking()
+            .Include(item => item.Customer)
+            .SingleOrDefaultAsync(item => item.BookingId == request.BookingId)
+            ?? throw new KeyNotFoundException("Không tìm thấy đơn đặt tiệc cưới này.");
+        EnsureDepositPaymentAccess(accessBooking, request, userId);
+        await ResolveExpiredDepositIntentAsync(request.BookingId);
+        _context.ChangeTracker.Clear();
 
-        var booking = await query.SingleOrDefaultAsync(b => b.BookingId == request.BookingId);
-        if (booking == null)
-            throw new KeyNotFoundException("Không tìm thấy đơn đặt tiệc cưới này.");
-
-        // Xác thực quyền sở hữu: nếu đăng nhập thì kiểm tra UserId, nếu là khách tra cứu thì kiểm tra mã + SĐT
-        if (userId.HasValue && userId.Value > 0)
-        {
-            if (booking.Customer.UserId != userId.Value)
-            {
-                // Cho phép tra cứu nếu khớp bookingCode + phone
-                if (!IsGuestVerified(booking, request.BookingCode, request.PhoneNumber))
-                    throw new UnauthorizedAccessException("Bạn không có quyền thực hiện thanh toán cho đơn tiệc này.");
-            }
-        }
-        else
-        {
-            if (!IsGuestVerified(booking, request.BookingCode, request.PhoneNumber))
-                throw new UnauthorizedAccessException("Thông tin mã đặt tiệc hoặc số điện thoại không khớp với hồ sơ.");
-        }
-
-        // Cho phép thanh toán cọc khi đơn đang chờ xác nhận hoặc đã được
-        // xác nhận nhưng chưa có tiền cọc. Quản lý có thể xác nhận đơn
-        // trước khi khách quét QR, nên chỉ chấp nhận PENDING sẽ làm khách
-        // bị kẹt khỏi luồng thanh toán.
-        if (booking.PaidAmount > 0)
-            throw new InvalidOperationException("Đơn đặt tiệc này đã được thanh toán cọc trước đó.");
-
-        if (booking.Status.StatusCode is not (BookingStatusCodes.Pending or BookingStatusCodes.Confirmed))
-            throw new InvalidOperationException($"Chỉ có thể đặt cọc khi tiệc ở trạng thái Chờ xác nhận hoặc Đã xác nhận (Hiện tại: {booking.Status.StatusName}).");
-
-        // 1. Tính tiền cọc nghiệp vụ (10% tổng dự toán)
-        decimal totalEstimate = booking.EstimatedTotal ?? 0m;
-        if (totalEstimate <= 0)
-            throw new InvalidOperationException("Tổng dự toán tiệc không hợp lệ để tính tiền cọc.");
-
-        decimal businessDeposit = Math.Round(totalEstimate * 0.10m, 0);
-
-        // 2. Tính số tiền thực tế quét VietQR theo tỷ lệ Demo Scale
+        PaymentTransactionEntity intent;
+        string bookingCode;
+        decimal businessDeposit;
         int actualAmount;
-        if (_options.Value.IsDemoMode)
-        {
-            int ratio = _options.Value.DemoScaleRatio > 0 ? _options.Value.DemoScaleRatio : 10000;
-            actualAmount = Math.Max(2000, (int)Math.Round(businessDeposit / ratio, MidpointRounding.AwayFromZero));
-        }
-        else
-        {
-            actualAmount = (int)businessDeposit;
-        }
+        string description;
+        DateTime expiresAt;
 
-        // 3. Sinh OrderCode dương duy nhất chuẩn PayOS (< 9007199254740991)
-        long orderCode = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-
-        // 4. Chuẩn hóa mô tả chuyển khoản (PayOS yêu cầu <= 25 ký tự, không dấu)
-        string description = $"RSP {booking.BookingId}";
-        if (description.Length > 25)
-            description = description.Substring(0, 25);
-
-        // 5. Chuẩn bị CreatePaymentLinkRequest cho PayOS SDK 2.1.0
-        var items = new List<PaymentLinkItem>
+        using (await BookingPaymentConcurrency.AcquireAsync(request.BookingId))
+        await using (var dbTransaction = await BookingPaymentConcurrency.BeginSerializableTransactionAsync(_context))
         {
-            new PaymentLinkItem
+            await BookingPaymentConcurrency.AcquireDatabaseLockAsync(_context, request.BookingId);
+            var booking = await _context.WeddingBookings
+                .Include(b => b.Customer)
+                .Include(b => b.Status)
+                .SingleOrDefaultAsync(b => b.BookingId == request.BookingId)
+                ?? throw new KeyNotFoundException("Không tìm thấy đơn đặt tiệc cưới này.");
+
+            EnsureDepositPaymentAccess(booking, request, userId);
+            await EnsureBookingCanCreateDepositAsync(booking);
+
+            var activeIntent = await _context.PaymentTransactions
+                .AsNoTracking()
+                .Where(item => item.DatTiecId == booking.BookingId &&
+                    item.TransactionType == PaymentTransactionTypes.Deposit &&
+                    (item.TrangThai == PaymentTransactionStatusCodes.Creating ||
+                     item.TrangThai == PaymentTransactionStatusCodes.Pending))
+                .OrderByDescending(item => item.NgayTao)
+                .FirstOrDefaultAsync();
+            if (activeIntent is not null)
+                throw new InvalidOperationException(
+                    $"Đơn đặt tiệc đang có giao dịch cọc hoạt động (OrderCode: {activeIntent.OrderCode}). Vui lòng tiếp tục hoặc kiểm tra trạng thái giao dịch hiện tại trước khi tạo link mới.");
+
+            var totalEstimate = booking.EstimatedTotal ?? 0m;
+            if (totalEstimate <= 0)
+                throw new InvalidOperationException("Tổng dự toán tiệc không hợp lệ để tính tiền cọc.");
+
+            businessDeposit = Math.Round(totalEstimate * 0.10m, 0);
+            actualAmount = CalculateActualPayOsAmount(businessDeposit);
+            bookingCode = booking.BookingCode;
+            description = $"RSP {booking.BookingId}";
+            if (description.Length > 25)
+                description = description[..25];
+
+            intent = new PaymentTransactionEntity
             {
-                Name = $"Coc tiec {booking.BookingCode}",
-                Quantity = 1,
-                Price = actualAmount
-            }
-        };
+                DatTiecId = booking.BookingId,
+                TransactionType = PaymentTransactionTypes.Deposit,
+                OrderCode = await GenerateUniqueOrderCodeAsync(),
+                SoTienGiaoDich = actualAmount,
+                SoTienGhiNhan = businessDeposit,
+                PhuongThuc = "VIETQR_PAYOS",
+                TrangThai = PaymentTransactionStatusCodes.Creating,
+                NgayTao = DateTime.Now,
+                ExpiresAt = DateTime.Now.AddMinutes(10)
+            };
+            _context.PaymentTransactions.Add(intent);
+            await _context.SaveChangesAsync();
+            await dbTransaction.CommitAsync();
+        }
+
+        _context.ChangeTracker.Clear();
 
         var paymentRequest = new CreatePaymentLinkRequest
         {
-            OrderCode = orderCode,
+            OrderCode = intent.OrderCode,
             Amount = actualAmount,
             Description = description,
-            Items = items,
+            Items =
+            [
+                new PaymentLinkItem
+                {
+                    Name = $"Coc tiec {bookingCode}",
+                    Quantity = 1,
+                    Price = actualAmount
+                }
+            ],
             CancelUrl = _options.Value.CancelUrl,
             ReturnUrl = _options.Value.ReturnUrl
         };
 
-        _logger.LogInformation(
-            "Tạo link thanh toán PayOS: BookingId={BookingId}, OrderCode={OrderCode}, BusinessDeposit={BusinessDeposit}, ActualAmount={ActualAmount}, IsDemo={IsDemo}",
-            booking.BookingId, orderCode, businessDeposit, actualAmount, _options.Value.IsDemoMode);
-
         CreatePaymentLinkResponse paymentResult;
         try
         {
-            paymentResult = await _payOSClient.PaymentRequests.CreateAsync(paymentRequest);
+            paymentResult = await _depositPaymentGateway.CreateAsync(paymentRequest);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Lỗi khi gọi PayOS SDK PaymentRequests.CreateAsync cho BookingId={BookingId}", booking.BookingId);
+            await MarkDepositIntentFailedAsync(
+                request.BookingId, intent.GiaoDichId,
+                PaymentReconciliationReasons.PayOsLinkCreationFailed, ex.Message);
+            _logger.LogError(ex,
+                "Lỗi khi tạo link PayOS cho BookingId={BookingId}, OrderCode={OrderCode}",
+                request.BookingId, intent.OrderCode);
             throw new InvalidOperationException($"Không thể tạo liên kết thanh toán VietQR lúc này: {ex.Message}", ex);
         }
 
-        // 6. Lưu bản ghi GiaoDichThanhToan trạng thái PENDING
-        var transaction = new PaymentTransactionEntity
+        _context.ChangeTracker.Clear();
+        var activated = false;
+        string invalidReason;
+        using (await BookingPaymentConcurrency.AcquireAsync(request.BookingId))
+        await using (var dbTransaction = await BookingPaymentConcurrency.BeginSerializableTransactionAsync(_context))
         {
-            DatTiecId = booking.BookingId,
-            TransactionType = PaymentTransactionTypes.Deposit,
-            OrderCode = orderCode,
-            SoTienGiaoDich = actualAmount,
-            SoTienGhiNhan = businessDeposit,
-            PhuongThuc = "VIETQR_PAYOS",
-            TrangThai = "PENDING",
-            NgayTao = DateTime.Now
-        };
+            await BookingPaymentConcurrency.AcquireDatabaseLockAsync(_context, request.BookingId);
+            var booking = await _context.WeddingBookings
+                .Include(item => item.Status)
+                .SingleAsync(item => item.BookingId == request.BookingId);
+            var currentIntent = await _context.PaymentTransactions
+                .SingleAsync(item => item.GiaoDichId == intent.GiaoDichId);
 
-        _context.PaymentTransactions.Add(transaction);
-        booking.DepositAmount = businessDeposit;
-        await _context.SaveChangesAsync();
+            var depositAlreadyRecorded = await HasOtherRecordedDepositAsync(
+                booking, currentIntent.GiaoDichId, CancellationToken.None);
+            activated = currentIntent.TrangThai == PaymentTransactionStatusCodes.Creating &&
+                booking.Status.StatusCode is BookingStatusCodes.Pending or BookingStatusCodes.Confirmed &&
+                !depositAlreadyRecorded;
+
+            if (activated)
+            {
+                currentIntent.TrangThai = PaymentTransactionStatusCodes.Pending;
+                expiresAt = DateTime.Now.AddMinutes(10);
+                currentIntent.ExpiresAt = expiresAt;
+                booking.DepositAmount = businessDeposit;
+                invalidReason = string.Empty;
+            }
+            else
+            {
+                expiresAt = currentIntent.ExpiresAt ?? DateTime.Now;
+                invalidReason = booking.Status.StatusCode == BookingStatusCodes.Cancelled
+                    ? PaymentReconciliationReasons.BookingCancelledDuringLinkCreation
+                    : depositAlreadyRecorded
+                        ? PaymentReconciliationReasons.DuplicateDepositPayment
+                        : $"INTENT_STATUS_{currentIntent.TrangThai}";
+                if (currentIntent.TrangThai == PaymentTransactionStatusCodes.Creating)
+                {
+                    currentIntent.TrangThai = PaymentTransactionStatusCodes.Failed;
+                    currentIntent.ReconciliationData = JsonSerializer.Serialize(new
+                    {
+                        reason = invalidReason,
+                        intent.OrderCode,
+                        bookingStatus = booking.Status.StatusCode,
+                        recordedAt = DateTime.Now
+                    });
+                }
+            }
+
+            await _context.SaveChangesAsync();
+            await dbTransaction.CommitAsync();
+        }
+
+        if (!activated)
+        {
+            await CancelDepositLinkAndRecordAsync(
+                request.BookingId, intent.GiaoDichId, intent.OrderCode,
+                "Booking is no longer eligible for this deposit link", CancellationToken.None);
+            throw new InvalidOperationException(
+                $"Liên kết PayOS đã được tạo nhưng booking không còn đủ điều kiện thanh toán ({invalidReason}). Link đã được đưa vào quy trình hủy và không được trả về cho khách.");
+        }
+
+        _logger.LogInformation(
+            "Đã kích hoạt link PayOS: BookingId={BookingId}, OrderCode={OrderCode}, BusinessDeposit={BusinessDeposit}, ActualAmount={ActualAmount}, IsDemo={IsDemo}",
+            request.BookingId, intent.OrderCode, businessDeposit, actualAmount, _options.Value.IsDemoMode);
 
         return new CreateDepositPaymentResponseDto
         {
-            OrderCode = orderCode,
+            OrderCode = intent.OrderCode,
             QrCode = paymentResult.QrCode ?? string.Empty,
             CheckoutUrl = paymentResult.CheckoutUrl ?? string.Empty,
             AccountNumber = paymentResult.AccountNumber,
@@ -187,7 +244,7 @@ public sealed class PayOSPaymentService : IPaymentService
             BusinessDeposit = businessDeposit,
             ActualAmount = actualAmount,
             IsDemoMode = _options.Value.IsDemoMode,
-            ExpiresAt = DateTime.Now.AddMinutes(10)
+            ExpiresAt = expiresAt
         };
     }
 
@@ -285,7 +342,9 @@ public sealed class PayOSPaymentService : IPaymentService
         {
             try
             {
-                PaymentLink linkInfo = await _payOSClient.PaymentRequests.GetAsync(orderCode);
+                PaymentLink linkInfo = tx.TransactionType == PaymentTransactionTypes.Deposit
+                    ? await _depositPaymentGateway.GetAsync(orderCode)
+                    : await _payOSClient.PaymentRequests.GetAsync(orderCode);
                 var statusStr = linkInfo?.Status.ToString();
                 if (linkInfo != null && string.Equals(statusStr, "PAID", StringComparison.OrdinalIgnoreCase))
                 {
@@ -369,14 +428,17 @@ public sealed class PayOSPaymentService : IPaymentService
         {
             await _context.PaymentTransactions
                 .Where(item => item.OrderCode == orderCode &&
-                    item.TrangThai == PaymentTransactionStatusCodes.Pending)
+                    (item.TrangThai == PaymentTransactionStatusCodes.Creating ||
+                     item.TrangThai == PaymentTransactionStatusCodes.Pending))
                 .ExecuteUpdateAsync(update => update
                     .SetProperty(item => item.TrangThai, PaymentTransactionStatusCodes.Cancelled));
             return;
         }
 
         var pending = await _context.PaymentTransactions.SingleOrDefaultAsync(item =>
-            item.OrderCode == orderCode && item.TrangThai == PaymentTransactionStatusCodes.Pending);
+            item.OrderCode == orderCode &&
+            (item.TrangThai == PaymentTransactionStatusCodes.Creating ||
+             item.TrangThai == PaymentTransactionStatusCodes.Pending));
         if (pending is not null)
         {
             pending.TrangThai = PaymentTransactionStatusCodes.Cancelled;
@@ -398,7 +460,8 @@ public sealed class PayOSPaymentService : IPaymentService
                 .AsNoTracking()
                 .Where(item => item.DatTiecId == bookingId &&
                     item.TransactionType == PaymentTransactionTypes.Deposit &&
-                    item.TrangThai == PaymentTransactionStatusCodes.Pending)
+                    (item.TrangThai == PaymentTransactionStatusCodes.Creating ||
+                     item.TrangThai == PaymentTransactionStatusCodes.Pending))
                 .ToListAsync(cancellationToken);
         }
         catch (Exception ex)
@@ -410,47 +473,250 @@ public sealed class PayOSPaymentService : IPaymentService
         }
 
         foreach (var pendingLink in pendingLinks)
-        {
-            string outcome;
-            string? error = null;
-            try
-            {
-                await _paymentLinkCancellation.CancelAsync(
-                    pendingLink.OrderCode,
-                    string.IsNullOrWhiteSpace(reason) ? "Booking cancelled" : reason,
-                    cancellationToken);
-                outcome = PaymentReconciliationReasons.PayOsCancelRequested;
-            }
-            catch (Exception ex)
-            {
-                outcome = PaymentReconciliationReasons.PayOsCancelRequestFailed;
-                error = ex.Message;
-                _logger.LogWarning(ex,
-                    "Không thể gửi yêu cầu hủy PayOS OrderCode={OrderCode} sau khi BookingId={BookingId} đã hủy.",
-                    pendingLink.OrderCode, bookingId);
-            }
+            await CancelDepositLinkAndRecordAsync(
+                bookingId,
+                pendingLink.GiaoDichId,
+                pendingLink.OrderCode,
+                string.IsNullOrWhiteSpace(reason) ? "Booking cancelled" : reason,
+                cancellationToken);
+    }
 
-            try
+    private static void EnsureDepositPaymentAccess(
+        WeddingBooking booking,
+        CreateDepositPaymentRequestDto request,
+        int? userId)
+    {
+        if (userId is > 0)
+        {
+            if (booking.Customer.UserId != userId.Value &&
+                !IsGuestVerified(booking, request.BookingCode, request.PhoneNumber))
+                throw new UnauthorizedAccessException("Bạn không có quyền thực hiện thanh toán cho đơn tiệc này.");
+            return;
+        }
+
+        if (!IsGuestVerified(booking, request.BookingCode, request.PhoneNumber))
+            throw new UnauthorizedAccessException("Thông tin mã đặt tiệc hoặc số điện thoại không khớp với hồ sơ.");
+    }
+
+    private async Task EnsureBookingCanCreateDepositAsync(WeddingBooking booking)
+    {
+        if (await BookingPaymentConcurrency.HasRecordedDepositAsync(
+                _context, booking.BookingId, booking.PaidAmount))
+            throw new InvalidOperationException("Đơn đặt tiệc này đã được ghi nhận thanh toán hoặc đang chờ đối soát tiền cọc.");
+
+        if (booking.Status.StatusCode is not (BookingStatusCodes.Pending or BookingStatusCodes.Confirmed))
+            throw new InvalidOperationException(
+                $"Chỉ có thể đặt cọc khi tiệc ở trạng thái Chờ xác nhận hoặc Đã xác nhận (Hiện tại: {booking.Status.StatusName}).");
+    }
+
+    private int CalculateActualPayOsAmount(decimal businessAmount)
+    {
+        if (!_options.Value.IsDemoMode)
+            return (int)businessAmount;
+
+        var ratio = _options.Value.DemoScaleRatio > 0 ? _options.Value.DemoScaleRatio : 10000;
+        return Math.Max(2000, (int)Math.Round(businessAmount / ratio, MidpointRounding.AwayFromZero));
+    }
+
+    private async Task<long> GenerateUniqueOrderCodeAsync()
+    {
+        for (var attempt = 0; attempt < 20; attempt++)
+        {
+            var orderCode = checked(DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() * 1000L + Random.Shared.Next(1000));
+            if (!await _context.PaymentTransactions.AnyAsync(item => item.OrderCode == orderCode))
+                return orderCode;
+        }
+
+        throw new InvalidOperationException("Không thể sinh OrderCode PayOS duy nhất. Vui lòng thử lại.");
+    }
+
+    private async Task ResolveExpiredDepositIntentAsync(int bookingId)
+    {
+        PaymentTransactionEntity? expiredIntent;
+        using (await BookingPaymentConcurrency.AcquireAsync(bookingId))
+        await using (var dbTransaction = await BookingPaymentConcurrency.BeginSerializableTransactionAsync(_context))
+        {
+            await BookingPaymentConcurrency.AcquireDatabaseLockAsync(_context, bookingId);
+            expiredIntent = await _context.PaymentTransactions
+                .AsNoTracking()
+                .Where(item => item.DatTiecId == bookingId &&
+                    item.TransactionType == PaymentTransactionTypes.Deposit &&
+                    (item.TrangThai == PaymentTransactionStatusCodes.Creating ||
+                     item.TrangThai == PaymentTransactionStatusCodes.Pending) &&
+                    item.ExpiresAt != null && item.ExpiresAt <= DateTime.Now)
+                .OrderByDescending(item => item.NgayTao)
+                .FirstOrDefaultAsync();
+            await dbTransaction.CommitAsync();
+        }
+
+        if (expiredIntent is null)
+            return;
+
+        PaymentLink linkInfo;
+        try
+        {
+            linkInfo = await _depositPaymentGateway.GetAsync(expiredIntent.OrderCode);
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException(
+                $"Giao dịch cọc cũ OrderCode={expiredIntent.OrderCode} đã hết hạn hiển thị nhưng chưa thể xác minh với PayOS. Không tạo link thay thế để tránh ghi nhận tiền trùng.", ex);
+        }
+
+        var status = linkInfo.Status.ToString();
+        if (string.Equals(status, "PAID", StringComparison.OrdinalIgnoreCase))
+        {
+            await ProcessConfirmedDepositAsync(
+                expiredIntent.OrderCode,
+                linkInfo.Amount,
+                "Verified expired deposit intent via PayOS before replacement");
+            return;
+        }
+
+        if (string.Equals(status, "CANCELLED", StringComparison.OrdinalIgnoreCase))
+        {
+            await MarkCancelledIfPendingAsync(expiredIntent.OrderCode);
+            return;
+        }
+
+        if (string.Equals(status, "EXPIRED", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(status, "FAILED", StringComparison.OrdinalIgnoreCase))
+        {
+            await MarkDepositIntentFailedAsync(
+                bookingId,
+                expiredIntent.GiaoDichId,
+                PaymentReconciliationReasons.PayOsLinkExpired,
+                $"PayOS status={status}");
+            return;
+        }
+
+        throw new InvalidOperationException(
+            $"Giao dịch cọc cũ OrderCode={expiredIntent.OrderCode} vẫn có trạng thái PayOS={status}. Không thể tạo thêm link cọc.");
+    }
+
+    private async Task MarkDepositIntentFailedAsync(
+        int bookingId,
+        long transactionId,
+        string reason,
+        string? error)
+    {
+        _context.ChangeTracker.Clear();
+        using (await BookingPaymentConcurrency.AcquireAsync(bookingId))
+        await using (var dbTransaction = await BookingPaymentConcurrency.BeginSerializableTransactionAsync(_context))
+        {
+            await BookingPaymentConcurrency.AcquireDatabaseLockAsync(_context, bookingId);
+            var current = await _context.PaymentTransactions.SingleAsync(item => item.GiaoDichId == transactionId);
+            if (current.TrangThai is PaymentTransactionStatusCodes.Creating or PaymentTransactionStatusCodes.Pending)
             {
-                var current = await _context.PaymentTransactions
-                    .SingleAsync(item => item.GiaoDichId == pendingLink.GiaoDichId, cancellationToken);
+                current.TrangThai = PaymentTransactionStatusCodes.Failed;
                 current.ReconciliationData = JsonSerializer.Serialize(new
                 {
-                    reason = outcome,
-                    bookingId,
-                    pendingLink.OrderCode,
-                    requestedAt = DateTime.Now,
+                    reason,
                     error,
-                    previous = current.ReconciliationData
+                    current.OrderCode,
+                    recordedAt = DateTime.Now
+                });
+                await _context.SaveChangesAsync();
+            }
+            await dbTransaction.CommitAsync();
+        }
+    }
+
+    private async Task<bool> HasOtherRecordedDepositAsync(
+        WeddingBooking booking,
+        long currentTransactionId,
+        CancellationToken cancellationToken)
+    {
+        if (booking.PaidAmount > 0)
+            return true;
+
+        if (await _context.PaymentTransactions.AnyAsync(item =>
+                item.DatTiecId == booking.BookingId &&
+                item.GiaoDichId != currentTransactionId &&
+                item.TransactionType == PaymentTransactionTypes.Deposit &&
+                item.TrangThai == PaymentTransactionStatusCodes.Paid,
+                cancellationToken))
+            return true;
+
+        return await _context.Payments.AnyAsync(item =>
+            item.Contract.BookingId == booking.BookingId &&
+            item.PaymentType == PaymentTypes.Deposit &&
+            item.Status.StatusGroup == StatusGroups.Payment &&
+            item.Status.StatusCode == PaymentStatusCodes.Success,
+            cancellationToken);
+    }
+
+    private async Task CancelDepositLinkAndRecordAsync(
+        int bookingId,
+        long transactionId,
+        long orderCode,
+        string reason,
+        CancellationToken cancellationToken)
+    {
+        if (await _context.PaymentTransactionEvents.AsNoTracking().AnyAsync(item =>
+                item.PaymentTransactionId == transactionId &&
+                item.EventType == PaymentTransactionEventTypes.PayOsCancelRequested,
+                cancellationToken))
+            return;
+
+        string eventType;
+        string? error = null;
+        try
+        {
+            await _paymentLinkCancellation.CancelAsync(orderCode, reason, cancellationToken);
+            eventType = PaymentTransactionEventTypes.PayOsCancelRequested;
+        }
+        catch (Exception ex)
+        {
+            eventType = PaymentTransactionEventTypes.PayOsCancelRequestFailed;
+            error = ex.Message;
+            _logger.LogWarning(ex,
+                "Không thể gửi yêu cầu hủy PayOS OrderCode={OrderCode}, BookingId={BookingId}.",
+                orderCode, bookingId);
+        }
+
+        await RecordPaymentTransactionEventAsync(
+            bookingId, transactionId, orderCode, eventType, error, cancellationToken);
+    }
+
+    private async Task RecordPaymentTransactionEventAsync(
+        int bookingId,
+        long transactionId,
+        long orderCode,
+        string eventType,
+        string? error,
+        CancellationToken cancellationToken)
+    {
+        _context.ChangeTracker.Clear();
+        using (await BookingPaymentConcurrency.AcquireAsync(bookingId, cancellationToken))
+        await using (var dbTransaction = await BookingPaymentConcurrency.BeginSerializableTransactionAsync(
+            _context, cancellationToken))
+        {
+            await BookingPaymentConcurrency.AcquireDatabaseLockAsync(_context, bookingId, cancellationToken);
+            var current = await _context.PaymentTransactions
+                .AsNoTracking()
+                .SingleAsync(item => item.GiaoDichId == transactionId, cancellationToken);
+            var alreadyRecorded = await _context.PaymentTransactionEvents.AnyAsync(item =>
+                item.PaymentTransactionId == transactionId && item.EventType == eventType,
+                cancellationToken);
+            if (!alreadyRecorded)
+            {
+                _context.PaymentTransactionEvents.Add(new PaymentTransactionEvent
+                {
+                    PaymentTransactionId = transactionId,
+                    EventType = eventType,
+                    OccurredAt = DateTime.Now,
+                    Details = JsonSerializer.Serialize(new
+                    {
+                        bookingId,
+                        orderCode,
+                        transactionStatus = current.TrangThai,
+                        error
+                    })
                 });
                 await _context.SaveChangesAsync(cancellationToken);
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex,
-                    "Không thể lưu kết quả yêu cầu hủy PayOS OrderCode={OrderCode}. BookingId={BookingId} vẫn giữ trạng thái đã hủy.",
-                    pendingLink.OrderCode, bookingId);
-            }
+            await dbTransaction.CommitAsync(cancellationToken);
         }
     }
 
@@ -495,8 +761,12 @@ public sealed class PayOSPaymentService : IPaymentService
                 .Include(b => b.Contract)
                 .SingleAsync(b => b.BookingId == tx.DatTiecId, cancellationToken);
 
+            var duplicateDeposit = await HasOtherRecordedDepositAsync(
+                booking, tx.GiaoDichId, cancellationToken);
             var reconciliationReason = booking.Status.StatusCode == BookingStatusCodes.Cancelled
                 ? PaymentReconciliationReasons.PaidAfterBookingCancelled
+                : duplicateDeposit
+                    ? PaymentReconciliationReasons.DuplicateDepositPayment
                 : actualAmount != tx.SoTienGiaoDich
                     ? PaymentReconciliationReasons.PaymentAmountMismatch
                     : booking.Status.StatusCode is not (BookingStatusCodes.Pending or BookingStatusCodes.Confirmed)

@@ -45,6 +45,7 @@ public sealed class ApplicationDbContext : DbContext
     public DbSet<DecorPackage> DecorPackages { get; set; }
     public DbSet<ServiceItem> ServiceItems { get; set; }
     public DbSet<PaymentTransaction> PaymentTransactions => Set<PaymentTransaction>();
+    public DbSet<PaymentTransactionEvent> PaymentTransactionEvents => Set<PaymentTransactionEvent>();
     public DbSet<ScheduleChangePolicy> ScheduleChangePolicies => Set<ScheduleChangePolicy>();
     public DbSet<ScheduleChangePolicyTier> ScheduleChangePolicyTiers => Set<ScheduleChangePolicyTier>();
     public DbSet<ScheduleChangeQuote> ScheduleChangeQuotes => Set<ScheduleChangeQuote>();
@@ -1014,6 +1015,21 @@ public sealed class ApplicationDbContext : DbContext
                 .WithMany(x => x.PaymentTransactions)
                 .HasForeignKey(x => x.ScheduleChangeId)
                 .OnDelete(DeleteBehavior.NoAction);
+        });
+
+        modelBuilder.Entity<PaymentTransactionEvent>(entity =>
+        {
+            entity.ToTable("GiaoDichThanhToanSuKien");
+            entity.HasKey(x => x.PaymentTransactionEventId);
+            entity.Property(x => x.PaymentTransactionEventId).HasColumnName("SuKienID");
+            entity.Property(x => x.PaymentTransactionId).HasColumnName("GiaoDichID");
+            entity.Property(x => x.EventType).HasColumnName("LoaiSuKien").HasColumnType("varchar(50)").HasMaxLength(50).IsRequired();
+            entity.Property(x => x.OccurredAt).HasColumnName("ThoiDiem").HasPrecision(0).HasDefaultValueSql("SYSDATETIME()");
+            entity.Property(x => x.Details).HasColumnName("ChiTiet").HasColumnType("nvarchar(max)");
+            entity.HasIndex(x => new { x.PaymentTransactionId, x.EventType }, "UX_GiaoDichThanhToanSuKien_GiaoDich_Loai")
+                .IsUnique();
+            entity.HasOne(x => x.PaymentTransaction).WithMany(x => x.Events)
+                .HasForeignKey(x => x.PaymentTransactionId).OnDelete(DeleteBehavior.NoAction);
         });
 
         modelBuilder.Entity<RecommendationRequestEntity>(entity =>

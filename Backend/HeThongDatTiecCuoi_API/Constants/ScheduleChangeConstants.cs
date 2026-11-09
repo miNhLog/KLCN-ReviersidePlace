@@ -56,6 +56,7 @@ public static class PaymentTransactionTypes
 
 public static class PaymentTransactionStatusCodes
 {
+    public const string Creating = "CREATING";
     public const string Pending = "PENDING";
     public const string Paid = "PAID";
     public const string Cancelled = "CANCELLED";
@@ -71,6 +72,14 @@ public static class PaymentReconciliationReasons
     public const string PaidAfterBookingCancelled = "PAID_AFTER_BOOKING_CANCELLED";
     public const string PaymentAmountMismatch = "PAYMENT_AMOUNT_MISMATCH";
     public const string BookingStatusNotEligible = "BOOKING_STATUS_NOT_ELIGIBLE";
+    public const string DuplicateDepositPayment = "DUPLICATE_DEPOSIT_PAYMENT";
+    public const string BookingCancelledDuringLinkCreation = "BOOKING_CANCELLED_DURING_LINK_CREATION";
+    public const string PayOsLinkCreationFailed = "PAYOS_LINK_CREATION_FAILED";
+    public const string PayOsLinkExpired = "PAYOS_LINK_EXPIRED";
+}
+
+public static class PaymentTransactionEventTypes
+{
     public const string PayOsCancelRequested = "PAYOS_CANCEL_REQUESTED";
     public const string PayOsCancelRequestFailed = "PAYOS_CANCEL_REQUEST_FAILED";
 }

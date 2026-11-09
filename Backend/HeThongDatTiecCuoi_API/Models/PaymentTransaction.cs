@@ -20,4 +20,5 @@ public sealed class PaymentTransaction
     public WeddingBooking Booking { get; set; } = null!;
     public WeddingScheduleChange? ScheduleChange { get; set; }
     public ScheduleChangeHold? ScheduleChangeHold { get; set; }
+    public ICollection<PaymentTransactionEvent> Events { get; set; } = new List<PaymentTransactionEvent>();
 }
